@@ -1,0 +1,302 @@
+EXPORTS
+    DllGetVersion @1
+    FTC_CMapCache_Lookup @2
+    FTC_CMapCache_New @3
+    FTC_Cache_Clear @4
+    FTC_Cache_Done @5
+    FTC_Cache_Init @6
+    FTC_Cache_Lookup @7
+    FTC_Cache_NewNode @8
+    FTC_Cache_RemoveFaceID @9
+    FTC_Family_Init @10
+    FTC_GCache_Done @11
+    FTC_GCache_Init @12
+    FTC_GCache_Lookup @13
+    FTC_GCache_New @14
+    FTC_GNode_Compare @15
+    FTC_GNode_Done @16
+    FTC_GNode_Init @17
+    FTC_GNode_UnselectFamily @18
+    FTC_INode_Free @19
+    FTC_INode_New @20
+    FTC_INode_Weight @21
+    FTC_ImageCache_Lookup @22
+    FTC_ImageCache_New @23
+    FTC_Manager_Compress @24
+    FTC_Manager_Done @25
+    FTC_Manager_FlushN @26
+    FTC_Manager_LookupFace @27
+    FTC_Manager_LookupSize @28
+    FTC_Manager_New @29
+    FTC_Manager_RegisterCache @30
+    FTC_Manager_RemoveFaceID @31
+    FTC_Manager_Reset @32
+    FTC_MruList_Done @33
+    FTC_MruList_Find @34
+    FTC_MruList_Init @35
+    FTC_MruList_Lookup @36
+    FTC_MruList_New @37
+    FTC_MruList_Remove @38
+    FTC_MruList_RemoveSelection @39
+    FTC_MruList_Reset @40
+    FTC_MruNode_Prepend @41
+    FTC_MruNode_Remove @42
+    FTC_MruNode_Up @43
+    FTC_Node_Unref @44
+    FTC_SBitCache_Lookup @45
+    FTC_SBitCache_New @46
+    FTC_SNode_Compare @47
+    FTC_SNode_Free @48
+    FTC_SNode_New @49
+    FTC_SNode_Weight @50
+    FT_Activate_Size @51
+    FT_Add64 @52
+    FT_Add_Default_Modules @53
+    FT_Add_Module @54
+    FT_Alloc @55
+    FT_Angle_Diff @56
+    FT_Atan2 @57
+    FT_Attach_File @58
+    FT_Attach_Stream @59
+    FT_CMap_Done @60
+    FT_CMap_New @61
+    FT_CeilFix @62
+    FT_Cos @63
+    FT_Div64by32 @64
+    FT_DivFix @65
+    FT_Done_Face @66
+    FT_Done_FreeType @67
+    FT_Done_Glyph @68
+    FT_Done_GlyphSlot @69
+    FT_Done_Library @70
+    FT_Done_Memory @71
+    FT_Done_Size @72
+    FT_FloorFix @73
+    FT_Free @74
+    FT_Get_BDF_Charset_ID @75
+    FT_Get_BDF_Property @76
+    FT_Get_CMap_Language_ID @77
+    FT_Get_Char_Index @78
+    FT_Get_First_Char @79
+    FT_Get_Glyph @80
+    FT_Get_Glyph_Name @81
+    FT_Get_Kerning @82
+    FT_Get_Module @83
+    FT_Get_Module_Interface @84
+    FT_Get_Multi_Master @85
+    FT_Get_Name_Index @86
+    FT_Get_Next_Char @87
+    FT_Get_PFR_Advance @88
+    FT_Get_PFR_Kerning @89
+    FT_Get_PFR_Metrics @90
+    FT_Get_PS_Font_Info @91
+    FT_Get_Postscript_Name @92
+    FT_Get_Renderer @93
+    FT_Get_Sfnt_Name @94
+    FT_Get_Sfnt_Name_Count @95
+    FT_Get_Sfnt_Table @96
+    FT_Get_WinFNT_Header @97
+    FT_Get_X11_Font_Format @98
+    FT_GlyphLoader_Add @99
+    FT_GlyphLoader_CheckPoints @100
+    FT_GlyphLoader_CheckSubGlyphs @101
+    FT_GlyphLoader_CopyPoints @102
+    FT_GlyphLoader_CreateExtra @103
+    FT_GlyphLoader_Done @104
+    FT_GlyphLoader_New @105
+    FT_GlyphLoader_Prepare @106
+    FT_GlyphLoader_Reset @107
+    FT_GlyphLoader_Rewind @108
+    FT_Glyph_Copy @109
+    FT_Glyph_Get_CBox @110
+    FT_Glyph_Stroke @111
+    FT_Glyph_StrokeBorder @112
+    FT_Glyph_To_Bitmap @113
+    FT_Glyph_Transform @114
+    FT_Has_PS_Glyph_Names @115
+    FT_Init_FreeType @116
+    FT_Library_Version @117
+    FT_List_Add @118
+    FT_List_Finalize @119
+    FT_List_Find @120
+    FT_List_Insert @121
+    FT_List_Iterate @122
+    FT_List_Remove @123
+    FT_List_Up @124
+    FT_Load_Char @125
+    FT_Load_Glyph @126
+    FT_Load_Sfnt_Table @127
+    FT_Lookup_Renderer @128
+    FT_Matrix_Invert @129
+    FT_Matrix_Multiply @130
+    FT_MulDiv @131
+    FT_MulDiv_No_Round @132
+    FT_MulFix @133
+    FT_MulTo64 @134
+    FT_New_Face @135
+    FT_New_GlyphSlot @136
+    FT_New_Library @137
+    FT_New_Memory @138
+    FT_New_Memory_Face @139
+    FT_New_Size @140
+    FT_Open_Face @141
+    FT_Outline_Check @142
+    FT_Outline_Copy @143
+    FT_Outline_Decompose @144
+    FT_Outline_Done @145
+    FT_Outline_Done_Internal @146
+    FT_Outline_GetInsideBorder @147
+    FT_Outline_GetOutsideBorder @148
+    FT_Outline_Get_BBox @149
+    FT_Outline_Get_Bitmap @150
+    FT_Outline_Get_CBox @151
+    FT_Outline_Get_Orientation @152
+    FT_Outline_New @153
+    FT_Outline_New_Internal @154
+    FT_Outline_Render @155
+    FT_Outline_Reverse @156
+    FT_Outline_Transform @157
+    FT_Outline_Translate @158
+    FT_Raccess_Get_DataOffsets @159
+    FT_Raccess_Get_HeaderInfo @160
+    FT_Raccess_Guess @161
+    FT_Realloc @162
+    FT_Remove_Module @163
+    FT_Render_Glyph @164
+    FT_Render_Glyph_Internal @165
+    FT_RoundFix @166
+    FT_Select_Charmap @167
+    FT_Set_Char_Size @168
+    FT_Set_Charmap @169
+    FT_Set_Debug_Hook @170
+    FT_Set_MM_Blend_Coordinates @171
+    FT_Set_MM_Design_Coordinates @172
+    FT_Set_Pixel_Sizes @173
+    FT_Set_Renderer @174
+    FT_Set_Transform @175
+    FT_Sin @176
+    FT_Sqrt32 @177
+    FT_SqrtFixed @178
+    FT_Stream_Close @179
+    FT_Stream_EnterFrame @180
+    FT_Stream_ExitFrame @181
+    FT_Stream_ExtractFrame @182
+    FT_Stream_Free @183
+    FT_Stream_GetChar @184
+    FT_Stream_GetLong @185
+    FT_Stream_GetLongLE @186
+    FT_Stream_GetOffset @187
+    FT_Stream_GetShort @188
+    FT_Stream_GetShortLE @189
+    FT_Stream_New @190
+    FT_Stream_Open @191
+    FT_Stream_OpenGzip @192
+    FT_Stream_OpenLZW @193
+    FT_Stream_OpenMemory @194
+    FT_Stream_Pos @195
+    FT_Stream_Read @196
+    FT_Stream_ReadAt @197
+    FT_Stream_ReadChar @198
+    FT_Stream_ReadFields @199
+    FT_Stream_ReadLong @200
+    FT_Stream_ReadLongLE @201
+    FT_Stream_ReadOffset @202
+    FT_Stream_ReadShort @203
+    FT_Stream_ReadShortLE @204
+    FT_Stream_ReleaseFrame @205
+    FT_Stream_Seek @206
+    FT_Stream_Skip @207
+    FT_Stroker_BeginSubPath @208
+    FT_Stroker_ConicTo @209
+    FT_Stroker_CubicTo @210
+    FT_Stroker_Done @211
+    FT_Stroker_EndSubPath @212
+    FT_Stroker_Export @213
+    FT_Stroker_ExportBorder @214
+    FT_Stroker_GetBorderCounts @215
+    FT_Stroker_GetCounts @216
+    FT_Stroker_LineTo @217
+    FT_Stroker_New @218
+    FT_Stroker_ParseOutline @219
+    FT_Stroker_Rewind @220
+    FT_Stroker_Set @221
+    FT_Tan @222
+    FT_Trace_Get_Count @223
+    FT_Trace_Get_Name @224
+    FT_Vector_From_Polar @225
+    FT_Vector_Length @226
+    FT_Vector_Polarize @227
+    FT_Vector_Rotate @228
+    FT_Vector_Transform @229
+    FT_Vector_Unit @230
+    TT_New_Context @231
+    TT_RunIns @232
+    _debug_mem_dummy @233 DATA
+    ah_arctan @234 DATA
+    autohint_module_class @235 DATA
+    bdf_cmap_class @236 DATA
+    bdf_driver_class @237 DATA
+    cff_cmap_encoding_class_rec @238 DATA
+    cff_cmap_unicode_class_rec @239 DATA
+    cff_driver_class @240 DATA
+    ft_autohinter_service @241 DATA
+    ft_bitmap_glyph_class @242 DATA
+    ft_debug_init @243
+    ft_glyphslot_alloc_bitmap @244
+    ft_glyphslot_free_bitmap @245
+    ft_glyphslot_set_bitmap @246
+    ft_grays_raster @247 DATA
+    ft_module_get_service @248
+    ft_outline_glyph_class @249 DATA
+    ft_raster1_renderer_class @250 DATA
+    ft_raster5_renderer_class @251 DATA
+    ft_service_list_lookup @252
+    ft_smooth_lcd_renderer_class @253 DATA
+    ft_smooth_lcdv_renderer_class @254 DATA
+    ft_smooth_renderer_class @255 DATA
+    ft_standard_raster @256 DATA
+    ft_validator_error @257
+    ft_validator_init @258
+    ft_validator_run @259
+    ftc_basic_image_cache_class @260 DATA
+    ftc_basic_image_family_class @261 DATA
+    ftc_basic_sbit_cache_class @262 DATA
+    ftc_basic_sbit_family_class @263 DATA
+    ftc_cmap_cache_class @264 DATA
+    ftc_face_list_class @265 DATA
+    ftc_node_destroy @266
+    ftc_size_list_class @267 DATA
+    gray_raster_render @268
+    pcf_cmap_class @269 DATA
+    pcf_driver_class @270 DATA
+    pfr_cmap_class_rec @271 DATA
+    pfr_driver_class @272 DATA
+    pfr_metrics_service_rec @273 DATA
+    ps_hints_apply @274
+    ps_parser_funcs @275 DATA
+    ps_table_funcs @276 DATA
+    psaux_module_class @277 DATA
+    pshinter_module_class @278 DATA
+    psnames_module_class @279 DATA
+    sbit_metrics_fields @280 DATA
+    sfnt_module_class @281 DATA
+    t1_builder_funcs @282 DATA
+    t1_cmap_classes @283 DATA
+    t1_cmap_custom_class_rec @284 DATA
+    t1_cmap_expert_class_rec @285 DATA
+    t1_cmap_standard_class_rec @286 DATA
+    t1_cmap_unicode_class_rec @287 DATA
+    t1_decoder_funcs @288 DATA
+    t1_driver_class @289 DATA
+    t1cid_driver_class @290 DATA
+    t42_driver_class @291 DATA
+    tt_cmap0_class_rec @292 DATA
+    tt_cmap10_class_rec @293 DATA
+    tt_cmap12_class_rec @294 DATA
+    tt_cmap2_class_rec @295 DATA
+    tt_cmap4_class_rec @296 DATA
+    tt_cmap6_class_rec @297 DATA
+    tt_cmap8_class_rec @298 DATA
+    tt_default_graphics_state @299 DATA
+    tt_driver_class @300 DATA
+    winfnt_driver_class @301 DATA
