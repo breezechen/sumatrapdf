@@ -16,6 +16,9 @@
 #include "PDFDoc.h"
 #include "PDFCore.h"
 
+/* Next action for the benchmark mode */
+#define MSG_BENCH_NEXT_ACTION WM_USER + 1
+
 /* A long TODO list:
 
 Must have before first release:
@@ -1685,6 +1688,20 @@ void WinResizeIfNeeded(WindowInfo *win)
     win->pdfCore->resizeToWindow(win);
 }
 
+void PostBenchNextAction(HWND hwnd)
+{
+    PostMessage(hwnd, MSG_BENCH_NEXT_ACTION, 0, 0);
+}
+
+void OnBenchNextAction(WindowInfo *win)
+{
+    if (win->pdfCore->gotoNextPage(1, gTrue)) {
+        win->pdfCore->updateTitle();
+        WindowInfo_RedrawAll(win);
+        PostBenchNextAction(win->hwnd);
+    }
+}
+
 void OnPaint(WindowInfo *win)
 {
     HDC         hdc;
@@ -2029,6 +2046,20 @@ void ViewWithAcrobat(WindowInfo *win)
     // TODO: write me
 }
 
+static inline BOOL IsBenchArg(char *txt)
+{
+    if (strieq(txt, BENCH_ARG_TXT))
+        return TRUE;
+    return FALSE;
+}
+
+static BOOL IsBenchMode(void)
+{
+    if (NULL != gBenchFileName)
+        return TRUE;
+    return FALSE;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
@@ -2170,6 +2201,11 @@ InitMouseWheelInfo:
         case IDM_VIEW_WITH_ACROBAT:
             if (win)
                 ViewWithAcrobat(win);
+            break;
+
+        case MSG_BENCH_NEXT_ACTION:
+            if (win)
+                OnBenchNextAction(win);
             break;
 
         default:
@@ -2537,20 +2573,6 @@ StrList *StrList_FromCmdLine(char *cmdLine)
     return strList;
 }
 
-static inline BOOL IsBenchMode(void)
-{
-    if (NULL != gBenchFileName)
-        return TRUE;
-    return FALSE;
-}
-
-static inline BOOL IsBenchArg(char *txt)
-{
-    if (strieq(txt, BENCH_ARG_TXT))
-        return TRUE;
-    return FALSE;
-}
-
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *   cur;
@@ -2575,9 +2597,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     cur = gArgListRoot->next;
     while (cur) {
         if (IsBenchArg(cur->str)) {
-            gBenchFileName = cur->str;
-            if (cur->next)
-                benchPageNumStr = cur->next->str;
+            cur = cur->next;
+            if (cur) {
+                gBenchFileName = cur->str;
+                if (cur->next)
+                    benchPageNumStr = cur->next->str;
+            }
             break;
         }
         cur = cur->next;
@@ -2605,18 +2630,25 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     /* TODO: detect it's not me and show a dialog box ? */
     AssociatePdfWithExe(exeName);
 
-    /* TODO: don't do it if in benchmark mode*/
-    cur = gArgListRoot->next;
     int pdfOpened = 0;
-    while (cur) {
-        win = OpenPdf(cur->str, FALSE);
-        if (!win)
-            goto Exit;
-       ++pdfOpened;
-        cur = cur->next;
+    if (NULL != gBenchFileName) {
+            win = OpenPdf(gBenchFileName, FALSE);
+            if (win)
+                ++pdfOpened;
+    } else {
+        cur = gArgListRoot->next;
+        while (cur) {
+            win = OpenPdf(cur->str, FALSE);
+            if (!win)
+                goto Exit;
+           ++pdfOpened;
+            cur = cur->next;
+        }
     }
 
     if (0 == pdfOpened) {
+        /* disable benchmark mode if we couldn't open file to benchmark */
+        gBenchFileName = 0;
         win = WindowInfo_CreateEmpty();
         if (!win)
             goto Exit;
@@ -2624,6 +2656,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         DragAcceptFiles(win->hwnd, TRUE);
         ShowWindow(win->hwnd, SW_SHOW);
         UpdateWindow(win->hwnd);
+    }
+
+    if (IsBenchMode()) {
+        assert(win);
+        assert(pdfOpened > 0);
+        if (win)
+            PostBenchNextAction(win->hwnd);
     }
 
     while (GetMessage(&msg, NULL, 0, 0)) {
