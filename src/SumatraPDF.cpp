@@ -15,6 +15,7 @@
 #include "SplashBitmap.h"
 #include "PDFDoc.h"
 #include "PDFCore.h"
+#include "strlist_util.h"
 
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
@@ -115,11 +116,6 @@ enum WinState {
 #define BENCH_ARG_TXT "-bench"
 
 class WinPDFCore;
-
-typedef struct StrList {
-    struct StrList *next;
-    char *str;
-} StrList;
 
 /* Describes information related to one window with (optional) pdf document
    on the screen */
@@ -360,21 +356,6 @@ typedef struct FontMapping {
 
 FontMapping *g_fontMapMSList = NULL;
 
-char *strdup(char *txt)
-{
-    size_t len;
-    char *newTxt;
-
-    if (!txt)
-        return NULL;
-    len = strlen(txt) + 1;
-    newTxt = (char*)malloc(len);
-    if (!newTxt)
-        return NULL;
-    memmove(newTxt, txt, len);
-    return newTxt;
-}
-
 BOOL streq(char *str1, char *str2)
 {
     if (!str1 && !str2)
@@ -441,10 +422,10 @@ FontMapping *FontMapping_Create(char *name, char *path, int index)
     if (!entry)
         return NULL;
 
-    entry->name = strdup(name);
+    entry->name = StrDup(name);
     if (!entry->name)
         goto Error;
-    entry->path = strdup(path);
+    entry->path = StrDup(path);
     if (!entry->path)
         goto Error;
     entry->index = index;
@@ -2307,96 +2288,6 @@ void StrStrip(char *str)
     new_len = new_end - new_start;
     assert(new_len >= 0);
     /* TODO: move the string if necessary */
-}
-
-char *StrDupN(char *str, size_t len)
-{
-    char *  str_new;
-    if (!str)
-        return NULL;
-
-    str_new = (char*)malloc(len+1);
-    if (!str_new)
-        return NULL;
-
-    memcpy(str_new, str, len);
-    str_new[len] = 0;
-    return str_new;
-}
-
-char *StrDup(char *str)
-{
-    size_t  len;
-    if (!str)
-        return NULL;
-
-    len = strlen(str);
-    return StrDupN(str, len);
-}
-
-int StrList_Len(StrList **root)
-{
-    int         len = 0;
-    StrList *   cur;
-    assert(root);
-    if (!root)
-        return 0;
-    cur = *root;
-    while (cur) {
-        ++len;
-        cur = cur->next;
-    }
-    return len;
-}
-
-BOOL StrList_InsertAndOwn(StrList **root, char *txt)
-{
-    StrList *   el;
-    assert(root && txt);
-    if (!root || !txt)
-        return FALSE;
-
-    el = (StrList*)malloc(sizeof(StrList));
-    if (!el)
-        return FALSE;
-    el->str = txt;
-    el->next = *root;
-    *root = el;
-    return TRUE;
-}
-
-BOOL StrList_Insert(StrList **root, char *txt)
-{
-    char *txtDup;
-
-    assert(root && txt);
-    if (!root || !txt)
-        return FALSE;
-    txtDup = StrDup(txt);
-    if (!txtDup)
-        return FALSE;
-
-    if (!StrList_InsertAndOwn(root, txtDup)) {
-        free((void*)txtDup);
-        return FALSE;
-    }
-    return TRUE;
-}
-
-void StrList_Destroy(StrList **root)
-{
-    StrList *   cur;
-    StrList *   next;
-
-    if (!root)
-        return;
-    cur = *root;
-    while (cur) {
-        next = cur->next;
-        free((void*)cur->str);
-        free((void*)cur);
-        cur = next;
-    }
 }
 
 void Str_SkipWs(char **txt)
