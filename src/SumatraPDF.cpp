@@ -16,6 +16,7 @@
 #include "PDFDoc.h"
 #include "PDFCore.h"
 #include "strlist_util.h"
+#include "file_util.h"
 
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
@@ -355,6 +356,21 @@ typedef struct FontMapping {
 } FontMapping;
 
 FontMapping *g_fontMapMSList = NULL;
+
+int isPdfFile(FileInfo *fi)
+{
+    assert(fi);
+    if (!fi) return 0;
+
+#if 0 /* TODO: figure out why doesn't work */
+    if (FileInfo_IsDir(fi))
+        return 0;
+#endif
+
+    if (utf8_endswith(fi->name, ".pdf"))
+        return 1;
+    return 0;
+}
 
 BOOL streq(char *str1, char *str2)
 {
@@ -1233,6 +1249,7 @@ void WinPDFCore::redrawRect(PDFCoreTile *tileA, int xSrc, int ySrc,
 
         FillRect(win->hdcToDraw, &rc, gBrushBg);
     }
+    updateScrollbars();
 }
 
 void WinPDFCore::updateScrollbars()

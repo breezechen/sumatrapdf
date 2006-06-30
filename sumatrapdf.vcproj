@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)..\poppler&quot;;&quot;$(ProjectDir)..\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir)..\poppler\poppler&quot;;&quot;$(ProjectDir)..\poppler\splash&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -122,13 +122,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)..\poppler&quot;;&quot;$(ProjectDir)..\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir)..\poppler\poppler&quot;;&quot;$(ProjectDir)..\poppler\splash&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
+				DisableSpecificWarnings="4996;4244;4267"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -144,6 +145,7 @@
 				AdditionalDependencies="freetype2110MT_D.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
+				IgnoreDefaultLibraryNames="libcmtd.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -185,31 +187,35 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\poppler\poppler\Annot.cc"
+				RelativePath=".\poppler\poppler\Annot.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Array.cc"
+				RelativePath=".\poppler\poppler\Array.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\BuiltinFont.cc"
+				RelativePath=".\baseutils\base_util.c"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\BuiltinFontTables.cc"
+				RelativePath=".\poppler\poppler\BuiltinFont.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Catalog.cc"
+				RelativePath=".\poppler\poppler\BuiltinFontTables.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CharCodeToUnicode.cc"
+				RelativePath=".\poppler\poppler\Catalog.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CMap.cc"
+				RelativePath=".\poppler\poppler\CharCodeToUnicode.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\CMap.cc"
 				>
 			</File>
 			<File
@@ -217,139 +223,139 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Decrypt.cc"
+				RelativePath=".\poppler\poppler\Decrypt.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Dict.cc"
+				RelativePath=".\poppler\poppler\Dict.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Error.cc"
+				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\FixedPoint.cc"
+				RelativePath=".\poppler\goo\FixedPoint.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiBase.cc"
+				RelativePath=".\poppler\fofi\FoFiBase.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiEncodings.cc"
+				RelativePath=".\poppler\fofi\FoFiEncodings.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiTrueType.cc"
+				RelativePath=".\poppler\fofi\FoFiTrueType.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiType1.cc"
+				RelativePath=".\poppler\fofi\FoFiType1.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiType1C.cc"
+				RelativePath=".\poppler\fofi\FoFiType1C.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\FontEncodingTables.cc"
+				RelativePath=".\poppler\poppler\FontEncodingTables.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Function.cc"
+				RelativePath=".\poppler\poppler\Function.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gfile.cc"
+				RelativePath=".\poppler\goo\gfile.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Gfx.cc"
+				RelativePath=".\poppler\poppler\Gfx.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GfxFont.cc"
+				RelativePath=".\poppler\poppler\GfxFont.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GfxState.cc"
+				RelativePath=".\poppler\poppler\GfxState.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GlobalParams.cc"
+				RelativePath=".\poppler\poppler\GlobalParams.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gmem.c"
+				RelativePath=".\poppler\goo\gmem.c"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gmempp.cc"
+				RelativePath=".\poppler\goo\gmempp.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooHash.cc"
+				RelativePath=".\poppler\goo\GooHash.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooList.cc"
+				RelativePath=".\poppler\goo\GooList.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooString.cc"
+				RelativePath=".\poppler\goo\GooString.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooTimer.cc"
+				RelativePath=".\poppler\goo\GooTimer.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JArithmeticDecoder.cc"
+				RelativePath=".\poppler\poppler\JArithmeticDecoder.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JBIG2Stream.cc"
+				RelativePath=".\poppler\poppler\JBIG2Stream.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JPXStream.cc"
+				RelativePath=".\poppler\poppler\JPXStream.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Lexer.cc"
+				RelativePath=".\poppler\poppler\Lexer.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Link.cc"
+				RelativePath=".\poppler\poppler\Link.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\NameToCharCode.cc"
+				RelativePath=".\poppler\poppler\NameToCharCode.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Object.cc"
+				RelativePath=".\poppler\poppler\Object.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Outline.cc"
+				RelativePath=".\poppler\poppler\Outline.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\OutputDev.cc"
+				RelativePath=".\poppler\poppler\OutputDev.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Page.cc"
+				RelativePath=".\poppler\poppler\Page.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PageLabelInfo.cc"
+				RelativePath=".\poppler\poppler\PageLabelInfo.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Parser.cc"
+				RelativePath=".\poppler\poppler\Parser.cc"
 				>
 			</File>
 			<File
@@ -357,91 +363,99 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PDFDoc.cc"
+				RelativePath=".\poppler\poppler\PDFDoc.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PDFDocEncoding.cc"
+				RelativePath=".\poppler\poppler\PDFDocEncoding.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PSTokenizer.cc"
+				RelativePath=".\poppler\poppler\PSTokenizer.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\SecurityHandler.cc"
+				RelativePath=".\poppler\poppler\SecurityHandler.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\Splash.cc"
+				RelativePath=".\poppler\splash\Splash.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashBitmap.cc"
+				RelativePath=".\poppler\splash\SplashBitmap.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashClip.cc"
+				RelativePath=".\poppler\splash\SplashClip.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFont.cc"
+				RelativePath=".\poppler\splash\SplashFont.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontEngine.cc"
+				RelativePath=".\poppler\splash\SplashFontEngine.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontFile.cc"
+				RelativePath=".\poppler\splash\SplashFontFile.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontFileID.cc"
+				RelativePath=".\poppler\splash\SplashFontFileID.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFont.cc"
+				RelativePath=".\poppler\splash\SplashFTFont.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFontEngine.cc"
+				RelativePath=".\poppler\splash\SplashFTFontEngine.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFontFile.cc"
+				RelativePath=".\poppler\splash\SplashFTFontFile.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\SplashOutputDev.cc"
+				RelativePath=".\poppler\poppler\SplashOutputDev.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashPath.cc"
+				RelativePath=".\poppler\splash\SplashPath.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashPattern.cc"
+				RelativePath=".\poppler\splash\SplashPattern.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashScreen.cc"
+				RelativePath=".\poppler\splash\SplashScreen.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashState.cc"
+				RelativePath=".\poppler\splash\SplashState.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashXPath.cc"
+				RelativePath=".\poppler\splash\SplashXPath.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashXPathScanner.cc"
+				RelativePath=".\poppler\splash\SplashXPathScanner.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Stream.cc"
+				RelativePath=".\baseutils\str_util.c"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\Stream.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\strlist_util.c"
 				>
 			</File>
 			<File
@@ -449,27 +463,27 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\TextOutputDev.cc"
+				RelativePath=".\poppler\poppler\TextOutputDev.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UGooString.cc"
+				RelativePath=".\poppler\poppler\UGooString.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeMap.cc"
+				RelativePath=".\poppler\poppler\UnicodeMap.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeTypeTable.cc"
+				RelativePath=".\poppler\poppler\UnicodeTypeTable.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\XpdfPluginAPI.cc"
+				RelativePath=".\poppler\poppler\XpdfPluginAPI.cc"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\XRef.cc"
+				RelativePath=".\poppler\poppler\XRef.cc"
 				>
 			</File>
 		</Filter>
@@ -479,39 +493,43 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\poppler\poppler\Annot.h"
+				RelativePath=".\poppler\poppler\Annot.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Array.h"
+				RelativePath=".\poppler\poppler\Array.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\BuiltinFont.h"
+				RelativePath=".\baseutils\base_util.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\BuiltinFontTables.h"
+				RelativePath=".\poppler\poppler\BuiltinFont.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Catalog.h"
+				RelativePath=".\poppler\poppler\BuiltinFontTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CharCodeToUnicode.h"
+				RelativePath=".\poppler\poppler\Catalog.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CharTypes.h"
+				RelativePath=".\poppler\poppler\CharCodeToUnicode.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CMap.h"
+				RelativePath=".\poppler\poppler\CharTypes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\CompactFontTables.h"
+				RelativePath=".\poppler\poppler\CMap.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\CompactFontTables.h"
 				>
 			</File>
 			<File
@@ -523,155 +541,159 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Decrypt.h"
+				RelativePath=".\poppler\poppler\Decrypt.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Dict.h"
+				RelativePath=".\poppler\poppler\Dict.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Error.h"
+				RelativePath=".\poppler\poppler\Error.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\ErrorCodes.h"
+				RelativePath=".\poppler\poppler\ErrorCodes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\FixedPoint.h"
+				RelativePath=".\baseutils\file_util.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiBase.h"
+				RelativePath=".\poppler\goo\FixedPoint.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiEncodings.h"
+				RelativePath=".\poppler\fofi\FoFiBase.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiTrueType.h"
+				RelativePath=".\poppler\fofi\FoFiEncodings.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiType1.h"
+				RelativePath=".\poppler\fofi\FoFiTrueType.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\fofi\FoFiType1C.h"
+				RelativePath=".\poppler\fofi\FoFiType1.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\FontEncodingTables.h"
+				RelativePath=".\poppler\fofi\FoFiType1C.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Function.h"
+				RelativePath=".\poppler\poppler\FontEncodingTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gfile.h"
+				RelativePath=".\poppler\poppler\Function.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Gfx.h"
+				RelativePath=".\poppler\goo\gfile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GfxFont.h"
+				RelativePath=".\poppler\poppler\Gfx.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GfxState.h"
+				RelativePath=".\poppler\poppler\GfxFont.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\GlobalParams.h"
+				RelativePath=".\poppler\poppler\GfxState.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gmem.h"
+				RelativePath=".\poppler\poppler\GlobalParams.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooHash.h"
+				RelativePath=".\poppler\goo\gmem.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooList.h"
+				RelativePath=".\poppler\goo\GooHash.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooMutex.h"
+				RelativePath=".\poppler\goo\GooList.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooString.h"
+				RelativePath=".\poppler\goo\GooMutex.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooTimer.h"
+				RelativePath=".\poppler\goo\GooString.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\GooVector.h"
+				RelativePath=".\poppler\goo\GooTimer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\goo\gtypes.h"
+				RelativePath=".\poppler\goo\GooVector.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JArithmeticDecoder.h"
+				RelativePath=".\poppler\goo\gtypes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JBIG2Stream.h"
+				RelativePath=".\poppler\poppler\JArithmeticDecoder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\JPXStream.h"
+				RelativePath=".\poppler\poppler\JBIG2Stream.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Lexer.h"
+				RelativePath=".\poppler\poppler\JPXStream.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Link.h"
+				RelativePath=".\poppler\poppler\Lexer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\NameToCharCode.h"
+				RelativePath=".\poppler\poppler\Link.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\NameToUnicodeTable.h"
+				RelativePath=".\poppler\poppler\NameToCharCode.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Object.h"
+				RelativePath=".\poppler\poppler\NameToUnicodeTable.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Outline.h"
+				RelativePath=".\poppler\poppler\Object.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\OutputDev.h"
+				RelativePath=".\poppler\poppler\Outline.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Page.h"
+				RelativePath=".\poppler\poppler\OutputDev.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PageLabelInfo.h"
+				RelativePath=".\poppler\poppler\Page.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Parser.h"
+				RelativePath=".\poppler\poppler\PageLabelInfo.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\Parser.h"
 				>
 			</File>
 			<File
@@ -679,11 +701,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PDFDoc.h"
+				RelativePath=".\poppler\poppler\PDFDoc.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PDFDocEncoding.h"
+				RelativePath=".\poppler\poppler\PDFDocEncoding.h"
 				>
 			</File>
 			<File
@@ -691,7 +713,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\PSTokenizer.h"
+				RelativePath=".\poppler\poppler\PSTokenizer.h"
 				>
 			</File>
 			<File
@@ -699,99 +721,107 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\SecurityHandler.h"
+				RelativePath=".\poppler\poppler\SecurityHandler.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\Splash.h"
+				RelativePath=".\poppler\splash\Splash.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashBitmap.h"
+				RelativePath=".\poppler\splash\SplashBitmap.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashClip.h"
+				RelativePath=".\poppler\splash\SplashClip.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashErrorCodes.h"
+				RelativePath=".\poppler\splash\SplashErrorCodes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFont.h"
+				RelativePath=".\poppler\splash\SplashFont.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontEngine.h"
+				RelativePath=".\poppler\splash\SplashFontEngine.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontFile.h"
+				RelativePath=".\poppler\splash\SplashFontFile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFontFileID.h"
+				RelativePath=".\poppler\splash\SplashFontFileID.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFont.h"
+				RelativePath=".\poppler\splash\SplashFTFont.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFontEngine.h"
+				RelativePath=".\poppler\splash\SplashFTFontEngine.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashFTFontFile.h"
+				RelativePath=".\poppler\splash\SplashFTFontFile.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashGlyphBitmap.h"
+				RelativePath=".\poppler\splash\SplashGlyphBitmap.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashMath.h"
+				RelativePath=".\poppler\splash\SplashMath.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\SplashOutputDev.h"
+				RelativePath=".\poppler\poppler\SplashOutputDev.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashPath.h"
+				RelativePath=".\poppler\splash\SplashPath.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashPattern.h"
+				RelativePath=".\poppler\splash\SplashPattern.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashScreen.h"
+				RelativePath=".\poppler\splash\SplashScreen.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashState.h"
+				RelativePath=".\poppler\splash\SplashState.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashTypes.h"
+				RelativePath=".\poppler\splash\SplashTypes.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashXPath.h"
+				RelativePath=".\poppler\splash\SplashXPath.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\splash\SplashXPathScanner.h"
+				RelativePath=".\poppler\splash\SplashXPathScanner.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Stream-CCITT.h"
+				RelativePath=".\baseutils\str_util.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\Stream.h"
+				RelativePath=".\poppler\poppler\Stream-CCITT.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\Stream.h"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\strlist_util.h"
 				>
 			</File>
 			<File
@@ -799,47 +829,47 @@
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\TextOutputDev.h"
+				RelativePath=".\poppler\poppler\TextOutputDev.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UGooString.h"
+				RelativePath=".\poppler\poppler\UGooString.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeCClassTables.h"
+				RelativePath=".\poppler\poppler\UnicodeCClassTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeCompTables.h"
+				RelativePath=".\poppler\poppler\UnicodeCompTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeDecompTables.h"
+				RelativePath=".\poppler\poppler\UnicodeDecompTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeMap.h"
+				RelativePath=".\poppler\poppler\UnicodeMap.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeMapTables.h"
+				RelativePath=".\poppler\poppler\UnicodeMapTables.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UnicodeTypeTable.h"
+				RelativePath=".\poppler\poppler\UnicodeTypeTable.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\UTF8.h"
+				RelativePath=".\poppler\poppler\UTF8.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\XpdfPluginAPI.h"
+				RelativePath=".\poppler\poppler\XpdfPluginAPI.h"
 				>
 			</File>
 			<File
-				RelativePath="..\poppler\poppler\XRef.h"
+				RelativePath=".\poppler\poppler\XRef.h"
 				>
 			</File>
 		</Filter>
