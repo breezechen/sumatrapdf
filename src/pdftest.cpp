@@ -45,6 +45,228 @@ extern void PreviewBitmap(SplashBitmap *);
   info.free();
 */
 
+#ifdef WIN32
+#define DIR_SEP_CHAR '\\'
+#define DIR_SEP_STR  "\\"
+#else
+#define DIR_SEP_CHAR '/'
+#define DIR_SEP_STR  "/"
+#endif
+
+#define MAX_FILENAME_SIZE 1024
+
+struct FindFileState {
+    char path[MAX_FILENAME_SIZE];
+    char dirpath[MAX_FILENAME_SIZE]; /* current dir path */
+    char pattern[MAX_FILENAME_SIZE]; /* search pattern */
+    const char *bufptr;
+#ifdef WIN32
+    WIN32_FIND_DATA fileinfo;
+    HANDLE dir;
+#else
+    DIR *dir;
+#endif
+};
+
+#ifdef WIN32
+#include <windows.h>
+#include <sys/timeb.h>
+#include <direct.h>
+
+__inline char *getcwd(char *buffer, int maxlen)
+{
+    return _getcwd(buffer, maxlen);
+}
+
+/* XXX: not suffisant, but OK for basic operations */
+int fnmatch(const char *pattern, const char *string, int flags)
+{
+    int prefix_len;
+    const char *star_pos = strchr(pattern, '*');
+    if (!star_pos)
+        return strcmp(pattern, string) != 0;
+
+    prefix_len = (int)(star_pos-pattern);
+    if (0 == prefix_len)
+        return 0;
+
+    if (0 == _strnicmp(pattern, string, prefix_len))
+        return 0;
+
+    return 1;
+}
+
+#else
+#include <fnmatch.h>
+#endif
+
+#ifdef WIN32
+/* on windows to query dirs we need foo\* to get files in this directory.
+    foo\ always fails and foo will return just info about foo directory,
+    not files in this directory */
+static void win_correct_path_for_FindFirstFile(char *path, int path_max_len)
+{
+    int path_len = strlen(path);
+    if (path_len >= path_max_len-4)
+        return;
+    if (DIR_SEP_CHAR != path[path_len])
+        path[path_len++] = DIR_SEP_CHAR;
+    path[path_len++] = '*';
+    path[path_len] = 0;
+}
+#endif
+
+void pstrcpy(char *buf, int buf_size, const char *str)
+{
+    int c;
+    char *q = buf;
+
+    if (buf_size <= 0)
+        return;
+
+    for (;;) {
+        c = *str++;
+        if (c == 0 || q >= buf + buf_size - 1)
+            break;
+        *q++ = c;
+    }
+    *q = '\0';
+}
+
+FindFileState *find_file_open(const char *path, const char *pattern)
+{
+    FindFileState *s;
+
+    s = (FindFileState*)malloc(sizeof(FindFileState));
+    if (!s)
+        return NULL;
+    pstrcpy(s->path, sizeof(s->path), path);
+    pstrcpy(s->dirpath, sizeof(s->path), path);
+#ifdef WIN32
+    win_correct_path_for_FindFirstFile(s->path, sizeof(s->path));
+#endif
+    pstrcpy(s->pattern, sizeof(s->pattern), pattern);
+    s->bufptr = s->path;
+#ifdef WIN32
+    s->dir = INVALID_HANDLE_VALUE;
+#else
+    s->dir = NULL;
+#endif
+    return s;
+}
+
+/* strcat and truncate. */
+char *pstrcat(char *buf, int buf_size, const char *s)
+{
+    int len;
+    len = strlen(buf);
+    if (len < buf_size) 
+        pstrcpy(buf + len, buf_size - len, s);
+    return buf;
+}
+
+char *makepath(char *buf, int buf_size, const char *path,
+               const char *filename)
+{
+    int len;
+
+    pstrcpy(buf, buf_size, path);
+    len = strlen(path);
+    if (len > 0 && path[len - 1] != DIR_SEP_CHAR && len + 1 < buf_size) {
+        buf[len++] = DIR_SEP_CHAR;
+        buf[len] = '\0';
+    }
+    return pstrcat(buf, buf_size, filename);
+}
+
+static int skip_matching_file(const char *filename)
+{
+    if (0 == strcmp(".", filename))
+        return 1;
+    if (0 == strcmp("..", filename))
+        return 1;
+    return 0;
+}
+
+int find_file_next(FindFileState *s, char *filename, int filename_size_max)
+{
+#ifdef WIN32
+    BOOL    fFound;
+    if (INVALID_HANDLE_VALUE == s->dir) {
+        s->dir = FindFirstFile(s->path, &(s->fileinfo));
+        if (INVALID_HANDLE_VALUE == s->dir)
+            return -1;
+        goto CheckFile;
+    }
+
+    while (1) {
+        fFound = FindNextFile(s->dir, &(s->fileinfo));
+        if (!fFound)
+            return -1;
+CheckFile:
+        if (skip_matching_file(s->fileinfo.cFileName))
+            continue;
+        if (0 == fnmatch(s->pattern, s->fileinfo.cFileName, 0) ) {
+            makepath(filename, filename_size_max, s->dirpath, s->fileinfo.cFileName);
+            return 0;
+        }
+    }
+#else
+    struct dirent *dirent;
+    const char *p;
+    char *q;
+
+    if (s->dir == NULL)
+        goto redo;
+
+    for (;;) {
+        dirent = readdir(s->dir);
+        if (dirent == NULL) {
+        redo:
+            if (s->dir) {
+                closedir(s->dir);
+                s->dir = NULL;
+            }
+            p = s->bufptr;
+            if (*p == '\0')
+                return -1;
+            /* CG: get_str(&p, s->dirpath, sizeof(s->dirpath), ":") */
+            q = s->dirpath;
+            while (*p != ':' && *p != '\0') {
+                if ((q - s->dirpath) < (int)sizeof(s->dirpath) - 1)
+                    *q++ = *p;
+                p++;
+            }
+            *q = '\0';
+            if (*p == ':')
+                p++;
+            s->bufptr = p;
+            s->dir = opendir(s->dirpath);
+            if (!s->dir)
+                goto redo;
+        } else {
+            if (fnmatch(s->pattern, dirent->d_name, 0) == 0) {
+                makepath(filename, filename_size_max,
+                         s->dirpath, dirent->d_name);
+                return 0;
+            }
+        }
+    }
+#endif
+}
+
+void find_file_close(FindFileState *s)
+{
+#ifdef WIN32
+    if (INVALID_HANDLE_VALUE != s->dir)
+       FindClose(s->dir);
+#else
+    if (s->dir)
+        closedir(s->dir);
+#endif
+    free(s);
+}
+
 /* TODO: move to a separate file */
 #define WIN_CLASS_NAME  "PDFTEST_PDF_WIN"
 #define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
@@ -316,7 +538,7 @@ static FILE *   gErrFile = NULL;
 static int gfRecursive = FALSE;
 
 /* If true, preview rendered image. To make sure that they're being rendered correctly. */
-static int gfPreview = TRUE;
+static int gfPreview = FALSE;
 
 static SplashColor splashColRed;
 static SplashColor splashColGreen;
@@ -359,13 +581,30 @@ char *Str_Dup(char *str)
     return Str_DupN(str, len);
 }
 
-int Str_EqNoCase(char *str1, char *str2)
+int Str_EqNoCase(const char *str1, const char *str2)
 {
     if (!str1 && !str2)
         return TRUE;
     if (!str1 || !str2)
         return FALSE;
     if (0 == stricmp(str1, str2))
+        return TRUE;
+    return FALSE;
+}
+
+int Str_EndsWithNoCase(const char *txt, const char *end)
+{
+    size_t end_len;
+    size_t txt_len;
+
+    if (!txt || !end)
+        return FALSE;
+
+    txt_len = strlen(txt);
+    end_len = strlen(end);
+    if (end_len > txt_len)
+        return FALSE;
+    if (Str_EqNoCase(txt+txt_len-end_len, end))
         return TRUE;
     return FALSE;
 }
@@ -418,6 +657,29 @@ BOOL StrList_Insert(StrList **root, char *txt)
     return TRUE;
 }
 
+StrList* StrList_RemoveHead(StrList **root)
+{
+    StrList *tmp;
+    assert(root);
+    if (!root)
+        return NULL;
+
+    if (!*root)
+        return NULL;
+    tmp = *root;
+    *root = tmp->next;
+    tmp->next = NULL;
+    return tmp;
+}
+
+void StrList_FreeElement(StrList *el)
+{
+    if (!el)
+        return;
+    free((void*)el->str);
+    free((void*)el);
+}
+
 void StrList_Destroy(StrList **root)
 {
     StrList *   cur;
@@ -428,8 +690,7 @@ void StrList_Destroy(StrList **root)
     cur = *root;
     while (cur) {
         next = cur->next;
-        free((void*)cur->str);
-        free((void*)cur);
+        StrList_FreeElement(cur);
         cur = next;
     }
     *root = NULL;
@@ -755,11 +1016,40 @@ void RenderPdfFileList(char *pdfFileList)
 
 }
 
-void RenderDirectory(char *path)
+#ifdef WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+
+int IsDirectoryName(char *path)
 {
-    /* TODO: implement me */
+    struct _stat    buf;
+    int             result;
+
+    result = _stat(path, &buf );
+    if (0 != result)
+        return FALSE;
+
+    if (buf.st_mode & _S_IFDIR)
+        return TRUE;
+
+    return FALSE;
 }
 
+int IsFileName(char *path)
+{
+    struct _stat    buf;
+    int             result;
+
+    result = _stat(path, &buf );
+    if (0 != result)
+        return FALSE;
+
+    if (buf.st_mode & _S_IFREG)
+        return TRUE;
+
+    return FALSE;
+}
+#else
 int IsDirectoryName(char *path)
 {
     /* TODO: implement me */
@@ -771,11 +1061,42 @@ int IsFileName(char *path)
     /* TODO: implement me */
     return TRUE;
 }
+#endif
 
 int IsPdfFileName(char *path)
 {
-    /* TODO: implement me */
-    return TRUE;
+    if (Str_EndsWithNoCase(path, ".pdf"))
+        return TRUE;
+    return FALSE;
+}
+
+void RenderDirectory(char *path)
+{
+    FindFileState * ffs;
+    char            filename[MAX_FILENAME_SIZE];
+    StrList *       dirList = NULL;
+    StrList *       el;
+
+    StrList_Insert(&dirList, path);
+
+    while (0 != StrList_Len(&dirList)) {
+        el = StrList_RemoveHead(&dirList);
+        ffs = find_file_open(el->str, "*");
+        while (!find_file_next(ffs, filename, sizeof(filename))) {
+            if (IsDirectoryName(filename)) {
+                if (gfRecursive) {
+                    StrList_Insert(&dirList, filename);
+                }
+            } else if (IsFileName(filename)) {
+                if (IsPdfFileName(filename)) {
+                    RenderPdfFile(filename);
+                }
+            }
+        }
+        find_file_close(ffs);
+        StrList_FreeElement(el);
+    }
+    StrList_Destroy(&dirList);
 }
 
 /* Render 'cmdLineArg', which can be:
