@@ -1134,7 +1134,7 @@ static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar 
     }
 }
 
-void ColorsInit(void)
+static void ColorsInit(void)
 {
     /* splash colors */
     SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
