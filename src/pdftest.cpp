@@ -29,6 +29,22 @@
 
 extern void PreviewBitmap(SplashBitmap *);
 
+/* TODO: list of pdf doc properties to print:
+  Object info;
+  doc->getDocInfo(&info);
+  if (info.isDict()) {
+    printInfoString(info.getDict(), "Title",        "Title:          ", uMap);
+    printInfoString(info.getDict(), "Subject",      "Subject:        ", uMap);
+    printInfoString(info.getDict(), "Keywords",     "Keywords:       ", uMap);
+    printInfoString(info.getDict(), "Author",       "Author:         ", uMap);
+    printInfoString(info.getDict(), "Creator",      "Creator:        ", uMap);
+    printInfoString(info.getDict(), "Producer",     "Producer:       ", uMap);
+    printInfoDate(info.getDict(),   "CreationDate", "CreationDate:   ");
+    printInfoDate(info.getDict(),   "ModDate",      "ModDate:        ");
+  }
+  info.free();
+*/
+
 /* TODO: move to a separate file */
 void PreviewBitmap(SplashBitmap *bitmap)
 {
@@ -404,14 +420,14 @@ static void RenderPdfFile(const char *fileName)
 
     outputDevice = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
     if (!outputDevice) {
-        error(0, "renderPdfFile(): failed to create outputDev\n");
+        error(-1, "renderPdfFile(): failed to create outputDev\n");
         goto Exit;
     }
 
     MsTimer_Start(&msTimer);
     pdfDoc = new PDFDoc(fileNameStr, ownerPasswordStr, userPasswordStr, NULL);
     if (!pdfDoc->isOk()) {
-        error(0, "renderPdfFile(): failed to open PDF file %s\n", fileName);
+        error(-1, "renderPdfFile(): failed to open PDF file %s\n", fileName);
         goto Exit;
     }
     outputDevice->startDoc(pdfDoc->getXRef());
@@ -483,7 +499,7 @@ void ParseCommandLine(int argc, char **argv)
     if (argc < 2)
         PrintUsageAndExit();
     for (int i=1; i < argc; i++) {
-        arg = argv[0];
+        arg = argv[i];
         assert(arg);
         if ('-' == arg[0]) {
             if (Str_EqNoCase(arg, TIMINGS_ARG)) {
@@ -521,12 +537,65 @@ void ParseCommandLine(int argc, char **argv)
     }
 }
 
+void RenderPdfFileList(char *pdfFileList)
+{
+    /* TODO: implement me */
+
+}
+
+void RenderDirectory(char *path)
+{
+    /* TODO: implement me */
+}
+
+int IsDirectoryName(char *path)
+{
+    /* TODO: implement me */
+    return FALSE;
+}
+
+int IsFileName(char *path)
+{
+    /* TODO: implement me */
+    return TRUE;
+}
+
+int IsPdfFileName(char *path)
+{
+    /* TODO: implement me */
+    return TRUE;
+}
+
+/* Render 'cmdLineArg', which can be:
+   - directory name
+   - name of PDF file
+   - name of text file with names of PDF files
+*/
+void RenderCmdLineArg(char *cmdLineArg)
+{
+    assert(cmdLineArg);
+    if (!cmdLineArg)
+        return;
+    if (IsDirectoryName(cmdLineArg)) {
+        RenderDirectory(cmdLineArg);
+    } else if (IsFileName(cmdLineArg)) {
+        if (IsPdfFileName(cmdLineArg))
+            RenderPdfFile(cmdLineArg);
+        else
+            RenderPdfFileList(cmdLineArg);
+    } else {
+        error(-1, "unexpected argument '%s'", cmdLineArg);
+    }
+}
+
 int main(int argc, char **argv)
 {
+    StrList *       curr;
+
     ParseCommandLine(argc, argv);
     if (0 == StrList_Len(&gArgsListRoot))
         PrintUsageAndExit();
-
+    assert(gArgsListRoot);
     ColorsInit();
     globalParams = new GlobalParams("");
     if (!globalParams)
@@ -537,7 +606,11 @@ int main(int argc, char **argv)
     gOutFile = stdout;
     gErrFile = stderr;
 
-    RenderPdfFile(TEST_PDF_FILE_NAME);
+    curr = gArgsListRoot;
+    while (curr) {
+        RenderCmdLineArg(curr->str);
+        curr = curr->next;
+    }
     StrList_Destroy(&gArgsListRoot);
     return 0;
 }
