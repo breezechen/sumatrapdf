@@ -557,7 +557,7 @@ static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
 static SplashColorMode gSplashColorMode = splashModeBGR8;
 
 /* TODO: move to a separate file */
-char *Str_DupN(char *str, size_t len)
+char *Str_DupN(const char *str, size_t len)
 {
     char *  str_new;
     if (!str)
@@ -572,7 +572,7 @@ char *Str_DupN(char *str, size_t len)
     return str_new;
 }
 
-char *Str_Dup(char *str)
+char *Str_Dup(const char *str)
 {
     size_t  len;
     if (!str)
@@ -695,6 +695,255 @@ void StrList_Destroy(StrList **root)
         cur = next;
     }
     *root = NULL;
+}
+
+unsigned long File_GetSize(const char *file_name)
+{
+    BOOL                        fOk;
+    WIN32_FILE_ATTRIBUTE_DATA   fileInfo;
+
+    if (NULL == file_name)
+        return INVALID_FILE_SIZE;
+
+    fOk = GetFileAttributesEx(file_name, GetFileExInfoStandard, (void*)&fileInfo);
+    if (!fOk)
+        return INVALID_FILE_SIZE;
+    return (unsigned long)fileInfo.nFileSizeLow;
+}
+
+#define BUF_SIZE 1024
+char *File_Slurp(const char *file_name, unsigned long *file_size_out)
+{
+    FILE *fp = NULL;
+    unsigned char buf[BUF_SIZE];
+    unsigned long left_to_read;
+    size_t to_read, read;
+    char *file_content = NULL;
+    char *cur_content_pos;
+
+    unsigned long file_size = File_GetSize(file_name);
+    if (INVALID_FILE_SIZE == file_size)
+        return NULL;
+        
+    file_content = (char*)malloc(file_size+1);
+    if (!file_content)
+        return NULL;
+    file_content[file_size] = 0;
+
+    cur_content_pos = file_content;
+    *file_size_out = file_size;
+    fp = fopen(file_name, "rb");
+    if (!fp)
+        goto Error;
+
+    left_to_read = file_size;
+    for(;;) {
+        if (left_to_read > BUF_SIZE)
+            to_read = BUF_SIZE;
+        else
+            to_read = (size_t)left_to_read;
+
+        read = fread((void*)buf, 1, to_read, fp);
+        if (ferror(fp))
+            goto Error;
+        memmove((void*)cur_content_pos, buf, read);
+        cur_content_pos += read;
+        left_to_read -= read;
+        if (0 == left_to_read)
+            break;
+    }
+
+    fclose(fp);
+    return file_content;
+Error:
+    if (fp)
+        fclose(fp);
+    free((void*)file_content);
+    return NULL;
+}
+
+/* split a string '*txt' at the border character 'c'. Something like python's
+   string.split() except called iteratively.
+   Returns a copy of the string (must be free()d by the caller).
+   Returns NULL to indicate there's no more items. */
+char *Str_SplitIter(char **txt, char c)
+{
+    const char *tmp;
+    const char *pos;
+    char *result;
+
+    tmp = (const char*)*txt;
+    if (!tmp)
+        return NULL;
+
+    pos = strchr(tmp, c);
+    if (pos) {
+         result = Str_DupN(tmp, (int)(pos-tmp));
+         *txt = (char*)pos+1;
+    } else {
+        result = Str_Dup(tmp);
+        *txt = NULL; /* next iteration will return NULL */
+    }
+    return result;
+}
+
+/* Replace all posible versions (Unix, Windows, Mac) of newline character
+   with 'replace'. Returns newly allocated string with normalized newlines
+   or NULL if error.
+   Caller needs to free() the result */
+char *Str_NormalizeNewline(char *txt, const char *replace)
+{
+    size_t  replace_len;
+    char    c;
+    char *  result;
+    char *  tmp;
+    size_t  result_len = 0;
+
+    replace_len = strlen(replace);
+    tmp = txt;
+    for (;;) {
+        c = *tmp++;
+        if (!c)
+            break;
+        if (0xa == c) {
+            /* a single 0xa => Unix */
+            result_len += replace_len;
+        } else if (0xd == c) {
+            if (0xa == *tmp) {
+                /* 0xd 0xa => dos */
+                result_len += replace_len;
+                ++tmp;
+            }
+            else {
+                /* just 0xd => Mac */
+                result_len += replace_len;
+            }
+        } else
+            ++result_len;
+    }
+
+    if (0 == result_len)
+        return NULL;
+
+    result = (char*)malloc(result_len+1);
+    if (!result)
+        return NULL;
+    tmp = result;
+    for (;;) {
+        c = *txt++;
+        if (!c)
+            break;
+        if (0xa == c) {
+            /* a single 0xa => Unix */
+            memcpy(tmp, replace, replace_len);
+            tmp += replace_len;
+        } else if (0xd == c) {
+            if (0xa == *txt) {
+                /* 0xd 0xa => dos */
+                memcpy(tmp, replace, replace_len);
+                tmp += replace_len;
+                ++txt;
+            }
+            else {
+                /* just 0xd => Mac */
+                memcpy(tmp, replace, replace_len);
+                tmp += replace_len;
+            }
+        } else
+            *tmp++ = c;
+    }
+
+    *tmp = 0;
+    return result;
+}
+
+#define WHITE_SPACE_CHARS " \n\t\r"
+
+int Str_Empty(const char *str)
+{
+    if (!str)
+        return TRUE;
+    if (0 == *str)
+        return TRUE;
+    return FALSE;
+}
+
+int Str_Contains(const char *str, char c)
+{
+    const char *pos = strchr(str, c);
+    if (!pos)
+        return FALSE;
+    return TRUE;
+}
+
+/* Strip all 'to_strip' characters from the beginning of the string.
+   Does stripping in-place */
+void Str_StripLeft(char *txt, const char *to_strip)
+{
+    char *new_start = txt;
+    char c;
+    if (!txt || !to_strip)
+        return;
+    for (;;) {
+        c = *new_start;
+        if (0 == c)
+            break;
+        if (!Str_Contains(to_strip, c))
+            break;
+        ++new_start;
+    }
+
+    if (new_start != txt) {
+        memmove(txt, new_start, strlen(new_start)+1);
+    }
+}
+
+/* Strip white-space characters from the beginning of the string.
+   Does stripping in-place */ 
+void Str_StripWsLeft(char *txt)
+{
+    Str_StripLeft(txt, WHITE_SPACE_CHARS);
+}
+
+void Str_StripRight(char *txt, const char *to_strip)
+{
+    char * new_end;
+    char   c;
+    if (!txt || !to_strip)
+        return;
+    if (0 == *txt)
+        return;
+    /* point at the last character in the string */
+    new_end = txt + strlen(txt) - 1;
+    for (;;) {
+        c = *new_end;
+        if (!Str_Contains(to_strip, c))
+            break;
+        if (txt == new_end)
+            break;
+        --new_end;
+    }
+    if (Str_Contains(to_strip, *new_end))
+        new_end[0] = 0;
+    else
+        new_end[1] = 0;
+}
+
+void Str_StripWsRight(char *txt)
+{
+    Str_StripRight(txt, WHITE_SPACE_CHARS);
+}
+
+void Str_StripBoth(char *txt, const char *to_strip)
+{
+    Str_StripLeft(txt, to_strip);
+    Str_StripRight(txt, to_strip);
+}
+
+void Str_StripWsBoth(char *txt)
+{
+    Str_StripWsLeft(txt);
+    Str_StripWsRight(txt);
 }
 
 static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
@@ -1102,10 +1351,44 @@ void ParseCommandLine(int argc, char **argv)
     }
 }
 
+#define UNIX_NEWLINE "\x0a"
+#define UNIX_NEWLINE_C 0xa
+
 void RenderPdfFileList(char *pdfFileList)
 {
-    /* TODO: implement me */
+    char *data = NULL;
+    char *dataNormalized = NULL;
+    char *pdfFileName;
+    unsigned long fileSize;
 
+    assert(pdfFileList);
+    if (!pdfFileList)
+        return;
+    data = File_Slurp(pdfFileList, &fileSize);
+    if (!data) {
+        error(-1, "couldn't load file '%s'", pdfFileList);
+        return;
+    }
+    dataNormalized = Str_NormalizeNewline(data, UNIX_NEWLINE);
+    if (!dataNormalized) {
+        error(-1, "couldn't normalize data of file '%s'", pdfFileList);
+        goto Exit;
+    }
+    for (;;) {
+        pdfFileName = Str_SplitIter(&dataNormalized, UNIX_NEWLINE_C);
+        if (!pdfFileName)
+            break;
+        Str_StripWsBoth(pdfFileName);
+        if (Str_Empty(pdfFileName)) {
+            free((void*)pdfFileName);
+            continue;
+        }
+        RenderPdfFile(pdfFileName);
+        free((void*)pdfFileName);
+    }
+Exit:
+    free((void*)dataNormalized);
+    free((void*)data);
 }
 
 #ifdef WIN32
