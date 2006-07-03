@@ -44,6 +44,7 @@ extern void PreviewBitmap(SplashBitmap *);
   }
   info.free();
 */
+#define dimof(X)    (sizeof(X)/sizeof((X)[0]))
 
 #ifdef WIN32
 #define DIR_SEP_CHAR '\\'
@@ -949,20 +950,110 @@ Exit:
     delete pdfDoc;
 }
 
+int ParseInteger(const char *start, const char *end, int *intOut)
+{
+    char            numBuf[16];
+    int             digitsCount;
+    const char *    tmp;
+
+    assert(start && end && intOut);
+    assert(end >= start);
+    if (!start || !end || !intOut || (start > end))
+        return FALSE;
+
+    digitsCount = 0;
+    tmp = start;
+    while (tmp <= end) {
+        if (isspace(*tmp)) {
+            /* do nothing, we allow whitespace */
+        } else if (!isdigit(*tmp))
+            return FALSE;
+        numBuf[digitsCount] = *tmp;
+        ++digitsCount;
+        if (digitsCount == dimof(numBuf)-3) /* -3 to be safe */
+            return FALSE;
+        ++tmp;
+    }
+    if (0 == digitsCount)
+        return FALSE;
+    numBuf[digitsCount] = 0;
+    *intOut = atoi(numBuf);
+    return TRUE;
+}
+
 /* Given 'resolutionString' in format NxM (e.g. "100x200"), parse the string and put N
    into 'resolutionXOut' and M into 'resolutionYOut'.
    Return FALSE if there was an error (e.g. string is not in the right format */
-int ParseResolutionString(char *resolutionString, int *resolutionXOut, int *resolutionYOut)
+int ParseResolutionString(const char *resolutionString, int *resolutionXOut, int *resolutionYOut)
 {
+    const char *    posOfX;
+
     assert(resolutionString);
     assert(resolutionXOut);
     assert(resolutionYOut);
     if (!resolutionString || !resolutionXOut || !resolutionYOut)
         return FALSE;
-    /* TODO: parse resolution string and return TRUE*/
-    *resolutionXOut = 640;
-    *resolutionYOut = 480;
-    return FALSE;
+    *resolutionXOut = 0;
+    *resolutionYOut = 0;
+    posOfX = strchr(resolutionString, 'X');
+    if (!posOfX)
+        posOfX = strchr(resolutionString, 'x');
+    if (!posOfX)
+        return FALSE;
+    if (posOfX == resolutionString)
+        return FALSE;
+    if (!ParseInteger(resolutionString, posOfX-1, resolutionXOut))
+        return FALSE;
+    if (!ParseInteger(posOfX+1, resolutionString+strlen(resolutionString)-1, resolutionYOut))
+        return FALSE;
+    return TRUE;
+}
+
+#ifdef DEBUG
+void u_ParseResolutionString(void)
+{
+    int i;
+    int result, resX, resY;
+    const char *str;
+    struct TestData {
+        const char *    str;
+        int             result;
+        int             resX;
+        int             resY;
+    } testData[] = {
+        { "", FALSE, 0, 0 },
+        { "abc", FALSE, 0, 0},
+        { "34", FALSE, 0, 0},
+        { "0x0", TRUE, 0, 0},
+        { "0x1", TRUE, 0, 1},
+        { "0xab", FALSE, 0, 0},
+        { "1x0", TRUE, 1, 0},
+        { "100x200", TRUE, 100, 200},
+        { "58x58", TRUE, 58, 58},
+        { "  58x58", TRUE, 58, 58},
+        { "58x  58", TRUE, 58, 58},
+        { "58x58  ", TRUE, 58, 58},
+        { "     58  x  58  ", TRUE, 58, 58},
+        { "34x1234a", FALSE, 0, 0},
+        { NULL, FALSE, 0, 0}
+    };
+    for (i=0; NULL != testData[i].str; i++) {
+        str = testData[i].str;
+        result = ParseResolutionString(str, &resX, &resY);
+        assert(result == testData[i].result);
+        if (result) {
+            assert(resX == testData[i].resX);
+            assert(resY == testData[i].resY);
+        }
+    }
+}
+#endif
+
+void RunAllUnitTests(void)
+{
+#ifdef DEBUG
+    u_ParseResolutionString();
+#endif
 }
 
 void ParseCommandLine(int argc, char **argv)
@@ -971,6 +1062,7 @@ void ParseCommandLine(int argc, char **argv)
 
     if (argc < 2)
         PrintUsageAndExit();
+
     for (int i=1; i < argc; i++) {
         arg = argv[i];
         assert(arg);
@@ -1124,20 +1216,43 @@ void RenderCmdLineArg(char *cmdLineArg)
 int main(int argc, char **argv)
 {
     StrList *       curr;
+    FILE *          outFile = NULL;
+    FILE *          errFile = NULL;
+
+    RunAllUnitTests();
 
     ParseCommandLine(argc, argv);
     if (0 == StrList_Len(&gArgsListRoot))
         PrintUsageAndExit();
     assert(gArgsListRoot);
+
     ColorsInit();
     globalParams = new GlobalParams("");
     if (!globalParams)
         return 1;
     globalParams->setErrQuiet(gFalse);
 
-    /* TODO: set to gOutFileName/g_errFileName if given */
-    gOutFile = stdout;
-    gErrFile = stderr;
+    if (gOutFileName) {
+        outFile = fopen(gOutFileName, "wb");
+        if (!outFile) {
+            printf("failed to open -out file %s\n", gOutFileName);
+            return 1;
+        }
+        gOutFile = outFile;
+    }
+    else
+        gOutFile = stdout;
+
+    if (gErrFileName) {
+        errFile = fopen(gErrFileName, "wb");
+        if (!errFile) {
+            printf("failed to open -errout file %s\n", gErrFileName);
+            return 1;
+        }
+        gErrFile = errFile;
+    }
+    else
+        gErrFile = stderr;
 
     PreviewBitmap_Init();
 
@@ -1146,6 +1261,10 @@ int main(int argc, char **argv)
         RenderCmdLineArg(curr->str);
         curr = curr->next;
     }
+    if (outFile)
+        fclose(outFile);
+    if (errFile)
+        fclose(errFile);
     PreviewBitmap_Destroy();
     StrList_Destroy(&gArgsListRoot);
     return 0;
