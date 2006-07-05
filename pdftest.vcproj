@@ -364,7 +364,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\pdftest.cpp"
+				RelativePath=".\poppler\test\pdftest.cpp"
 				>
 			</File>
 			<File
