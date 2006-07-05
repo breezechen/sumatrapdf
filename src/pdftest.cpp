@@ -79,7 +79,6 @@ __inline char *getcwd(char *buffer, int maxlen)
     return _getcwd(buffer, maxlen);
 }
 
-/* XXX: not suffisant, but OK for basic operations */
 int fnmatch(const char *pattern, const char *string, int flags)
 {
     int prefix_len;
@@ -508,6 +507,7 @@ static StrList *gArgsListRoot = NULL;
 #define OUT_ARG             "-out"
 #define ERROUT_ARG          "-errout"
 #define PREVIEW_ARG         "-preview"
+#define SLOW_PREVIEW_ARG    "-slowpreview"
 
 /* Should we record timings? True if -timings command-line argument was given. */
 static int gfTimings = FALSE;
@@ -541,6 +541,15 @@ static int gfRecursive = FALSE;
 /* If true, preview rendered image. To make sure that they're being rendered correctly. */
 static int gfPreview = FALSE;
 
+/* 1 second (1000 milliseconds) */
+#define SLOW_PREVIEW_TIME 1000
+
+/* If true, preview rendered image in a slow mode i.e. delay displaying for
+   SLOW_PREVIEW_TIME. This is so that a human has enough time to see if the
+   PDF renders ok. In release mode on fast processor pages take only ~100-200 ms
+   to render and they go away too quickly to be inspected by a human. */
+static int gfSlowPreview = FALSE;
+
 static SplashColor splashColRed;
 static SplashColor splashColGreen;
 static SplashColor splashColBlue;
@@ -555,6 +564,15 @@ static SplashColor splashColBlack;
 
 static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
 static SplashColorMode gSplashColorMode = splashModeBGR8;
+
+void SleepMilliseconds(int milliseconds)
+{
+#ifdef WIN32
+    Sleep((DWORD)milliseconds);
+#else
+#error "not implemented!"
+#endif
+}
 
 /* TODO: move to a separate file */
 char *Str_DupN(const char *str, size_t len)
@@ -1104,6 +1122,13 @@ double MsTimer_GetTimeInMs(MsTimer *timer)
 
 #define SCREEN_DPI 72
 
+int ShowPreview(void)
+{
+    if (gfPreview || gfSlowPreview)
+        return TRUE;
+    return FALSE;
+}
+
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
 static void RenderPdfFile(const char *fileName)
 {
@@ -1112,6 +1137,7 @@ static void RenderPdfFile(const char *fileName)
     int         pageCount;
     int         pageDx, pageDy;
     int         renderDx, renderDy;
+    double      scaleX, scaleY;
     double      hDPI, vDPI;
     int         rotate;
     GBool       useMediaBox;
@@ -1179,17 +1205,25 @@ static void RenderPdfFile(const char *fileName)
         useMediaBox = gFalse;
         crop = gTrue;
         doLinks = gTrue;
-        hDPI = (double)SCREEN_DPI;
-        vDPI = (double)SCREEN_DPI;
+        scaleX = 1.0;
+        scaleY = 1.0;
+        if (pageDx != renderDx)
+            scaleX = (double)renderDx / (double)pageDx;
+        if (pageDy != renderDy)
+            scaleY = (double)renderDy / (double)pageDy;
+        hDPI = (double)SCREEN_DPI * scaleX;
+        vDPI = (double)SCREEN_DPI * scaleY;
         pdfDoc->displayPage(outputDevice, curPage, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
         MsTimer_End(&msTimer);
         timeInMs = MsTimer_GetTimeInMs(&msTimer);
         if (gfTimings)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
-        if (gfPreview) {
+        if (ShowPreview()) {
             delete bitmap;
             bitmap = outputDevice->takeBitmap();
             PreviewBitmap(bitmap);
+            if (gfSlowPreview && (int)timeInMs < SLOW_PREVIEW_TIME)
+                SleepMilliseconds(SLOW_PREVIEW_TIME - timeInMs);
         }
     }
 Exit:
@@ -1339,6 +1373,8 @@ void ParseCommandLine(int argc, char **argv)
                 gErrFileName = Str_Dup(argv[i]);
             } else if (Str_EqNoCase(arg, PREVIEW_ARG)) {
                 gfPreview = TRUE;
+            } else if (Str_EqNoCase(arg, SLOW_PREVIEW_ARG)) {
+                gfSlowPreview = TRUE;
             } else {
                 /* unknown option */
                 PrintUsageAndExit();
