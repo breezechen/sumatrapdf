@@ -52,6 +52,7 @@
 #undef HAVE_MKSTEMP
 #undef SELECT_TAKES_INT
 #undef HAVE_FSEEK64
+#undef HAVE_FONTCONFIG_H
 
 /*
  * One of these is defined if using FreeType (version 1 or 2).
