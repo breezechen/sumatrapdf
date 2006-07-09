@@ -1894,13 +1894,28 @@ static void OnKeydown(WindowInfo *win, int key)
 static void OnChar(WindowInfo *win, int key)
 {
     if (' ' == key) {
-        /* TODO: for now do the same thing as 'n' but in the future that should
-           probably be something different i.e. more of a continuous viewing (scroll
-           by visible area while 'n' is just 'go to next page */
-        if (win->pdfCore->gotoNextPage(1, gTrue)) {
-            win->pdfCore->updateTitle();
-            WindowInfo_RedrawAll(win);
+        /*  Space does smart scrolling.
+            TODO: Overlapp scrolling?
+            TODO: backspace should scroll in the opposite direction.
+        */
+        SCROLLINFO si;
+        si.cbSize = sizeof(SCROLLINFO);
+        si.fMask = SIF_RANGE|SIF_POS|SIF_PAGE;
+        GetScrollInfo(win->hwnd, SB_VERT, &si);
+        if (si.nPos + si.nPage >= si.nMax)
+        {
+            if (win->pdfCore->gotoNextPage(1, gTrue))
+            {
+                win->pdfCore->updateTitle();
+                WindowInfo_RedrawAll(win);
+            }
         }
+        else
+            SendMessage(win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0);
+    } else if ('k' == key) {
+        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
+    } else if ('j' == key) {
+        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
     } else if ('n' == key) {
         if (win->pdfCore->gotoNextPage(1, gTrue)) {
             win->pdfCore->updateTitle();
