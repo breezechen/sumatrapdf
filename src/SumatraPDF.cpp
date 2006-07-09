@@ -26,18 +26,36 @@
 Must have before first release:
 
 Nice to have:
-- check for new version on-line
+- re-integrate windows font code from xpdf, currently external fonts
+  are broken
 - much better "About" box
 - bug: window size slightly changes at startup, don't know why
 - replace windows font scanning code with a better version from mupdf
 - continuous-mode
 - access encrypted files
-- space for continuous reading
 - handle links (actions)
+- remember the history of opened files (infinite "Recent Files"). Remember file name and
+  UI state (windows posisition, current page, zoom level, scroll position) at the time
+  file was close. Restore the UI state when file is re-opened. That way user gets where
+  he left off, which is probably what he wants most of the time. Might want to make it
+  user-configurable option (not sure if that's what all of the people would want).
+  History is infinite (as opposed to only N recently opened, as in most software).
+- good UI for history of opened files. At the very least a type-down list, ordered by
+  last access time. Type-down filters by file name (or maybe full path?). Filter out
+  files that don't exist anymore (and remove them from history)
+- session saving (similar to what a Firefox extension does). Save the whole state of the app (windows
+  position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
+  session when called without a command-line argument.
 - Ctrl-G - "go to page" dialog
 - cursor up/down and page up/down should advance pages if at the top/bottom
+- check for new version on-line
 - toolbar (?)
 - easy toggle to full-screen mode (Ctrl-L ?)
+- UI for table of contents
+- bookmarks per PDF, persisted across sessions. UI for handling bookmarks (add bookmark, delete
+  bookmark, go to bookmark). 2 cases need to be handled: going to a bookmark in the currently
+  displayed PDF file. Going to a "global" bookmark, across all PDF files (i.e. show a list
+  of all bookmarks in all PDF files, grouped by PDF file). Those 2 cases need separate UI.
 - "launch with acrobat" option (menu item?), so that it's easy to launch a doc
   with acrobat if it implements an important function that I don't (e.g. priting)
   Needs to read registry to find where acrobat is installed.
@@ -45,15 +63,8 @@ Nice to have:
 - detect if *pdf files are associsated with me at startup, if not, either silently
   restore or have a dialog box
 - printing
-- remember the history of opened files (infinite "Recent Files")
-  - including UI for history files (a list, probably, in a separate window)
-- saving the session (window position(s), list of opened files and their
-  position)
-- remember the position/size of the window
-- a benchmark mode (render all the pages and exit) e.g. -bench file
-- a torture mode where it goes through all the *pdf files in a directory
-  (recursing) and renders every page. That would be a no-crash test
-- get rid of dependency on freetype, use windows functions instead
+- get rid of dependency on freetype, use windows functions instead (not sure if that's
+  actually possible with poppler)
 - optimize the use of embedded fonts, currently they're being written out
   to disk and then read into memory, which seems completely unnecessary since
   freetype can create a face directly from memory.
