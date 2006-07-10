@@ -287,6 +287,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\poppler\poppler\GlobalParamsWin.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\poppler\goo\gmem.c"
 				>
 			</File>

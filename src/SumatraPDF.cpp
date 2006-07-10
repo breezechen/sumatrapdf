@@ -26,8 +26,6 @@
 Must have before first release:
 
 Nice to have:
-- re-integrate windows font code from xpdf, currently external fonts
-  are broken
 - much better "About" box
 - bug: window size slightly changes at startup, don't know why
 - replace windows font scanning code with a better version from mupdf
