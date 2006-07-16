@@ -18,6 +18,8 @@
 #include "strlist_util.h"
 #include "file_util.h"
 
+#include "SimpleRect.h"
+
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
@@ -26,9 +28,9 @@
 Must have before first release:
 
 Nice to have:
+- remove dependency on PDFCore/WinPDFCore
 - much better "About" box
 - bug: window size slightly changes at startup, don't know why
-- replace windows font scanning code with a better version from mupdf
 - continuous-mode
 - access encrypted files
 - handle links (actions)
@@ -71,6 +73,7 @@ Nice to have:
 - nicer-looking window
  - drop shadows
  - custom caption area
+- replace windows font scanning code with a better version from mupdf
 
 BUGS:
 - C:\kjk\downloads\6.05.HowToBeCreative.pdf popup on every page
@@ -87,6 +90,11 @@ enum WinState {
     WS_EMPTY = 1,
     WS_ERROR_LOADING_PDF,
     WS_SHOWING_PDF
+};
+
+enum PdfDisplayMode {
+    DM_SINGLE_PAGE = 1,
+    DM_CONTINOUS
 };
 
 /* define if want to use double-buffering for rendering the PDF. Takes more memory!. */
@@ -135,7 +143,18 @@ typedef struct WindowInfo {
     WindowInfo *    next;
     HWND            hwnd;
     const char *    fileName;
+
+    /* TODO: pdfCore will be removed and the state variables below will
+       be used instead */
     WinPDFCore *    pdfCore;
+
+    PDFDoc *        pdfDoc;
+    PdfDisplayMode  displayMode;
+    int             currPage;
+    int             offX;
+    int             offY;
+    double          zoomLevel;
+
     HDC             hdc;
     BITMAPINFO *    dibInfo;
     int             winDx;
@@ -2505,6 +2524,16 @@ StrList *StrList_FromCmdLine(char *cmdLine)
     return strList;
 }
 
+void u_DoAllTests(void)
+{
+#ifdef DEBUG
+    printf("Running tests\n");
+    u_SimpleRect_Intersect();
+#else
+    printf("Not running tests\n");
+#endif
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *   cur;
@@ -2515,6 +2544,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     WindowInfo* win;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
+
+    u_DoAllTests();
 
     gArgListRoot = StrList_FromCmdLine(lpCmdLine);
     assert(gArgListRoot);
