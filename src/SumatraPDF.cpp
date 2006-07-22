@@ -95,6 +95,16 @@ enum WinState {
     WS_SHOWING_PDF
 };
 
+#define ZOOM_IN_FACTOR      1.2
+#define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
+
+/* default UI settings */
+#define DEFAULT_DISPLAY_MODE DM_SINGLE_PAGE
+//#define DEFAULT_DISPLAY_MODE DM_CONTINUOUS
+//#define DEFAULT_ZOOM         ZOOM_FIT_WIDTH
+#define DEFAULT_ZOOM         ZOOM_FIT_PAGE
+#define DEFAULT_ROTATION     0
+
 /* define if want to use double-buffering for rendering the PDF. Takes more memory!. */
 #define DOUBLE_BUFFER 1
 
@@ -120,8 +130,8 @@ enum WinState {
 
 #define COL_CAPTION_BLUE RGB(0,0x50,0xa0)
 #define COL_WHITE RGB(0xff,0xff,0xff)
-//#define COL_WINDOW_BG RGB(0xcc, 0xcc, 0xcc)
-#define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
+#define COL_WINDOW_BG RGB(0xcc, 0xcc, 0xcc)
+//#define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 #define COL_WINDOW_SHADOW RGB(0x40, 0x40, 0x40)
 
 #define WIN_CLASS_NAME  _T("SUMATRA_PDF_WIN")
@@ -753,6 +763,14 @@ void WinFontList_Destroy(void)
     FontMappingList_Destroy(&g_fontMapMSList);
 }
 
+void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
+{
+    if (scrollbarYDxOut)
+        *scrollbarYDxOut = GetSystemMetrics(SM_CXHSCROLL);
+    if (scrollbarXDyOut)
+        *scrollbarXDyOut = GetSystemMetrics(SM_CYHSCROLL);
+}
+
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
 void WinResizeClientArea(HWND hwnd, int dx, int dy)
 {
@@ -796,18 +814,13 @@ static void CaptionPens_Destroy(void)
     }
 }
 
-static void WindowInfo_UpdateSize(WindowInfo *win)
+static void WindowInfo_GetWindowSize(WindowInfo *win)
 {
     RECT  rc;
     GetClientRect(win->hwnd, &rc);
     win->winDx = RectDx(&rc);
     win->winDy = RectDy(&rc);
-    /* TODO: get rid of bmp_dx and bmp_dy ? */
-#if 0
-    win->bmpDx = win->winDx;
-    win->bmpDy = win->winDy;
-#endif
-    // DBG_OUT("WindowInfo_UpdateSize() win_dx=%d, win_dy=%d\n", win->win_dx, win->win_dy);
+    // DBG_OUT("WindowInfo_GetWindowSize() win_dx=%d, win_dy=%d\n", win->win_dx, win->win_dy);
 }
 
 static BOOL WindowInfo_Dib_Init(WindowInfo *win)
@@ -854,7 +867,7 @@ static BOOL WindowInfo_DoubleBuffer_New(WindowInfo *win)
 
     win->hdc = GetDC(win->hwnd);
     win->hdcToDraw = win->hdc;
-    WindowInfo_UpdateSize(win);
+    WindowInfo_GetWindowSize(win);
     if (!gUseDoubleBuffer || (0 == win->winDx) || (0 == win->winDy))
         return TRUE;
 
@@ -862,7 +875,6 @@ static BOOL WindowInfo_DoubleBuffer_New(WindowInfo *win)
     if (!win->hdcDoubleBuffer)
         return FALSE;
 
-    //win->bmpDoubleBuffer = CreateCompatibleBitmap(win->hdc, win->bmpDx, win->bmpDy);
     win->bmpDoubleBuffer = CreateCompatibleBitmap(win->hdc, win->winDx, win->winDy);
     if (!win->bmpDoubleBuffer) {
         WindowInfo_DoubleBuffer_Delete(win);
@@ -882,7 +894,6 @@ static void WindowInfo_DoubleBuffer_Show(WindowInfo *win, HDC hdc)
 {
     if (win->hdc != win->hdcToDraw) {
         assert(win->hdcToDraw == win->hdcDoubleBuffer);
-        //BitBlt(hdc, 0, 0, win->bmpDx, win->bmpDy, win->hdcDoubleBuffer, 0, 0, SRCCOPY);
         BitBlt(hdc, 0, 0, win->winDx, win->winDy, win->hdcDoubleBuffer, 0, 0, SRCCOPY);
     }
 }
@@ -1039,7 +1050,7 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
-static WindowInfo* OpenPdf(const TCHAR *file_name, BOOL close_invalid_files)
+static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
 {
     int             err;
     WindowInfo *    win;
@@ -1047,7 +1058,7 @@ static WindowInfo* OpenPdf(const TCHAR *file_name, BOOL close_invalid_files)
     int             reuse_existing_window = FALSE;
     PDFDoc *        pdfDoc;
     RectDSize       totalDrawAreaSize;
-    int             scrollbarDx, scrollbarDy;
+    int             scrollbarYDx, scrollbarXDy;
     SplashOutputDev *outputDev = NULL;
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
@@ -1087,14 +1098,13 @@ static WindowInfo* OpenPdf(const TCHAR *file_name, BOOL close_invalid_files)
     if (!outputDev)
         return NULL; /* TODO: probably should WindowInfo_Delete() using the same logic as above */
 
-    WindowInfo_UpdateSize(win);
+    WindowInfo_GetWindowSize(win);
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
-    scrollbarDx = 0;
-    scrollbarDy = 0; /* TODO: doesn't matter yet, but fix me anyway */
+    Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
     win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarDx, scrollbarDx, DM_CONTINUOUS, 1);
+        scrollbarYDx, scrollbarXDy, DM_CONTINUOUS, 1);
     if (!win->dm) {
         delete outputDev;
         WindowInfo_Delete(win);
@@ -1112,6 +1122,9 @@ static WindowInfo* OpenPdf(const TCHAR *file_name, BOOL close_invalid_files)
         }
         WindowInfoList_Add(win);
     }
+
+    DisplayModel_RecalcPagesInfo(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
+    DisplayModel_GoToPage(win->dm, 1, 0);
 
     if (errNone != err) {
         win->state = WS_ERROR_LOADING_PDF;
@@ -1206,6 +1219,7 @@ void DisplayModel_RepaintDisplay(DisplayModel *dm)
 
 void DisplayModel_SetScrollbarsState(DisplayModel *dm)
 {
+    SCROLLINFO si = {0};
     WindowInfo *win;
 
     assert(dm);
@@ -1215,90 +1229,44 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
     assert(win);
     if (!win) return;
 
-    /* TODO: write me */
-}
-
-#if 0
-void WinPDFCore::updateScrollbars()
-{
-    SCROLLINFO si = {0};
-
     si.cbSize = sizeof(si);
     si.fMask = SIF_ALL;
 
-    int maxPosDx = 1;
-    if (pages->getLength() > 0) {
-        if (continuousMode) {
-            maxPosDx = maxPageW;
-        } else {
-            maxPosDx = ((PDFCorePage *)pages->get(0))->w;
-        }
-    }
+    int maxPosDx = (int)dm->totalDrawAreaSize.dx;
+    int maxPosDy = (int)dm->totalDrawAreaSize.dy;
 
-    if (maxPosDx < drawAreaWidth) {
-        maxPosDx = drawAreaWidth;
-    }
-
-    int maxPosDy = 1;
-    if (pages->getLength() > 0) {
-        if (continuousMode) {
-            maxPosDy = totalDocH;
-        } else {
-            maxPosDy = ((PDFCorePage *)pages->get(0))->h;
-        }
-    }
-
-    if (maxPosDy < drawAreaHeight) {
-        maxPosDy = drawAreaHeight;
-    }
-
-    si.nPos = scrollX;
+    si.nPos = (int)dm->areaOffset.x;
     si.nMin = 0;
     si.nMax = maxPosDx;
-    si.nPage = drawAreaWidth;
+    si.nPage = (int)dm->canvasSize.dx;
     SetScrollInfo(win->hwnd, SB_HORZ, &si, TRUE);
 
-    si.nPos = scrollY;
+    si.nPos = (int)dm->areaOffset.y;
     si.nMin = 0;
     si.nMax = maxPosDy;
-    si.nPage = drawAreaHeight;
+    si.nPage = (int)dm->canvasSize.dx;
     SetScrollInfo(win->hwnd, SB_VERT, &si, TRUE);
 }
-#endif
 
-#if 0
-void WinPDFCore::resizeToWindow(WindowInfo *win)
+void WindowInfo_ResizeToWindow(WindowInfo *win)
 {
-    RECT    rc;
-    int     newDx, newDy;
-    int     sx, sy;
+    DisplayModel *dm;
+    RectDSize     totalDrawAreaSize;
+    
+    assert(win);
+    if (!win) return;
 
-    assert(this->win == win);
+    dm = win->dm;
+    assert(dm);
+    if (!dm) return;
 
-    GetClientRect(win->hwnd, &rc);
-    newDx = RectDx(&rc);
 
-    if (VS_AMIGA == gVisualStyle)
-        newDy = RectDy(&rc) - CAPTION_DY - (BORDER_TOP + BORDER_BOTTOM);
-    else
-        newDy = RectDy(&rc) - (BORDER_TOP + BORDER_BOTTOM);
+    WindowInfo_GetWindowSize(win);
 
-    if ((drawAreaWidth == newDx) && (drawAreaHeight == newDy))
-        return;
-
-    drawAreaWidth = newDx;
-    drawAreaHeight = newDy;
-
-    if ((zoomPage == zoom) || (zoomWidth == zoom)) {
-        sx = sy = -1;
-    } else {
-        sx = scrollX;
-        sy = scrollY;
-    }
-
-    update(topPage, sx, sy, zoom, rotate, gTrue, gFalse);
+    totalDrawAreaSize.dx = (double)win->winDx;
+    totalDrawAreaSize.dy = (double)win->winDy;
+    DisplayModel_SetTotalDrawAreaSize(dm, totalDrawAreaSize);
 }
-#endif
 
 #if 0
 void WinPDFCore::resizeToPage(int pg)
@@ -1355,27 +1323,22 @@ void WinPDFCore::resizeToPage(int pg)
 }
 #endif
 
-#if 0
-void WinPDFCore::toggleZoom(void)
+void WindowInfo_ToggleZoom(WindowInfo *win)
 {
-    bool redisplay = false;
+    DisplayModel *  dm;
 
-    if (zoomPage == getZoom())
-    {
-        zoom = zoomWidth;
-        redisplay = true;
-    }
-    else if (zoomWidth == getZoom())
-    {
-        zoom = zoomPage;
-        redisplay = true;
-    }
+    assert(win);
+    if (!win) return;
 
-    if (redisplay) {
-        displayPage(topPage, zoom, 0, gTrue, gFalse);
-    }
+    dm = win->dm;
+    assert(dm);
+    if (!dm) return;
+
+    if (ZOOM_FIT_PAGE == dm->zoomVirtual)
+        DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_WIDTH);
+    else if (ZOOM_FIT_WIDTH == dm->zoomVirtual)
+        DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_PAGE);
 }
-#endif
 
 /* 'txt' is path that can be:
   - escaped, in which case it starts with '"', ends with '"' and each '"' that is part of the name is escaped
@@ -1555,7 +1518,7 @@ static void OnDropFiles(WindowInfo *win, HDROP hDrop)
     for (i = 0; i < files_count; i++)
     {
         DragQueryFile(hDrop, i, filename, MAX_PATH);
-        OpenPdf(filename, TRUE);
+        LoadPdf(filename, TRUE);
     }
     DragFinish(hDrop);
 
@@ -1653,53 +1616,62 @@ void OnBenchNextAction(WindowInfo *win)
         PostBenchNextAction(win->hwnd);
 }
 
-#if 0
-void WinPDFCore::redrawRect(PDFCoreTile *tileA, int xSrc, int ySrc,
-                            int xDest, int yDest, int width, int height)
+void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
-    SplashBitmap *        splashBmp = NULL;
+    int                   pageNo;
+    PdfPageInfo*          pageInfo;
+    DisplayModel *        dm;
+    SplashBitmap *        splashBmp;
     int                   splashBmpDx, splashBmpDy;
     SplashColorMode       splashBmpColorMode;
     SplashColorPtr        splashBmpData;
     int                   splashBmpRowSize;
-    RECT                  rc;
-    int                   offsetDiff;
+    int                   xSrc, ySrc, xDest, yDest;
+    int                   width, height;
 
-    if (VS_AMIGA == gVisualStyle)
-        yDest += CAPTION_DY;
+    assert(win);
+    if (!win) return;
+    dm = win->dm;
+    assert(dm);
+    if (!dm) return;
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return;
 
-    yDest += BORDER_TOP;
+    //DBG_OUT("DisplayModel_Draw(), bound=(x=%d, y=%d, dx=%d, dy=%d)\n", bounds.x, bounds.y, bounds.w, bounds.h);
 
-    assert(win->hdcToDraw);
+    FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
-    if (tileA)
-    {
-        splashBmp = tileA->bitmap;
-        if (!splashBmp)
-        {
-            DBG_OUT("redrawRect() tileA->bitmap is NULL!\n");
-            return;
+    for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
+        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        if (!pageInfo->visible)
+            continue;
+        assert(pageInfo->shown);
+        if (!pageInfo->shown)
+            continue;
+        splashBmp = pageInfo->bitmap;
+        if (!splashBmp) {
+            DBG_OUT("DisplayModel_Draw() missing bitmap on visible page %d\n", pageNo+1);
+            continue;
         }
+
         splashBmpDx = splashBmp->getWidth();
         splashBmpDy = splashBmp->getHeight();
         splashBmpRowSize = splashBmp->getRowSize();
         splashBmpData = splashBmp->getDataPtr();
         splashBmpColorMode = splashBmp->getMode();
 
-        // DBG_OUT("redrawRect(tileA=0x%x, xSrc=%d, ySrc=%d, xDest=%d, yDest=%d, width=%d, height=%d, bmpDx=%d, bmpDy=%d)\n",  tileA, xSrc, ySrc, xDest, yDest, width, height, splashBmpDx, splashBmpDy);
-
         win->dibInfo->bmiHeader.biWidth = splashBmpDx;
         win->dibInfo->bmiHeader.biHeight = -splashBmpDy;
         win->dibInfo->bmiHeader.biSizeImage = splashBmpDy * splashBmpRowSize;
 
-        SplashColorPtr newBmpData = NULL;
+        xSrc = (int)pageInfo->bitmapX;
+        ySrc = (int)pageInfo->bitmapY;
+        xDest = (int)pageInfo->screenX;
+        yDest = (int)pageInfo->screenY;
+        width = (int)pageInfo->bitmapDx;
+        height = (int)pageInfo->bitmapDy;
 
-        if (!newBmpData)
-            newBmpData = splashBmpData;
-        offsetDiff = 0;
-        if (splashBmpDy > drawAreaHeight)
-            offsetDiff = splashBmpDy - drawAreaHeight;
-        SetDIBitsToDevice(win->hdcToDraw,
+        SetDIBitsToDevice(hdc,
             xDest, /* destx */
             yDest, /* desty */
             width, /* destw */
@@ -1707,40 +1679,14 @@ void WinPDFCore::redrawRect(PDFCoreTile *tileA, int xSrc, int ySrc,
             xSrc, /* srcx */
             /* TODO: I don't understand why I have to do this trick with offsetDiff,
                it shouldn't be necessary */
-            offsetDiff - ySrc , /* srcy */
+            ySrc , /* srcy */
             0, /* startscan */
             splashBmpDy, /* numscans */
-            newBmpData, /* pBits */
+            splashBmpData, /* pBits */
             win->dibInfo, /* pInfo */
             DIB_RGB_COLORS /* color use flag */
         );
-        if (newBmpData != splashBmpData)
-            free((void*)newBmpData);
     }
-    else
-    {
-        // DBG_OUT("redrawRect(tileA=NULL, xSrc=%d, ySrc=%d, xDest=%d, yDest=%d, width=%d, height=%d)\n", xSrc, ySrc, xDest, yDest, width, height);
-        rc.left = 0;
-        rc.right = win->winDx;
-        if (VS_AMIGA == gVisualStyle) {
-            rc.top = CAPTION_DY;
-            rc.bottom = win->winDy + CAPTION_DY;
-        } else {
-            assert(VS_WINDOWS == gVisualStyle);
-            rc.top = 0;
-            rc.bottom = win->winDy;
-        }
-
-        FillRect(win->hdcToDraw, &rc, gBrushBg);
-    }
-    updateScrollbars();
-}
-#endif
-
-void WindowInfo_Paint(WindowInfo *win)
-{
-
-
 }
 
 void OnPaint(WindowInfo *win)
@@ -1762,10 +1708,12 @@ void OnPaint(WindowInfo *win)
         DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
     } else {
         WinResizeIfNeeded(win);
-
+        WindowInfo_Paint(win, hdc, &ps);
+#if 0
         if (VS_AMIGA == gVisualStyle)
             AmigaCaptionDraw(win);
         WindowInfo_DoubleBuffer_Show(win, hdc);
+#endif
     }
     EndPaint(win->hwnd, &ps);
 }
@@ -1871,12 +1819,6 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
 
     zoom = ZoomMenuItemToZoom(menuId);
     DisplayModel_ZoomTo(win->dm, zoom);
-
-#if 0
-    core->displayPage(core->getPageNum(), zoom, core->getRotate(), gTrue, gFalse);
-    core->displayPage(core->getPageNum(), zoom, core->getRotate(), gTrue, gFalse);
-    WindowInfo_RedrawAll(win);
-#endif
     ZoomMenuItemCheck(GetMenu(win->hwnd), menuId);
 }
 
@@ -1905,7 +1847,7 @@ void OnMenuOpen(WindowInfo *win)
     if (FALSE == GetOpenFileName(&ofn))
         return;
 
-    win = OpenPdf(file_name, TRUE);
+    win = LoadPdf(file_name, TRUE);
     if (!win)
         return;
 }
@@ -1960,19 +1902,20 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('n' == key) {
         if (win->dm)
             DisplayModel_GoToNextPage(win->dm, 0);
-    } else if ('p' == key)
-    {
+    } else if ('c' == key) {
+        if (win->dm)
+            DisplayModel_ToggleContinuous(win->dm);
+    } else if ('p' == key) {
         if (win->dm)
             DisplayModel_GoToPrevPage(win->dm, 0);
-    } else if ('z' == key)
-    {
-    /* TODO: do me */
-#if 0
-        win->pdfCore->toggleZoom();
-        WindowInfo_RedrawAll(win);
-#endif
+    } else if ('z' == key) {
+        WindowInfo_ToggleZoom(win);
     } else if ('q' == key) {
         DestroyWindow(win->hwnd);
+    } else if ('+' == key) {
+        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+    } else if ('-' == key) {
+        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
     }
 }
 
@@ -2294,8 +2237,6 @@ BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
     if (!globalParams)
         return FALSE;
 
-    /* globalParams->setupBaseFonts(NULL); */
-
     ColorsInit();
     gCursorArrow = LoadCursor(NULL, IDC_ARROW);
     gCursorWait  = LoadCursor(NULL, IDC_WAIT);
@@ -2601,13 +2542,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     int pdfOpened = 0;
     if (NULL != gBenchFileName) {
-            win = OpenPdf(gBenchFileName, FALSE);
+            win = LoadPdf(gBenchFileName, FALSE);
             if (win)
                 ++pdfOpened;
     } else {
         cur = gArgListRoot->next;
         while (cur) {
-            win = OpenPdf(cur->str, FALSE);
+            win = LoadPdf(cur->str, FALSE);
             if (!win)
                 goto Exit;
            ++pdfOpened;

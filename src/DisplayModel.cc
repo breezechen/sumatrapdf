@@ -222,6 +222,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
 
     dm->appData = NULL;
     dm->pdfDoc = pdfDoc;
+    dm->outputDevice = outputDev;
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
@@ -229,6 +230,8 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->startPage = startPage;
     dm->rotation = INVALID_ROTATION;
     dm->zoomVirtual = INVALID_ZOOM;
+
+    outputDev->startDoc(pdfDoc->getXRef());
 
     /* TODO: drawAreaSize not always is minus scrollbars */
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
