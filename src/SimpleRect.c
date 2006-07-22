@@ -61,9 +61,9 @@ int SimpleRect_Intersect(SimpleRect *r1, SimpleRect *r2, SimpleRect *rIntersectO
     assert(x2s <= x1e);
     xIntersectS = x2s;
     xIntersectE = MinInt(x1e, x2e);
-	assert(xIntersectE >= xIntersectS);
+    assert(xIntersectE >= xIntersectS);
 
-	/* the logic for y is the same */
+    /* the logic for y is the same */
     y1s = r1->y;
     y2s = r2->y;
     y1e = y1s + r1->dy;
@@ -127,8 +127,8 @@ void u_SimpleRect_Intersect(void)
         { 0,10, 0,10,   5,15, 0,10,  1,  5,10, 0,10 }, /* { | } | */
         { 0,10, 0,10,   5, 7, 0,10,  1,  5, 7, 0,10 }, /* { | | } */
 
-		{ 0,10, 0,10,   5, 7, 5, 7,  1,  5, 7, 5, 7 },
-		{ 0,10, 0,10,   5, 15,5,15,  1,  5,10, 5,10 },
+        { 0,10, 0,10,   5, 7, 5, 7,  1,  5, 7, 5, 7 },
+        { 0,10, 0,10,   5, 15,5,15,  1,  5,10, 5,10 },
     };
     dataLen = dimof(testData);
     for (i = 0; i < dataLen; i++) {
@@ -137,7 +137,7 @@ void u_SimpleRect_Intersect(void)
         SimpleRect_FromXY(&rExpected, curr->i_xs, curr->i_xe, curr->i_ys, curr->i_ye);
         SimpleRect_FromXY(&rExpectedSwaped, curr->i_ys, curr->i_ye, curr->i_xs, curr->i_xe);
 
-		SimpleRect_FromXY(&r1, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
+        SimpleRect_FromXY(&r1, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
         SimpleRect_FromXY(&r2, curr->x2s, curr->x2e, curr->y2s, curr->y2e);
         doIntersectExpected = curr->intersect;
 
