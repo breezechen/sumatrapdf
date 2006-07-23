@@ -36,6 +36,32 @@ int MinInt(int one, int two)
         return two;
 }
 
+int Char_IsWsOrZero(char c)
+{
+    switch (c) {
+        case ' ':
+        case '\t':
+        case '\r':
+        case '\n':
+        case 0:
+            return TRUE;
+    }
+    return FALSE;
+}
+
+
+int Char_IsWs(char c)
+{
+    switch (c) {
+        case ' ':
+        case '\t':
+        case '\r':
+        case '\n':
+            return TRUE;
+    }
+    return FALSE;
+}
+
 int Str_Empty(const char *txt)
 {
     if (!txt)
@@ -112,6 +138,17 @@ char *Str_Dup(const char *str)
     return Str_DupN(str, len);
 }
 
+int Str_Eq(const char *str1, const char *str2)
+{
+    if (!str1 && !str2)
+        return TRUE;
+    if (!str1 || !str2)
+        return FALSE;
+    if (0 == strcmp(str1, str2))
+        return TRUE;
+    return FALSE;
+}
+
 int Str_EqNoCase(const char *str1, const char *str2)
 {
     if (!str1 && !str2)
@@ -186,6 +223,7 @@ Error:
 #endif
 }
 
+/* Return TRUE if string 'txt' ends with string 'end', case-insensitive */
 int Str_EndsWithNoCase(const char *txt, const char *end)
 {
     size_t end_len;
@@ -201,6 +239,160 @@ int Str_EndsWithNoCase(const char *txt, const char *end)
     if (Str_EqNoCase(txt+txt_len-end_len, end))
         return TRUE;
     return FALSE;
+}
+
+/* Strip the white-space in-line on both sides of the string */
+void Str_StripWs(char *str)
+{
+    char *  new_start = str;
+    char *  new_end;
+    int     new_len;
+    char    c;
+
+    for (c = *new_start; c && Char_IsWs(c);) {
+        new_start++;
+        c = *new_start;
+    }
+    new_end = new_start;
+
+    while (*new_end)
+        ++new_end;
+
+    --new_end;
+    while ((new_end > new_start) && Char_IsWs(*new_end))
+        --new_end;
+
+    new_len = new_end - new_start;
+    assert(new_len >= 0);
+    /* TODO: move the string if necessary */
+}
+
+/* Given a pointer to a string in '*txt', skip past whitespace in the string
+   and put the result in '*txt' */
+void Str_SkipWs(char **txtInOut)
+{
+    char *cur;
+    if (!txtInOut)
+        return;
+    cur = *txtInOut;
+    if (!cur)
+        return;
+    while (Char_IsWs(*cur)) {
+        ++cur;
+    }
+    *txtInOut = cur;
+}
+
+char *Str_ParseQuoted(char **txt)
+{
+    char *      strStart;
+    char *      strCopy;
+    char *      cur;
+    char *      dst;
+    char        c;
+    size_t      len;
+
+    assert(txt);
+    if (!txt) return NULL;
+    strStart = *txt;
+    assert(strStart);
+    if (!strStart) return NULL;
+
+    assert('"' == *strStart);
+    ++strStart;
+    cur = strStart;
+    len = 0;
+    for (;;) {
+        c = *cur;
+        if ((0 == c) || ('"' == c))
+            break;
+        if ('\\' == c) {
+            /* TODO: should I un-escape everything or just '\' and '"' ? */
+            if (('\\' == cur[1]) || ('"' == cur[1])) {
+                ++cur;
+                c = *cur;
+            }
+        }
+        ++cur;
+        ++len;
+    }
+
+    strCopy = (char*)malloc(len+1);
+    if (!strCopy)
+        return NULL;
+
+    cur = strStart;
+    dst = strCopy;
+    for (;;) {
+        c = *cur;
+        if (0 == c)
+            break;
+        if ('"' == c) {
+            ++cur;
+            break;
+        }
+        if ('\\' == c) {
+            /* TODO: should I un-escape everything or just '\' and '"' ? */
+            if (('\\' == cur[1]) || ('"' == cur[1])) {
+                ++cur;
+                c = *cur;
+            }
+        }
+        *dst++ = c;
+        ++cur;
+    }
+    *dst = 0;
+    *txt = cur;
+    return strCopy;
+}
+
+char *Str_ParseNonQuoted(char **txt)
+{
+    char *  cur;
+    char *  strStart;
+    char *  strCopy;
+    char    c;
+    size_t  strLen;
+
+    strStart = *txt;
+    assert(strStart);
+    if (!strStart) return NULL;
+    assert('"' != *strStart);
+    cur = strStart;
+    for (;;) {
+        c = *cur;
+        if (Char_IsWsOrZero(c))
+            break;
+        ++cur;
+    }
+
+    strLen = cur - strStart;
+    assert(strLen > 0);
+    strCopy = Str_DupN(strStart, strLen);
+    *txt = cur;
+    return strCopy;
+}
+
+char *Str_ParsePossiblyQuoted(char **txt)
+{
+    char *  cur;
+    char *  strCopy;
+
+    if (!txt)
+        return NULL;
+    cur = *txt;
+    if (!cur)
+        return NULL;
+
+    Str_SkipWs(&cur);
+    if (0 == *cur)
+        return NULL;
+    if ('"' == *cur)
+        strCopy = Str_ParseQuoted(&cur);
+    else
+        strCopy = Str_ParseNonQuoted(&cur);
+    *txt = cur;
+    return strCopy;
 }
 
 #ifndef WIN32 /* TODO: should probably be based on MSVC version */
