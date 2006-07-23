@@ -23,6 +23,8 @@
 #include "DisplayModel.h"
 #include "BaseUtils.h"
 
+#define REGULAR_BITMAP 1
+
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
@@ -586,6 +588,11 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     RectDSize       totalDrawAreaSize;
     int             scrollbarYDx, scrollbarXDy;
     SplashOutputDev *outputDev = NULL;
+#ifdef REGULAR_BITMAP
+    GBool           bitmapTopDown = gTrue;
+#else
+    GBool           bitmapTopDown = gFalse;
+#endif
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -620,7 +627,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         return NULL;
     }
 
-    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
+    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
     if (!outputDev)
         return NULL; /* TODO: probably should WindowInfo_Delete() using the same logic as above */
 
@@ -745,8 +752,11 @@ void DisplayModel_RepaintDisplay(DisplayModel *dm)
 
 void DisplayModel_SetScrollbarsState(DisplayModel *dm)
 {
-    SCROLLINFO si = {0};
-    WindowInfo *win;
+    WindowInfo *    win;
+    SCROLLINFO      si = {0};
+    int             canvasDx, canvasDy;
+    int             drawAreaDx, drawAreaDy;
+    int             offsetX, offsetY;
 
     assert(dm);
     if (!dm) return;
@@ -758,19 +768,37 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
     si.cbSize = sizeof(si);
     si.fMask = SIF_ALL;
 
-    int maxPosDx = (int)dm->totalDrawAreaSize.dx;
-    int maxPosDy = (int)dm->totalDrawAreaSize.dy;
+    canvasDx = (int)dm->canvasSize.dx;
+    canvasDy = (int)dm->canvasSize.dy;
+    drawAreaDx = (int)dm->drawAreaSize.dx;
+    drawAreaDy = (int)dm->drawAreaSize.dy;
+    offsetX = (int)dm->areaOffset.x;
+    offsetY = (int)dm->areaOffset.y;
 
-    si.nPos = (int)dm->areaOffset.x;
-    si.nMin = 0;
-    si.nMax = maxPosDx;
-    si.nPage = (int)dm->canvasSize.dx;
+    if (drawAreaDx >= canvasDx) {
+        si.nPos = 0;
+        si.nMin = 0;
+        si.nMax = 99;
+        si.nPage = 100;
+    } else {
+        si.nPos = offsetX;
+        si.nMin = 0;
+        si.nMax = canvasDx-1;
+        si.nPage = drawAreaDx;
+    }
     SetScrollInfo(win->hwnd, SB_HORZ, &si, TRUE);
 
-    si.nPos = (int)dm->areaOffset.y;
-    si.nMin = 0;
-    si.nMax = maxPosDy;
-    si.nPage = (int)dm->canvasSize.dx;
+    if (drawAreaDy >= canvasDy) {
+        si.nPos = 0;
+        si.nMin = 0;
+        si.nMax = 99;
+        si.nPage = 100;
+    } else {
+        si.nPos = offsetY;
+        si.nMin = 0;
+        si.nMax = canvasDy-1;
+        si.nPage = drawAreaDy;
+    }
     SetScrollInfo(win->hwnd, SB_VERT, &si, TRUE);
 }
 
@@ -1125,7 +1153,7 @@ void WinResizeIfNeeded(WindowInfo *win)
     }
 
     WindowInfo_DoubleBuffer_New(win);
-//    win->pdfCore->resizeToWindow(win);
+    WindowInfo_ResizeToWindow(win);
 }
 
 void PostBenchNextAction(HWND hwnd)
@@ -1187,7 +1215,12 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         splashBmpColorMode = splashBmp->getMode();
 
         win->dibInfo->bmiHeader.biWidth = splashBmpDx;
+
+#ifdef REGULAR_BITMAP
         win->dibInfo->bmiHeader.biHeight = -splashBmpDy;
+#else
+        win->dibInfo->bmiHeader.biHeight = splashBmpDy;
+#endif
         win->dibInfo->bmiHeader.biSizeImage = splashBmpDy * splashBmpRowSize;
 
         xSrc = (int)pageInfo->bitmapX;

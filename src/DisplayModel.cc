@@ -104,6 +104,8 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     GBool       doLinks     = gTrue;
     double      zoomReal;
     int         rotation;
+    SplashBitmap *bmp;
+    int         bmpDx, bmpDy;
 
     assert(dm);
     if (!dm) return NULL;
@@ -114,19 +116,29 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     zoomReal = dm->zoomReal;
     rotation = dm->rotation;
     pageDx = (int)pageInfo->pageDx;
-    pageDy = (int)pageInfo->pageDx;
+    pageDy = (int)pageInfo->pageDy;
 
-    if (FlippedRotation(pageInfo->rotation))
-        SwapInt(&pageDx, &pageDy);
-
-    printf("DisplayModel_GetBitmapForPage(pageNo=%d) pageDx=%d, pageDy=%d, rotate=%d, zoomReal=%.2f%%\n",
-        pageNo, pageDx, pageDy, rotation, zoomReal);
+    printf("DisplayModel_GetBitmapForPage(pageNo=%d) orig=(%d,%d) curr=(%d,%d) rotate=%d, zoomReal=%.2f%%\n",
+        pageNo,
+        pageDx, pageDy,
+        (int)pageInfo->currDx,
+        (int)pageInfo->currDy,
+        rotation, zoomReal);
 
     hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     assert(dm->outputDevice);
     dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks);
-    return dm->outputDevice->takeBitmap();
+    bmp = dm->outputDevice->takeBitmap();
+    bmpDx = bmp->getWidth();
+    bmpDy = bmp->getHeight();
+    if ( (bmpDx != (int)pageInfo->currDx) || (bmpDy != (int)pageInfo->currDy)) {
+        printf("  mismatched bitmap sizes!!!\n");
+        printf("  calculated: (%4d-%4d)\n", (int)pageInfo->currDx, (int)pageInfo->currDy);
+        printf("  real:       (%4d-%4d)\n", bmpDx, bmpDy);
+        assert(0);
+    }
+    return bmp;
 }
 
 void DisplayModel_RenderVisibleParts(DisplayModel *dm)
@@ -134,6 +146,10 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
     int             pageNo;
     PdfPageInfo*    pageInfo;
 
+    assert(dm);
+    if (!dm) return;
+
+    printf("DisplayModel_RenderVisibleParts()\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (pageInfo->visible) {
@@ -153,6 +169,7 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
+    printf("DisplayModel_FreeBitmaps()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         delete dm->pagesInfo[pageNo-1].bitmap;
         dm->pagesInfo[pageNo-1].bitmap = NULL;
@@ -331,30 +348,7 @@ PdfPageInfo* DisplayModel_FindFirstVisiblePage(DisplayModel *dm)
     return pageInfo;
 }
 
-void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
-{
-    PdfPageInfo *   pageInfo;
-
-    assert(dm);
-    if (!dm) return;
-    assert(DisplayModel_ValidPageNo(dm, pageNo));
-    if (!DisplayModel_ValidPageNo(dm, pageNo))
-        return;
-
-    printf("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n)", pageNo, scrollY);
-    dm->areaOffset.x = 0.0;
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
-    /* TODO: prevent scrolling too far */
-
-    DisplayModel_RecalcVisibleParts(dm);
-    DisplayModel_RenderVisibleParts(dm);
-    DisplayModel_SetScrollbarsState(dm);
-    DisplayModel_PageChanged(dm, pageNo);
-    DisplayModel_RepaintDisplay(dm);
-}
-
-void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
+static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
 {
     PdfPageInfo     *pageInfo;
 
@@ -375,6 +369,36 @@ void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
         }
         pageInfo->visible = false;
     }
+    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
+}
+
+void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
+{
+    PdfPageInfo *   pageInfo;
+
+    assert(dm);
+    if (!dm) return;
+    assert(DisplayModel_ValidPageNo(dm, pageNo));
+    if (!DisplayModel_ValidPageNo(dm, pageNo))
+        return;
+
+    if (DM_SINGLE_PAGE == dm->displayMode) {
+        /* in single page mode going to another page involves recalculating
+           the size of canvas */
+        DisplayModel_SetStartPage(dm, pageNo);
+        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
+    }
+    printf("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    dm->areaOffset.x = 0.0;
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
+    /* TODO: prevent scrolling too far */
+
+    DisplayModel_RecalcVisibleParts(dm);
+    DisplayModel_RenderVisibleParts(dm);
+    DisplayModel_SetScrollbarsState(dm);
+    DisplayModel_PageChanged(dm, pageNo);
+    DisplayModel_RepaintDisplay(dm);
 }
 
 bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
@@ -386,28 +410,20 @@ bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
 
     if (DM_CONTINUOUS == dm->displayMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-        printf("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
-        if (currPageNo <= 1) {
-            /* we're on a first page, can't go back */
-            return false;
-        }
-        DisplayModel_GoToPage(dm, currPageNo - 1, scrollY);
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
         currPageNo = dm->startPage;
-        printf("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
-        assert(DisplayModel_IsPageShown(dm, currPageNo));
-        if (currPageNo <= 1) {
-            /* we're on a first page, can't go back */
-            return false;
-        }
-        DisplayModel_SetStartPage(dm, currPageNo - 1);
-        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, currPageNo - 1, scrollY);
     }
     else {
         assert(0);
         return false;
     }
+
+    printf("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    if (currPageNo <= 1) {
+        /* we're on a first page, can't go back */
+        return false;
+    }
+    DisplayModel_GoToPage(dm, currPageNo - 1, scrollY);
     return true;
 }
 
@@ -422,59 +438,44 @@ bool DisplayModel_GoToLastPage(DisplayModel *dm)
 
     if (DM_CONTINUOUS == dm->displayMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-        if (currPageNo != dm->pageCount) {
-            DisplayModel_GoToPage(dm, dm->pageCount, 0);
-            return true;
-        }
-        return false;
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
         currPageNo = dm->startPage;
-        assert(DisplayModel_IsPageShown(dm, currPageNo));
-        if (1 == currPageNo) {
-            /* we're on a first page already */
-            return false;
-        }
-        DisplayModel_SetStartPage(dm, 1);
-        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, currPageNo + 1, 0);
     }
     else {
         assert(0);
         return false;
     }
-    return true;
+    if (currPageNo != dm->pageCount) { /* are we on the last page already ? */
+        DisplayModel_GoToPage(dm, dm->pageCount, 0);
+        return true;
+    }
+    return false;
 }
 
 bool DisplayModel_GoToFirstPage(DisplayModel *dm)
 {
-    int             currPageNo;
-
     assert(dm);
     if (!dm) return false;
 
     printf("DisplayModel_GoToFirstPage()\n");
 
     if (DM_CONTINUOUS == dm->displayMode) {
-        if (0 != dm->areaOffset.y) {
-            DisplayModel_GoToPage(dm, 1, 0);
-            return true;
+        if (0 == dm->areaOffset.y) {
+            return false;
         }
-        return false;
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        currPageNo = dm->startPage;
-        assert(DisplayModel_IsPageShown(dm, currPageNo));
-        if (1 == currPageNo) {
+        assert(DisplayModel_IsPageShown(dm, dm->startPage));
+        if (1 == dm->startPage) {
             /* we're on a first page already */
             return false;
         }
-        DisplayModel_SetStartPage(dm, 1);
-        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, currPageNo + 1, 0);
     }
     else {
         assert(0);
         return false;
     }
+    DisplayModel_GoToPage(dm, 1, 0);
+
     return true;
 }
 
@@ -491,28 +492,19 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
 
     if (DM_CONTINUOUS == dm->displayMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-        printf("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
-        if (dm->pageCount == currPageNo) {
-            /* we're on a last page, can't go any further */
-            return false;
-        }
-        DisplayModel_GoToPage(dm, currPageNo + 1, scrollY);
-        return true;
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
         currPageNo = dm->startPage;
-        printf("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
-        assert(DisplayModel_IsPageShown(dm, currPageNo));
-        if (dm->pageCount == currPageNo) {
-            /* we're on a last page, can't go any further */
-            return false;
-        }
-        DisplayModel_SetStartPage(dm, currPageNo + 1);
-        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, currPageNo + 1, scrollY);
     }
     else
         assert(0);
-    return false;
+
+    printf("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    if (dm->pageCount == currPageNo) {
+        /* we're on a last page, can't go any further */
+        return false;
+    }
+    DisplayModel_GoToPage(dm, currPageNo + 1, scrollY);
+    return true;
 }
 
 int DisplayModel_GetSinglePageDy(DisplayModel *dm)
@@ -635,20 +627,18 @@ void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePag
 
 void DisplayModel_SwitchToSinglePage(DisplayModel *dm)
 {
-    int     pageNo;
+    int     currPageNo;
 
     assert(dm);
     if (!dm) return;
 
     assert(DM_SINGLE_PAGE != dm->displayMode);
 
-    pageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    assert(INVALID_PAGE != pageNo);
+    currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
+    printf("DisplayModel_SwitchToSinglePage() currPageNo = %d\n", currPageNo);
+    assert(INVALID_PAGE != currPageNo);
     dm->displayMode = DM_SINGLE_PAGE;
-
-DisplayModel_SetStartPage(dm, pageNo);
-    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-    DisplayModel_GoToPage(dm, pageNo, 0);
+    DisplayModel_GoToPage(dm, currPageNo, 0);
 }
 
 void DisplayModel_SwitchToContinuous(DisplayModel *dm)
@@ -690,12 +680,15 @@ void DisplayModel_ToggleContinuous(DisplayModel *dm)
 
 void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
 {
+    int     currPageNo;
+
     printf("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
-    DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
     if (DM_CONTINUOUS == dm->displayMode) {
-        /* TODO: preserve current page */
-        DisplayModel_GoToPage(dm, 1, 0);
+        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
+        DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
+        DisplayModel_GoToPage(dm, currPageNo, 0);
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
+        DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
         DisplayModel_GoToPage(dm, dm->startPage, 0);
     } else
         assert(0);
@@ -703,13 +696,18 @@ void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
 
 void DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor)
 {
-    printf("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f\n", dm->zoomReal, zoomFactor);
-    DisplayModel_ZoomTo(dm, dm->zoomReal * zoomFactor);
+    double newZoom;
+    newZoom = dm->zoomReal * zoomFactor;
+    printf("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
+    if (newZoom > ZOOM_MAX)
+        return;
+    DisplayModel_ZoomTo(dm, newZoom);
 }
 
 void DisplayModel_RotateBy(DisplayModel *dm, int rotation)
 {
     int     newRotation;
+    int     currPageNo;
 
     assert(dm);
     if (!dm) return;
@@ -728,11 +726,12 @@ void DisplayModel_RotateBy(DisplayModel *dm, int rotation)
     if (!ValidRotation(newRotation))
         return;
 
-    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
     if (DM_CONTINUOUS == dm->displayMode) {
-        /* TODO: preserve current page */
-        DisplayModel_GoToPage(dm, 1, 0);
+        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
+        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
+        DisplayModel_GoToPage(dm, currPageNo, 0);
     } else if (DM_SINGLE_PAGE == dm->displayMode) {
+         DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
         DisplayModel_GoToPage(dm, dm->startPage, 0);
     } else
         assert(0);
@@ -805,8 +804,11 @@ void DisplayModel_SetZoomVirtual(DisplayModel *dm, double zoomVirtual)
 }
 
 /* Given PDFDoc and zoom/rotation, calculate the position of each page on a
-   large sheet that is continous view. Needs to be recalculated each time
-   zoom or rotation changes.
+   large sheet that is continous view. Needs to be recalculated when:
+     * zoom changes
+     * rotation changes
+     * switching between continuous and single page modes
+     * navigating to another page in sing page mode
    TODO: a better name. */
 void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rotation)
 {
@@ -826,8 +828,8 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
 
     NormalizeRotation(&rotation);
     assert(ValidRotation(rotation));
-    dm->rotation = rotation;
 
+    dm->rotation = rotation;
     pageCount = dm->pageCount;
 
     currPosY = 0.0;
@@ -839,17 +841,17 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
     for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
 
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-
         if (!pageInfo->shown) {
             assert(!pageInfo->visible);
             continue;
         }
-        PageSizeAfterRotation(pageInfo, rotation, &pageDx, &pageDy);
 
+        PageSizeAfterRotation(pageInfo, rotation, &pageDx, &pageDy);
         currDxInt = (int)(pageDx * dm->zoomReal * 0.01 + 0.5);
         currDyInt = (int)(pageDy * dm->zoomReal * 0.01 + 0.5);
         pageInfo->currDx = (double)currDxInt;
         pageInfo->currDy = (double)currDyInt;
+
         pageInfo->currPosY = currPosY;
         /* TODO: what should pageInfo->currPosX be ? */
         pageInfo->currPosX = 0.0;
@@ -873,6 +875,9 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
 
     dm->canvasSize.dx = totalAreaDx;
     dm->canvasSize.dy = totalAreaDy;
+
+    /* bitmaps generated before are no longer valid after we changed sizes of pages */
+    DisplayModel_FreeBitmaps(dm);
 }
 
 /* Given positions of each page in a large sheet that is continous view and
@@ -898,7 +903,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
     drawAreaRect.dx = (int)dm->drawAreaSize.dx;
     drawAreaRect.dy = (int)dm->drawAreaSize.dy;
 
-    printf("DisplayModel_RecalcVisibleParts() draw area (x=%d, y=%d, dx=%d, dy=%d)\n",
+    printf("DisplayModel_RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
         drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
@@ -925,7 +930,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
             pageInfo->screenY = (int) ((double)intersect.y - dm->areaOffset.y);
             assert(pageInfo->screenX >= 0);
             assert(pageInfo->screenY <= dm->drawAreaSize.dy);
-            printf("DisplayModel_RecalcVisibleParts() visible page = %d, (x=%d,y=%d,dx=%d,dy=%d) at (x=%d,y=%d)\n",
+            printf("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
                 pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
                           pageInfo->bitmapDx, pageInfo->bitmapDy,
                           pageInfo->screenX, pageInfo->screenY);

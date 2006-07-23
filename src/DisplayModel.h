@@ -56,8 +56,8 @@ class SplashOutputDev;
 
 #define PDF_FILE_DPI        72
 
-#define ZOOM_MAX            400.0  /* max zoom in % */
-#define ZOOM_MIN            10.0   /* min zoom in % */
+#define ZOOM_MAX            1600.0  /* max zoom in % */
+#define ZOOM_MIN            10.0    /* min zoom in % */
 
 #define ZOOM_FIT_PAGE       -1
 #define ZOOM_FIT_WIDTH      -2
@@ -144,12 +144,12 @@ typedef struct DisplayModel {
        for ZOOM_FIT_PAGE and ZOOM_FIT_WIDTH */
     double          zoomReal;
 
-    /* size of total draw area (i.e. window size) */
-    RectDSize       totalDrawAreaSize;
-
     /* size of scrollbars */
     int             scrollbarXDy;
     int             scrollbarYDx;
+
+    /* size of total draw area (i.e. window size) */
+    RectDSize       totalDrawAreaSize;
 
     /* size of draw area i.e. totalDrawAreaSize minus scrollbarsSize (if
        they're shown) */
@@ -167,6 +167,8 @@ typedef struct DisplayModel {
 
 } DisplayModel;
 
+bool          ValidZoomVirtual(double zoomVirtual);
+
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
@@ -176,8 +178,6 @@ void          DisplayModel_Delete(DisplayModel *dm);
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
 
 int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
-
-void          DisplayModel_SetStartPage(DisplayModel *dm, int startPage);
 
 void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY);
 bool          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
