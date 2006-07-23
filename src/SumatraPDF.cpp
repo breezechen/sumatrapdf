@@ -23,7 +23,7 @@
 #include "DisplayModel.h"
 #include "BaseUtils.h"
 
-#define REGULAR_BITMAP 1
+#define BITMAP_TOP_DOWN
 
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
@@ -200,27 +200,6 @@ static int          gBenchPageNum = INVALID_PAGE_NUM;
 static BOOL            gUseDoubleBuffer = TRUE;
 #else
 static BOOL            gUseDoubleBuffer = FALSE;
-#endif
-
-#ifdef DEBUG
-void __cdecl DBG_OUT(const char *format, ...) {
-    char        buf[4096], *p = buf;
-    va_list     args;
-
-    va_start(args, format);
-
-    p += _vsnprintf(p, sizeof(buf) - 1, format, args);
-    while ( (p > buf)  &&  isspace(p[-1]) )
-            *--p = '\0';
-    *p++ = '\r';
-    *p++ = '\n';
-    *p   = '\0';
-    OutputDebugString(buf);
-
-    va_end(args);
-}
-#else
-#define DBG_OUT
 #endif
 
 void CDECL error(int pos, char *msg, ...) {
@@ -588,7 +567,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     RectDSize       totalDrawAreaSize;
     int             scrollbarYDx, scrollbarXDy;
     SplashOutputDev *outputDev = NULL;
-#ifdef REGULAR_BITMAP
+#ifdef BITMAP_TOP_DOWN
     GBool           bitmapTopDown = gTrue;
 #else
     GBool           bitmapTopDown = gFalse;
@@ -1181,7 +1160,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     SplashColorPtr        splashBmpData;
     int                   splashBmpRowSize;
     int                   xSrc, ySrc, xDest, yDest;
-    int                   width, height;
+    int                   bmpDx, bmpDy;
 
     assert(win);
     if (!win) return;
@@ -1216,7 +1195,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         win->dibInfo->bmiHeader.biWidth = splashBmpDx;
 
-#ifdef REGULAR_BITMAP
+#ifdef BITMAP_TOP_DOWN
         win->dibInfo->bmiHeader.biHeight = -splashBmpDy;
 #else
         win->dibInfo->bmiHeader.biHeight = splashBmpDy;
@@ -1225,20 +1204,28 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         xSrc = (int)pageInfo->bitmapX;
         ySrc = (int)pageInfo->bitmapY;
+        bmpDx = (int)pageInfo->bitmapDx;
+        bmpDy = (int)pageInfo->bitmapDy;
         xDest = (int)pageInfo->screenX;
         yDest = (int)pageInfo->screenY;
-        width = (int)pageInfo->bitmapDx;
-        height = (int)pageInfo->bitmapDy;
 
+#ifdef BITMAP_TOP_DOWN
+        /* TODO: I don't understand why I have to do this trick with offsetDiff,
+           it shouldn't be necessary */
+        ySrc = -ySrc;
+#else
+        ySrc = ySrc + bmpDy;
+#endif
+
+        DBG_OUT("  SetDIBBitsToDevice(): pg=%2d, xDest=%d, yDest=%d, dx=%d, dy=%d, xSrc=%d, ySrc=%d\n",
+            pageNo, xDest, yDest, bmpDx, bmpDy, xSrc, ySrc);
         SetDIBitsToDevice(hdc,
             xDest, /* destx */
             yDest, /* desty */
-            width, /* destw */
-            height, /* desth */
+            bmpDx, /* destw */
+            bmpDy, /* desth */
             xSrc, /* srcx */
-            /* TODO: I don't understand why I have to do this trick with offsetDiff,
-               it shouldn't be necessary */
-            ySrc , /* srcy */
+            ySrc, /* srcy */
             0, /* startscan */
             splashBmpDy, /* numscans */
             splashBmpData, /* pBits */

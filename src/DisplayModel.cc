@@ -40,7 +40,7 @@ static int FlippedRotation(int rotation)
 static bool ValidZoomReal(double zoomReal)
 {
     if ((zoomReal < ZOOM_MIN) || (zoomReal > ZOOM_MAX)) {
-        printf("ValidZoomReal() invalid zoom: %.4f\n", zoomReal);
+        DBG_OUT("ValidZoomReal() invalid zoom: %.4f\n", zoomReal);
         return false;
     }
     return true;
@@ -51,7 +51,7 @@ bool ValidZoomVirtual(double zoomVirtual)
     if ((ZOOM_FIT_PAGE == zoomVirtual) || (ZOOM_FIT_WIDTH == zoomVirtual))
         return true;
     if ((zoomVirtual < ZOOM_MIN) || (zoomVirtual > ZOOM_MAX)) {
-        printf("ValidZoomVirtual() invalid zoom: %.4f\n", zoomVirtual);
+        DBG_OUT("ValidZoomVirtual() invalid zoom: %.4f\n", zoomVirtual);
         return false;
     }
     return true;
@@ -118,7 +118,7 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     pageDx = (int)pageInfo->pageDx;
     pageDy = (int)pageInfo->pageDy;
 
-    printf("DisplayModel_GetBitmapForPage(pageNo=%d) orig=(%d,%d) curr=(%d,%d) rotate=%d, zoomReal=%.2f%%\n",
+    DBG_OUT("DisplayModel_GetBitmapForPage(pageNo=%d) orig=(%d,%d) curr=(%d,%d) rotate=%d, zoomReal=%.2f%%\n",
         pageNo,
         pageDx, pageDy,
         (int)pageInfo->currDx,
@@ -133,9 +133,9 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     bmpDx = bmp->getWidth();
     bmpDy = bmp->getHeight();
     if ( (bmpDx != (int)pageInfo->currDx) || (bmpDy != (int)pageInfo->currDy)) {
-        printf("  mismatched bitmap sizes!!!\n");
-        printf("  calculated: (%4d-%4d)\n", (int)pageInfo->currDx, (int)pageInfo->currDy);
-        printf("  real:       (%4d-%4d)\n", bmpDx, bmpDy);
+        DBG_OUT("  mismatched bitmap sizes!!!\n");
+        DBG_OUT("  calculated: (%4d-%4d)\n", (int)pageInfo->currDx, (int)pageInfo->currDy);
+        DBG_OUT("  real:       (%4d-%4d)\n", bmpDx, bmpDy);
         assert(0);
     }
     return bmp;
@@ -149,7 +149,7 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    printf("DisplayModel_RenderVisibleParts()\n");
+    DBG_OUT("DisplayModel_RenderVisibleParts()\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (pageInfo->visible) {
@@ -169,7 +169,7 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    printf("DisplayModel_FreeBitmaps()\n");
+    DBG_OUT("DisplayModel_FreeBitmaps()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         delete dm->pagesInfo[pageNo-1].bitmap;
         dm->pagesInfo[pageNo-1].bitmap = NULL;
@@ -178,7 +178,6 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
 
 void DisplayModel_Delete(DisplayModel *dm)
 {
-    assert(dm);
     if (!dm) return;
 
     DisplayModel_FreeBitmaps(dm);
@@ -255,7 +254,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
     dm->pageCount = pdfDoc->getNumPages();
-    printf("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d\n", dm->pageCount, startPage);
+    DBG_OUT("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d\n", dm->pageCount, startPage);
     dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount * sizeof(PdfPageInfo));
     if (!dm->pagesInfo)
         goto Error;
@@ -271,7 +270,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
             pageInfo->shown = true;
         } else if (DM_SINGLE_PAGE == displayMode) {
             if (pageNo == startPage) {
-                printf("DisplayModel_CreateFromPdfDoc() set page %d as shown\n", pageNo);
+                DBG_OUT("DisplayModel_CreateFromPdfDoc() set page %d as shown\n", pageNo);
                 pageInfo->shown = true;
             }
         } else
@@ -321,7 +320,7 @@ int DisplayModel_GetCurrentPageNo(DisplayModel *dm)
 {
     int     currPageNo = INVALID_PAGE;
 
-    printf("DisplayModel_GetCurrentPageNo()\n");
+    DBG_OUT("DisplayModel_GetCurrentPageNo()\n");
 
     assert(dm);
     if (!dm) goto Exit;
@@ -364,7 +363,7 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
         pageInfo->bitmap = NULL;
         pageInfo->shown = false;
         if (pageNo == startPage) {
-            printf("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
+            DBG_OUT("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
             pageInfo->shown = true;
         }
         pageInfo->visible = false;
@@ -388,7 +387,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
         DisplayModel_SetStartPage(dm, pageNo);
         DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
     }
-    printf("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    DBG_OUT("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     dm->areaOffset.x = 0.0;
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
     dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
@@ -418,7 +417,7 @@ bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
         return false;
     }
 
-    printf("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    DBG_OUT("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (currPageNo <= 1) {
         /* we're on a first page, can't go back */
         return false;
@@ -434,7 +433,7 @@ bool DisplayModel_GoToLastPage(DisplayModel *dm)
     assert(dm);
     if (!dm) return false;
 
-    printf("DisplayModel_GoToLastPage()\n");
+    DBG_OUT("DisplayModel_GoToLastPage()\n");
 
     if (DM_CONTINUOUS == dm->displayMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
@@ -457,7 +456,7 @@ bool DisplayModel_GoToFirstPage(DisplayModel *dm)
     assert(dm);
     if (!dm) return false;
 
-    printf("DisplayModel_GoToFirstPage()\n");
+    DBG_OUT("DisplayModel_GoToFirstPage()\n");
 
     if (DM_CONTINUOUS == dm->displayMode) {
         if (0 == dm->areaOffset.y) {
@@ -498,7 +497,7 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
     else
         assert(0);
 
-    printf("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (dm->pageCount == currPageNo) {
         /* we're on a last page, can't go any further */
         return false;
@@ -530,7 +529,7 @@ void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
     assert(dm);
     if (!dm) return;
 
-    printf("DisplayModel_ScrollYTo(yOff=%d)\n", yOff);
+    DBG_OUT("DisplayModel_ScrollYTo(yOff=%d)\n", yOff);
     dm->areaOffset.y = (double)yOff;
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RenderVisibleParts(dm);
@@ -547,7 +546,7 @@ void DisplayModel_ScrollXTo(DisplayModel *dm, int xOff)
     assert(dm);
     if (!dm) return;
 
-    printf("DisplayModel_ScrollXTo(xOff=%d)\n", xOff);
+    DBG_OUT("DisplayModel_ScrollXTo(xOff=%d)\n", xOff);
     dm->areaOffset.x = (double)xOff;
     DisplayModel_RepaintDisplay(dm);
 }
@@ -563,7 +562,7 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
     assert(dm);
     if (!dm) return;
 
-    printf("DisplayModel_ScrollYBy(dy=%d, changePage=%d)\n", dy, (int)changePage);
+    DBG_OUT("DisplayModel_ScrollYBy(dy=%d, changePage=%d)\n", dy, (int)changePage);
     assert(0 != dy);
     if (0 == dy) return;
 
@@ -635,7 +634,7 @@ void DisplayModel_SwitchToSinglePage(DisplayModel *dm)
     assert(DM_SINGLE_PAGE != dm->displayMode);
 
     currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    printf("DisplayModel_SwitchToSinglePage() currPageNo = %d\n", currPageNo);
+    DBG_OUT("DisplayModel_SwitchToSinglePage() currPageNo = %d\n", currPageNo);
     assert(INVALID_PAGE != currPageNo);
     dm->displayMode = DM_SINGLE_PAGE;
     DisplayModel_GoToPage(dm, currPageNo, 0);
@@ -651,7 +650,7 @@ void DisplayModel_SwitchToContinuous(DisplayModel *dm)
 
     currPageNo = dm->startPage;
 
-    printf("DisplayModel_SwitchToContinuous() currPageNo=%d\n", currPageNo);
+    DBG_OUT("DisplayModel_SwitchToContinuous() currPageNo=%d\n", currPageNo);
     dm->displayMode = DM_CONTINUOUS;
 
     /* mark all pages as shown but not yet visible */
@@ -682,7 +681,7 @@ void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
 {
     int     currPageNo;
 
-    printf("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
+    DBG_OUT("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
     if (DM_CONTINUOUS == dm->displayMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
         DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
@@ -698,7 +697,7 @@ void DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor)
 {
     double newZoom;
     newZoom = dm->zoomReal * zoomFactor;
-    printf("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
+    DBG_OUT("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
     if (newZoom > ZOOM_MAX)
         return;
     DisplayModel_ZoomTo(dm, newZoom);
@@ -835,7 +834,7 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
     currPosY = 0.0;
     DisplayModel_SetZoomVirtual(dm, zoomVirtual);
 
-    printf("DisplayModel_RecalcPagesInfo(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
+    DBG_OUT("DisplayModel_RecalcPagesInfo(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
         pageCount, dm->zoomReal, dm->zoomVirtual);
     totalAreaDx = 0;
     for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
@@ -858,7 +857,7 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
         currPosY += pageInfo->currDy + (double)PAGES_SPACE_DY;
         if (totalAreaDx < pageInfo->currDx)
             totalAreaDx = pageInfo->currDx;
-        printf("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
+        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
                     (int)pageInfo->currDx, (int)pageInfo->currDy,
                     (int)pageDx, (int)pageDy);
@@ -903,7 +902,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
     drawAreaRect.dx = (int)dm->drawAreaSize.dx;
     drawAreaRect.dy = (int)dm->drawAreaSize.dy;
 
-    printf("DisplayModel_RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
+    DBG_OUT("DisplayModel_RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
         drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
@@ -930,7 +929,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
             pageInfo->screenY = (int) ((double)intersect.y - dm->areaOffset.y);
             assert(pageInfo->screenX >= 0);
             assert(pageInfo->screenY <= dm->drawAreaSize.dy);
-            printf("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
+            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
                 pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
                           pageInfo->bitmapDx, pageInfo->bitmapDy,
                           pageInfo->screenX, pageInfo->screenY);

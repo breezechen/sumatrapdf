@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-
 void SwapInt(int *one, int *two)
 {
     int tmp = *one;
@@ -480,10 +479,10 @@ char *CanonizeAbsolutePath(const char *path)
 {
 #ifdef WIN32
    /* TODO: needs windows version. */
-	assert(0);
-	return Str_Dup(path);
+    assert(0);
+    return Str_Dup(path);
 #else
-	char    cwd[MAX_FILENAME_SIZE];
+    char    cwd[MAX_FILENAME_SIZE];
     char *  canonized;
 
     if (!path) return NULL;
@@ -491,7 +490,7 @@ char *CanonizeAbsolutePath(const char *path)
     if (IsAbsPath(path)) {
         canonized = Str_Dup(path);
     } else {
-		canonized = ExpandUnixHome(path);
+        canonized = ExpandUnixHome(path);
         if (!canonized) {
             getcwd(cwd, sizeof(cwd));
             canonized = Str_PathJoin(cwd, path);
@@ -501,4 +500,23 @@ char *CanonizeAbsolutePath(const char *path)
     return canonized;
 #endif
 }
+
+#ifdef WIN32
+void win32_dbg_out(const char *format, ...) {
+    char        buf[4096], *p = buf;
+    va_list     args;
+
+    va_start(args, format);
+
+    p += _vsnprintf(p, sizeof(buf) - 1, format, args);
+    while ( (p > buf)  &&  isspace(p[-1]) )
+            *--p = '\0';
+    *p++ = '\r';
+    *p++ = '\n';
+    *p   = '\0';
+    OutputDebugString(buf);
+
+    va_end(args);
+}
+#endif
 

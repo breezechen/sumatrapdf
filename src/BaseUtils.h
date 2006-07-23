@@ -11,6 +11,12 @@ extern "C"
 
 #define dimof(X)    (sizeof(X)/sizeof((X)[0]))
 
+#ifdef _WIN32
+#ifndef WIN32
+#define WIN32
+#endif
+#endif
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -19,11 +25,21 @@ extern "C"
 #define FALSE 0
 #endif
 
+#ifdef WIN32
+#define DBG_OUT win32_dbg_out
+#else
+#define DBG_OUT printf
+#endif
+
 #ifndef WIN32
 #define stricmp strcasecmp
 #endif
 
 #define MAX_FILENAME_SIZE 1024
+
+#ifdef _WIN32
+void    win32_dbg_out(const char *format, ...);
+#endif
 
 #define DIR_SEP_CHAR '/'
 #define DIR_SEP_STR  "/"
