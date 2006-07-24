@@ -44,6 +44,11 @@ void    win32_dbg_out(const char *format, ...);
 #define DIR_SEP_CHAR '/'
 #define DIR_SEP_STR  "/"
 
+enum PdfDisplayMode {
+    DM_SINGLE_PAGE = 1,
+    DM_CONTINUOUS
+};
+
 /* TODO: consider using standard C macros for SWAP and MIN */
 void        SwapInt(int *one, int *two);
 void        SwapDouble(double *one, double *two);

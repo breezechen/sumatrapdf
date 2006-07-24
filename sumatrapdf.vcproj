@@ -243,6 +243,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\FileHistory.c"
+				>
+			</File>
+			<File
 				RelativePath=".\poppler\goo\FixedPoint.cc"
 				>
 			</File>
@@ -586,6 +590,10 @@
 			</File>
 			<File
 				RelativePath=".\baseutils\file_util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\FileHistory.h"
 				>
 			</File>
 			<File

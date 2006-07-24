@@ -46,6 +46,7 @@
 */
 
 #include "SimpleRect.h"
+#include "BaseUtils.h"
 
 class SplashBitmap;
 class PDFDoc;
@@ -68,11 +69,6 @@ class SplashOutputDev;
 #define INVALID_PAGE        -1
 
 #define INVALID_ROTATION    -1
-
-enum PdfDisplayMode {
-    DM_SINGLE_PAGE = 1,
-    DM_CONTINUOUS
-};
 
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
