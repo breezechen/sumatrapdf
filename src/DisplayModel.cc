@@ -390,7 +390,17 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
     DBG_OUT("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     dm->areaOffset.x = 0.0;
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
+
+    /* Hack: if an image is smaller in Y axis than the draw area, then we center
+       the image by setting pageInfo->currPosY in RecalcPagesInfo. So we shouldn't
+       scroll (adjust areaOffset.y) there because it defeats the purpose.
+       TODO: is there a better way of y-centering?
+       TODO: it probably doesn't work in continuous mode (but that's a corner
+             case, I hope) */
+    if (DM_SINGLE_PAGE == dm->displayMode)
+        dm->areaOffset.y = (double)scrollY;
+    else
+        dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
     /* TODO: prevent scrolling too far */
 
     DisplayModel_RecalcVisibleParts(dm);
@@ -548,7 +558,34 @@ void DisplayModel_ScrollXTo(DisplayModel *dm, int xOff)
 
     DBG_OUT("DisplayModel_ScrollXTo(xOff=%d)\n", xOff);
     dm->areaOffset.x = (double)xOff;
+    DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RepaintDisplay(dm);
+}
+
+void DisplayModel_ScrollXBy(DisplayModel *dm, int dx)
+{
+    double  newX, prevX;
+    double  maxX;
+
+    assert(dm);
+    if (!dm) return;
+
+    DBG_OUT("DisplayModel_ScrollXBy(dx=%d)\n", dx);
+
+    maxX = dm->canvasSize.dx - dm->drawAreaSize.dx;
+    assert(maxX >= 0.0);
+    prevX = dm->areaOffset.x;
+    newX = prevX + (double)dx;
+    if (newX < 0.0)
+        newX = 0.0;
+    else
+        if (newX > maxX)
+            newX = maxX;
+
+    if (newX == prevX)
+        return;
+
+    DisplayModel_ScrollXTo(dm, (int)newX);
 }
 
 void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
@@ -818,6 +855,7 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
     int         pageNo;
     int         pageCount;
     double      totalAreaDx, totalAreaDy;
+    double      off;
 
     assert(dm);
     if (!dm) return;
@@ -852,7 +890,6 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
         pageInfo->currDy = (double)currDyInt;
 
         pageInfo->currPosY = currPosY;
-        /* TODO: what should pageInfo->currPosX be ? */
         pageInfo->currPosX = 0.0;
         currPosY += pageInfo->currDy + (double)PAGES_SPACE_DY;
         if (totalAreaDx < pageInfo->currDx)
@@ -862,14 +899,39 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
                     (int)pageInfo->currDx, (int)pageInfo->currDy,
                     (int)pageDx, (int)pageDy);
     }
+
     if (totalAreaDx < dm->drawAreaSize.dx) {
         totalAreaDx = dm->drawAreaSize.dx;
-        /* TODO: center all pages */
+        for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+            pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+            if (!pageInfo->shown) {
+                assert(!pageInfo->visible);
+                continue;
+            }
+            off = (totalAreaDx - pageInfo->currDx) / 2;
+            assert(off >= 0.0);
+            pageInfo->currPosX = off;
+        }
     }
+
     totalAreaDy = currPosY;
     if (totalAreaDy < dm->drawAreaSize.dy) {
+        off = (dm->drawAreaSize.dy - totalAreaDy) / 2;
+        DBG_OUT("  offY = %.2f\n", off);
+        assert(off >= 0.0);
         totalAreaDy = dm->drawAreaSize.dy;
-        /* TODO: set dm->areaOffset so that the image is centered */
+        for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+            pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+            if (!pageInfo->shown) {
+                assert(!pageInfo->visible);
+                continue;
+            }
+            pageInfo->currPosY += off;
+            DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
+                pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
+                        (int)pageInfo->currDx, (int)pageInfo->currDy,
+                        (int)pageDx, (int)pageDy);
+        }
     }
 
     dm->canvasSize.dx = totalAreaDx;

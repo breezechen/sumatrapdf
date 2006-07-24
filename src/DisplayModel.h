@@ -188,6 +188,7 @@ bool          DisplayModel_GoToLastPage(DisplayModel *dm);
 int           DisplayModel_GetSinglePageDy(DisplayModel *dm);
 
 void          DisplayModel_ScrollXTo(DisplayModel *dm, int xOff);
+void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
 
 void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
 void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
