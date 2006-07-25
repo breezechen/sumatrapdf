@@ -52,9 +52,6 @@ class SplashBitmap;
 class PDFDoc;
 class SplashOutputDev;
 
-/* how many pixels between pages in continous mode */
-#define PAGES_SPACE_DY      3
-
 #define PDF_FILE_DPI        72
 
 #define ZOOM_MAX            1600.0  /* max zoom in % */
@@ -70,13 +67,17 @@ class SplashOutputDev;
 
 #define INVALID_ROTATION    -1
 
-/* the distance between a page and left border, in pixels */
-#define PADDING_PAGE_BORDER_LEFT  4
-/* the distance between a page and right border, in pixels */
-#define PADDING_PAGE_BORDER_RIGHT 4
-/* the distance between pages, in pixels. Only applicable if
+/* the distance between a page and window border edges, in pixels */
+#define PADDING_PAGE_BORDER_TOP      2
+#define PADDING_PAGE_BORDER_BOTTOM   2
+#define PADDING_PAGE_BORDER_LEFT     4
+#define PADDING_PAGE_BORDER_RIGHT    4
+/* the distance between pages in x axis, in pixels. Only applicable if
    pagesAtATime > 1 */
-#define PADDING_PAGE_PAGE         8
+#define PADDING_BETWEEN_PAGES_X      8
+/* the distance between pages in y axis, in pixels. Only applicable if
+   more than one page in y axis (continuous mode) */
+#define PADDING_BETWEEN_PAGES_Y      3
 
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
@@ -85,14 +86,14 @@ typedef struct PdfPageInfo {
     double          pageDy;
     int             rotation;
 
-    /* data that needs to be set before DisplayModel_RecalcPagesInfo().
+    /* data that needs to be set before DisplayModel_Relayout().
        Determines whether a given page should be shown on the screen. */
     bool            shown;
 
     /* data that changes when zoom and rotation changes */
     /* position and size within total area after applying zoom and rotation.
        Represents display rectangle for a given page.
-       Calculated in DisplayModel_RecalcPagesInfo() */
+       Calculated in DisplayModel_Relayout() */
 
     /* TODO: change it to RectD ?*/
     double          currDx;
@@ -189,7 +190,7 @@ bool          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
 bool          DisplayModel_GoToFirstPage(DisplayModel *dm);
 bool          DisplayModel_GoToLastPage(DisplayModel *dm);
 
-int           DisplayModel_GetSinglePageDy(DisplayModel *dm);
+//int           DisplayModel_GetSinglePageDy(DisplayModel *dm);
 
 void          DisplayModel_ScrollXTo(DisplayModel *dm, int xOff);
 void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
@@ -200,11 +201,15 @@ void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool 
 
 void          DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime);
 
-/* TODO: remove those 2 */
-void          DisplayModel_SwitchToSinglePage(DisplayModel *dm);
-void          DisplayModel_SwitchToContinuous(DisplayModel *dm);
+int           DisplayModel_IsSinglePage(DisplayModel *dm);
+int           DisplayModel_IsFacing(DisplayModel *dm);
+int           DisplayModel_IsContinuous(DisplayModel *dm);
+int           DisplayModel_IsContinuousFacing(DisplayModel *dm);
 
-void          DisplayModel_ToggleContinuous(DisplayModel *dm);
+void          DisplayModel_SwitchToSinglePage(DisplayModel *dm);
+void          DisplayModel_SwitchToFacing(DisplayModel *dm);
+void          DisplayModel_SwitchToContinuous(DisplayModel *dm);
+void          DisplayModel_SwitchToContinuousFacing(DisplayModel *dm);
 
 void          DisplayModel_FreeBitmaps(DisplayModel *dm);
 
@@ -215,7 +220,7 @@ void          DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor);
 void          DisplayModel_RotateBy(DisplayModel *dm, int rotation);
 
 void          DisplayModel_RenderVisibleParts(DisplayModel *dm);
-void          DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rotation);
+void          DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation);
 void          DisplayModel_RecalcVisibleParts(DisplayModel *dm);
 
 void          DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawAreaSize);

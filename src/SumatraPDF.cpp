@@ -38,6 +38,10 @@ Must have before next release:
 - handle links (actions)
 - Ctrl-G - "go to page" dialog
 
+Done:
+- facing and continuous facing mode
+- Rotate left/right
+
 Nice to have:
 - backspace to do the opposite of space
 - access encrypted files
@@ -647,7 +651,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         WindowInfoList_Add(win);
     }
 
-    DisplayModel_RecalcPagesInfo(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
+    DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
     DisplayModel_GoToPage(win->dm, 1, 0);
 
     if (errNone != err) {
@@ -882,6 +886,16 @@ void WindowInfo_ToggleZoom(WindowInfo *win)
         DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_WIDTH);
     else if (ZOOM_FIT_WIDTH == dm->zoomVirtual)
         DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_PAGE);
+}
+
+BOOL WindowInfo_PdfLoaded(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return FALSE;
+    if (!win->dm) return FALSE;
+    assert(win->dm->pdfDoc);
+    assert(win->dm->pdfDoc->isOk());
+    return TRUE;
 }
 
 /* 'txt' is path that can be:
@@ -1264,6 +1278,7 @@ void OnPaint(WindowInfo *win)
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
     } else {
+        //TODO: it might cause infinite loop due to showing/hiding scrollbars
         WinResizeIfNeeded(win);
         WindowInfo_Paint(win, hdc, &ps);
 #if 0
@@ -1409,6 +1424,24 @@ void OnMenuOpen(WindowInfo *win)
         return;
 }
 
+static void RotateLeft(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_RotateBy(win->dm, -90);
+}    
+
+static void RotateRight(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_RotateBy(win->dm, 90);
+}
+
 static void OnKeydown(WindowInfo *win, int key)
 {
     if (VK_PRIOR == key) {
@@ -1461,7 +1494,7 @@ static void OnChar(WindowInfo *win, int key)
             DisplayModel_GoToNextPage(win->dm, 0);
     } else if ('c' == key) {
         if (win->dm)
-            DisplayModel_ToggleContinuous(win->dm);
+            DisplayModel_SwitchToContinuous(win->dm);
     } else if ('p' == key) {
         if (win->dm)
             DisplayModel_GoToPrevPage(win->dm, 0);
@@ -1473,6 +1506,10 @@ static void OnChar(WindowInfo *win, int key)
         DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
     } else if ('-' == key) {
         DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
+    } else if ('l' == key) {
+        RotateLeft(win);
+    } else if ('r' == key) {
+        RotateRight(win);
     }
 }
 
@@ -1588,16 +1625,6 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
         DisplayModel_ScrollXTo(win->dm, si.nPos);
 }
 
-BOOL WindowInfo_PdfLoaded(WindowInfo *win)
-{
-    assert(win);
-    if (!win) return FALSE;
-    if (!win->dm) return FALSE;
-    assert(win->dm->pdfDoc);
-    assert(win->dm->pdfDoc->isOk());
-    return TRUE;
-}
-
 void ViewWithAcrobat(WindowInfo *win)
 {
     // TODO: write me
@@ -1609,9 +1636,16 @@ static void OnMenuViewSinglePage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    if (!win->dm->continuousMode)
-        return;
     DisplayModel_SwitchToSinglePage(win->dm);
+}
+
+static void OnMenuViewFacing(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_SwitchToFacing(win->dm);
 }
 
 static void OnMenuViewContinuous(WindowInfo *win)
@@ -1620,9 +1654,26 @@ static void OnMenuViewContinuous(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    if (win->dm->continuousMode)
-        return;
     DisplayModel_SwitchToContinuous(win->dm);
+}
+
+static void OnMenuViewContinuousFacing(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_SwitchToContinuousFacing(win->dm);
+}
+
+static void OnMenuViewRotateLeft(WindowInfo *win)
+{
+    RotateLeft(win);
+}
+
+static void OnMenuViewRotateRight(WindowInfo *win)
+{
+    RotateRight(win);
 }
 
 static inline BOOL IsBenchArg(char *txt)
@@ -1699,8 +1750,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     OnMenuViewSinglePage(win);
                     break;
 
+                case IDM_VIEW_FACING:
+                    OnMenuViewFacing(win);
+                    break;
+
                 case IDM_VIEW_CONTINUOUS:
                     OnMenuViewContinuous(win);
+                    break;
+
+                case IDM_VIEW_CONTINUOUS_FACING:
+                    OnMenuViewContinuousFacing(win);
+                    break;
+
+                case IDM_VIEW_ROTATE_LEFT:
+                    OnMenuViewRotateLeft(win);
+                    break;
+
+                case IDM_VIEW_ROTATE_RIGHT:
+                    OnMenuViewRotateRight(win);
                     break;
 
                 case IDM_ABOUT:

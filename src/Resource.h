@@ -34,6 +34,10 @@
 #define IDM_VIEW_WITH_ACROBAT   421
 #define IDM_VIEW_CONTINUOUS     422
 #define IDM_VIEW_SINGLE_PAGE    423
+#define IDM_VIEW_FACING         424
+#define IDM_VIEW_CONTINUOUS_FACING 425
+#define IDM_VIEW_ROTATE_LEFT    426
+#define IDM_VIEW_ROTATE_RIGHT   427
 
 #define IDI_XPDFWIN             600
 #define IDI_SMALL               601
