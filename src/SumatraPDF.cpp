@@ -102,8 +102,9 @@ enum WinState {
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
 
 /* default UI settings */
-#define DEFAULT_DISPLAY_MODE DM_SINGLE_PAGE
-//#define DEFAULT_DISPLAY_MODE DM_CONTINUOUS
+#define DEFAULT_CONTINUOUS          TRUE
+#define DEFAULT_PAGES_AT_A_TIME     1
+
 //#define DEFAULT_ZOOM         ZOOM_FIT_WIDTH
 #define DEFAULT_ZOOM         ZOOM_FIT_PAGE
 #define DEFAULT_ROTATION     0
@@ -573,6 +574,8 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
 #else
     GBool           bitmapTopDown = gFalse;
 #endif
+    int             continuous = DEFAULT_CONTINUOUS;
+    int             pagesAtATime = DEFAULT_PAGES_AT_A_TIME;
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -625,7 +628,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     scrollbarYDx = 0;
     scrollbarXDy = 0;
     win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarYDx, scrollbarXDy, DM_CONTINUOUS, 1);
+        scrollbarYDx, scrollbarXDy, continuous, pagesAtATime, 1);
     if (!win->dm) {
         delete outputDev;
         WindowInfo_Delete(win);
@@ -1606,7 +1609,7 @@ static void OnMenuViewSinglePage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    if (DM_SINGLE_PAGE == win->dm->displayMode)
+    if (!win->dm->continuousMode)
         return;
     DisplayModel_SwitchToSinglePage(win->dm);
 }
@@ -1617,7 +1620,7 @@ static void OnMenuViewContinuous(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    if (DM_CONTINUOUS== win->dm->displayMode)
+    if (win->dm->continuousMode)
         return;
     DisplayModel_SwitchToContinuous(win->dm);
 }

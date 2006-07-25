@@ -220,7 +220,8 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
 DisplayModel *DisplayModel_CreateFromPdfDoc(
   PDFDoc *pdfDoc, SplashOutputDev *outputDev, RectDSize totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
-  PdfDisplayMode displayMode, int startPage)
+  int continuousMode, int pagesAtATime,
+  int startPage)
 {
     PdfPageInfo *pageInfo;
     DisplayModel *  dm = NULL;
@@ -237,25 +238,29 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     if (!dm)
         goto Error;
 
+    /* TODO: not supporting more just yet */
+    assert(1 == pagesAtATime);
     dm->appData = NULL;
     dm->pdfDoc = pdfDoc;
     dm->outputDevice = outputDev;
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
-    dm->displayMode = displayMode;
+    dm->continuousMode = continuousMode;
+    dm->pagesAtATime = pagesAtATime;
     dm->startPage = startPage;
     dm->rotation = INVALID_ROTATION;
     dm->zoomVirtual = INVALID_ZOOM;
 
     outputDev->startDoc(pdfDoc->getXRef());
 
-    /* TODO: drawAreaSize not always is minus scrollbars */
+    /* TODO: drawAreaSize not always is minus scrollbars (e.g. on Windows)*/
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
     dm->pageCount = pdfDoc->getNumPages();
-    DBG_OUT("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d\n", dm->pageCount, startPage);
+    DBG_OUT("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d, continuous=%d, pagesAtATime=%d\n",
+            dm->pageCount, startPage, continuousMode, pagesAtATime);
     dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount * sizeof(PdfPageInfo));
     if (!dm->pagesInfo)
         goto Error;
@@ -267,15 +272,14 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         pageInfo->rotation = pdfDoc->getPageRotate(pageNo);
         pageInfo->bitmap = NULL;
         pageInfo->shown = false;
-        if (DM_CONTINUOUS == displayMode) {
+        if (dm->continuousMode) {
             pageInfo->shown = true;
-        } else if (DM_SINGLE_PAGE == displayMode) {
-            if (pageNo == startPage) {
+        } else {
+            if ((pageNo >= startPage) && (pageNo < startPage + dm->pagesAtATime)) {
                 DBG_OUT("DisplayModel_CreateFromPdfDoc() set page %d as shown\n", pageNo);
                 pageInfo->shown = true;
             }
-        } else
-            assert(0);
+        }
         pageInfo->visible = false;
     }
 
@@ -321,18 +325,17 @@ int DisplayModel_GetCurrentPageNo(DisplayModel *dm)
 {
     int     currPageNo = INVALID_PAGE;
 
-    DBG_OUT("DisplayModel_GetCurrentPageNo()\n");
-
     assert(dm);
     if (!dm) goto Exit;
 
-    if (DM_CONTINUOUS == dm->displayMode) {
+    if (dm->continuousMode) {
         currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
+    } else {
         currPageNo = dm->startPage;
-    } else
-        assert(0);
+    }
+
 Exit:
+    DBG_OUT("DisplayModel_GetCurrentPageNo() currPageNo=%d\n", currPageNo);
     return currPageNo;
 }
 
@@ -355,7 +358,7 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
     assert(dm);
     if (!dm) return;
     assert(DisplayModel_ValidPageNo(dm, startPage));
-    assert(DM_SINGLE_PAGE == dm->displayMode);
+    assert(!dm->continuousMode);
 
     dm->startPage = startPage;
     for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
@@ -363,7 +366,7 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
         delete pageInfo->bitmap; /* TODO: delete those lazily from allocator */
         pageInfo->bitmap = NULL;
         pageInfo->shown = false;
-        if (pageNo == startPage) {
+        if ((pageNo >= startPage) && (pageNo < startPage + dm->pagesAtATime)) {
             DBG_OUT("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
             pageInfo->shown = true;
         }
@@ -382,7 +385,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
     if (!DisplayModel_ValidPageNo(dm, pageNo))
         return;
 
-    if (DM_SINGLE_PAGE == dm->displayMode) {
+    if (!dm->continuousMode) {
         /* in single page mode going to another page involves recalculating
            the size of canvas */
         DisplayModel_SetStartPage(dm, pageNo);
@@ -398,7 +401,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
        TODO: is there a better way of y-centering?
        TODO: it probably doesn't work in continuous mode (but that's a corner
              case, I hope) */
-    if (DM_SINGLE_PAGE == dm->displayMode)
+    if (!dm->continuousMode)
         dm->areaOffset.y = (double)scrollY;
     else
         dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
@@ -418,16 +421,9 @@ bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
     assert(dm);
     if (!dm) return false;
 
-    if (DM_CONTINUOUS == dm->displayMode) {
-        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        currPageNo = dm->startPage;
-    }
-    else {
-        assert(0);
-        return false;
-    }
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
 
+    /* TODO: take dm->pagesAtATime into account */
     DBG_OUT("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (currPageNo <= 1) {
         /* we're on a first page, can't go back */
@@ -446,15 +442,9 @@ bool DisplayModel_GoToLastPage(DisplayModel *dm)
 
     DBG_OUT("DisplayModel_GoToLastPage()\n");
 
-    if (DM_CONTINUOUS == dm->displayMode) {
-        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        currPageNo = dm->startPage;
-    }
-    else {
-        assert(0);
-        return false;
-    }
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
+
+    /* TODO: take dm->pagesAtATime into account */
     if (currPageNo != dm->pageCount) { /* are we on the last page already ? */
         DisplayModel_GoToPage(dm, dm->pageCount, 0);
         return true;
@@ -469,21 +459,18 @@ bool DisplayModel_GoToFirstPage(DisplayModel *dm)
 
     DBG_OUT("DisplayModel_GoToFirstPage()\n");
 
-    if (DM_CONTINUOUS == dm->displayMode) {
+    if (dm->continuousMode) {
         if (0 == dm->areaOffset.y) {
             return false;
         }
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
+    } else {
         assert(DisplayModel_IsPageShown(dm, dm->startPage));
         if (1 == dm->startPage) {
             /* we're on a first page already */
             return false;
         }
     }
-    else {
-        assert(0);
-        return false;
-    }
+    /* TODO: take dm->pagesAtATime into account */
     DisplayModel_GoToPage(dm, 1, 0);
 
     return true;
@@ -500,14 +487,9 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
     assert(dm);
     if (!dm) return false;
 
-    if (DM_CONTINUOUS == dm->displayMode) {
-        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        currPageNo = dm->startPage;
-    }
-    else
-        assert(0);
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
 
+    /* TODO: take dm->pagesAtATime into account */
     DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (dm->pageCount == currPageNo) {
         /* we're on a last page, can't go any further */
@@ -522,7 +504,7 @@ int DisplayModel_GetSinglePageDy(DisplayModel *dm)
     PdfPageInfo *   pageInfo;
     assert(dm);
     if (!dm) return 0;
-    assert(DM_SINGLE_PAGE == dm->displayMode);
+    assert(!dm->continuousMode);
 
     pageInfo = DisplayModel_FindFirstVisiblePage(dm);
     assert(pageInfo);
@@ -541,11 +523,12 @@ void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
     if (!dm) return;
 
     DBG_OUT("DisplayModel_ScrollYTo(yOff=%d)\n", yOff);
+
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
     dm->areaOffset.y = (double)yOff;
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RenderVisibleParts(dm);
 
-    currPageNo = DisplayModel_GetCurrentPageNo(dm);
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
         DisplayModel_PageChanged(dm, newPageNo);
@@ -606,7 +589,7 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
 
     newYOff = currYOff;
 
-    if ((DM_SINGLE_PAGE == dm->displayMode) && changePage) {
+    if (!dm->continuousMode && changePage) {
         if ((dy < 0) && (0 == currYOff)) {
             if (dm->startPage > 1) {
                 newPageNo = dm->startPage-1;
@@ -640,7 +623,6 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
         return;
 
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
-
     dm->areaOffset.y = (double)newYOff;
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RenderVisibleParts(dm);
@@ -662,57 +644,72 @@ void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePag
         DisplayModel_ScrollYBy(dm, -(int)dm->drawAreaSize.dy, changePage);
 }
 
-void DisplayModel_SwitchToSinglePage(DisplayModel *dm)
+void DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime)
 {
-    int     currPageNo;
+    int             currPageNo;
+    PdfPageInfo *   pageInfo;
 
     assert(dm);
     if (!dm) return;
 
-    assert(DM_SINGLE_PAGE != dm->displayMode);
+    /* TODO: not supporting more just yet */
+    assert(1 == pagesAtATime);
 
-    currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-    DBG_OUT("DisplayModel_SwitchToSinglePage() currPageNo = %d\n", currPageNo);
-    assert(INVALID_PAGE != currPageNo);
-    dm->displayMode = DM_SINGLE_PAGE;
+    if ((continuousMode == dm->continuousMode) &&
+        (pagesAtATime == dm->pagesAtATime)) {
+        return;
+    }
+
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
+    dm->continuousMode = continuousMode;
+    dm->pagesAtATime = pagesAtATime;
+    if (dm->continuousMode) {
+        /* mark all pages as shown but not yet visible. The equivalent code
+           for non-continuous mode is in DisplayModel_SetStartPage() called
+           from DisplayModel_GoToPage() */
+        for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
+            pageInfo = &(dm->pagesInfo[pageNo-1]);
+            pageInfo->bitmap = NULL;
+            pageInfo->shown = true;
+            pageInfo->visible = false;
+        }
+        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
+    }
     DisplayModel_GoToPage(dm, currPageNo, 0);
+
+}
+
+void DisplayModel_SwitchToSinglePage(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+    if (!dm->continuousMode)
+        return;
+    DisplayModel_ToggleContinuous(dm);
 }
 
 void DisplayModel_SwitchToContinuous(DisplayModel *dm)
 {
-    PdfPageInfo *   pageInfo;
-    int             currPageNo;
     assert(dm);
     if (!dm) return;
-    assert(DM_CONTINUOUS != dm->displayMode);
-
-    currPageNo = dm->startPage;
-
-    DBG_OUT("DisplayModel_SwitchToContinuous() currPageNo=%d\n", currPageNo);
-    dm->displayMode = DM_CONTINUOUS;
-
-    /* mark all pages as shown but not yet visible */
-    for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
-        pageInfo = &(dm->pagesInfo[pageNo-1]);
-        pageInfo->bitmap = NULL;
-        pageInfo->shown = true;
-        pageInfo->visible = false;
-    }
-    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
-    DisplayModel_GoToPage(dm, currPageNo, 0);
+    if (dm->continuousMode)
+        return;
+    DisplayModel_ToggleContinuous(dm);
 }
 
 void DisplayModel_ToggleContinuous(DisplayModel *dm)
 {
+    int     newContinuous;
+
     assert(dm);
     if (!dm) return;
 
-    if (DM_CONTINUOUS == dm->displayMode) {
-        DisplayModel_SwitchToSinglePage(dm);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        DisplayModel_SwitchToContinuous(dm);
-    } else
-        assert(0);
+    if (dm->continuousMode) {
+        newContinuous = FALSE;
+    } else {
+        newContinuous = TRUE;
+    }
+    DisplayModel_SetLayout(dm, newContinuous, dm->pagesAtATime);
 }
 
 void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
@@ -720,15 +717,9 @@ void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
     int     currPageNo;
 
     DBG_OUT("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
-    if (DM_CONTINUOUS == dm->displayMode) {
-        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-        DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, currPageNo, 0);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-        DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
-        DisplayModel_GoToPage(dm, dm->startPage, 0);
-    } else
-        assert(0);
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
+    DisplayModel_RecalcPagesInfo(dm, zoomVirtual, dm->rotation);
+    DisplayModel_GoToPage(dm, currPageNo, 0);
 }
 
 void DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor)
@@ -763,15 +754,10 @@ void DisplayModel_RotateBy(DisplayModel *dm, int rotation)
     if (!ValidRotation(newRotation))
         return;
 
-    if (DM_CONTINUOUS == dm->displayMode) {
-        currPageNo = DisplayModel_FindFirstVisiblePageNo(dm);
-        DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
-        DisplayModel_GoToPage(dm, currPageNo, 0);
-    } else if (DM_SINGLE_PAGE == dm->displayMode) {
-         DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
-        DisplayModel_GoToPage(dm, dm->startPage, 0);
-    } else
-        assert(0);
+    currPageNo = DisplayModel_GetCurrentPageNo(dm);
+    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, newRotation);
+    DisplayModel_GoToPage(dm, currPageNo, 0);
+
 }
 
 /* Given a zoom level that can include a "virtual" zoom levels like ZOOM_FIT_WIDTH
@@ -876,6 +862,7 @@ void DisplayModel_RecalcPagesInfo(DisplayModel *dm, double zoomVirtual, int rota
     DBG_OUT("DisplayModel_RecalcPagesInfo(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
         pageCount, dm->zoomReal, dm->zoomVirtual);
     totalAreaDx = 0;
+    /* TODO: take dm->pagesAtATime into account */
     for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
 
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);

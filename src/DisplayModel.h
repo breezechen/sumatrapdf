@@ -70,6 +70,14 @@ class SplashOutputDev;
 
 #define INVALID_ROTATION    -1
 
+/* the distance between a page and left border, in pixels */
+#define PADDING_PAGE_BORDER_LEFT  4
+/* the distance between a page and right border, in pixels */
+#define PADDING_PAGE_BORDER_RIGHT 4
+/* the distance between pages, in pixels. Only applicable if
+   pagesAtATime > 1 */
+#define PADDING_PAGE_PAGE         8
+
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
        recorded in PDF file */
@@ -121,12 +129,12 @@ typedef struct DisplayModel {
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
 
-    /* current display mode */
-    PdfDisplayMode  displayMode;
+    int             continuousMode;
+    int             pagesAtATime;
 
-    /* in DM_CONTINUOUS and DM_FACING_CONTINUOUS mode has no meaning.
-       In DM_SINGLE_PAGE is the page we're displaying.
-       In DM_FACING is the first of (possibly) 2 pages we're displaying. */
+    /* In non-continuous mode is the first page from a PDF file that we're
+       displaying.
+       No meaning in continous mode. */
     int             startPage;
 
     /* current rotation selected by user */
@@ -168,7 +176,7 @@ bool          ValidZoomVirtual(double zoomVirtual);
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
-                                            PdfDisplayMode displayMode, int startPage);
+                                            int continuousMode, int pagesAtATime, int startPage);
 void          DisplayModel_Delete(DisplayModel *dm);
 
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
@@ -190,9 +198,14 @@ void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
 void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
 void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage);
 
+void          DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime);
+
+/* TODO: remove those 2 */
 void          DisplayModel_SwitchToSinglePage(DisplayModel *dm);
 void          DisplayModel_SwitchToContinuous(DisplayModel *dm);
+
 void          DisplayModel_ToggleContinuous(DisplayModel *dm);
+
 void          DisplayModel_FreeBitmaps(DisplayModel *dm);
 
 void          DisplayModel_SetZoomVirtual(DisplayModel *dm, double zoomVirtual);
