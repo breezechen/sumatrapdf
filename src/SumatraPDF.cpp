@@ -28,17 +28,19 @@
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
-/* A long TODO list:
+/* TODO list:
 
-Must have before first release:
-
-Nice to have:
-- remove dependency on PDFCore/WinPDFCore
+Must have before next release:
+- drawing issues resolved (SetDIBSToDevice is driving me crazy)
+- reimplement void WinPDFCore::resizeToPage(int pg)
 - much better "About" box
 - bug: window size slightly changes at startup, don't know why
-- continuous-mode
-- access encrypted files
 - handle links (actions)
+- Ctrl-G - "go to page" dialog
+
+Nice to have:
+- backspace to do the opposite of space
+- access encrypted files
 - remember the history of opened files (infinite "Recent Files"). Remember file name and
   UI state (windows posisition, current page, zoom level, scroll position) at the time
   file was close. Restore the UI state when file is re-opened. That way user gets where
@@ -51,7 +53,6 @@ Nice to have:
 - session saving (similar to what a Firefox extension does). Save the whole state of the app (windows
   position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
   session when called without a command-line argument.
-- Ctrl-G - "go to page" dialog
 - cursor up/down and page up/down should advance pages if at the top/bottom
 - check for new version on-line
 - toolbar (?)
@@ -69,7 +70,7 @@ Nice to have:
   restore or have a dialog box
 - printing
 - get rid of dependency on freetype, use windows functions instead (not sure if that's
-  actually possible with poppler)
+  possible with poppler)
 - optimize the use of embedded fonts, currently they're being written out
   to disk and then read into memory, which seems completely unnecessary since
   freetype can create a face directly from memory.
@@ -614,7 +615,15 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
-    Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
+
+    /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
+       but scrollbars are not part of the client area on windows so it's better
+       not to have them taken into account by DisplayModel code.
+       TODO: I think it's broken anyway and DisplayModel needs to know if
+             scrollbars are part of client area in order to accomodate windows
+             UI properly */
+    scrollbarYDx = 0;
+    scrollbarXDy = 0;
     win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
         scrollbarYDx, scrollbarXDy, DM_CONTINUOUS, 1);
     if (!win->dm) {
@@ -792,7 +801,6 @@ void WindowInfo_ResizeToWindow(WindowInfo *win)
     dm = win->dm;
     assert(dm);
     if (!dm) return;
-
 
     WindowInfo_GetWindowSize(win);
 
@@ -1577,9 +1585,41 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
         DisplayModel_ScrollXTo(win->dm, si.nPos);
 }
 
+BOOL WindowInfo_PdfLoaded(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return FALSE;
+    if (!win->dm) return FALSE;
+    assert(win->dm->pdfDoc);
+    assert(win->dm->pdfDoc->isOk());
+    return TRUE;
+}
+
 void ViewWithAcrobat(WindowInfo *win)
 {
     // TODO: write me
+}
+
+static void OnMenuViewSinglePage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    if (DM_SINGLE_PAGE == win->dm->displayMode)
+        return;
+    DisplayModel_SwitchToSinglePage(win->dm);
+}
+
+static void OnMenuViewContinuous(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    if (DM_CONTINUOUS== win->dm->displayMode)
+        return;
+    DisplayModel_SwitchToContinuous(win->dm);
 }
 
 static inline BOOL IsBenchArg(char *txt)
@@ -1652,6 +1692,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     /* TODO: implement me */
                     break;
 
+                case IDM_VIEW_SINGLE_PAGE:
+                    OnMenuViewSinglePage(win);
+                    break;
+
+                case IDM_VIEW_CONTINUOUS:
+                    OnMenuViewContinuous(win);
+                    break;
 
                 case IDM_ABOUT:
                     DialogBox(ghinst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);

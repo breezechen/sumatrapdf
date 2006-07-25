@@ -202,6 +202,7 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
+    DisplayModel_RecalcPagesInfo(dm, dm->zoomVirtual, dm->rotation);
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RenderVisibleParts(dm);
     DisplayModel_SetScrollbarsState(dm);

@@ -32,7 +32,8 @@
 #define IDM_ZOOM_12_5           419
 #define IDM_ZOOM_8_33           420
 #define IDM_VIEW_WITH_ACROBAT   421
-
+#define IDM_VIEW_CONTINUOUS     422
+#define IDM_VIEW_SINGLE_PAGE    423
 
 #define IDI_XPDFWIN             600
 #define IDI_SMALL               601

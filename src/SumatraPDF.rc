@@ -29,41 +29,46 @@ IDI_XPDFWIN         ICON         "SumatraPDF.ico"
 IDI_SMALL           ICON         "SumatraPDFSmall.ico"
 
 // Menu
-IDC_XPDFWIN MENU 
+IDC_XPDFWIN MENU
 BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open\tCtrl-O",        IDM_OPEN
-        MENUITEM "&Close\tCtrl-W",       IDM_CLOSE
-        //MENUITEM "&View with Acrobat",   IDM_VIEW_WITH_ACROBAT
-        MENUITEM "E&xit\tCtrl-Q",        IDM_EXIT
-    END
-    POPUP "&Zoom"
-    BEGIN
-        MENUITEM "Fit &Page\tCtrl-0",    IDM_ZOOM_FIT_PAGE
-        MENUITEM "Act&ual Size\tCtrl-1", IDM_ZOOM_ACTUAL_SIZE
-        MENUITEM "Fit Widt&h\tCtrl-2",   IDM_ZOOM_FIT_WIDTH
+POPUP "&File"
+	BEGIN
+    MENUITEM "&Open\tCtrl-O",        IDM_OPEN
+    MENUITEM "&Close\tCtrl-W",       IDM_CLOSE
+    //MENUITEM "&View with Acrobat",   IDM_VIEW_WITH_ACROBAT
+    MENUITEM "E&xit\tCtrl-Q",        IDM_EXIT
+	END
+POPUP "&View"
+	BEGIN
+    MENUITEM "Continuous",    		IDM_VIEW_CONTINUOUS
+    MENUITEM "Single page",    		IDM_VIEW_SINGLE_PAGE
+	END
+POPUP "&Zoom"
+	BEGIN
+    MENUITEM "Fit &Page\tCtrl-0",    IDM_ZOOM_FIT_PAGE
+    MENUITEM "Act&ual Size\tCtrl-1", IDM_ZOOM_ACTUAL_SIZE
+    MENUITEM "Fit Widt&h\tCtrl-2",   IDM_ZOOM_FIT_WIDTH
 /* Not yet implemented
-        MENUITEM "Fit Visi&ble\tCtrl-3", DM_ZOOM_FIT_VISIBLE */
-        MENUITEM SEPARATOR
-        MENUITEM "6400%",                IDM_ZOOM_6400
-        MENUITEM "3200%",                IDM_ZOOM_3200
-        MENUITEM "1600%",                IDM_ZOOM_1600
-        MENUITEM "800%",                 IDM_ZOOM_800
-        MENUITEM "400%",                 IDM_ZOOM_400
-        MENUITEM "200%",                 IDM_ZOOM_200
-        MENUITEM "150%",                 IDM_ZOOM_150
-        MENUITEM "125%",                 IDM_ZOOM_125
-        MENUITEM "100%",                 IDM_ZOOM_100
-        MENUITEM "50%",                  IDM_ZOOM_50
-        MENUITEM "25%",                  IDM_ZOOM_25
-        MENUITEM "12.5%",                IDM_ZOOM_12_5
-        MENUITEM "8.33%",                IDM_ZOOM_8_33
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&About ...",           IDM_ABOUT
-    END
+    MENUITEM "Fit Visi&ble\tCtrl-3", DM_ZOOM_FIT_VISIBLE */
+    MENUITEM SEPARATOR
+    MENUITEM "6400%",                IDM_ZOOM_6400
+    MENUITEM "3200%",                IDM_ZOOM_3200
+    MENUITEM "1600%",                IDM_ZOOM_1600
+    MENUITEM "800%",                 IDM_ZOOM_800
+    MENUITEM "400%",                 IDM_ZOOM_400
+    MENUITEM "200%",                 IDM_ZOOM_200
+    MENUITEM "150%",                 IDM_ZOOM_150
+    MENUITEM "125%",                 IDM_ZOOM_125
+    MENUITEM "100%",                 IDM_ZOOM_100
+    MENUITEM "50%",                  IDM_ZOOM_50
+    MENUITEM "25%",                  IDM_ZOOM_25
+    MENUITEM "12.5%",                IDM_ZOOM_12_5
+    MENUITEM "8.33%",                IDM_ZOOM_8_33
+	END
+POPUP "&Help"
+	BEGIN
+    MENUITEM "&About ...",           IDM_ABOUT
+	END
 END
 
 // Accelerators
@@ -101,12 +106,12 @@ END
 //
 // TEXTINCLUDE
 //
-1 TEXTINCLUDE  
+1 TEXTINCLUDE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE  
+2 TEXTINCLUDE
 BEGIN
     "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
     "#include ""windows.h""\r\n"
@@ -114,7 +119,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE  
+3 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
@@ -123,7 +128,7 @@ END
 #endif    // APSTUDIO_INVOKED
 
 // String Table
-STRINGTABLE  
+STRINGTABLE
 BEGIN
    IDC_XPDFWIN          "SUMATRAPDFWIN"
    IDS_APP_TITLE        "SumatraPDF"
