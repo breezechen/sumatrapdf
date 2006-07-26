@@ -28,67 +28,6 @@
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
-/* TODO list:
-
-Must have before next release:
-- drawing issues resolved (SetDIBSToDevice is driving me crazy)
-- reimplement void WinPDFCore::resizeToPage(int pg)
-- much better "About" box
-- bug: window size slightly changes at startup, don't know why
-- handle links (actions)
-- Ctrl-G - "go to page" dialog
-
-Done:
-- facing and continuous facing mode
-- Rotate left/right
-
-Nice to have:
-- backspace to do the opposite of space
-- access encrypted files
-- remember the history of opened files (infinite "Recent Files"). Remember file name and
-  UI state (windows posisition, current page, zoom level, scroll position) at the time
-  file was close. Restore the UI state when file is re-opened. That way user gets where
-  he left off, which is probably what he wants most of the time. Might want to make it
-  user-configurable option (not sure if that's what all of the people would want).
-  History is infinite (as opposed to only N recently opened, as in most software).
-- good UI for history of opened files. At the very least a type-down list, ordered by
-  last access time. Type-down filters by file name (or maybe full path?). Filter out
-  files that don't exist anymore (and remove them from history)
-- session saving (similar to what a Firefox extension does). Save the whole state of the app (windows
-  position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
-  session when called without a command-line argument.
-- cursor up/down and page up/down should advance pages if at the top/bottom
-- check for new version on-line
-- toolbar (?)
-- easy toggle to full-screen mode (Ctrl-L ?)
-- UI for table of contents
-- bookmarks per PDF, persisted across sessions. UI for handling bookmarks (add bookmark, delete
-  bookmark, go to bookmark). 2 cases need to be handled: going to a bookmark in the currently
-  displayed PDF file. Going to a "global" bookmark, across all PDF files (i.e. show a list
-  of all bookmarks in all PDF files, grouped by PDF file). Those 2 cases need separate UI.
-- "launch with acrobat" option (menu item?), so that it's easy to launch a doc
-  with acrobat if it implements an important function that I don't (e.g. priting)
-  Needs to read registry to find where acrobat is installed.
-- easy toggle of full-screen mode (Ctrl-L ?)
-- detect if *pdf files are associsated with me at startup, if not, either silently
-  restore or have a dialog box
-- printing
-- get rid of dependency on freetype, use windows functions instead (not sure if that's
-  possible with poppler)
-- optimize the use of embedded fonts, currently they're being written out
-  to disk and then read into memory, which seems completely unnecessary since
-  freetype can create a face directly from memory.
-  Also, it uses char-by-char IO, which is slow, switch to reading/writing in
-  chunks.
-- nicer-looking window
- - drop shadows
- - custom caption area
-- replace windows font scanning code with a better version from mupdf
-
-BUGS:
-- C:\kjk\downloads\6.05.HowToBeCreative.pdf popup on every page
-*/
-
 #define dimof(X)    (sizeof(X)/sizeof((X)[0]))
 
 enum AppVisualStyle {
@@ -104,6 +43,10 @@ enum WinState {
 
 #define ZOOM_IN_FACTOR      1.2
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
+
+/* Uncomment to visually show links as blue rectangles, for easier links
+   debugging */
+//#define DEBUG_SHOW_LINKS            1
 
 /* default UI settings */
 #define DEFAULT_CONTINUOUS          TRUE
@@ -189,6 +132,7 @@ static HCURSOR      gCursorArrow = NULL;
 static HCURSOR      gCursorWait = NULL;
 static HBRUSH       gBrushBg;
 static HBRUSH       gBrushShadow;
+static HBRUSH       gBrushLinkDebug;
 
 static HPEN         ghpenWhite = NULL;
 static HPEN         ghpenBlue = NULL;
@@ -638,6 +582,10 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         WindowInfo_Delete(win);
         return NULL;
     }
+
+#ifdef DEBUG_SHOW_LINKS
+    win->dm->debugShowLinks = TRUE;
+#endif
 
     win->dm->appData = (void*)win;
     if (!reuse_existing_window) {
@@ -1186,6 +1134,12 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     int                   splashBmpRowSize;
     int                   xSrc, ySrc, xDest, yDest;
     int                   bmpDx, bmpDy;
+    int                   linkNo;
+    PdfLink *             pdfLink;
+    SimpleRect            drawAreaRect;
+    SimpleRect            intersect;
+    SimpleRect            rectLink;
+    RECT                  rectScreen;
 
     assert(win);
     if (!win) return;
@@ -1258,9 +1212,57 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             DIB_RGB_COLORS /* color use flag */
         );
     }
+
+    if (!dm->debugShowLinks)
+        return;
+
+    /* debug code to visualize links */
+    drawAreaRect.x = (int)dm->areaOffset.x;
+    drawAreaRect.y = (int)dm->areaOffset.y;
+    drawAreaRect.dx = (int)dm->drawAreaSize.dx;
+    drawAreaRect.dy = (int)dm->drawAreaSize.dy;
+
+    for (linkNo = 0; linkNo < dm->linkCount; ++linkNo) {
+        pdfLink = &(dm->links[linkNo]);
+
+        rectLink.x = pdfLink->rectCanvas.x;
+        rectLink.y = pdfLink->rectCanvas.y;
+        rectLink.dx = pdfLink->rectCanvas.dx;
+        rectLink.dy = pdfLink->rectCanvas.dy;
+
+        if (SimpleRect_Intersect(&rectLink, &drawAreaRect, &intersect)) {
+            rectScreen.left = (LONG) ((double)intersect.x - dm->areaOffset.x);
+            rectScreen.top = (LONG) ((double)intersect.y - dm->areaOffset.y);
+            rectScreen.right = rectScreen.left + rectLink.dx;
+            rectScreen.bottom = rectScreen.top + rectLink.dy;
+            FillRect(hdc, &rectScreen, gBrushLinkDebug);
+            DBG_OUT("  link on screen rotate=%d, (x=%d, y=%d, dx=%d, dy=%d)\n",
+                dm->rotation + dm->pagesInfo[pdfLink->pageNo-1].rotation,
+                rectScreen.left, rectScreen.top, RectDx(&rectScreen), RectDy(&rectScreen));
+        }
+    }
 }
 
-void OnPaint(WindowInfo *win)
+static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
+{
+    DisplayModel *  dm;
+    PdfLink *       link;
+
+    assert(win);
+    if (!win) return;
+    dm = win->dm;
+    if (!dm) return;
+
+    link = DisplayModel_GetLinkAtPosition(dm, x, y);
+    if (link) {
+        SetCursor(LoadCursor(NULL, IDC_HAND));
+    } else {
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
+    }
+    DBG_OUT("OnMoseMove(): found link at pos (%d,%d)\n", x, y);
+}
+
+static void OnPaint(WindowInfo *win)
 {
     HDC         hdc;
     PAINTSTRUCT ps;
@@ -1431,7 +1433,7 @@ static void RotateLeft(WindowInfo *win)
     if (!WindowInfo_PdfLoaded(win))
         return;
     DisplayModel_RotateBy(win->dm, -90);
-}    
+}
 
 static void RotateRight(WindowInfo *win)
 {
@@ -1840,6 +1842,11 @@ InitMouseWheelInfo:
                 OnKeydown(win, wParam);
             break;
 
+        case WM_MOUSEMOVE:
+            if (win)
+                OnMouseMove(win, LOWORD(lParam), HIWORD(lParam), wParam);
+            break;
+
         case WM_DROPFILES:
             if (win)
                 OnDropFiles(win, (HDROP)wParam);
@@ -1906,7 +1913,7 @@ BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
 
     gBrushBg     = CreateSolidBrush(COL_WINDOW_BG);
     gBrushShadow = CreateSolidBrush(COL_WINDOW_SHADOW);
-
+    gBrushLinkDebug = CreateSolidBrush(RGB(0x00,0x00,0xff));
     return TRUE;
 }
 
@@ -2076,6 +2083,7 @@ Exit:
     CaptionPens_Destroy();
     DeleteObject(gBrushBg);
     DeleteObject(gBrushShadow);
+    DeleteObject(gBrushLinkDebug);
 
     //WinFontList_Destroy();
     StrList_Destroy(&gArgListRoot);

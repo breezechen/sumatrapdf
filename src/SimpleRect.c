@@ -1,22 +1,6 @@
 #include <assert.h>
+#include "BaseUtils.h"
 #include "SimpleRect.h"
-
-#define dimof(X)    (sizeof(X)/sizeof((X)[0]))
-
-static int MinInt(int one, int two)
-{
-    if (one < two)
-        return one;
-    else
-        return two;
-}
-
-static void SwapInt(int *one, int *two)
-{
-    int tmp = *one;
-    *one = *two;
-    *two = tmp;
-}
 
 /* Return true if 'r1' and 'r2' intersect. Put the intersect area into
    'rIntersectOut'.
@@ -99,6 +83,38 @@ void SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye)
     rOut->y = ys;
     rOut->dx = xe - xs;
     rOut->dy = ye - ys;
+}
+
+void RectD_FromXY(RectD *rOut, double xs, double xe, double ys, double ye)
+{
+    assert(rOut);
+    if (!rOut)
+        return;
+    if (xs > xe)
+        SwapDouble(&xs, &xe);
+    if (ys > ye)
+        SwapDouble(&ys, &ye);
+
+    rOut->x = xs;
+    rOut->y = ys;
+    rOut->dx = xe - xs;
+    assert(rOut->dx >= 0.0);
+    rOut->dy = ye - ys;
+    assert(rOut->dy >= 0.0);
+}
+
+/* Return TRUE if point 'x'/'y' is inside rectangle 'r' */
+int SimpleRect_Inside(SimpleRect *r, int x, int y)
+{
+    if (x < r->x)
+        return FALSE;
+    if (x > r->x + r->dx)
+        return FALSE;
+    if (y < r->y)
+        return FALSE;
+    if (y > r->y + r->dy)
+        return FALSE;
+    return TRUE;
 }
 
 void SimpleRect_AssertEqual(SimpleRect *rIntersect, SimpleRect *rExpected)

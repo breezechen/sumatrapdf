@@ -216,8 +216,8 @@ Error:
   char*   pBuffer;
   int     len;
 
-  va_start(args, pFormat);
-  len = vasprintf(&pBuffer, pFormat, args);
+  va_start(args, format);
+  len = vasprintf(&pBuffer, format, args);
   return pBuffer;
 #endif
 }

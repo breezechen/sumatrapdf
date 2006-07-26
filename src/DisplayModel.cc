@@ -7,8 +7,117 @@
 #include "SplashBitmap.h"
 #include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
 #include "SplashOutputDev.h"
+#include "Link.h"
 #include "PDFDoc.h"
 #include "BaseUtils.h"
+
+static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
+{
+    Object obj;
+    Catalog *catalog = doc->getCatalog();
+    Page *page = catalog->getPage(pageNo);
+    Links *links = new Links(page->getAnnots(&obj), catalog->getBaseURI());
+    obj.free();
+    return links;
+}
+
+static int GetPageRotation(PDFDoc *doc, int pageNo)
+{
+    Catalog *catalog = doc->getCatalog();
+    Page *page = catalog->getPage(pageNo);
+    int rotation = page->getRotate();
+    return rotation;
+}
+
+static const char * GetLinkActionKindName(LinkActionKind kind) {
+    switch (kind) {
+        case (actionGoTo):
+            return "actionGoTo";
+        case actionGoToR:
+            return "actionGoToR";
+        case actionLaunch:
+            return "actionLaunch";
+        case actionURI:
+            return "actionURI";
+        case actionNamed:
+            return "actionNamed";
+        case actionMovie:
+            return "actionMovie";
+        case actionUnknown:
+            return "actionUnknown";
+        default:
+            assert(0);
+            return "unknown action";
+    }
+}
+
+static void TransformUpsideDown(DisplayModel *dm, int pageNo, double *y1, double *y2, double *y3, double *y4)
+{
+    PdfPageInfo *   pageInfo;
+    double          pageDy;
+    assert(dm);
+    if (!dm) return;
+    if (!dm->outputDevice->upsideDown())
+        return;
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    pageDy = pageInfo->pageDy;
+    if (y1)
+        *y1 = pageDy - *y1;
+    if (y2)
+        *y2 = pageDy - *y2;
+    if (y3)
+        *y3 = pageDy - *y3;
+    if (y4)
+        *y4 = pageDy - *y4;
+}
+
+static void DumpLinks(DisplayModel *dm, PDFDoc *doc)
+{
+    Links *     links = NULL;
+    int         pagesCount, linkCount;
+    int         pageRotation;
+    Link *      link;
+    LinkURI *   linkUri;
+    GBool       upsideDown;
+
+    DBG_OUT("DumpLinks() started\n");
+    if (!doc)
+        return;
+
+    upsideDown = dm->outputDevice->upsideDown();
+    pagesCount = doc->getNumPages();
+    for (int pageNo = 1; pageNo < pagesCount; ++pageNo) {
+        links = GetLinksForPage(doc, pageNo);
+        if (!links)
+            goto Exit;
+        linkCount = links->getNumLinks();
+        if (linkCount > 0)
+            DBG_OUT(" :page %d linkCount = %d\n", pageNo, linkCount);
+        pageRotation = GetPageRotation(doc, pageNo);
+        for (int i=0; i<linkCount; i++) {
+            link = links->getLink(i);
+            LinkAction *action = link->getAction();
+            LinkActionKind actionKind = action->getKind();
+            double xs, ys, xe, ye;
+            link->getRect(&xs, &ys, &xe, &ye);
+            TransformUpsideDown(dm, pageNo, &ys, &ye, NULL, NULL);
+            if (ys > ye)
+                SwapDouble(&ys, &ye);
+            DBG_OUT( "   link %d: pageRotation=%d upsideDown=%d, action=%d (%s), (xs=%d,ys=%d - xe=%d,ye=%d)\n", i,
+                pageRotation, (int)upsideDown,
+                (int)actionKind,
+                GetLinkActionKindName(actionKind),
+                (int)xs, (int)ys, (int)xe, (int)ye);
+            if (actionURI == actionKind) {
+                linkUri = (LinkURI*)action;
+                DBG_OUT("   uri=%s\n", linkUri->getURI()->getCString());
+            }
+        }
+    }
+Exit:
+    delete links;
+    DBG_OUT("DumpLinks() finished\n");
+}
 
 static void NormalizeRotation(int *rotation)
 {
@@ -35,6 +144,20 @@ static int FlippedRotation(int rotation)
     if ((90 == rotation) || (270 == rotation))
         return TRUE;
     return FALSE;
+}
+
+static void RectD_Transform(RectD *rectInOut, int rotation, double zoomLevel)
+{
+    NormalizeRotation(&rotation);
+    assert(ValidRotation(rotation));
+
+    if (FlippedRotation(rotation))
+        SwapDouble(&(rectInOut->dx), &(rectInOut->dy));
+
+    rectInOut->x = rectInOut->x * zoomLevel;
+    rectInOut->y = rectInOut->y * zoomLevel;
+    rectInOut->dx = rectInOut->dx * zoomLevel;
+    rectInOut->dy = rectInOut->dy * zoomLevel;
 }
 
 static bool ValidZoomReal(double zoomReal)
@@ -249,6 +372,9 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->startPage = startPage;
     dm->rotation = INVALID_ROTATION;
     dm->zoomVirtual = INVALID_ZOOM;
+    dm->links = NULL;
+    dm->linkCount = 0;
+    dm->debugShowLinks = FALSE;
 
     outputDev->startDoc(pdfDoc->getXRef());
 
@@ -269,6 +395,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         pageInfo->pageDy = pdfDoc->getPageCropHeight(pageNo);
         pageInfo->rotation = pdfDoc->getPageRotate(pageNo);
         pageInfo->bitmap = NULL;
+        pageInfo->links = NULL;
         pageInfo->shown = false;
         if (dm->continuousMode) {
             pageInfo->shown = true;
@@ -281,6 +408,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         pageInfo->visible = false;
     }
 
+    //DumpLinks(dm, pdfDoc);
     return dm;
 Error:
     if (dm)
@@ -434,7 +562,7 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
 {
     int             currPageNo;
     int             newPageNo;
-    int             firstPageInCurrRow, firstPageInNewRow;    
+    int             firstPageInCurrRow, firstPageInNewRow;
 
     assert(dm);
     if (!dm) return false;
@@ -511,23 +639,6 @@ bool DisplayModel_GoToFirstPage(DisplayModel *dm)
     DisplayModel_GoToPage(dm, 1, 0);
     return true;
 }
-
-#if 0 /* TODO: remove me */
-int DisplayModel_GetSinglePageDy(DisplayModel *dm)
-{
-    PdfPageInfo *   pageInfo;
-    assert(dm);
-    if (!dm) return 0;
-    assert(!dm->continuousMode);
-
-    pageInfo = DisplayModel_FindFirstVisiblePage(dm);
-    assert(pageInfo);
-    if (!pageInfo)
-        return 0;
-
-    return (int)pageInfo->currDy;
-}
-#endif
 
 void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
 {
@@ -888,12 +999,129 @@ void DisplayModel_SetZoomVirtual(DisplayModel *dm, double zoomVirtual)
         dm->zoomReal = zoomVirtual;
 }
 
+/* Recalculates the position of each link on the canvas i.e. applies current
+   rotation and zoom level and offsets it by the offset of each page in
+   the canvas.
+   TODO: applying rotation and zoom level could be split into a separate
+         function for speedup, since it only has to change after rotation/zoomLevel
+         changes while this function has to be called after each scrolling.
+         But I'm not sure if this would be a significant speedup */
+static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
+{
+    PdfLink *       pdfLink;
+    PdfPageInfo *   pageInfo;
+    int             rotation;
+    int             linkNo;
+    double          zoomReal;
+    RectD           rect;
+    SimpleRect      rectCanvas;
+
+    assert(dm);
+    if (!dm) return;
+
+    DBG_OUT("DisplayModel_RecalcLinksCanvasPos() links=%d, rotation=%d, zoom=%2.f\n", dm->linkCount, dm->rotation, dm->zoomReal);
+    if (0 == dm->linkCount)
+        return;
+    assert(dm->links);
+    if (!dm->links)
+        return;
+
+    zoomReal = dm->zoomReal * 0.01;
+
+    for (linkNo = 0; linkNo < dm->linkCount; linkNo++) {
+        pdfLink = &(dm->links[linkNo]);
+        pageInfo = DisplayModel_GetPageInfo(dm, pdfLink->pageNo);
+        rotation = dm->rotation + pageInfo->rotation;
+        if (!pageInfo->visible) {
+            /* hack: make the links on pages that are not shown invisible by
+                     moving it off canvas. A better solution would probably be
+                     not adding those links in the first place */
+            pdfLink->rectCanvas.x = -100;
+            pdfLink->rectCanvas.y = -100;
+            pdfLink->rectCanvas.dx = 0;
+            pdfLink->rectCanvas.dy = 0;
+            continue;
+        }
+
+        rect = pdfLink->rectPage;
+        RectD_Transform(&rect, rotation, zoomReal);
+        rectCanvas.x = (int)pageInfo->currPosX + (int)rect.x;
+        rectCanvas.y = (int)pageInfo->currPosY + (int)rect.y;
+        rectCanvas.dx = (int)rect.dx;
+        rectCanvas.dy = (int)rect.dy;
+        pdfLink->rectCanvas = rectCanvas;
+        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
+                  rectCanvas.x, rectCanvas.y,
+                  rectCanvas.dx, rectCanvas.dy);
+    }
+}
+
+/* Recalcualte 'dm->linkCount' and 'dm->links' out of 'dm->pagesInfo' data.
+   Should only be called if link data has chagned in 'dm->pagesInfo'. */
+static void DisplayModel_RecalcLinks(DisplayModel *dm)
+{
+    int             linkCount;
+    int             pageNo;
+    int             i;
+    PdfPageInfo *   pageInfo;
+    Link *          link;
+    PdfLink *       currPdfLink;
+    int             currPdfLinkNo;
+    double          xs, ys, xe, ye;
+
+    assert(dm);
+    if (!dm) return;
+
+    free((void*)dm->links);
+    dm->linkCount = 0;
+
+    /* calculate number of links */
+    linkCount = 0;
+    for (pageNo = 1; pageNo < dm->pageCount; ++pageNo) {
+        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        if (!pageInfo->links)
+            continue;
+        linkCount += pageInfo->links->getNumLinks();
+    }
+
+    assert(linkCount > 0);
+    dm->links = (PdfLink*)malloc(linkCount * sizeof(PdfLink));
+    if (!dm->links)
+        return;
+
+    /* build links info */
+    currPdfLinkNo = 0;
+    for (pageNo = 1; pageNo < dm->pageCount; ++pageNo) {
+        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        if (!pageInfo->links)
+            continue;
+        for (i = 0; i < pageInfo->links->getNumLinks(); i++) {
+            currPdfLink = &(dm->links[currPdfLinkNo]);
+            link = pageInfo->links->getLink(i);
+            link->getRect(&xs, &ys, &xe, &ye);
+            TransformUpsideDown(dm, pageNo, &ys, &ye, NULL, NULL);
+            if (ys > ye)
+                SwapDouble(&ys, &ye);
+            /* note: different param order than getRect() is intentional */
+            RectD_FromXY(&currPdfLink->rectPage, xs, xe, ys, ye);
+            assert(currPdfLink->rectPage.dx >= 0);
+            assert(currPdfLink->rectPage.dy >= 0);
+            currPdfLink->pageNo = pageNo;
+            ++currPdfLinkNo;
+        }
+    }
+    assert(linkCount == currPdfLinkNo);
+    dm->linkCount = linkCount;
+    DBG_OUT("DisplayModel_RecalcLinks() new link count: %d\n", dm->linkCount);
+}
+
+
 /* Given PDFDoc and zoom/rotation, calculate the position of each page on a
    large sheet that is continous view. Needs to be recalculated when:
      * zoom changes
      * rotation changes
-     * switching between continuous and single page modes
-     * navigating to another page in sing page mode */
+     * switching between display modes
+     * navigating to another page in non-continuous mode */
 void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
 {
     int         pageNo;
@@ -984,7 +1212,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
         currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
         thisRowDx = currPosX - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
         if (totalAreaDx < thisRowDx)
-            totalAreaDx = thisRowDx;       
+            totalAreaDx = thisRowDx;
     }
     currPosY += (PADDING_PAGE_BORDER_BOTTOM - PADDING_BETWEEN_PAGES_Y);
 
@@ -1038,6 +1266,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     dm->canvasSize.dx = totalAreaDx;
     dm->canvasSize.dy = totalAreaDy;
 
+    DisplayModel_RecalcLinksCanvasPos(dm);
     /* bitmaps generated before are no longer valid after we changed sizes of pages */
     DisplayModel_FreeBitmaps(dm);
 }
@@ -1053,6 +1282,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
     SimpleRect      pageRect;
     SimpleRect      intersect;
     PdfPageInfo*    pageInfo;
+    int             needsRecalcLinks = FALSE;
 
     assert(dm);
     if (!dm) return;
@@ -1097,6 +1327,52 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
                           pageInfo->bitmapDx, pageInfo->bitmapDy,
                           pageInfo->screenX, pageInfo->screenY);
         }
+        /* lazily (i.e. only when a page becomes visible for the first time)
+           recalculate links. If there are any new links, note to self that
+           we need to recalculate links positions. */
+        if (pageInfo->visible && (NULL == pageInfo->links)) {
+            pageInfo->links = GetLinksForPage(dm->pdfDoc, pageNo);
+            if ((NULL != pageInfo->links) && (pageInfo->links->getNumLinks() > 0)) {
+                needsRecalcLinks = TRUE;
+            }
+        }
     }
+
+    if (needsRecalcLinks)
+        DisplayModel_RecalcLinks(dm);
+    DisplayModel_RecalcLinksCanvasPos(dm);
 }
 
+/* Given position 'x'/'y' in the draw area, returns a structure describing
+   a link or NULL if there is no link at this position.
+   Note: DisplayModel owns this memory so it should not be changed by the
+   caller and caller should not reference it after it has changed (i.e. process
+   it immediately since it will become invalid after each _Relayout()).
+   TODO: this function is called frequently from UI code so make sure that
+         it's fast enough for a decent number of link.
+         Possible speed improvement: remember which links are visible after
+         scrolling and skip the _Inside test for those invisible.
+         Another way: build another list with only those visible, so we don't
+         even have to travers those that are invisible.
+   */
+PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
+{
+    PdfLink *       currLink;
+    int             i;
+    int             canvasPosX, canvasPosY;
+
+    assert(dm);
+    if (!dm) return NULL;
+
+    assert(dm->links);
+
+    canvasPosX = x + (int)dm->areaOffset.x;
+    canvasPosY = y + (int)dm->areaOffset.y;
+    for (i = 0; i < dm->linkCount; i++) {
+        currLink = &(dm->links[i]);
+
+        if (SimpleRect_Inside(&(currLink->rectCanvas), canvasPosX, canvasPosY))
+            return currLink;
+    }
+    return NULL;
+}

@@ -51,7 +51,9 @@
 class SplashBitmap;
 class PDFDoc;
 class SplashOutputDev;
+class Links;
 
+/* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
 #define ZOOM_MAX            1600.0  /* max zoom in % */
@@ -78,6 +80,14 @@ class SplashOutputDev;
 /* the distance between pages in y axis, in pixels. Only applicable if
    more than one page in y axis (continuous mode) */
 #define PADDING_BETWEEN_PAGES_Y      3
+
+/* Describes a link on PDF page. */
+typedef struct PdfLink {
+    /* on which Pdf page the link exists. 1..pageCount */
+    int             pageNo;
+    RectD           rectPage; /* position of the link on the page */
+    SimpleRect      rectCanvas; /* position of the link on canvas */
+} PdfLink;
 
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
@@ -110,6 +120,8 @@ typedef struct PdfPageInfo {
 
     /* a bitmap representing the whole page. Should be of (currDx,currDy) size */
     SplashBitmap *  bitmap;
+
+    Links *         links;
 } PdfPageInfo;
 
 /* Information needed to drive the display of a given PDF document on a screen.
@@ -170,6 +182,15 @@ typedef struct DisplayModel {
        The same for areaOff.y, except it's for dy */
     RectDPos        areaOffset;
 
+    /* total number of links */
+    int             linkCount;
+
+    /* an array of 'totalLinksCount' size, each entry describing a link */
+    PdfLink *       links;
+
+    /* if TRUE, we're in debug mode where we show links as blue rectangle on
+       the screen. Makes debugging code related to links easier. */
+    int             debugShowLinks;
 } DisplayModel;
 
 bool          ValidZoomVirtual(double zoomVirtual);
@@ -189,8 +210,6 @@ bool          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
 bool          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
 bool          DisplayModel_GoToFirstPage(DisplayModel *dm);
 bool          DisplayModel_GoToLastPage(DisplayModel *dm);
-
-//int           DisplayModel_GetSinglePageDy(DisplayModel *dm);
 
 void          DisplayModel_ScrollXTo(DisplayModel *dm, int xOff);
 void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
@@ -224,6 +243,8 @@ void          DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int ro
 void          DisplayModel_RecalcVisibleParts(DisplayModel *dm);
 
 void          DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawAreaSize);
+
+PdfLink *     DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
