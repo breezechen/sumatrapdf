@@ -1,5 +1,10 @@
 #include "FileHistory.h"
 
+#include <string.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 /* Handling of file history list.
 
    We keep an infinite list of all (still existing in the file system) PDF
@@ -9,15 +14,15 @@
    We persist this list as serialized text inside preferences file.
    Serialized history list looks like this:
 
-FileHistoryNode:
-FilePath: /home/test.pdf
-PageNo: 5
-ZoomLevel: 123.34
-DisplayMode: 1
-FullScreen: 1
-LastAccessTimeInSecsSinceEpoch: 12341234124314
+File History:
+  DisplayMode: single page
+  File: /home/test.pdf
+  PageNo: 5
+  ZoomLevel: 123.3434
+  FullScreen: 1
+  LastAccessTimeInSecsSinceEpoch: 12341234124314
 
-FileHistoryNode:
+File History:
 
 etc...
 
@@ -25,31 +30,216 @@ etc...
     quits.
 */
 
-/* This is really a job for dynmic string */
-char *FileHistoryList_Serialize(FileHistoryList **root)
-{
+#define STR_FROM_ENUM(val) \
+    if (val == var) \
+        return val##_STR;
 
+/* TODO: probably belongs in a differnet file */
+const char *DisplayModeNameFromEnum(DisplayMode var)
+{
+    STR_FROM_ENUM(DM_SINGLE_PAGE)
+    STR_FROM_ENUM(DM_FACING)
+    STR_FROM_ENUM(DM_CONTINUOUS)
+    STR_FROM_ENUM(DM_CONTINUOUS_FACING)
     return NULL;
 }
 
-char *FileHistoryList_SerializeNode(FileHistoryList *node)
-{
-    return NULL;
-}
+#define IS_STR_ENUM(enumName) \
+    if (Str_Eq(txt, #enumName)) { \
+        *resOut = enumName; \
+        return TRUE; \
+    }
 
-int FileHistoryList_AppendNode(FileHistoryList **root, FileHistoryList *node)
+BOOL DisplayModeEnumFromName(const char *txt, DisplayMode *resOut)
 {
+    IS_STR_ENUM(DM_SINGLE_PAGE)
+    IS_STR_ENUM(DM_FACING)
+    IS_STR_ENUM(DM_CONTINUOUS)
+    IS_STR_ENUM(DM_CONTINUOUS_FACING)
     return FALSE;
 }
 
-FileHistoryList *FileHistoryList_FindNodeByFilePath(FileHistoryList **root, const char *filePath)
+FileHistoryList *FileHistoryList_Node_Create(void)
 {
+    FileHistoryList *node;
+    node = (FileHistoryList*)malloc(sizeof(FileHistoryList));
+    if (!node)
+        return NULL;
+
+    node->next = NULL;
+    node->menuId = INVALID_MENU_ID;
+    node->filePath = NULL;
+    return node;
+}
+
+FileHistoryList *FileHistoryList_Node_CreateFromFilePath(const char *filePath)
+{
+    FileHistoryList *node;
+
+    DBG_OUT("FileHistoryList_Node_CreateFromFilePath() file='%s'\n", filePath);
+    node = FileHistoryList_Node_Create();
+    if (!node)
+        return NULL;
+
+    node->filePath = (const char*)Str_Dup(filePath);
+    if (!node->filePath)
+        goto Error;
+    return node;
+
+Error:
+    FileHistoryList_Node_Free(node);
     return NULL;
 }
 
-int FileHistoryList_RemoveNode(FileHistoryList **root, FileHistoryList *node)
+void FileHistoryList_Node_Free(FileHistoryList *node)
 {
+    assert(node);
+    if (!node) return;
+    free((void*)node->filePath);
+    free((void*)node);
+}
 
+void FileHistoryList_Free(FileHistoryList **root)
+{
+    FileHistoryList *curr, *next;
+    assert(root);
+    if (!root) return;
+
+    curr = *root;
+    while (curr) {
+        next = curr->next;
+        FileHistoryList_Node_Free(curr);
+        curr = next;
+    }
+
+    *root = NULL;
+}
+
+static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString_t *strOut)
+{
+    char *          fileNameEscaped = NULL;
+
+    assert(node);
+    if (!node) return FALSE;
+    assert(strOut);
+    if (!strOut) return FALSE;
+
+    DStringSprintf(strOut, "%s:\n", FILE_HISTORY_STR);
+
+    fileNameEscaped = Str_Escape(node->filePath);
+    if (!fileNameEscaped)
+        return FALSE;
+     DStringSprintf(strOut, "  %s: %s\n", FILE_STR, fileNameEscaped);
+
+    free((void*)fileNameEscaped);
+    return TRUE;
+}
+
+BOOL FileHistoryList_Serialize(FileHistoryList **root, DString_t *strOut)
+{
+    FileHistoryList *curr;
+    int              fOk;
+
+    assert(root);
+    if (!root) return FALSE;
+    curr = *root;
+    while (curr) {
+        fOk = FileHistoryList_Node_Serialize(curr, strOut);
+        if (!fOk)
+            return FALSE;
+        curr = curr->next;
+    }
+    return TRUE;
+}
+
+void FileHistoryList_Node_InsertHead(FileHistoryList **root, FileHistoryList *node)
+{
+    assert(root);
+    if (!root) return;
+    node->next = *root;
+    *root = node;
+}
+
+void FileHistoryList_Node_Append(FileHistoryList **root, FileHistoryList *node)
+{
+    FileHistoryList *curr;
+    assert(root);
+    if (!root) return;
+    assert(node);
+    if (!node) return;
+    assert(!node->next);
+    curr = *root;
+    if (!curr) {
+        *root = node;
+        return;
+    }
+    while (curr->next)
+        curr = curr->next;
+    curr->next = node;
+}
+
+FileHistoryList *FileHistoryList_Node_FindByFilePath(FileHistoryList **root, const char *filePath)
+{
+    FileHistoryList *curr;
+
+    assert(root);
+    if (!root) return NULL;
+    assert(filePath);
+    if (!filePath) return NULL;
+
+    curr = *root;
+    while (curr) {
+        assert(curr->filePath);
+        if (Str_Eq(filePath, curr->filePath))
+            return curr;
+        curr = curr->next;
+    }
+
+    return NULL;
+}
+
+BOOL FileHistoryList_Node_RemoveByFilePath(FileHistoryList **root, const char *filePath)
+{
+    FileHistoryList *node;
+
+    assert(root);
+    if (!root) return FALSE;
+    assert(filePath);
+    if (!filePath) return FALSE;
+
+    /* TODO: traversing the list twice, but it's small so we don't care */
+    node = FileHistoryList_Node_FindByFilePath(root, filePath);
+    if (!node)
+        return FALSE;
+
+    return FileHistoryList_Node_RemoveAndFree(root, node);
+}
+
+BOOL FileHistoryList_Node_RemoveAndFree(FileHistoryList **root, FileHistoryList *node)
+{
+    FileHistoryList **prev;
+
+    assert(root);
+    if (!root) return FALSE;
+
+    if (node == *root) {
+        *root = node->next;
+        goto Free;
+    }
+
+    prev = root;
+    while (*prev) {
+        if ((*prev)->next == node) {
+            (*prev)->next = node->next;
+            goto Free;
+        }
+        prev = &((*prev)->next);
+    }
+
+    /* TODO: should I free it anyway? */
     return FALSE;
+Free:
+    FileHistoryList_Node_Free(node);
+    return TRUE;
 }
 

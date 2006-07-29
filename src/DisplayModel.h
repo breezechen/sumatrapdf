@@ -51,7 +51,16 @@
 class SplashBitmap;
 class PDFDoc;
 class SplashOutputDev;
+class Link;
 class Links;
+class LinkGoTo;
+class LinkGoToR;
+class LinkURI;
+class LinkLaunch;
+class LinkNamed;
+
+/* must be implemented somewhere else */
+extern void LaunchBrowser(const char *uri);
 
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
@@ -69,26 +78,37 @@ class Links;
 
 #define INVALID_ROTATION    -1
 
-/* the distance between a page and window border edges, in pixels */
-#define PADDING_PAGE_BORDER_TOP      2
-#define PADDING_PAGE_BORDER_BOTTOM   2
-#define PADDING_PAGE_BORDER_LEFT     4
-#define PADDING_PAGE_BORDER_RIGHT    4
-/* the distance between pages in x axis, in pixels. Only applicable if
-   pagesAtATime > 1 */
-#define PADDING_BETWEEN_PAGES_X      8
-/* the distance between pages in y axis, in pixels. Only applicable if
-   more than one page in y axis (continuous mode) */
-#define PADDING_BETWEEN_PAGES_Y      3
+typedef struct DisplaySettings {
+    int     paddingPageBorderTop;
+    int     paddingPageBorderBottom;
+    int     paddingPageBorderLeft;
+    int     paddingPageBorderRight;
+    int     paddingBetweenPagesX;
+    int     paddingBetweenPagesY;
+} DisplaySettings;
+
+DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
+
+/* TODO: probably move this to some other file, it only needs to be shared by
+   FileHistory.c and main.cc */
+enum DisplayMode {
+    DM_FIRST = 1,
+    DM_SINGLE_PAGE = DM_FIRST,
+    DM_FACING,
+    DM_CONTINUOUS,
+    DM_CONTINUOUS_FACING,
+    DM_LAST = DM_CONTINUOUS_FACING
+};
 
 /* Describes a link on PDF page. */
 typedef struct PdfLink {
-    /* on which Pdf page the link exists. 1..pageCount */
-    int             pageNo;
-    RectD           rectPage; /* position of the link on the page */
+    int             pageNo;     /* on which Pdf page the link exists. 1..pageCount */
+    Link *          link;       /* a reference to a link; we don't own it */
+    RectD           rectPage;   /* position of the link on the page */
     SimpleRect      rectCanvas; /* position of the link on canvas */
 } PdfLink;
 
+/* Describes many attributes of one page in one, convenient place */
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
        recorded in PDF file */
@@ -194,6 +214,8 @@ typedef struct DisplayModel {
 } DisplayModel;
 
 bool          ValidZoomVirtual(double zoomVirtual);
+BOOL          ValidDisplayMode(DisplayMode dm);
+bool          ValidRotation(int rotation);
 
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
@@ -204,6 +226,9 @@ void          DisplayModel_Delete(DisplayModel *dm);
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
 
 int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
+double        DisplayModel_GetZoomReal(DisplayModel *dm);
+double        DisplayModel_GetZoomVirtual(DisplayModel *dm);
+int           DisplayModel_GetRotation(DisplayModel *dm);
 
 void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY);
 bool          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
@@ -245,6 +270,11 @@ void          DisplayModel_RecalcVisibleParts(DisplayModel *dm);
 void          DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawAreaSize);
 
 PdfLink *     DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y);
+void          DisplayModel_HandleLinkGoTo(DisplayModel *dm, LinkGoTo *linkGoTo);
+void          DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoToR);
+void          DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI);
+void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch);
+void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);

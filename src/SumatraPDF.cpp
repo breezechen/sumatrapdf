@@ -16,6 +16,8 @@
 #include "PDFDoc.h"
 #include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
 #include "SplashOutputDev.h"
+#include "Link.h"
+
 #include "Win32FontList.h"
 #include "strlist_util.h"
 #include "file_util.h"
@@ -109,6 +111,7 @@ typedef struct WindowInfo {
     HDC             hdcDoubleBuffer;
     HBITMAP         bmpDoubleBuffer;
     WinState        state;
+    PdfLink *       linkOnLastButtonDown;
 } WindowInfo;
 
 static SplashColor splashColRed;
@@ -1243,6 +1246,79 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     }
 }
 
+static void HandleLink(DisplayModel *dm, PdfLink *pdfLink)
+{
+    Link *          link;
+    LinkAction *    action;
+    LinkActionKind  actionKind;
+
+    assert(dm);
+    if (!dm) return;
+
+    assert(pdfLink);
+    if (!pdfLink) return;
+
+    link = pdfLink->link;
+    assert(link);
+    if (!link) return;
+
+    action = link->getAction();
+    actionKind = action->getKind();
+
+    switch (actionKind) {
+        case actionGoTo:
+            DisplayModel_HandleLinkGoTo(dm, (LinkGoTo*)action);
+            break;
+        case actionGoToR:
+            DisplayModel_HandleLinkGoToR(dm, (LinkGoToR*)action);
+            break;
+        case actionLaunch:
+            DisplayModel_HandleLinkLaunch(dm, (LinkLaunch*)action);
+            break;
+        case actionURI:
+            DisplayModel_HandleLinkURI(dm, (LinkURI*)action);
+            break;
+        case actionNamed:
+            DisplayModel_HandleLinkNamed(dm, (LinkNamed *)action);
+            break;
+        default:
+            /* other kinds are not supported */
+            break;
+    }
+}
+
+static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
+{
+    assert(win);
+    if (!win) return;
+    if (!win->dm)
+        return;
+    win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+}
+
+void LaunchBrowser(const char *uri)
+{
+    /* TODO: implement me */
+}
+
+static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
+{
+    PdfLink *   link;
+
+    assert(win);
+    if (!win) return;
+    if (!win->dm)
+        return;
+
+    if (!win->linkOnLastButtonDown)
+        return;
+
+    link = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+    if (link && (link == win->linkOnLastButtonDown))
+        HandleLink(win->dm, link);
+    win->linkOnLastButtonDown = NULL;
+}
+
 static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
 {
     DisplayModel *  dm;
@@ -1256,10 +1332,10 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
     link = DisplayModel_GetLinkAtPosition(dm, x, y);
     if (link) {
         SetCursor(LoadCursor(NULL, IDC_HAND));
+        //DBG_OUT("OnMoseMove(): found link at pos (%d,%d)\n", x, y);
     } else {
         SetCursor(LoadCursor(NULL, IDC_ARROW));
     }
-    DBG_OUT("OnMoseMove(): found link at pos (%d,%d)\n", x, y);
 }
 
 static void OnPaint(WindowInfo *win)
@@ -1845,6 +1921,15 @@ InitMouseWheelInfo:
         case WM_MOUSEMOVE:
             if (win)
                 OnMouseMove(win, LOWORD(lParam), HIWORD(lParam), wParam);
+            break;
+
+        case WM_LBUTTONDOWN:
+            if (win)
+                OnMouseLeftButtonDown(win, LOWORD(lParam), HIWORD(lParam));
+            break;
+        case WM_LBUTTONUP:
+            if (win)
+                OnMouseLeftButtonUp(win, LOWORD(lParam), HIWORD(lParam));
             break;
 
         case WM_DROPFILES:

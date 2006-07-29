@@ -11,6 +11,48 @@
 #include "PDFDoc.h"
 #include "BaseUtils.h"
 
+/* the distance between a page and window border edges, in pixels */
+#define PADDING_PAGE_BORDER_TOP_DEF      2
+#define PADDING_PAGE_BORDER_BOTTOM_DEF   2
+#define PADDING_PAGE_BORDER_LEFT_DEF     2
+#define PADDING_PAGE_BORDER_RIGHT_DEF    2
+/* the distance between pages in x axis, in pixels. Only applicable if
+   pagesAtATime > 1 */
+#define PADDING_BETWEEN_PAGES_X_DEF      4
+/* the distance between pages in y axis, in pixels. Only applicable if
+   more than one page in y axis (continuous mode) */
+#define PADDING_BETWEEN_PAGES_Y_DEF      3
+
+#define PADDING_PAGE_BORDER_TOP      gDisplaySettings.paddingPageBorderTop
+#define PADDING_PAGE_BORDER_BOTTOM   gDisplaySettings.paddingPageBorderBottom
+#define PADDING_PAGE_BORDER_LEFT     gDisplaySettings.paddingPageBorderLeft
+#define PADDING_PAGE_BORDER_RIGHT    gDisplaySettings.paddingPageBorderRight
+#define PADDING_BETWEEN_PAGES_X      gDisplaySettings.paddingBetweenPagesX
+#define PADDING_BETWEEN_PAGES_Y      gDisplaySettings.paddingBetweenPagesY
+
+static DisplaySettings gDisplaySettings = {
+  PADDING_PAGE_BORDER_TOP_DEF,
+  PADDING_PAGE_BORDER_BOTTOM_DEF,
+  PADDING_PAGE_BORDER_LEFT_DEF,
+  PADDING_PAGE_BORDER_RIGHT_DEF,
+  PADDING_BETWEEN_PAGES_X_DEF,
+  PADDING_BETWEEN_PAGES_Y_DEF
+};
+
+BOOL ValidDisplayMode(DisplayMode dm)
+{
+    if ((int)dm <= (int)DM_FIRST)
+        return FALSE;
+    if ((int)dm >= (int)DM_LAST)
+        return FALSE;
+    return TRUE;
+}
+
+DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void)
+{
+    return &gDisplaySettings;
+}
+
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
 {
     Object obj;
@@ -129,7 +171,7 @@ static void NormalizeRotation(int *rotation)
         *rotation -= 360;
 }
 
-static bool ValidRotation(int rotation)
+bool ValidRotation(int rotation)
 {
     NormalizeRotation(&rotation);
     if ((0 == rotation) || (90 == rotation) ||
@@ -299,13 +341,27 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
     }
 }
 
+void DisplayModel_FreeLinks(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+
+    DBG_OUT("DisplayModel_FreeBitmaps()\n");
+    for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
+        delete dm->pagesInfo[pageNo-1].links;
+        dm->pagesInfo[pageNo-1].links = NULL;
+    }
+}
+
 void DisplayModel_Delete(DisplayModel *dm)
 {
     if (!dm) return;
 
     DisplayModel_FreeBitmaps(dm);
+    DisplayModel_FreeLinks(dm);
 
     delete dm->outputDevice;
+    free((void*)dm->links);
     free((void*)dm->pagesInfo);
     delete dm->pdfDoc;
     free((void*)dm);
@@ -408,7 +464,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         pageInfo->visible = false;
     }
 
-    //DumpLinks(dm, pdfDoc);
+    DumpLinks(dm, pdfDoc);
     return dm;
 Error:
     if (dm)
@@ -463,6 +519,31 @@ int DisplayModel_GetCurrentPageNo(DisplayModel *dm)
 Exit:
     DBG_OUT("DisplayModel_GetCurrentPageNo() currPageNo=%d\n", currPageNo);
     return currPageNo;
+}
+
+int DisplayModel_GetRotation(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return 0;
+    return dm->rotation;
+}
+
+double DisplayModel_GetZoomVirtual(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return 100.0;
+
+    DBG_OUT("DisplayModel_GetZoomVirtual() zoom=%.2f\n", dm->zoomVirtual);
+    return dm->zoomVirtual;
+}
+
+double DisplayModel_GetZoomReal(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return 100.0;
+
+    DBG_OUT("DisplayModel_GetZoomReal() zoom=%.2f\n", dm->zoomReal);
+    return dm->zoomReal;
 }
 
 PdfPageInfo* DisplayModel_FindFirstVisiblePage(DisplayModel *dm)
@@ -1107,6 +1188,7 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
             assert(currPdfLink->rectPage.dx >= 0);
             assert(currPdfLink->rectPage.dy >= 0);
             currPdfLink->pageNo = pageNo;
+            currPdfLink->link = link;
             ++currPdfLinkNo;
         }
     }
@@ -1364,6 +1446,9 @@ PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
     assert(dm);
     if (!dm) return NULL;
 
+    if (0 == dm->linkCount)
+        return NULL;
+
     assert(dm->links);
 
     canvasPosX = x + (int)dm->areaOffset.x;
@@ -1376,3 +1461,80 @@ PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
     }
     return NULL;
 }
+
+void DisplayModel_HandleLinkGoTo(DisplayModel *dm, LinkGoTo *linkGoTo)
+{
+    LinkDest *      linkDest;
+    UGooString *    linkNamedDest;
+
+    assert(dm);
+    if (!dm) return;
+    assert(linkGoTo);
+    if (!linkGoTo) return;
+
+    /* TODO: not implemented because don't have test pdf file */
+    assert(0);
+    linkDest = linkGoTo->getDest();
+    linkNamedDest = linkGoTo->getNamedDest();
+}
+
+void DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoToR)
+{
+    LinkDest *      linkDest;
+    UGooString *    linkNamedDest;
+    GooString *     fileName;
+
+    assert(dm);
+    if (!dm) return;
+    assert(linkGoToR);
+    if (!linkGoToR) return;
+
+    /* TODO: not implemented because don't have test pdf file */
+    assert(0);
+    fileName = linkGoToR->getFileName();
+    linkDest = linkGoToR->getDest();
+    linkNamedDest = linkGoToR->getNamedDest();
+}
+
+void DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI)
+{
+    const char *uri;
+
+    uri = linkURI->getURI()->getCString();
+    if (Str_Empty(uri))
+        return;
+    LaunchBrowser(uri);
+}
+
+void DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch)
+{
+    GooString *     fileName;
+    GooString *     params;
+
+    assert(dm);
+    if (!dm) return;
+    assert(linkLaunch);
+    if (!linkLaunch) return;
+
+    fileName = linkLaunch->getFileName();
+    params = linkLaunch->getParams();
+    /* TODO: not tested since I don't know what should happen and have no
+       test pdf file */
+    assert(0);
+}
+
+void DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed)
+{
+    GooString * name;
+
+    assert(dm);
+    if (!dm) return;
+    assert(linkNamed);
+    if (!linkNamed) return;
+
+    name = linkNamed->getName();
+    /* TODO: not tested since I don't know what should happen and have no
+       test pdf file */
+    assert(0);
+}
+

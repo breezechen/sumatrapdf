@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <limits.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -17,6 +21,10 @@ extern "C"
 #endif
 #endif
 
+#ifndef BOOL
+#define BOOL int
+#endif
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -25,13 +33,17 @@ extern "C"
 #define FALSE 0
 #endif
 
-#ifdef WIN32
+#ifndef INVALID_FILE_SIZE
+#define INVALID_FILE_SIZE (unsigned long)-1
+#endif
+
+#ifdef _WIN32
 #define DBG_OUT win32_dbg_out
 #else
 #define DBG_OUT printf
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 #define stricmp strcasecmp
 #endif
 
@@ -44,12 +56,17 @@ void    win32_dbg_out(const char *format, ...);
 #define DIR_SEP_CHAR '/'
 #define DIR_SEP_STR  "/"
 
+#define UNIX_NEWLINE "\x0a"
+#define UNIX_NEWLINE_C 0xa
+
+#define WHITE_SPACE_CHARS " \n\t\r"
+
 /* TODO: consider using standard C macros for SWAP and MIN */
 void        SwapInt(int *one, int *two);
 void        SwapDouble(double *one, double *two);
 int         MinInt(int one, int two);
 
-#ifndef WIN32 /* TODO: should probably be based on MSVC version */
+#ifndef _WIN32 /* TODO: should probably be based on MSVC version */
 /* Re-implementation of Visual Studio C runtime function for c libs that don't
    have it. */
 void    strcpy_s(char *dst, size_t dstLen, char *src);
@@ -65,17 +82,30 @@ char *  Str_DupN(const char *str, size_t len);
 char *  Str_Dup(const char *str);
 int     Str_Eq(const char *str1, const char *str2);
 int     Str_EqNoCase(const char *str1, const char *str2);
-char *  Str_Printf(const char* pFormat, ...);
 int     Str_EndsWithNoCase(const char *txt, const char *end);
-void    Str_StripWs(char *str);
+
+char *  Str_Printf(const char* pFormat, ...);
+
+void    Str_StripWsLeft(char *str);
+void    Str_StripWsRight(char *str);
+void    Str_StripWsBoth(char *str);
 void    Str_SkipWs(char **txtInOut);
+
+char *  Str_SplitIter(char **txt, char c);
+
+char *  Str_NormalizeNewline(char *txt, const char *replace);
+
 char *  Str_ParseQuoted(char **txt);
 char *  Str_ParseNonQuoted(char **txt);
 char *  Str_ParsePossiblyQuoted(char **txt);
+char *  Str_Escape(const char *txt);
 
 char *  Str_PathJoin(const char *path, const char *fileName);
 
 char *  CanonizeAbsolutePath(const char *path);
+
+unsigned long File_GetSize(const char *file_name);
+char *  File_Slurp(const char *file_name, unsigned long *file_size_out);
 
 #ifdef __cplusplus
 }

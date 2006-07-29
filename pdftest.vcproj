@@ -200,6 +200,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\BaseUtils.c"
+				>
+			</File>
+			<File
 				RelativePath=".\poppler\poppler\BuiltinFont.cc"
 				>
 			</File>
@@ -281,6 +285,10 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\GlobalParams.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\GlobalParamsWin.cc"
 				>
 			</File>
 			<File

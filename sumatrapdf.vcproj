@@ -42,7 +42,7 @@
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUG"
+				PreprocessorDefinitions="_WIN32;WIN32;_DEBUG;_WINDOWS;DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -51,6 +51,7 @@
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
 				DisableSpecificWarnings="4996;4244;4267"
+				EnablePREfast="false"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -239,11 +240,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\dstring.c"
+				>
+			</File>
+			<File
 				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\FileHistory.c"
+				RelativePath=".\src\FileHistory.cc"
 				>
 			</File>
 			<File
@@ -578,6 +583,10 @@
 			</File>
 			<File
 				RelativePath=".\src\DisplayModel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\dstring.h"
 				>
 			</File>
 			<File
