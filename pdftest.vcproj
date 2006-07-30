@@ -42,7 +42,7 @@
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;DEBUG"
+				PreprocessorDefinitions="_WIN32;WIN32;_DEBUG;_WINDOWS;DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -124,7 +124,7 @@
 				UseUnicodeResponseFiles="true"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="_WIN32;WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -158,6 +158,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="true"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"

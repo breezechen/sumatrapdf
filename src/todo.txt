@@ -1,6 +1,6 @@
 TODO list for Sumatra PDF.
 
-Must have before next release:
+Must have before next (0.2) release:
 - drawing issues resolved (SetDIBSToDevice is driving me crazy)
 - reimplement void WinPDFCore::resizeToPage(int pg)
 - much better "About" box
@@ -8,9 +8,9 @@ Must have before next release:
 - handle links (actions)
 - Ctrl-G - "go to page" dialog
 - "Go To" (next/prev/first/last,page) menu
+- better mapping of fonts, default to some font if can't find a named mapping
 
 Nice to have:
-- use memory mapped files to speedup stuff
 - Widgets should be links as well
 - backspace to do the opposite of space
 - access encrypted files
@@ -54,6 +54,7 @@ Nice to have:
  - custom caption area
 - replace windows font scanning code with a better version from mupdf
 - C:\kjk\downloads\6.05.HowToBeCreative.pdf popup on every page (but FoxIt PDF also does that)
+- use memory mapped files to speedup stuff
 
 Done:
 - facing and continuous facing mode
