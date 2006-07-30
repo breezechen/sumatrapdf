@@ -617,7 +617,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
     if (!dm->continuousMode)
         dm->areaOffset.y = (double)scrollY;
     else
-        dm->areaOffset.y = pageInfo->currPosY + (double)scrollY;
+        dm->areaOffset.y = pageInfo->currPosY - PADDING_PAGE_BORDER_TOP + (double)scrollY;
     /* TODO: prevent scrolling too far */
 
     DisplayModel_RecalcVisibleParts(dm);
@@ -1228,6 +1228,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     double      pageOffX;
     int         pagesLeft;
     int         pageInARow;
+    int         rows = 0;
 
     assert(dm);
     if (!dm) return;
@@ -1261,7 +1262,6 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             assert(!pageInfo->visible);
             continue;
         }
-
         PageSizeAfterRotation(pageInfo, rotation, &pageDx, &pageDy);
         currDxInt = (int)(pageDx * dm->zoomReal * 0.01 + 0.5);
         currDyInt = (int)(pageDy * dm->zoomReal * 0.01 + 0.5);
@@ -1289,6 +1289,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
                 totalAreaDx = thisRowDx;
             pagesLeft = dm->pagesAtATime;
             currPosX = PADDING_PAGE_BORDER_LEFT;
+            ++rows;
         }
         DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
@@ -1303,7 +1304,9 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
         if (totalAreaDx < thisRowDx)
             totalAreaDx = thisRowDx;
     }
-    currPosY += (PADDING_PAGE_BORDER_BOTTOM - PADDING_BETWEEN_PAGES_Y);
+
+    if (1 == rows)
+        currPosY -= PADDING_BETWEEN_PAGES_Y;
 
     /* since pages can be smaller than the drawing area, center them in x axis */
     if (totalAreaDx < dm->drawAreaSize.dx) {

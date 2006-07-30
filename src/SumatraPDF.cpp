@@ -1174,6 +1174,9 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     SimpleRect            intersect;
     SimpleRect            rectLink;
     RECT                  rectScreen;
+    HBITMAP               hbmp = NULL;
+    BITMAPINFOHEADER      bmih;
+    HDC                   bmpDC = NULL;
 
     assert(win);
     if (!win) return;
@@ -1182,8 +1185,6 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     if (!dm) return;
     assert(dm->pdfDoc);
     if (!dm->pdfDoc) return;
-
-    //DBG_OUT("DisplayModel_Draw(), bound=(x=%d, y=%d, dx=%d, dy=%d)\n", bounds.x, bounds.y, bounds.w, bounds.h);
 
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
@@ -1206,15 +1207,6 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         splashBmpData = splashBmp->getDataPtr();
         splashBmpColorMode = splashBmp->getMode();
 
-        win->dibInfo->bmiHeader.biWidth = splashBmpDx;
-
-#ifdef BITMAP_TOP_DOWN
-        win->dibInfo->bmiHeader.biHeight = -splashBmpDy;
-#else
-        win->dibInfo->bmiHeader.biHeight = splashBmpDy;
-#endif
-        win->dibInfo->bmiHeader.biSizeImage = splashBmpDy * splashBmpRowSize;
-
         xSrc = (int)pageInfo->bitmapX;
         ySrc = (int)pageInfo->bitmapY;
         bmpDx = (int)pageInfo->bitmapDx;
@@ -1222,29 +1214,28 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         xDest = (int)pageInfo->screenX;
         yDest = (int)pageInfo->screenY;
 
-#ifdef BITMAP_TOP_DOWN
-        /* TODO: I don't understand why I have to do this trick with offsetDiff,
-           it shouldn't be necessary */
-        ySrc = -ySrc;
-#else
-        ySrc = ySrc + bmpDy;
-#endif
+        bmih.biSize = sizeof(bmih);
+        bmih.biHeight = -splashBmpDy;
+        bmih.biWidth = splashBmpDx;
+        bmih.biPlanes = 1;
+        bmih.biBitCount = 24;
+        bmih.biCompression = BI_RGB;
+        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
+        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+        bmih.biClrUsed = bmih.biClrImportant = 0;
 
-        DBG_OUT("  SetDIBBitsToDevice(): pg=%2d, xDest=%d, yDest=%d, dx=%d, dy=%d, xSrc=%d, ySrc=%d\n",
-            pageNo, xDest, yDest, bmpDx, bmpDy, xSrc, ySrc);
-        SetDIBitsToDevice(hdc,
-            xDest, /* destx */
-            yDest, /* desty */
-            bmpDx, /* destw */
-            bmpDy, /* desth */
-            xSrc, /* srcx */
-            ySrc, /* srcy */
-            0, /* startscan */
-            splashBmpDy, /* numscans */
-            splashBmpData, /* pBits */
-            win->dibInfo, /* pInfo */
-            DIB_RGB_COLORS /* color use flag */
-        );
+        hbmp = CreateDIBitmap(hdc, &bmih, CBM_INIT, splashBmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
+        if (hbmp) {
+            bmpDC = CreateCompatibleDC(hdc);
+            if (bmpDC) {
+                SelectObject(bmpDC, hbmp);
+                BitBlt(hdc, xDest, yDest, bmpDx, bmpDy, bmpDC, xSrc, ySrc, SRCCOPY);
+                DeleteDC(bmpDC);
+                bmpDC = NULL;
+            }
+            DeleteObject(hbmp);
+            hbmp = NULL;
+        }
     }
 
     if (!dm->debugShowLinks)

@@ -44,7 +44,7 @@ POPUP "&View"
     MENUITEM "Facing",    		    IDM_VIEW_FACING
     MENUITEM "Continuous",    		IDM_VIEW_CONTINUOUS
     MENUITEM "Continuous facing",   IDM_VIEW_CONTINUOUS_FACING
-	/* TODO: put separator here */
+    MENUITEM SEPARATOR
 	MENUITEM "Rotate left",			IDM_VIEW_ROTATE_LEFT
 	MENUITEM "Rotate right",        IDM_VIEW_ROTATE_RIGHT
 	END
