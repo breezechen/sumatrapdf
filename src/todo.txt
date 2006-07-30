@@ -3,16 +3,14 @@ TODO list for Sumatra PDF.
 Must have before next (0.2) release:
 - reimplement void WinPDFCore::resizeToPage(int pg)
 - much better "About" box
-- bug: window size slightly changes at startup, don't know why
 - handle links (actions)
 - Ctrl-G - "go to page" dialog
 - "Go To" (next/prev/first/last,page) menu
 - better mapping of fonts, default to some font if can't find a named mapping
+- access encrypted files
 
 Nice to have:
 - Widgets should be links as well
-- backspace to do the opposite of space
-- access encrypted files
 - remember the history of opened files (infinite "Recent Files"). Remember file name and
   UI state (windows posisition, current page, zoom level, scroll position) at the time
   file was close. Restore the UI state when file is re-opened. That way user gets where
@@ -56,6 +54,9 @@ Nice to have:
 - use memory mapped files to speedup stuff
 
 Done:
+- fix flicker with double buffering
+- backspace to do the opposite of space
+- bug: window size slightly changes at startup, don't know why
 - drawing issues resolved (SetDIBSToDevice is driving me crazy)
 - facing and continuous facing mode
 - Rotate left/right

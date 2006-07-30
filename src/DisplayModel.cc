@@ -17,8 +17,8 @@
 #define ACTION_LAST_PAGE    "LastPage"
 
 /* the default distance between a page and window border edges, in pixels */
-#define PADDING_PAGE_BORDER_TOP_DEF      2
-#define PADDING_PAGE_BORDER_BOTTOM_DEF   2
+#define PADDING_PAGE_BORDER_TOP_DEF      4
+#define PADDING_PAGE_BORDER_BOTTOM_DEF   PADDING_PAGE_BORDER_TOP_DEF
 #define PADDING_PAGE_BORDER_LEFT_DEF     2
 #define PADDING_PAGE_BORDER_RIGHT_DEF    2
 /* the distance between pages in x axis, in pixels. Only applicable if
@@ -26,7 +26,7 @@
 #define PADDING_BETWEEN_PAGES_X_DEF      4
 /* the distance between pages in y axis, in pixels. Only applicable if
    more than one page in y axis (continuous mode) */
-#define PADDING_BETWEEN_PAGES_Y_DEF      3
+#define PADDING_BETWEEN_PAGES_Y_DEF      PADDING_PAGE_BORDER_TOP_DEF * 2
 
 #define PADDING_PAGE_BORDER_TOP      gDisplaySettings.paddingPageBorderTop
 #define PADDING_PAGE_BORDER_BOTTOM   gDisplaySettings.paddingPageBorderBottom
@@ -849,13 +849,15 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
 
 void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage)
 {
+    int     toScroll;
     assert(dm);
     if (!dm) return;
 
+    toScroll = (int)dm->drawAreaSize.dy;
     if (forward)
-        DisplayModel_ScrollYBy(dm, (int)dm->drawAreaSize.dy, changePage);
+        DisplayModel_ScrollYBy(dm, toScroll, changePage);
     else
-        DisplayModel_ScrollYBy(dm, -(int)dm->drawAreaSize.dy, changePage);
+        DisplayModel_ScrollYBy(dm, -toScroll, changePage);
 }
 
 void DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime)
@@ -1305,9 +1307,6 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             totalAreaDx = thisRowDx;
     }
 
-    if (1 == rows)
-        currPosY -= PADDING_BETWEEN_PAGES_Y;
-
     /* since pages can be smaller than the drawing area, center them in x axis */
     if (totalAreaDx < dm->drawAreaSize.dx) {
         offX = (dm->drawAreaSize.dx - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
@@ -1335,7 +1334,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     }
 
     /* if a page is smaller than drawing area in y axis, y-center the page */
-    totalAreaDy = currPosY + PADDING_PAGE_BORDER_BOTTOM;
+    totalAreaDy = currPosY + PADDING_PAGE_BORDER_BOTTOM - PADDING_BETWEEN_PAGES_Y;
     if (totalAreaDy < dm->drawAreaSize.dy) {
         offY = PADDING_PAGE_BORDER_TOP + (dm->drawAreaSize.dy - totalAreaDy) / 2;
         DBG_OUT("  offY = %.2f\n", offY);

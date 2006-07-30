@@ -1186,6 +1186,9 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     assert(dm->pdfDoc);
     if (!dm->pdfDoc) return;
 
+    assert(win->hdcToDraw);
+    hdc = win->hdcToDraw;
+
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
@@ -1384,8 +1387,8 @@ static void OnPaint(WindowInfo *win)
 #if 0
         if (VS_AMIGA == gVisualStyle)
             AmigaCaptionDraw(win);
-        WindowInfo_DoubleBuffer_Show(win, hdc);
 #endif
+        WindowInfo_DoubleBuffer_Show(win, hdc);
     }
     EndPaint(win->hwnd, &ps);
 }
@@ -1569,22 +1572,10 @@ static void OnKeydown(WindowInfo *win, int key)
 
 static void OnChar(WindowInfo *win, int key)
 {
-    if (' ' == key) {
-        /*  Space does smart scrolling.
-            TODO: Overlapp scrolling?
-            TODO: backspace should scroll in the opposite direction.
-        */
-        SCROLLINFO si;
-        si.cbSize = sizeof(SCROLLINFO);
-        si.fMask = SIF_RANGE|SIF_POS|SIF_PAGE;
-        GetScrollInfo(win->hwnd, SB_VERT, &si);
-        if (si.nPos + (int)si.nPage >= si.nMax)
-        {
-            if (win->dm)
-                DisplayModel_GoToNextPage(win->dm, 0);
-        }
-        else
-            SendMessage(win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0);
+    if (VK_SPACE == key) {
+        DisplayModel_ScrollYByAreaDy(win->dm, true, true);
+    } else if (VK_BACK == key) {
+        DisplayModel_ScrollYByAreaDy(win->dm, false, true);
     } else if ('k' == key) {
         SendMessage(win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
     } else if ('j' == key) {
