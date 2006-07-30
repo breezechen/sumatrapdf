@@ -17,7 +17,11 @@
 #define ACTION_LAST_PAGE    "LastPage"
 
 /* the default distance between a page and window border edges, in pixels */
-#define PADDING_PAGE_BORDER_TOP_DEF      4
+#ifdef _WIN32
+  #define PADDING_PAGE_BORDER_TOP_DEF      6
+#else
+  #define PADDING_PAGE_BORDER_TOP_DEF      4
+#endif
 #define PADDING_PAGE_BORDER_BOTTOM_DEF   PADDING_PAGE_BORDER_TOP_DEF
 #define PADDING_PAGE_BORDER_LEFT_DEF     2
 #define PADDING_PAGE_BORDER_RIGHT_DEF    2
@@ -56,6 +60,25 @@ BOOL ValidDisplayMode(DisplayMode dm)
 DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void)
 {
     return &gDisplaySettings;
+}
+
+
+void GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *pagesAtATime)
+{
+    if (DM_SINGLE_PAGE == displayMode) {
+        *continuous = FALSE;
+        *pagesAtATime = 1;
+    } else if (DM_FACING == displayMode) {
+        *continuous = FALSE;
+        *pagesAtATime = 2;
+    } else if (DM_CONTINUOUS == displayMode) {
+        *continuous = TRUE;
+        *pagesAtATime = 1;
+    } else if (DM_CONTINUOUS_FACING == displayMode) {
+        *continuous = TRUE;
+        *pagesAtATime = 2;
+    } else
+        assert(0);
 }
 
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
@@ -1205,7 +1228,6 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
     dm->linkCount = linkCount;
     DBG_OUT("DisplayModel_RecalcLinks() new link count: %d\n", dm->linkCount);
 }
-
 
 /* Given PDFDoc and zoom/rotation, calculate the position of each page on a
    large sheet that is continous view. Needs to be recalculated when:

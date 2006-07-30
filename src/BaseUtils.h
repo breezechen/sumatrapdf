@@ -37,10 +37,14 @@ extern "C"
 #define INVALID_FILE_SIZE (unsigned long)-1
 #endif
 
-#ifdef _WIN32
-#define DBG_OUT win32_dbg_out
+#ifdef DEBUG
+  #ifdef _WIN32
+  #define DBG_OUT win32_dbg_out
+  #else
+  #define DBG_OUT printf
+  #endif
 #else
-#define DBG_OUT printf
+  #define DBG_OUT
 #endif
 
 #ifndef _WIN32

@@ -26,8 +26,6 @@
 #include "DisplayModel.h"
 #include "BaseUtils.h"
 
-#define BITMAP_TOP_DOWN
-
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
@@ -52,8 +50,7 @@ enum WinState {
 //#define DEBUG_SHOW_LINKS            1
 
 /* default UI settings */
-#define DEFAULT_CONTINUOUS          TRUE
-#define DEFAULT_PAGES_AT_A_TIME     1
+#define DEFAULT_DISPLAY_MODE DM_SINGLE_PAGE
 
 //#define DEFAULT_ZOOM         ZOOM_FIT_WIDTH
 #define DEFAULT_ZOOM         ZOOM_FIT_PAGE
@@ -115,46 +112,55 @@ typedef struct WindowInfo {
     PdfLink *       linkOnLastButtonDown;
 } WindowInfo;
 
-static SplashColor splashColRed;
-static SplashColor splashColGreen;
-static SplashColor splashColBlue;
-static SplashColor splashColWhite;
-static SplashColor splashColBlack;
+static SplashColor                  splashColRed;
+static SplashColor                  splashColGreen;
+static SplashColor                  splashColBlue;
+static SplashColor                  splashColWhite;
+static SplashColor                  splashColBlack;
 
-#define SPLASH_COL_RED_PTR (SplashColorPtr)&(splashColRed[0])
-#define SPLASH_COL_GREEN_PTR (SplashColorPtr)&(splashColGreen[0])
-#define SPLASH_COL_BLUE_PTR (SplashColorPtr)&(splashColBlue[0])
-#define SPLASH_COL_WHITE_PTR (SplashColorPtr)&(splashColWhite[0])
-#define SPLASH_COL_BLACK_PTR (SplashColorPtr)&(splashColBlack[0])
+static HINSTANCE                    ghinst = NULL;
+TCHAR                               szTitle[MAX_LOADSTRING];
 
-static HINSTANCE    ghinst = NULL;
-TCHAR               szTitle[MAX_LOADSTRING];
+static WindowInfo*                  gWindowList = NULL;
 
-static WindowInfo*  gWindowList = NULL;
+static HCURSOR                      gCursorArrow = NULL;
+static HCURSOR                      gCursorWait = NULL;
+static HBRUSH                       gBrushBg;
+static HBRUSH                       gBrushShadow;
+static HBRUSH                       gBrushLinkDebug;
 
-static HCURSOR      gCursorArrow = NULL;
-static HCURSOR      gCursorWait = NULL;
-static HBRUSH       gBrushBg;
-static HBRUSH       gBrushShadow;
-static HBRUSH       gBrushLinkDebug;
+static HPEN                         ghpenWhite = NULL;
+static HPEN                         ghpenBlue = NULL;
 
-static HPEN         ghpenWhite = NULL;
-static HPEN         ghpenBlue = NULL;
+static char *                       gStateFile = NULL;
+static DisplayMode                  gStateDisplayMode = DEFAULT_DISPLAY_MODE;
+static int                          gStatePageNo = 1;
+static int                          gStateRotation = 0;
+static double                       gStateZoomVirtual = 100.0;
+static BOOL                         gStateFullScreen = FALSE;
 
-static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
-static SplashColorMode gSplashColorMode = splashModeBGR8;
+#define SPLASH_COL_RED_PTR          (SplashColorPtr)&(splashColRed[0])
+#define SPLASH_COL_GREEN_PTR        (SplashColorPtr)&(splashColGreen[0])
+#define SPLASH_COL_BLUE_PTR         (SplashColorPtr)&(splashColBlue[0])
+#define SPLASH_COL_WHITE_PTR        (SplashColorPtr)&(splashColWhite[0])
+#define SPLASH_COL_BLACK_PTR        (SplashColorPtr)&(splashColBlack[0])
 
-static AppVisualStyle  gVisualStyle = VS_WINDOWS;
+static SplashColorPtr               gBgColor = SPLASH_COL_WHITE_PTR;
+static SplashColorMode              gSplashColorMode = splashModeBGR8;
 
-static StrList *    gArgListRoot = NULL;
-static char *       gBenchFileName = NULL;
-static int          gBenchPageNum = INVALID_PAGE_NUM;
+static AppVisualStyle               gVisualStyle = VS_WINDOWS;
+
+static StrList *                    gArgListRoot = NULL;
+static char *                       gBenchFileName = NULL;
+static int                          gBenchPageNum = INVALID_PAGE_NUM;
 
 #ifdef DOUBLE_BUFFER
-static BOOL            gUseDoubleBuffer = TRUE;
+static BOOL                         gUseDoubleBuffer = TRUE;
 #else
-static BOOL            gUseDoubleBuffer = FALSE;
+static BOOL                         gUseDoubleBuffer = FALSE;
 #endif
+
+void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 
 void CDECL error(int pos, char *msg, ...) {
     va_list args;
@@ -547,13 +553,11 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     RectDSize       totalDrawAreaSize;
     int             scrollbarYDx, scrollbarXDy;
     SplashOutputDev *outputDev = NULL;
-#ifdef BITMAP_TOP_DOWN
     GBool           bitmapTopDown = gTrue;
-#else
-    GBool           bitmapTopDown = gFalse;
-#endif
-    int             continuous = DEFAULT_CONTINUOUS;
-    int             pagesAtATime = DEFAULT_PAGES_AT_A_TIME;
+    int             continuous;
+    int             pagesAtATime;
+
+    GetStateFromDisplayMode(DEFAULT_DISPLAY_MODE, &continuous, &pagesAtATime);
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -640,6 +644,7 @@ Error:
     } else {
         win->state = WS_SHOWING_PDF;
         DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
+        WindowInfo_ResizeToPage(win, 1);
         DisplayModel_GoToPage(win->dm, 1, 0);
     }
     if (reuse_existing_window)
@@ -798,60 +803,52 @@ void WindowInfo_ResizeToWindow(WindowInfo *win)
     DisplayModel_SetTotalDrawAreaSize(dm, totalDrawAreaSize);
 }
 
-#if 0
-void WinPDFCore::resizeToPage(int pg)
+void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 {
-    int         width, height;
-    double      width1, height1;
-    int         displayW, displayH;
-    int         fullScreen = 0;
-    HDC         hdc = GetDC(win->hwnd);
+    int                 dx, dy;
+    int                 displayDx, displayDy;
+    int                 fullScreen = 0;
+    DisplaySettings *   displaySettings;
+    DisplayModel *      dm;
+    PdfPageInfo *       pageInfo;
+    HDC                 hdc;
 
-    displayW = GetDeviceCaps(hdc, HORZRES);
-    displayH = GetDeviceCaps(hdc, VERTRES);
+    assert(win);
+    if (!win) return;
+    dm = win->dm;
+    assert(dm);
+    if (!dm)
+        return;
+
+    /* TODO: should take current monitor into account? */
+    hdc = GetDC(win->hwnd);
+    displayDx = GetDeviceCaps(hdc, HORZRES);
+    displayDy = GetDeviceCaps(hdc, VERTRES);
 
     if (fullScreen) {
         /* TODO: fullscreen not yet supported */
         assert(0);
-        width = displayW;
-        height = displayH;
+        dx = displayDx;
+        dy = displayDy;
     } else {
-        if (pg < 0 || pg > doc->getNumPages()) {
-            width1 = 612;
-            height1 = 792;
-        } else if (doc->getPageRotate(pg) == 90 ||
-            doc->getPageRotate(pg) == 270) {
-            width1 = doc->getPageCropHeight(pg);
-            height1 = doc->getPageCropWidth(pg);
-        } else {
-            width1 = doc->getPageCropWidth(pg);
-            height1 = doc->getPageCropHeight(pg);
-        }
-
-        if (zoom == zoomPage || zoom == zoomWidth) {
-            width = (int)(width1 * 0.01 * defZoom + 0.5);
-            height = (int)(height1 * 0.01 * defZoom + 0.5);
-        } else {
-            width = (int)(width1 * 0.01 * zoom + 0.5);
-            height = (int)(height1 * 0.01 * zoom + 0.5);
-        }
-
-        if (continuousMode) {
-            height += continuousModePageSpacing;
-        }
-
-        if (width > displayW - 100) {
-            width = displayW - 100;
-        }
-
-        if (height > displayH - 100) {
-            height = displayH - 100;
-        }
+        assert(DisplayModel_ValidPageNo(dm, pageNo));
+        if (!DisplayModel_ValidPageNo(dm, pageNo))
+            return;
+        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        assert(pageInfo);
+        if (!pageInfo)
+            return;
+        displaySettings = DisplayModel_GetGlobalDisplaySettings();
+        dx = pageInfo->currDx + displaySettings->paddingPageBorderLeft + displaySettings->paddingPageBorderRight;
+        dy = pageInfo->currDy + displaySettings->paddingPageBorderTop + displaySettings->paddingPageBorderBottom;
+        if (dx > displayDx - 10)
+            dx = displayDx - 10;
+        if (dy > displayDy - 10)
+            dy = displayDy - 10;
     }
 
-    WinResizeClientArea(win->hwnd, width, height + BORDER_BOTTOM + BORDER_TOP);
+    WinResizeClientArea(win->hwnd, dx, dy);
 }
-#endif
 
 void WindowInfo_ToggleZoom(WindowInfo *win)
 {

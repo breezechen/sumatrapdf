@@ -87,8 +87,6 @@ typedef struct DisplaySettings {
     int     paddingBetweenPagesY;
 } DisplaySettings;
 
-DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
-
 /* TODO: probably move this to some other file, it only needs to be shared by
    FileHistory.c and main.cc */
 enum DisplayMode {
@@ -213,6 +211,9 @@ typedef struct DisplayModel {
     int             debugShowLinks;
 } DisplayModel;
 
+DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
+void             GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *pagesAtATime);
+
 bool          ValidZoomVirtual(double zoomVirtual);
 BOOL          ValidDisplayMode(DisplayMode dm);
 bool          ValidRotation(int rotation);
@@ -225,6 +226,7 @@ void          DisplayModel_Delete(DisplayModel *dm);
 
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
 
+bool          DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo);
 int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
 double        DisplayModel_GetZoomReal(DisplayModel *dm);
 double        DisplayModel_GetZoomVirtual(DisplayModel *dm);
