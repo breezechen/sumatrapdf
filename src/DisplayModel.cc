@@ -1299,7 +1299,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     if (pagesLeft < dm->pagesAtATime) {
         /* this is a partial row that we need to take into account */
         currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
-        thisRowDx = currPosX - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
+        thisRowDx = currPosX + (pageInfo->currDx + PADDING_BETWEEN_PAGES_X) - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
         if (totalAreaDx < thisRowDx)
             totalAreaDx = thisRowDx;
     }

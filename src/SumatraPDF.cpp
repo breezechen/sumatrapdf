@@ -579,7 +579,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     if (!pdfDoc->isOk())
     {
         err = errOpenFile;
-        error(-1, "LoadPdf(): failed to open PDF file %s\n", file_name_str);
+        error(-1, "LoadPdf(): failed to open PDF file %s\n", file_name);
     }
 
     if (close_invalid_files && (errNone != err) && !reuse_existing_window)
