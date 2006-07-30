@@ -69,7 +69,7 @@ int         MinInt(int one, int two);
 #ifndef _WIN32 /* TODO: should probably be based on MSVC version */
 /* Re-implementation of Visual Studio C runtime function for c libs that don't
    have it. */
-void    strcpy_s(char *dst, size_t dstLen, char *src);
+void    strcpy_s(char *dst, size_t dstLen, const char *src);
 #endif
 
 int     Char_IsWs(char c);

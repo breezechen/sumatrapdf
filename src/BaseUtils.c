@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <strsafe.h>
 #else
@@ -161,7 +161,7 @@ int Str_EqNoCase(const char *str1, const char *str2)
 
 char *Str_Printf(const char *format, ...)
 {
-#ifdef WIN32
+#ifdef _WIN32
     HRESULT     hr;
     va_list     args;
     char        message[256];
@@ -549,8 +549,8 @@ char *Str_Escape(const char *txt)
     return Str_Dup(txt);
 }
 
-#ifndef WIN32 /* TODO: should probably be based on MSVC version */
-void strcpy_s(char *dst, size_t dstLen, char *src)
+#ifndef _WIN32 /* TODO: should probably be based on MSVC version */
+void strcpy_s(char *dst, size_t dstLen, const char *src)
 {
     size_t  toCopy;
 
@@ -632,7 +632,7 @@ static char *ExpandUnixHome(const char *path)
    Caller needs to free() the result. */
 char *CanonizeAbsolutePath(const char *path)
 {
-#ifdef WIN32
+#ifdef _WIN32
    /* TODO: needs windows version. */
     assert(0);
     return Str_Dup(path);
@@ -656,7 +656,7 @@ char *CanonizeAbsolutePath(const char *path)
 #endif
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 void win32_dbg_out(const char *format, ...) {
     char        buf[4096], *p = buf;
     va_list     args;
@@ -675,7 +675,7 @@ void win32_dbg_out(const char *format, ...) {
 }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 unsigned long File_GetSize(const char *file_name)
 {
     int                         fOk;

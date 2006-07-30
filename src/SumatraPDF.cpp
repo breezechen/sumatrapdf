@@ -17,6 +17,7 @@
 #include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
 #include "SplashOutputDev.h"
 #include "Link.h"
+#include "SecurityHandler.h"
 
 #include "Win32FontList.h"
 #include "strlist_util.h"
@@ -272,6 +273,32 @@ static void CaptionPens_Destroy(void)
         DeleteObject(ghpenBlue);
         ghpenBlue = NULL;
     }
+}
+
+static char *GetPasswordForFile(const char *fileName)
+{
+    /* TODO: show a dialog */
+    return Str_Dup("kjk");
+}
+
+void *StandardSecurityHandler::getAuthData() 
+{
+    WindowInfo *        winInfo;
+    const char *        pwd;
+    StandardAuthData *  authData;
+
+    winInfo = (WindowInfo*)doc->getGUIData();
+    assert(winInfo);
+    if (!winInfo)
+        return NULL;
+
+    pwd = GetPasswordForFile(doc->getFileName()->getCString());
+    if (!pwd)
+        return NULL;
+
+    authData = new StandardAuthData(new GooString(pwd), new GooString(pwd));
+    free((void*)pwd);
+    return (void*)authData;
 }
 
 static void WindowInfo_GetWindowSize(WindowInfo *win)
@@ -548,7 +575,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         return win;
 
     err = errNone;
-    pdfDoc = new PDFDoc(file_name_str, NULL, NULL, NULL);
+    pdfDoc = new PDFDoc(file_name_str, NULL, NULL, (void*)win);
     if (!pdfDoc->isOk())
     {
         err = errOpenFile;
@@ -560,6 +587,9 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         WindowInfo_Delete(win);
         return NULL;
     }
+
+    if (errNone != err)
+        goto Error;
 
     outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
     if (!outputDev)
@@ -591,6 +621,8 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
 #endif
 
     win->dm->appData = (void*)win;
+
+Error:
     if (!reuse_existing_window) {
         if (errNone != err) {
             if (WindowInfoList_ExistsWithError()) {
@@ -602,14 +634,13 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
         WindowInfoList_Add(win);
     }
 
-    DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
-    DisplayModel_GoToPage(win->dm, 1, 0);
-
     if (errNone != err) {
         win->state = WS_ERROR_LOADING_PDF;
-        DBG_OUT("failed to load file %s, error=%d\n", file_name, err);
+        DBG_OUT("failed to load file %s, error=%d\n", file_name, (int)err);
     } else {
         win->state = WS_SHOWING_PDF;
+        DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
+        DisplayModel_GoToPage(win->dm, 1, 0);
     }
     if (reuse_existing_window)
         WindowInfo_RedrawAll(win);
@@ -2170,6 +2201,7 @@ Exit:
     DeleteObject(gBrushShadow);
     DeleteObject(gBrushLinkDebug);
 
+    delete globalParams;
     //WinFontList_Destroy();
     StrList_Destroy(&gArgListRoot);
     return (int) msg.wParam;

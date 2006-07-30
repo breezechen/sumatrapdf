@@ -11,7 +11,12 @@
 #include "PDFDoc.h"
 #include "BaseUtils.h"
 
-/* the distance between a page and window border edges, in pixels */
+#define ACTION_NEXT_PAGE    "NextPage"
+#define ACTION_PREV_PAGE    "PrevPage"
+#define ACTION_FIRST_PAGE   "FirstPage"
+#define ACTION_LAST_PAGE    "LastPage"
+
+/* the default distance between a page and window border edges, in pixels */
 #define PADDING_PAGE_BORDER_TOP_DEF      2
 #define PADDING_PAGE_BORDER_BOTTOM_DEF   2
 #define PADDING_PAGE_BORDER_LEFT_DEF     2
@@ -256,6 +261,7 @@ PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
     if (!dm) return NULL;
     assert(DisplayModel_ValidPageNo(dm, pageNo));
     assert(dm->pagesInfo);
+    if (!dm->pagesInfo) return NULL;
     return &(dm->pagesInfo[pageNo-1]);
 }
 
@@ -293,6 +299,7 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     assert(dm->outputDevice);
+    if (!dm->outputDevice) return NULL;
     dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks);
     bmp = dm->outputDevice->takeBitmap();
     bmpDx = bmp->getWidth();
@@ -1158,7 +1165,7 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
 
     /* calculate number of links */
     linkCount = 0;
-    for (pageNo = 1; pageNo < dm->pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (!pageInfo->links)
             continue;
@@ -1172,7 +1179,7 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
 
     /* build links info */
     currPdfLinkNo = 0;
-    for (pageNo = 1; pageNo < dm->pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (!pageInfo->links)
             continue;
@@ -1450,6 +1457,8 @@ PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
         return NULL;
 
     assert(dm->links);
+    if (!dm->links)
+        return NULL;
 
     canvasPosX = x + (int)dm->areaOffset.x;
     canvasPosY = y + (int)dm->areaOffset.y;
@@ -1508,24 +1517,19 @@ void DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI)
 
 void DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch)
 {
-    GooString *     fileName;
-    GooString *     params;
-
     assert(dm);
     if (!dm) return;
     assert(linkLaunch);
     if (!linkLaunch) return;
 
-    fileName = linkLaunch->getFileName();
-    params = linkLaunch->getParams();
-    /* TODO: not tested since I don't know what should happen and have no
-       test pdf file */
-    assert(0);
+    /* Launching means executing another application. It's not supported
+       due to security and portability reasons */
 }
 
 void DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed)
 {
     GooString * name;
+    char *      nameTxt;
 
     assert(dm);
     if (!dm) return;
@@ -1533,8 +1537,19 @@ void DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed)
     if (!linkNamed) return;
 
     name = linkNamed->getName();
-    /* TODO: not tested since I don't know what should happen and have no
-       test pdf file */
-    assert(0);
+    if (!name)
+      return;
+    nameTxt = name->getCString();
+    if (Str_Eq(ACTION_NEXT_PAGE, nameTxt)) {
+        DisplayModel_GoToNextPage(dm, 0);
+    } else if (Str_Eq(ACTION_PREV_PAGE, nameTxt)) {
+        DisplayModel_GoToPrevPage(dm, 0);
+    } else if (Str_Eq(ACTION_LAST_PAGE, nameTxt)) {
+        DisplayModel_GoToLastPage(dm);
+    } else if (Str_Eq(ACTION_FIRST_PAGE, nameTxt)) {
+        DisplayModel_GoToFirstPage(dm);
+    } else {
+        /* not supporting: "GoBack", "GoForward", "Quit" */
+    }
 }
 
