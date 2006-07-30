@@ -5,9 +5,9 @@ Must have before next (0.2) release:
 - much better "About" box
 - handle links (actions)
 - Ctrl-G - "go to page" dialog
-- "Go To" (next/prev/first/last,page) menu
 - better mapping of fonts, default to some font if can't find a named mapping
 - access encrypted files
+- Go To page dialog
 
 Nice to have:
 - Widgets should be links as well
@@ -54,6 +54,7 @@ Nice to have:
 - use memory mapped files to speedup stuff
 
 Done:
+- "Go To" (next/prev/first/last,page) menu
 - fix flicker with double buffering
 - backspace to do the opposite of space
 - bug: window size slightly changes at startup, don't know why

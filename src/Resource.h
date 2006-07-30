@@ -38,11 +38,16 @@
 #define IDM_VIEW_CONTINUOUS_FACING 425
 #define IDM_VIEW_ROTATE_LEFT    426
 #define IDM_VIEW_ROTATE_RIGHT   427
+#define IDM_GOTO_NEXT_PAGE      428
+#define IDM_GOTO_PREV_PAGE      429
+#define IDM_GOTO_FIRST_PAGE     430
+#define IDM_GOTO_LAST_PAGE      431
+#define IDM_GOTO_PAGE           432
 
-#define IDI_XPDFWIN             600
+#define IDI_SUMATRAPDF             600
 #define IDI_SMALL               601
 
-#define IDC_XPDFWIN             700
+#define IDC_SUMATRAPDF             700
 #define IDC_MYICON              701
 
 #ifndef IDC_STATIC

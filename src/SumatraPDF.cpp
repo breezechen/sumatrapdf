@@ -1757,6 +1757,52 @@ static void OnMenuViewContinuousFacing(WindowInfo *win)
     DisplayModel_SwitchToContinuousFacing(win->dm);
 }
 
+static void OnMenuGoToNextPage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_GoToNextPage(win->dm, 0);
+}
+
+static void OnMenuGoToPrevPage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_GoToPrevPage(win->dm, 0);
+}
+
+static void OnMenuGoToLastPage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_GoToLastPage(win->dm);
+}
+
+static void OnMenuGoToFirstPage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    DisplayModel_GoToFirstPage(win->dm);
+}
+
+static void OnMenuGoToPage(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    if (!WindowInfo_PdfLoaded(win))
+        return;
+    /* TODO: not implemented yet */
+    assert(0);
+}
+
 static void OnMenuViewRotateLeft(WindowInfo *win)
 {
     RotateLeft(win);
@@ -1847,6 +1893,26 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case IDM_VIEW_CONTINUOUS:
                     OnMenuViewContinuous(win);
+                    break;
+
+                case IDM_GOTO_NEXT_PAGE:
+                    OnMenuGoToNextPage(win);
+                    break;
+
+                case IDM_GOTO_PREV_PAGE:
+                    OnMenuGoToPrevPage(win);
+                    break;
+
+                case IDM_GOTO_FIRST_PAGE:
+                    OnMenuGoToFirstPage(win);
+                    break;
+
+                case IDM_GOTO_LAST_PAGE:
+                    OnMenuGoToLastPage(win);
+                    break;
+
+                case IDM_GOTO_PAGE:
+                    OnMenuGoToPage(win);
                     break;
 
                 case IDM_VIEW_CONTINUOUS_FACING:
@@ -1984,10 +2050,10 @@ BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_XPDFWIN));
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SUMATRAPDF));
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground  = NULL;
-    wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_XPDFWIN);
+    wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_SUMATRAPDF);
     wcex.lpszClassName  = WIN_CLASS_NAME;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -2129,7 +2195,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     if (!InstanceInit(hInstance, nCmdShow))
         goto Exit;
 
-    hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_XPDFWIN));
+    hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
     /* TODO: detect it's not me and show a dialog box ? */
     AssociatePdfWithExe(exeName);
