@@ -20,8 +20,7 @@
 #include "SecurityHandler.h"
 
 #include "Win32FontList.h"
-#include "strlist_util.h"
-#include "file_util.h"
+
 #include "SimpleRect.h"
 #include "DisplayModel.h"
 #include "BaseUtils.h"
@@ -111,6 +110,11 @@ typedef struct WindowInfo {
     WinState        state;
     PdfLink *       linkOnLastButtonDown;
 } WindowInfo;
+
+typedef struct StrList {
+    struct StrList *    next;
+    char *              str;
+} StrList;
 
 static SplashColor                  splashColRed;
 static SplashColor                  splashColGreen;
@@ -213,21 +217,6 @@ const char *FileGetBaseName(const char *path)
 void WinSetText(HWND hwnd, const TCHAR *txt)
 {
     SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)txt);
-}
-
-int isPdfFile(FileInfo *fi)
-{
-    assert(fi);
-    if (!fi) return 0;
-
-#if 0 /* TODO: figure out why doesn't work */
-    if (FileInfo_IsDir(fi))
-        return 0;
-#endif
-
-    if (utf8_endswith(fi->name, ".pdf"))
-        return 1;
-    return 0;
 }
 
 void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
@@ -2092,6 +2081,39 @@ void StrList_Reverse(StrList **strListRoot)
         cur = next;
     }
     *strListRoot = newRoot;
+}
+
+BOOL StrList_InsertAndOwn(StrList **root, char *txt)
+{
+    StrList *   el;
+    assert(root && txt);
+    if (!root || !txt)
+        return FALSE;
+
+    el = (StrList*)malloc(sizeof(StrList));
+    if (!el)
+        return FALSE;
+    el->str = txt;
+    el->next = *root;
+    *root = el;
+    return TRUE;
+}
+
+void StrList_Destroy(StrList **root)
+{
+    StrList *   cur;
+    StrList *   next;
+
+    if (!root)
+        return;
+    cur = *root;
+    while (cur) {
+        next = cur->next;
+        free((void*)cur->str);
+        free((void*)cur);
+        cur = next;
+    }
+    *root = NULL;
 }
 
 StrList *StrList_FromCmdLine(char *cmdLine)

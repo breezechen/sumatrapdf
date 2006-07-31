@@ -192,11 +192,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\poppler\poppler\Array.cc"
+				RelativePath=".\src\AppPrefs.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\base_util.c"
+				RelativePath=".\poppler\poppler\Array.cc"
 				>
 			</File>
 			<File
@@ -236,11 +236,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\dstring.c"
+				RelativePath=".\src\DisplayState.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\file_util.c"
+				RelativePath=".\src\dstring.c"
 				>
 			</File>
 			<File
@@ -468,15 +468,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\str_util.c"
-				>
-			</File>
-			<File
 				RelativePath=".\poppler\poppler\Stream.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\strlist_util.c"
 				>
 			</File>
 			<File
@@ -522,11 +514,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\poppler\poppler\Array.h"
+				RelativePath=".\src\AppPrefs.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\base_util.h"
+				RelativePath=".\poppler\poppler\Array.h"
 				>
 			</File>
 			<File
@@ -578,6 +570,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DisplayState.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\dstring.h"
 				>
 			</File>
@@ -587,10 +583,6 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\ErrorCodes.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\file_util.h"
 				>
 			</File>
 			<File
@@ -842,19 +834,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\str_util.h"
-				>
-			</File>
-			<File
 				RelativePath=".\poppler\poppler\Stream-CCITT.h"
 				>
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\Stream.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\strlist_util.h"
 				>
 			</File>
 			<File
