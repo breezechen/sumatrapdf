@@ -50,9 +50,9 @@ static DisplaySettings gDisplaySettings = {
 
 BOOL ValidDisplayMode(DisplayMode dm)
 {
-    if ((int)dm <= (int)DM_FIRST)
+    if ((int)dm < (int)DM_FIRST)
         return FALSE;
-    if ((int)dm >= (int)DM_LAST)
+    if ((int)dm > (int)DM_LAST)
         return FALSE;
     return TRUE;
 }
@@ -189,25 +189,6 @@ Exit:
     DBG_OUT("DumpLinks() finished\n");
 }
 
-static void NormalizeRotation(int *rotation)
-{
-    assert(rotation);
-    if (!rotation) return;
-    while (*rotation < 0)
-        *rotation += 360;
-    while (*rotation >= 360)
-        *rotation -= 360;
-}
-
-bool ValidRotation(int rotation)
-{
-    NormalizeRotation(&rotation);
-    if ((0 == rotation) || (90 == rotation) ||
-        (180 == rotation) || (270 == rotation))
-        return true;
-    return false;
-}
-
 static int FlippedRotation(int rotation)
 {
     assert(ValidRotation(rotation));
@@ -234,17 +215,6 @@ static bool ValidZoomReal(double zoomReal)
 {
     if ((zoomReal < ZOOM_MIN) || (zoomReal > ZOOM_MAX)) {
         DBG_OUT("ValidZoomReal() invalid zoom: %.4f\n", zoomReal);
-        return false;
-    }
-    return true;
-}
-
-bool ValidZoomVirtual(double zoomVirtual)
-{
-    if ((ZOOM_FIT_PAGE == zoomVirtual) || (ZOOM_FIT_WIDTH == zoomVirtual))
-        return true;
-    if ((zoomVirtual < ZOOM_MIN) || (zoomVirtual > ZOOM_MAX)) {
-        DBG_OUT("ValidZoomVirtual() invalid zoom: %.4f\n", zoomVirtual);
         return false;
     }
     return true;
@@ -1252,7 +1222,6 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     double      pageOffX;
     int         pagesLeft;
     int         pageInARow;
-    int         rows = 0;
 
     assert(dm);
     if (!dm) return;
@@ -1313,7 +1282,6 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
                 totalAreaDx = thisRowDx;
             pagesLeft = dm->pagesAtATime;
             currPosX = PADDING_PAGE_BORDER_LEFT;
-            ++rows;
         }
         DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
@@ -1575,5 +1543,24 @@ void DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed)
     } else {
         /* not supporting: "GoBack", "GoForward", "Quit" */
     }
+}
+
+BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm, DisplayMode mode, BOOL fullScreen)
+{
+    ds->displayMode = mode;
+    ds->filePath = Str_Escape(dm->pdfDoc->getFileName()->getCString());
+    if (!ds->filePath)
+        return FALSE;
+    ds->fullScreen = fullScreen;
+    ds->pageNo = DisplayModel_GetCurrentPageNo(dm);
+    ds->rotation = DisplayModel_GetRotation(dm);
+    ds->zoomVirtual = DisplayModel_GetZoomVirtual(dm);
+    ds->scrollX = (int)dm->areaOffset.x;
+    ds->scrollY = (int)dm->areaOffset.y;
+    ds->windowX = 0;
+    ds->windowY = 0;
+    ds->windowDx = 0;
+    ds->windowDy = 0;
+    return TRUE;
 }
 

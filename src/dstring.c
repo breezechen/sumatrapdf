@@ -49,7 +49,7 @@
  */
 
 void
-DStringInit(DString_t* pDs)
+DStringInit(DString* pDs)
 {
     pDs->pString = pDs->staticSpace;
     pDs->length = 0;
@@ -76,7 +76,7 @@ DStringInit(DString_t* pDs)
  */
 
 char *
-DStringAppend(DString_t *pDs,
+DStringAppend(DString *pDs,
                  const char* string,
                  int         length)
 {
@@ -142,7 +142,7 @@ DStringAppend(DString_t *pDs,
  */
 
 void
-DStringSetLength(DString_t* pDs,
+DStringSetLength(DString* pDs,
                     int         length)
 {
     if (length < 0) {
@@ -190,7 +190,7 @@ DStringSetLength(DString_t* pDs,
  */
 
 void
-DStringFree(DString_t* pDs)
+DStringFree(DString* pDs)
 {
     if (pDs->pString != pDs->staticSpace) {
         free(pDs->pString);
@@ -208,7 +208,7 @@ DStringFree(DString_t* pDs)
  */
 
 void
-DStringSprintf(DString_t* pDs,
+DStringSprintf(DString* pDs,
                    const char* pFormat,
                    ...)
 {
@@ -275,7 +275,7 @@ Error:
  */
 
 char*
-DStringAppendLowerCase(DString_t*   pDs,
+DStringAppendLowerCase(DString*   pDs,
                          const char*    string,
                          int            length)
 {

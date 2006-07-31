@@ -76,6 +76,8 @@ int         MinInt(int one, int two);
 void    strcpy_s(char *dst, size_t dstLen, const char *src);
 #endif
 
+void    memzero(void *dst, size_t len);
+
 int     Char_IsWs(char c);
 int     Char_IsWsOrZero(char c);
 int     Str_Empty(const char *txt);
@@ -97,7 +99,7 @@ void    Str_SkipWs(char **txtInOut);
 
 char *  Str_SplitIter(char **txt, char c);
 
-char *  Str_NormalizeNewline(char *txt, const char *replace);
+char *  Str_NormalizeNewline(const char *txt, const char *replace);
 
 char *  Str_ParseQuoted(char **txt);
 char *  Str_ParseNonQuoted(char **txt);

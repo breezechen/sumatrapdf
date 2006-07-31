@@ -16,6 +16,7 @@ Must have before next (0.2) release:
 - session saving (similar to what a Firefox extension does). Save the whole state of the app (windows
   position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
   session when called without a command-line argument.
+- launch browser for the link
 
 Nice to have:
 - good UI for history of opened files. At the very least a type-down list, ordered by
@@ -31,14 +32,17 @@ Nice to have:
 - "launch with acrobat" option (menu item?), so that it's easy to launch a doc
   with acrobat if it implements an important function that I don't (e.g. priting)
   Needs to read registry to find where acrobat is installed.
-- detect if *pdf files are associsated with me at startup, if not, either silently
+- detect if *pdf files are associated with me at startup, if not, either silently
   restore or have a dialog box
 - nicer-looking window
  - drop shadows
  - custom caption area
+- find
+- select text
 - printing
 - Widgets should be links as well
 - check for new version on-line
+- select images
 - get rid of dependency on freetype, use windows functions instead (not sure if that's
   possible with poppler)
 - optimize the use of embedded fonts, currently they're being written out

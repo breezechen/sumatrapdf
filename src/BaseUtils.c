@@ -61,6 +61,13 @@ int Char_IsWs(char c)
     return FALSE;
 }
 
+void memzero(void *dst, size_t len)
+{
+    if (len <= 0)
+        return;
+    memset(dst, 0, len);
+}
+
 int Str_Empty(const char *txt)
 {
     if (!txt)
@@ -476,13 +483,14 @@ char *Str_SplitIter(char **txt, char c)
    with 'replace'. Returns newly allocated string with normalized newlines
    or NULL if error.
    Caller needs to free() the result */
-char *Str_NormalizeNewline(char *txt, const char *replace)
+char *Str_NormalizeNewline(const char *txt, const char *replace)
 {
-    size_t  replace_len;
-    char    c;
-    char *  result;
-    char *  tmp;
-    size_t  result_len = 0;
+    size_t          replace_len;
+    char            c;
+    char *          result;
+    const char *    tmp;
+    char *          tmpResult;
+    size_t          result_len = 0;
 
     replace_len = strlen(replace);
     tmp = txt;
@@ -513,32 +521,32 @@ char *Str_NormalizeNewline(char *txt, const char *replace)
     result = (char*)malloc(result_len+1);
     if (!result)
         return NULL;
-    tmp = result;
+    tmpResult = result;
     for (;;) {
         c = *txt++;
         if (!c)
             break;
         if (0xa == c) {
             /* a single 0xa => Unix */
-            memcpy(tmp, replace, replace_len);
-            tmp += replace_len;
+            memcpy(tmpResult, replace, replace_len);
+            tmpResult += replace_len;
         } else if (0xd == c) {
             if (0xa == *txt) {
                 /* 0xd 0xa => dos */
-                memcpy(tmp, replace, replace_len);
-                tmp += replace_len;
+                memcpy(tmpResult, replace, replace_len);
+                tmpResult += replace_len;
                 ++txt;
             }
             else {
                 /* just 0xd => Mac */
-                memcpy(tmp, replace, replace_len);
-                tmp += replace_len;
+                memcpy(tmpResult, replace, replace_len);
+                tmpResult += replace_len;
             }
         } else
-            *tmp++ = c;
+            *tmpResult++ = c;
     }
 
-    *tmp = 0;
+    *tmpResult = 0;
     return result;
 }
 

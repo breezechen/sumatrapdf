@@ -30,35 +30,6 @@ etc...
     quits.
 */
 
-#define STR_FROM_ENUM(val) \
-    if (val == var) \
-        return val##_STR;
-
-/* TODO: probably belongs in a differnet file */
-const char *DisplayModeNameFromEnum(DisplayMode var)
-{
-    STR_FROM_ENUM(DM_SINGLE_PAGE)
-    STR_FROM_ENUM(DM_FACING)
-    STR_FROM_ENUM(DM_CONTINUOUS)
-    STR_FROM_ENUM(DM_CONTINUOUS_FACING)
-    return NULL;
-}
-
-#define IS_STR_ENUM(enumName) \
-    if (Str_Eq(txt, #enumName)) { \
-        *resOut = enumName; \
-        return TRUE; \
-    }
-
-BOOL DisplayModeEnumFromName(const char *txt, DisplayMode *resOut)
-{
-    IS_STR_ENUM(DM_SINGLE_PAGE)
-    IS_STR_ENUM(DM_FACING)
-    IS_STR_ENUM(DM_CONTINUOUS)
-    IS_STR_ENUM(DM_CONTINUOUS_FACING)
-    return FALSE;
-}
-
 FileHistoryList *FileHistoryList_Node_Create(void)
 {
     FileHistoryList *node;
@@ -66,9 +37,9 @@ FileHistoryList *FileHistoryList_Node_Create(void)
     if (!node)
         return NULL;
 
-    node->next = NULL;
+    memzero(node, sizeof(node));
+
     node->menuId = INVALID_MENU_ID;
-    node->filePath = NULL;
     return node;
 }
 
@@ -81,8 +52,8 @@ FileHistoryList *FileHistoryList_Node_CreateFromFilePath(const char *filePath)
     if (!node)
         return NULL;
 
-    node->filePath = (const char*)Str_Dup(filePath);
-    if (!node->filePath)
+    node->state.filePath = (const char*)Str_Dup(filePath);
+    if (!node->state.filePath)
         goto Error;
     return node;
 
@@ -95,7 +66,7 @@ void FileHistoryList_Node_Free(FileHistoryList *node)
 {
     assert(node);
     if (!node) return;
-    free((void*)node->filePath);
+    DisplayState_Free(&(node->state));
     free((void*)node);
 }
 
@@ -115,7 +86,7 @@ void FileHistoryList_Free(FileHistoryList **root)
     *root = NULL;
 }
 
-static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString_t *strOut)
+static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString *strOut)
 {
     char *          fileNameEscaped = NULL;
 
@@ -125,17 +96,12 @@ static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString_t *str
     if (!strOut) return FALSE;
 
     DStringSprintf(strOut, "%s:\n", FILE_HISTORY_STR);
+    DisplayState_Serialize(&(node->state), strOut);
 
-    fileNameEscaped = Str_Escape(node->filePath);
-    if (!fileNameEscaped)
-        return FALSE;
-     DStringSprintf(strOut, "  %s: %s\n", FILE_STR, fileNameEscaped);
-
-    free((void*)fileNameEscaped);
     return TRUE;
 }
 
-BOOL FileHistoryList_Serialize(FileHistoryList **root, DString_t *strOut)
+BOOL FileHistoryList_Serialize(FileHistoryList **root, DString *strOut)
 {
     FileHistoryList *curr;
     int              fOk;
@@ -189,8 +155,8 @@ FileHistoryList *FileHistoryList_Node_FindByFilePath(FileHistoryList **root, con
 
     curr = *root;
     while (curr) {
-        assert(curr->filePath);
-        if (Str_Eq(filePath, curr->filePath))
+        assert(curr->state.filePath);
+        if (Str_Eq(filePath, curr->state.filePath))
             return curr;
         curr = curr->next;
     }

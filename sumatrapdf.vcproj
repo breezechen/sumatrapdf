@@ -224,10 +224,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\CoreOutputDev.cc"
-				>
-			</File>
-			<File
 				RelativePath=".\poppler\poppler\Decrypt.cc"
 				>
 			</File>
@@ -567,10 +563,6 @@
 			</File>
 			<File
 				RelativePath=".\src\config.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\CoreOutputDev.h"
 				>
 			</File>
 			<File

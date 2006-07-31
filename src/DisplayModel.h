@@ -47,6 +47,7 @@
 
 #include "SimpleRect.h"
 #include "BaseUtils.h"
+#include "DisplayState.h"
 
 class SplashBitmap;
 class PDFDoc;
@@ -65,11 +66,6 @@ extern void LaunchBrowser(const char *uri);
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
-#define ZOOM_MAX            1600.0  /* max zoom in % */
-#define ZOOM_MIN            10.0    /* min zoom in % */
-
-#define ZOOM_FIT_PAGE       -1
-#define ZOOM_FIT_WIDTH      -2
 #define INVALID_ZOOM        -99
 /* arbitrary but big */
 #define INVALID_BIG_ZOOM    999999.0
@@ -86,17 +82,6 @@ typedef struct DisplaySettings {
     int     paddingBetweenPagesX;
     int     paddingBetweenPagesY;
 } DisplaySettings;
-
-/* TODO: probably move this to some other file, it only needs to be shared by
-   FileHistory.c and main.cc */
-enum DisplayMode {
-    DM_FIRST = 1,
-    DM_SINGLE_PAGE = DM_FIRST,
-    DM_FACING,
-    DM_CONTINUOUS,
-    DM_CONTINUOUS_FACING,
-    DM_LAST = DM_CONTINUOUS_FACING
-};
 
 /* Describes a link on PDF page. */
 typedef struct PdfLink {
@@ -214,9 +199,7 @@ typedef struct DisplayModel {
 DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
 void             GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *pagesAtATime);
 
-bool          ValidZoomVirtual(double zoomVirtual);
 BOOL          ValidDisplayMode(DisplayMode dm);
-bool          ValidRotation(int rotation);
 
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
@@ -277,6 +260,8 @@ void          DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoTo
 void          DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI);
 void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch);
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
+
+BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm, DisplayMode mode, BOOL fullScreen);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);

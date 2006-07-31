@@ -26,7 +26,7 @@ extern "C"
 
 #define kDstringStaticSize 200
 
-typedef struct DString_t {
+typedef struct DString {
     char *pString;               /* Points to beginning of string:  either
                                  * staticSpace below or a malloc'ed array. */
     int length;                 /* Number of non-NULL characters in the
@@ -36,33 +36,33 @@ typedef struct DString_t {
     char staticSpace[kDstringStaticSize];
                                 /* Space to use in common case where string
                                  * is small. */
-} DString_t;
+} DString;
 
 #define DStringLength(dsPtr) ((dsPtr)->length)
 #define DStringValue(dsPtr) ((dsPtr)->pString)
 #define DStringTrunc DStringSetLength
 
 char*
-DStringAppend(DString_t* dsPtr,
+DStringAppend(DString* dsPtr,
                  const char* string,
                  int         length);
 
 void
-DStringFree(DString_t* dsPtr);
+DStringFree(DString* dsPtr);
 
 void
-DStringInit(DString_t* dsPtr);
+DStringInit(DString* dsPtr);
 
 void
-DStringSetLength(DString_t* dsPtr,
+DStringSetLength(DString* dsPtr,
                     int         length);
 
 void
-DStringSprintf(DString_t* pDs,
+DStringSprintf(DString* pDs,
                    const char* pFormat,
                    ...);
 char*
-DStringAppendLowerCase(DString_t*   pDs,
+DStringAppendLowerCase(DString*   pDs,
                          const char*    pIn,
                          int            length);
 
