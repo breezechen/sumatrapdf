@@ -122,7 +122,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
-				OmitFramePointers="true"
+				OmitFramePointers="false"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
 				PreprocessorDefinitions="_WIN32;WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="2"
@@ -152,6 +153,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
+				Profile="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -197,10 +199,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\base_util.c"
-				>
-			</File>
-			<File
 				RelativePath=".\src\BaseUtils.c"
 				>
 			</File>
@@ -230,10 +228,6 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\Dict.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
@@ -457,15 +451,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\str_util.c"
-				>
-			</File>
-			<File
 				RelativePath=".\poppler\poppler\Stream.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\strlist_util.c"
 				>
 			</File>
 			<File
