@@ -57,11 +57,13 @@ extern "C"
 #define MAX_FILENAME_SIZE 1024
 
 #ifdef _WIN32
-void    win32_dbg_out(const char *format, ...);
+  void    win32_dbg_out(const char *format, ...);
+  #define DIR_SEP_CHAR '\\'
+  #define DIR_SEP_STR  "\\"
+#else
+  #define DIR_SEP_CHAR '/'
+  #define DIR_SEP_STR  "/"
 #endif
-
-#define DIR_SEP_CHAR '/'
-#define DIR_SEP_STR  "/"
 
 #define UNIX_NEWLINE "\x0a"
 #define UNIX_NEWLINE_C 0xa

@@ -91,6 +91,9 @@ enum WinState {
 #define INVALID_PAGE_NUM -1
 #define BENCH_ARG_TXT "-bench"
 
+#define DEF_WIN_DX 612
+#define DEF_WIN_DY 792
+
 /* Describes information related to one window with (optional) pdf document
    on the screen */
 typedef struct WindowInfo {
@@ -208,17 +211,75 @@ int RectDy(RECT *r)
     assert(dy >= 0);
     return dy;
 }
-const char *FileGetBaseName(const char *path)
+
+void LaunchUrl(const TCHAR *url)
 {
-    /* TODO: implement me */
-    return path;
+    SHELLEXECUTEINFO sei;
+    BOOL             res;
+
+    if (NULL == url)
+        return;
+
+    ZeroMemory(&sei, sizeof(sei));
+    sei.cbSize  = sizeof(sei);
+    sei.fMask   = SEE_MASK_FLAG_NO_UI;
+    sei.lpVerb  = TEXT("open");
+    sei.lpFile  = url;
+    sei.nShow   = SW_SHOWNORMAL;
+
+    res = ShellExecuteEx(&sei);
+    return;
 }
 
+void LaunchBrowser(const char *uri)
+{
+    LaunchUrl(uri);
+}
+
+const char *FileGetBaseName(const char *path)
+{
+    const char *fileBaseName = (const char*)strrchr(path, DIR_SEP_CHAR);
+    if (NULL == fileBaseName)
+        fileBaseName = path;
+    else
+        ++fileBaseName;
+    return fileBaseName;
+}
+
+void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
+{
+   ::SendMessage(hwnd, EM_SETSEL, (WPARAM)selStart, (WPARAM)selEnd);
+}
+
+void WinEditSelectAll(HWND hwnd)
+{
+    WinEditSetSel(hwnd, 0, -1);
+}
+
+int WinGetTextLen(HWND hwnd)
+{
+    return (int)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0);
+}
 void WinSetText(HWND hwnd, const TCHAR *txt)
 {
     SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)txt);
 }
 
+/* return a text in edit control represented by hwnd
+   return NULL in case of error (couldn't allocate memory)
+   caller needs to free() the text */
+TCHAR *WinGetText(HWND hwnd)
+{
+    int     cchTxtLen = WinGetTextLen(hwnd);
+    TCHAR * txt = (TCHAR*)malloc((cchTxtLen+1)*sizeof(TCHAR));
+
+    if (NULL == txt)
+        return NULL;
+
+    SendMessage(hwnd, WM_GETTEXT, cchTxtLen + 1, (LPARAM)txt);
+    txt[cchTxtLen] = 0;
+    return txt;
+}
 void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
 {
     if (scrollbarYDxOut)
@@ -520,8 +581,8 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     hwnd = CreateWindow(
             WIN_CLASS_NAME, szTitle,
             WS_OVERLAPPEDWINDOW | WS_HSCROLL | WS_VSCROLL,
-            CW_USEDEFAULT, 0,
-            CW_USEDEFAULT, 0,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            DEF_WIN_DX, DEF_WIN_DY,
             NULL, NULL,
             ghinst, NULL);
 
@@ -671,7 +732,7 @@ static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar 
 
 static void ColorsInit(void)
 {
-    /* splash colors */
+    /* Colors for poppler's splash rendering backend */
     SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
     SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
     SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
@@ -1307,11 +1368,6 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
 }
 
-void LaunchBrowser(const char *uri)
-{
-    /* TODO: implement me */
-}
-
 static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
 {
     PdfLink *   link;
@@ -1531,65 +1587,6 @@ static void RotateRight(WindowInfo *win)
     DisplayModel_RotateBy(win->dm, 90);
 }
 
-static void OnKeydown(WindowInfo *win, int key)
-{
-    if (VK_PRIOR == key) {
-        /* TODO: more intelligence (see VK_NEXT comment). Also, probably
-           it's exactly the same as 'n' so the code should be factored out */
-        if (win->dm)
-            DisplayModel_GoToPrevPage(win->dm, 0);
-       /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEUP, 0); */
-    } else if (VK_NEXT == key) {
-        /* TODO: this probably should be more intelligent (scroll if not yet at the bottom,
-           go to next page if at the bottom, and something entirely different in continuous mode */
-        if (win->dm)
-            DisplayModel_GoToNextPage(win->dm, 0);
-        /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
-    } else if (VK_UP == key) {
-        SendMessage (win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
-    } else if (VK_DOWN == key) {
-        /* SendMessage (win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0); */
-    } else if (VK_LEFT == key) {
-        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEUP, 0);
-    } else if (VK_RIGHT == key) {
-        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEDOWN, 0);
-    }
-}
-
-static void OnChar(WindowInfo *win, int key)
-{
-    if (VK_SPACE == key) {
-        DisplayModel_ScrollYByAreaDy(win->dm, true, true);
-    } else if (VK_BACK == key) {
-        DisplayModel_ScrollYByAreaDy(win->dm, false, true);
-    } else if ('k' == key) {
-        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
-    } else if ('j' == key) {
-        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
-    } else if ('n' == key) {
-        if (win->dm)
-            DisplayModel_GoToNextPage(win->dm, 0);
-    } else if ('c' == key) {
-        if (win->dm)
-            DisplayModel_SwitchToContinuous(win->dm);
-    } else if ('p' == key) {
-        if (win->dm)
-            DisplayModel_GoToPrevPage(win->dm, 0);
-    } else if ('z' == key) {
-        WindowInfo_ToggleZoom(win);
-    } else if ('q' == key) {
-        DestroyWindow(win->hwnd);
-    } else if ('+' == key) {
-        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
-    } else if ('-' == key) {
-        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
-    } else if ('l' == key) {
-        RotateLeft(win);
-    } else if ('r' == key) {
-        RotateRight(win);
-    }
-}
-
 static void OnVScroll(WindowInfo *win, WPARAM wParam)
 {
     SCROLLINFO   si = {0};
@@ -1779,14 +1776,97 @@ static void OnMenuGoToFirstPage(WindowInfo *win)
     DisplayModel_GoToFirstPage(win->dm);
 }
 
+static int gDialogGoToPageCurrPageNo = INVALID_PAGE_NUM;
+static int gDialogGoToPagePageCount;
+static int gDialogGoToPageEnteredPageNo = INVALID_PAGE_NUM;
+
+#define DIALOG_GO_PRESSED 1
+#define DIALOG_CANCEL_PRESSED 2
+
+BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static HWND editPageNo = NULL;
+    HWND        labelOfPages;
+    DString     ds;
+    TCHAR *     newPageNoTxt;
+
+    switch (message)
+    {
+        case WM_INITDIALOG:
+            assert(INVALID_PAGE_NUM != gDialogGoToPageCurrPageNo);
+            assert(gDialogGoToPagePageCount >= 1);
+            DStringInit(&ds);
+            DStringSprintf(&ds, "%d", gDialogGoToPageCurrPageNo);
+            editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
+            WinSetText(editPageNo, ds.pString);
+            DStringFree(&ds);
+            DStringSprintf(&ds, "(of %d)", gDialogGoToPagePageCount);
+            labelOfPages = GetDlgItem(hDlg, IDC_GOTO_PAGE_LABEL_OF);
+            WinSetText(labelOfPages, ds.pString);
+            DStringFree(&ds);
+            WinEditSelectAll(editPageNo);
+            SetFocus(editPageNo);
+            return FALSE;
+
+        case WM_COMMAND:
+            switch (LOWORD(wParam))
+            {
+                case IDC_GOTO_PAGE_GO:
+                    assert(NULL != editPageNo);
+                    newPageNoTxt = WinGetText(editPageNo);
+                    if (NULL != newPageNoTxt) {
+                        gDialogGoToPageEnteredPageNo = atoi(newPageNoTxt);
+                        free((void*)newPageNoTxt);
+                    } else
+                        gDialogGoToPageEnteredPageNo = INVALID_PAGE_NUM;
+                    EndDialog(hDlg, DIALOG_GO_PRESSED);
+                    return TRUE;
+
+                case IDC_GOTO_PAGE_CANCEL:
+                case IDCANCEL:
+                    EndDialog(hDlg, DIALOG_CANCEL_PRESSED);
+                    return TRUE;
+            }
+            break;
+    }
+    return FALSE;
+}
+
+/* Shows a 'go to page' dialog and returns a page number entered by the user
+   or INVALID_PAGE_NUM if user clicked "cancel" button, entered invalid
+   page number or there was an error.
+   TODO: intelligently center the dialog within the window? */
+static int Dialog_GoToPage(WindowInfo *win)
+{
+    int     dialogResult;
+    
+    assert(win);
+    if (!win) return INVALID_PAGE_NUM;
+
+    gDialogGoToPageCurrPageNo = win->dm->startPage;
+    gDialogGoToPagePageCount = win->dm->pageCount;
+    dialogResult = DialogBox(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwnd, Dialog_GoToPage_Proc);
+    if (DIALOG_GO_PRESSED == dialogResult) {
+        if (DisplayModel_ValidPageNo(win->dm, gDialogGoToPageEnteredPageNo)) {
+            return gDialogGoToPageEnteredPageNo;
+        }
+    }
+    return INVALID_PAGE_NUM;
+}
+
 static void OnMenuGoToPage(WindowInfo *win)
 {
+    int     newPageNo;
+
     assert(win);
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    /* TODO: not implemented yet */
-    assert(0);
+
+    newPageNo = Dialog_GoToPage(win);
+    if (DisplayModel_ValidPageNo(win->dm, newPageNo)) {
+        DisplayModel_GoToPage(win->dm, newPageNo, 0);
+    }
 }
 
 static void OnMenuViewRotateLeft(WindowInfo *win)
@@ -1797,6 +1877,93 @@ static void OnMenuViewRotateLeft(WindowInfo *win)
 static void OnMenuViewRotateRight(WindowInfo *win)
 {
     RotateRight(win);
+}
+
+BOOL  IsCtrlLeftPressed(void)
+{
+    int state = GetKeyState(VK_LCONTROL);
+    if (0 != state)
+        return TRUE;
+    return FALSE;
+}
+
+BOOL  IsCtrlRightPressed(void)
+{
+    int state = GetKeyState(VK_RCONTROL);
+    if (0 != state)
+        return TRUE;
+    return FALSE;
+}
+
+BOOL  IsCtrlPressed(void)
+{
+    if (IsCtrlLeftPressed() || IsCtrlRightPressed())
+        return TRUE;
+    return FALSE;
+}
+
+static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
+{
+    if (VK_PRIOR == key) {
+        /* TODO: more intelligence (see VK_NEXT comment). Also, probably
+           it's exactly the same as 'n' so the code should be factored out */
+        if (win->dm)
+            DisplayModel_GoToPrevPage(win->dm, 0);
+       /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEUP, 0); */
+    } else if (VK_NEXT == key) {
+        /* TODO: this probably should be more intelligent (scroll if not yet at the bottom,
+           go to next page if at the bottom, and something entirely different in continuous mode */
+        if (win->dm)
+            DisplayModel_GoToNextPage(win->dm, 0);
+        /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
+    } else if (VK_UP == key) {
+        SendMessage (win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
+    } else if (VK_DOWN == key) {
+        /* SendMessage (win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0); */
+    } else if (VK_LEFT == key) {
+        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEUP, 0);
+    } else if (VK_RIGHT == key) {
+        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEDOWN, 0);
+    } else if (('g' == key) || ('G' == key)) {
+        if (IsCtrlLeftPressed())
+            OnMenuGoToPage(win);
+    }
+}
+
+static void OnChar(WindowInfo *win, int key)
+{
+    if (VK_SPACE == key) {
+        DisplayModel_ScrollYByAreaDy(win->dm, true, true);
+    } else if (VK_BACK == key) {
+        DisplayModel_ScrollYByAreaDy(win->dm, false, true);
+    } else if ('g' == key) {
+        OnMenuGoToPage(win);
+    } else if ('k' == key) {
+        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
+    } else if ('j' == key) {
+        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
+    } else if ('n' == key) {
+        if (win->dm)
+            DisplayModel_GoToNextPage(win->dm, 0);
+    } else if ('c' == key) {
+        if (win->dm)
+            DisplayModel_SwitchToContinuous(win->dm);
+    } else if ('p' == key) {
+        if (win->dm)
+            DisplayModel_GoToPrevPage(win->dm, 0);
+    } else if ('z' == key) {
+        WindowInfo_ToggleZoom(win);
+    } else if ('q' == key) {
+        DestroyWindow(win->hwnd);
+    } else if ('+' == key) {
+        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+    } else if ('-' == key) {
+        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
+    } else if ('l' == key) {
+        RotateLeft(win);
+    } else if ('r' == key) {
+        RotateRight(win);
+    }
 }
 
 static inline BOOL IsBenchArg(char *txt)
@@ -1980,7 +2147,7 @@ InitMouseWheelInfo:
 
         case WM_KEYDOWN:
             if (win)
-                OnKeydown(win, wParam);
+                OnKeydown(win, wParam, lParam);
             break;
 
         case WM_MOUSEMOVE:

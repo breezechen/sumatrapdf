@@ -3,10 +3,7 @@ TODO list for Sumatra PDF.
 Must have before next (0.2) release:
 - much better "About" box
 - handle links (actions)
-- better mapping of fonts, default to some font if can't find a named mapping
 - access encrypted files
-- Go To page dialog
-- Ctrl-G - "go to page" dialog
 - remember the history of opened files (infinite "Recent Files"). Remember file name and
   UI state (windows posisition, current page, zoom level, scroll position) at the time
   file was close. Restore the UI state when file is re-opened. That way user gets where
@@ -16,10 +13,12 @@ Must have before next (0.2) release:
 - session saving (similar to what a Firefox extension does). Save the whole state of the app (windows
   position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
   session when called without a command-line argument.
-- launch browser for the link
 - less intrusive icon
 
 Nice to have:
+- when calculating the page size, use client area size as a guide, not the 
+  window size
+- do loading in rendering in a background thread, without blocking the UI
 - reading of C:\kjk\test_pdfs\pda\palm\dev tools\sdk\user_interface.pdf takes 
   an awfully long time
 - toolbar
@@ -58,6 +57,12 @@ Nice to have:
 - use memory mapped files to speedup stuff
 
 Done:
+---- v 0.2 released
+- a better initial size of the window (size of a standard PDF page)
+- launch browser for the link
+- Go To page dialog
+- Ctrl-G - "go to page" dialog
+- better mapping of fonts, default to some font if can't find a named mapping
 - reimplement void WinPDFCore::resizeToPage(int pg)
 - make DBG_OUT away in release build
 - "Go To" (next/prev/first/last,page) menu
@@ -67,6 +72,7 @@ Done:
 - drawing issues resolved (SetDIBSToDevice is driving me crazy)
 - facing and continuous facing mode
 - Rotate left/right
+---- v 0.1 released
 
 */
 
