@@ -88,8 +88,6 @@ void FileHistoryList_Free(FileHistoryList **root)
 
 static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString *strOut)
 {
-    char *          fileNameEscaped = NULL;
-
     assert(node);
     if (!node) return FALSE;
     assert(strOut);

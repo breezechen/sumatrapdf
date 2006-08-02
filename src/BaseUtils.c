@@ -13,6 +13,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+void no_op(void)
+{
+    /* This really is a no-op, just to silence the compiler */
+}
+
 void SwapInt(int *one, int *two)
 {
     int tmp = *one;

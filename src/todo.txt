@@ -17,12 +17,15 @@ Must have before next (0.2) release:
   position, which PDF file is open, current page, zoom level, scroll position etc.). Restore the
   session when called without a command-line argument.
 - launch browser for the link
+- less intrusive icon
 
 Nice to have:
+- reading of C:\kjk\test_pdfs\pda\palm\dev tools\sdk\user_interface.pdf takes 
+  an awfully long time
+- toolbar
 - good UI for history of opened files. At the very least a type-down list, ordered by
   last access time. Type-down filters by file name (or maybe full path?). Filter out
   files that don't exist anymore (and remove them from history)
-- toolbar (?)
 - easy toggle to full-screen mode (Ctrl-L ?)
 - UI for table of contents
 - bookmarks per PDF, persisted across sessions. UI for handling bookmarks (add bookmark, delete

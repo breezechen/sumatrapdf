@@ -91,6 +91,13 @@ typedef struct PdfLink {
     SimpleRect      rectCanvas; /* position of the link on canvas */
 } PdfLink;
 
+/* A special "pointer" value indicating that this bitmap is being rendered
+   on a separate thread */
+#define BITMAP_BEING_RENDERED (SplashBitmap*)-1
+/* A special "pointer" vlaue indicating that we tried to render this bitmap
+   but couldn't (e.g. due to lack of memory) */
+#define BITMAP_CANNOT_RENDER (SplashBitmap*)-2
+
 /* Describes many attributes of one page in one, convenient place */
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
@@ -146,7 +153,7 @@ typedef struct DisplayModel {
     PdfPageInfo *   pagesInfo;
 
     int             continuousMode;
-    int             pagesAtATime;
+    int             columns;
 
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.
@@ -196,15 +203,17 @@ typedef struct DisplayModel {
     int             debugShowLinks;
 } DisplayModel;
 
+BOOL          IsAllocatedBitmap(SplashBitmap *bmp);
+
 DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
-void             GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *pagesAtATime);
+void             GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *columns);
 
 BOOL          ValidDisplayMode(DisplayMode dm);
 
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
-                                            int continuousMode, int pagesAtATime, int startPage);
+                                            int continuousMode, int columns, int startPage);
 void          DisplayModel_Delete(DisplayModel *dm);
 
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
@@ -228,7 +237,7 @@ void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
 void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
 void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage);
 
-void          DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime);
+void          DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int columns);
 
 int           DisplayModel_IsSinglePage(DisplayModel *dm);
 int           DisplayModel_IsFacing(DisplayModel *dm);
@@ -262,6 +271,7 @@ void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLa
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
 
 BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm, DisplayMode mode, BOOL fullScreen);
+SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);

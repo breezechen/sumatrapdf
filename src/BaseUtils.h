@@ -44,11 +44,14 @@ extern "C"
   #define DBG_OUT printf
   #endif
 #else
-  #define DBG_OUT
+  #define DBG_OUT(...) no_op()
 #endif
 
 #ifndef _WIN32
-#define stricmp strcasecmp
+  #define REL_OUT printf
+  #define stricmp strcasecmp
+#else
+  #define REL_OUT win32_dbg_out
 #endif
 
 #define MAX_FILENAME_SIZE 1024
@@ -75,6 +78,8 @@ int         MinInt(int one, int two);
    have it. */
 void    strcpy_s(char *dst, size_t dstLen, const char *src);
 #endif
+
+void    no_op(void);
 
 void    memzero(void *dst, size_t len);
 

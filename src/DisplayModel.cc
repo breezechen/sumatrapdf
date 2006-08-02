@@ -26,7 +26,7 @@
 #define PADDING_PAGE_BORDER_LEFT_DEF     2
 #define PADDING_PAGE_BORDER_RIGHT_DEF    2
 /* the distance between pages in x axis, in pixels. Only applicable if
-   pagesAtATime > 1 */
+   columns > 1 */
 #define PADDING_BETWEEN_PAGES_X_DEF      4
 /* the distance between pages in y axis, in pixels. Only applicable if
    more than one page in y axis (continuous mode) */
@@ -48,6 +48,17 @@ static DisplaySettings gDisplaySettings = {
   PADDING_BETWEEN_PAGES_Y_DEF
 };
 
+BOOL IsAllocatedBitmap(SplashBitmap *bmp)
+{
+    if (BITMAP_BEING_RENDERED == bmp)
+        return FALSE;
+    if (BITMAP_CANNOT_RENDER == bmp)
+        return FALSE;
+    if (!bmp)
+        return FALSE;
+    return TRUE;
+}
+
 BOOL ValidDisplayMode(DisplayMode dm)
 {
     if ((int)dm < (int)DM_FIRST)
@@ -63,20 +74,20 @@ DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void)
 }
 
 
-void GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *pagesAtATime)
+void GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *columns)
 {
     if (DM_SINGLE_PAGE == displayMode) {
         *continuous = FALSE;
-        *pagesAtATime = 1;
+        *columns = 1;
     } else if (DM_FACING == displayMode) {
         *continuous = FALSE;
-        *pagesAtATime = 2;
+        *columns = 2;
     } else if (DM_CONTINUOUS == displayMode) {
         *continuous = TRUE;
-        *pagesAtATime = 1;
+        *columns = 1;
     } else if (DM_CONTINUOUS_FACING == displayMode) {
         *continuous = TRUE;
-        *pagesAtATime = 2;
+        *columns = 2;
     } else
         assert(0);
 }
@@ -260,16 +271,16 @@ PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
 
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
 {
-    PdfPageInfo *pageInfo;
-    int         pageDx, pageDy;
-    double      hDPI, vDPI;
-    GBool       useMediaBox = gFalse;
-    GBool       crop        = gTrue;
-    GBool       doLinks     = gTrue;
-    double      zoomReal;
-    int         rotation;
-    SplashBitmap *bmp;
-    int         bmpDx, bmpDy;
+    PdfPageInfo *   pageInfo;
+    int             pageDx, pageDy;
+    double          hDPI, vDPI;
+    GBool           useMediaBox = gFalse;
+    GBool           crop        = gTrue;
+    GBool           doLinks     = gTrue;
+    double          zoomReal;
+    int             rotation;
+    SplashBitmap *  bmp;
+    int             bmpDx, bmpDy;
 
     assert(dm);
     if (!dm) return NULL;
@@ -306,6 +317,44 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     return bmp;
 }
 
+#ifdef _WIN32
+/* simple, single-threaded version */
+void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
+{
+    PdfPageInfo*    pageInfo;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    pageInfo->bitmap = DisplayModel_GetBitmapForPage(dm, pageNo);
+}
+#else
+extern void PageRenderSendRequest(DisplayModel *dm, int pageNo);
+
+/* Send the request to render a given page to a rendering thread */
+void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
+{
+    PdfPageInfo*    pageInfo;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    assert(NULL == pageInfo->bitmap);
+    PageRenderSendRequest(dm, pageNo);
+}
+#endif
+
+/* TODO: do something clever to make sure that if a page is being rendered,
+   we wait until it's being rendered */
+void DisplayModel_FreeBitmap(DisplayModel *dm, int pageNo)
+{
+    PdfPageInfo*    pageInfo;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    /* TODO: do it lazily from malloc when allocation fails */
+    /* TODO: if being rendered -> stop rendering */
+    if (IsAllocatedBitmap(pageInfo->bitmap)) {
+        delete pageInfo->bitmap;
+        pageInfo->bitmap = NULL;
+    }
+}
+
 void DisplayModel_RenderVisibleParts(DisplayModel *dm)
 {
     int             pageNo;
@@ -320,11 +369,9 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
         if (pageInfo->visible) {
             assert(pageInfo->shown);
             if (!pageInfo->bitmap)
-                pageInfo->bitmap = DisplayModel_GetBitmapForPage(dm, pageNo);
+                DisplayModel_StartRenderingPage(dm, pageNo);
         } else {
-            /* TODO: do it lazily from malloc when allocation fails */
-            delete pageInfo->bitmap;
-            pageInfo->bitmap = NULL;
+            DisplayModel_FreeBitmap(dm, pageNo);
         }
     }
 }
@@ -336,8 +383,7 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
 
     DBG_OUT("DisplayModel_FreeBitmaps()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
-        delete dm->pagesInfo[pageNo-1].bitmap;
-        dm->pagesInfo[pageNo-1].bitmap = NULL;
+        DisplayModel_FreeBitmap(dm, pageNo);
     }
 }
 
@@ -399,7 +445,7 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
 DisplayModel *DisplayModel_CreateFromPdfDoc(
   PDFDoc *pdfDoc, SplashOutputDev *outputDev, RectDSize totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
-  int continuousMode, int pagesAtATime,
+  int continuousMode, int columns,
   int startPage)
 {
     PdfPageInfo *pageInfo;
@@ -424,7 +470,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
     dm->continuousMode = continuousMode;
-    dm->pagesAtATime = pagesAtATime;
+    dm->columns = columns;
     dm->startPage = startPage;
     dm->rotation = INVALID_ROTATION;
     dm->zoomVirtual = INVALID_ZOOM;
@@ -439,8 +485,8 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
     dm->pageCount = pdfDoc->getNumPages();
-    DBG_OUT("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d, continuous=%d, pagesAtATime=%d\n",
-            dm->pageCount, startPage, continuousMode, pagesAtATime);
+    DBG_OUT("DisplayModel_CreateFromPdfDoc() pageCount = %d, startPage=%d, continuous=%d, columns=%d\n",
+            dm->pageCount, startPage, continuousMode, columns);
     dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount * sizeof(PdfPageInfo));
     if (!dm->pagesInfo)
         goto Error;
@@ -456,7 +502,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         if (dm->continuousMode) {
             pageInfo->shown = true;
         } else {
-            if ((pageNo >= startPage) && (pageNo < startPage + dm->pagesAtATime)) {
+            if ((pageNo >= startPage) && (pageNo < startPage + dm->columns)) {
                 DBG_OUT("DisplayModel_CreateFromPdfDoc() set page %d as shown\n", pageNo);
                 pageInfo->shown = true;
             }
@@ -570,10 +616,9 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
     dm->startPage = startPage;
     for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
         pageInfo = &(dm->pagesInfo[pageNo-1]);
-        delete pageInfo->bitmap; /* TODO: delete those lazily from allocator */
-        pageInfo->bitmap = NULL;
+        DisplayModel_FreeBitmap(dm, pageNo);
         pageInfo->shown = false;
-        if ((pageNo >= startPage) && (pageNo < startPage + dm->pagesAtATime)) {
+        if ((pageNo >= startPage) && (pageNo < startPage + dm->columns)) {
             DBG_OUT("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
             pageInfo->shown = true;
         }
@@ -620,18 +665,18 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY)
     DisplayModel_RepaintDisplay(dm);
 }
 
-/* given 'pagesInARow' and an absolute 'pageNo', return the number of the first
-   page in a row to which a 'pageNo' belongs e.g. if 'pagesInARow' is 2 and we
+/* given 'columns' and an absolute 'pageNo', return the number of the first
+   page in a row to which a 'pageNo' belongs e.g. if 'columns' is 2 and we
    have 5 pages in 3 rows:
    (1,2)
    (3,4)
    (5)
    then, we return 1 for pages (1,2), 3 for (3,4) and 5 for (5).
    This is 1-based index, not 0-based. */
-static int FirstPageInARowNo(int pageNo, int pagesInARow)
+static int FirstPageInARowNo(int pageNo, int columns)
 {
-    int row = (pageNo + pagesInARow - 1) / pagesInARow;
-    int firstPageNo = row * pagesInARow;
+    int row = ((pageNo - 1) / columns); /* 0-based row number */
+    int firstPageNo = row * columns + 1; /* 1-based page in a row */
     return firstPageNo;
 }
 
@@ -649,11 +694,11 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
     if (!dm) return false;
 
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
-    firstPageInCurrRow = FirstPageInARowNo(currPageNo, dm->pagesAtATime);
-    newPageNo = currPageNo + dm->pagesAtATime;
-    firstPageInNewRow = FirstPageInARowNo(newPageNo, dm->pagesAtATime);
+    firstPageInCurrRow = FirstPageInARowNo(currPageNo, dm->columns);
+    newPageNo = currPageNo + dm->columns;
+    firstPageInNewRow = FirstPageInARowNo(newPageNo, dm->columns);
 
-    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
     if ((firstPageInNewRow > dm->pageCount) || (firstPageInCurrRow == firstPageInNewRow)) {
         /* we're on a last row or after it, can't go any further */
         return false;
@@ -671,11 +716,11 @@ bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
 
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
     DBG_OUT("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
-    if (currPageNo <= dm->pagesAtATime) {
+    if (currPageNo <= dm->columns) {
         /* we're on a first page, can't go back */
         return false;
     }
-    DisplayModel_GoToPage(dm, currPageNo - dm->pagesAtATime, scrollY);
+    DisplayModel_GoToPage(dm, currPageNo - dm->columns, scrollY);
     return true;
 }
 
@@ -690,7 +735,7 @@ bool DisplayModel_GoToLastPage(DisplayModel *dm)
     DBG_OUT("DisplayModel_GoToLastPage()\n");
 
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
-    firstPageInLastRow = FirstPageInARowNo(dm->pageCount, dm->pagesAtATime);
+    firstPageInLastRow = FirstPageInARowNo(dm->pageCount, dm->columns);
 
     if (currPageNo != firstPageInLastRow) { /* are we on the last page already ? */
         DisplayModel_GoToPage(dm, firstPageInLastRow, 0);
@@ -853,7 +898,7 @@ void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePag
         DisplayModel_ScrollYBy(dm, -toScroll, changePage);
 }
 
-void DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATime)
+void DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int columns)
 {
     int             currPageNo;
     PdfPageInfo *   pageInfo;
@@ -862,13 +907,13 @@ void DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int pagesAtATi
     if (!dm) return;
 
     if ((continuousMode == dm->continuousMode) &&
-        (pagesAtATime == dm->pagesAtATime)) {
+        (columns == dm->columns)) {
         return;
     }
 
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
     dm->continuousMode = continuousMode;
-    dm->pagesAtATime = pagesAtATime;
+    dm->columns = columns;
     if (dm->continuousMode) {
         /* mark all pages as shown but not yet visible. The equivalent code
            for non-continuous mode is in DisplayModel_SetStartPage() called
@@ -891,7 +936,7 @@ int DisplayModel_IsSinglePage(DisplayModel *dm)
     if (!dm) return FALSE;
     if (dm->continuousMode)
         return FALSE;
-    if (1 != dm->pagesAtATime)
+    if (1 != dm->columns)
         return FALSE;
     return TRUE;
 }
@@ -902,7 +947,7 @@ int DisplayModel_IsFacing(DisplayModel *dm)
     if (!dm) return FALSE;
     if (dm->continuousMode)
         return FALSE;
-    if (2 != dm->pagesAtATime)
+    if (2 != dm->columns)
         return FALSE;
     return TRUE;
 }
@@ -913,7 +958,7 @@ int DisplayModel_IsContinuous(DisplayModel *dm)
     if (!dm) return FALSE;
     if (!dm->continuousMode)
         return FALSE;
-    if (1 != dm->pagesAtATime)
+    if (1 != dm->columns)
         return FALSE;
     return TRUE;
 }
@@ -924,7 +969,7 @@ int DisplayModel_IsContinuousFacing(DisplayModel *dm)
     if (!dm) return FALSE;
     if (!dm->continuousMode)
         return FALSE;
-    if (2 != dm->pagesAtATime)
+    if (2 != dm->columns)
         return FALSE;
     return TRUE;
 }
@@ -1031,8 +1076,8 @@ static double DisplayModel_ZoomRealFromFirtualForPage(DisplayModel *dm, double z
     assert(0 != (int)pageDy);
 
     areaForPageDx = (dm->drawAreaSize.dx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT);
-    areaForPageDx -= (PADDING_BETWEEN_PAGES_X * (dm->pagesAtATime - 1));
-    areaForPageDxInt = (int)(areaForPageDx / dm->pagesAtATime);
+    areaForPageDx -= (PADDING_BETWEEN_PAGES_X * (dm->columns - 1));
+    areaForPageDxInt = (int)(areaForPageDx / dm->columns);
     areaForPageDx = (double)areaForPageDxInt;
     areaForPageDy = (double)dm->drawAreaSize.dy - PADDING_PAGE_BORDER_TOP - PADDING_PAGE_BORDER_BOTTOM;
     if (ZOOM_FIT_WIDTH == zoomVirtual) {
@@ -1208,7 +1253,7 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
 void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
 {
     int         pageNo;
-    PdfPageInfo*pageInfo;
+    PdfPageInfo*pageInfo = NULL;
     double      currPosX, currPosY;
     double      pageDx, pageDy;
     int         currDxInt, currDyInt;
@@ -1243,9 +1288,9 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     totalAreaDx = 0;
 
     /* calculate the position of each page on the canvas, given current zoom,
-       rotation, pagesAtATime parameters. You can think of it as a simple
-       table layout, each row has pagesAtATime pages columns. */
-    pagesLeft = dm->pagesAtATime;
+       rotation, columns parameters. You can think of it as a simple
+       table layout, each row has columns pages columns. */
+    pagesLeft = dm->columns;
     currPosX = PADDING_PAGE_BORDER_LEFT;
     rowMaxPageDy = 0;
     for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
@@ -1280,7 +1325,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             thisRowDx = currPosX - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
             if (totalAreaDx < thisRowDx)
                 totalAreaDx = thisRowDx;
-            pagesLeft = dm->pagesAtATime;
+            pagesLeft = dm->columns;
             currPosX = PADDING_PAGE_BORDER_LEFT;
         }
         DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
@@ -1289,7 +1334,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
                     (int)pageDx, (int)pageDy);
     }
 
-    if (pagesLeft < dm->pagesAtATime) {
+    if (pagesLeft < dm->columns) {
         /* this is a partial row that we need to take into account */
         currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
         thisRowDx = currPosX + (pageInfo->currDx + PADDING_BETWEEN_PAGES_X) - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
@@ -1302,8 +1347,8 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
         offX = (dm->drawAreaSize.dx - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
         assert(offX >= 0.0);
         areaPerPageDx = totalAreaDx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT;
-        areaPerPageDx = areaPerPageDx - (PADDING_BETWEEN_PAGES_X * (dm->pagesAtATime - 1));
-        areaPerPageDxInt = (int)(areaPerPageDx / (double)dm->pagesAtATime);
+        areaPerPageDx = areaPerPageDx - (PADDING_BETWEEN_PAGES_X * (dm->columns - 1));
+        areaPerPageDxInt = (int)(areaPerPageDx / (double)dm->columns);
         areaPerPageDx = (double)areaPerPageDxInt;
         totalAreaDx = dm->drawAreaSize.dx;
         pageInARow = 0;
@@ -1318,7 +1363,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             assert(pageOffX >= 0.0);
             pageInfo->currPosX = pageOffX + offX;
             ++pageInARow;
-            if (pageInARow == dm->pagesAtATime)
+            if (pageInARow == dm->columns)
                 pageInARow = 0;
         }
     }
@@ -1463,6 +1508,59 @@ PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
     return NULL;
 }
 
+static void DisplayModel_GoToDest(DisplayModel *dm, LinkDest *linkDest)
+{
+    Ref             pageRef;
+    int             newPage = INVALID_PAGE;
+    int             left, top;
+    int             scrollY = 0;
+
+    assert(dm);
+    if (!dm) return;
+    assert(linkDest);
+    if (!linkDest) return;
+
+    if (linkDest->isPageRef()) {
+        pageRef = linkDest->getPageRef();
+        newPage = dm->pdfDoc->findPage(pageRef.num, pageRef.gen);
+    } else {
+        newPage = linkDest->getPageNum();
+    }
+
+    if (newPage <= 0 || newPage > dm->pdfDoc->getNumPages()) {
+        newPage = 1;
+    }
+
+    left = (int)linkDest->getLeft();
+    top = (int)linkDest->getTop();
+    /* TODO: convert left/top coordinates to window space */
+
+    /* TODO: this logic needs to be implemented */
+    switch (linkDest->getKind()) {
+        case destXYZ:
+            break;
+        case destFitR:
+            break;
+    }
+    DisplayModel_GoToPage(dm, newPage, scrollY);
+}
+
+static void DisplayModel_GoToNamedDest(DisplayModel *dm, UGooString *dest)
+{
+    LinkDest *d;
+
+    assert(dm);
+    if (!dm) return;
+    assert(dest);
+    if (!dest) return;
+
+    d = dm->pdfDoc->findDest(dest);
+    assert(d);
+    if (!d) return;
+    DisplayModel_GoToDest(dm, d);
+    delete d;
+}
+
 void DisplayModel_HandleLinkGoTo(DisplayModel *dm, LinkGoTo *linkGoTo)
 {
     LinkDest *      linkDest;
@@ -1473,10 +1571,15 @@ void DisplayModel_HandleLinkGoTo(DisplayModel *dm, LinkGoTo *linkGoTo)
     assert(linkGoTo);
     if (!linkGoTo) return;
 
-    /* TODO: not implemented because don't have test pdf file */
-    assert(0);
     linkDest = linkGoTo->getDest();
     linkNamedDest = linkGoTo->getNamedDest();
+    if (linkDest) {
+        assert(!linkNamedDest);
+        DisplayModel_GoToDest(dm, linkDest);
+    } else {
+        assert(linkNamedDest);
+        DisplayModel_GoToNamedDest(dm, linkNamedDest);
+    }
 }
 
 void DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoToR)
@@ -1490,11 +1593,14 @@ void DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoToR)
     assert(linkGoToR);
     if (!linkGoToR) return;
 
-    /* TODO: not implemented because don't have test pdf file */
-    assert(0);
-    fileName = linkGoToR->getFileName();
     linkDest = linkGoToR->getDest();
     linkNamedDest = linkGoToR->getNamedDest();
+
+    fileName = linkGoToR->getFileName();
+    /* TODO: see if a file exists, if not show a dialog box. If exists,
+       load it and go to a destination in this file.
+       Should also search currently opened files. */
+    /* Test file: C:\kjk\test_pdfs\pda\palm\dev tools\sdk\user_interface.pdf, page 633 */
 }
 
 void DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI)
