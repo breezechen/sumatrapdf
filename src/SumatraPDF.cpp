@@ -2,10 +2,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <direct.h> /* for _mkdir() */
 
 #include "SumatraPDF.h"
 
 #include <shellapi.h>
+#include <shlobj.h>
 #include <strsafe.h>
 
 #include "ErrorCodes.h"
@@ -20,6 +22,8 @@
 #include "SecurityHandler.h"
 
 #include "Win32FontList.h"
+#include "FileHistory.h"
+#include "AppPrefs.h"
 
 #include "SimpleRect.h"
 #include "DisplayModel.h"
@@ -88,6 +92,9 @@ enum WinState {
 #define APP_NAME        _T("SumatraPDF")
 #define PDF_DOC_NAME    _T("Adobe PDF Document")
 
+#define PREFS_FILE_NAME _T("prefs.txt")
+#define APP_SUB_DIR     _T("SumatraPDF")
+
 #define INVALID_PAGE_NUM -1
 #define BENCH_ARG_TXT "-bench"
 
@@ -121,6 +128,8 @@ typedef struct StrList {
     struct StrList *    next;
     char *              str;
 } StrList;
+
+FileHistoryList *   gFileHistoryRoot = NULL;
 
 static SplashColor                  splashColRed;
 static SplashColor                  splashColGreen;
@@ -160,7 +169,6 @@ static SplashColorMode              gSplashColorMode = splashModeBGR8;
 
 static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
-static StrList *                    gArgListRoot = NULL;
 static char *                       gBenchFileName = NULL;
 static int                          gBenchPageNum = INVALID_PAGE_NUM;
 
@@ -334,6 +342,28 @@ static void CaptionPens_Destroy(void)
     }
 }
 
+static void AddFileToHistory(const char *filePath)
+{
+    FileHistoryList *   node;
+    uint32_t            oldMenuId = INVALID_MENU_ID;
+
+    assert(filePath);
+    if (!filePath) return;
+
+    /* if a history entry with the same name already exists, then delete it.
+       That way we don't have duplicates and the file moves to the front of the list */
+    node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, filePath);
+    if (node) {
+        oldMenuId = node->menuId;
+        FileHistoryList_Node_RemoveAndFree(&gFileHistoryRoot, node);
+    }
+    node = FileHistoryList_Node_CreateFromFilePath(filePath);
+    if (!node)
+        return;
+    node->menuId = oldMenuId;
+    FileHistoryList_Node_InsertHead(&gFileHistoryRoot, node);
+}
+
 /* For passing data to/from GetPassword dialog */
 typedef struct {
     const char *  fileName; /* name of the file for which we need the password */
@@ -434,6 +464,191 @@ void *StandardSecurityHandler::getAuthData()
     authData = new StandardAuthData(new GooString(pwd), new GooString(pwd));
     free((void*)pwd);
     return (void*)authData;
+}
+
+void AppGetAppDir(DString* pDs)
+{
+    char        dir[MAX_PATH];
+
+    SHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, 0, dir);
+    DStringSprintf(pDs, "%s/%s", dir, APP_SUB_DIR);
+    _mkdir(pDs->pString);
+}
+
+/* Generate the full path for a filename used by the app in the userdata path. */
+void AppGenDataFilename(char* pFilename, DString* pDs)
+{
+    assert(0 == pDs->length);
+    assert(pFilename);
+    if (!pFilename) return;
+    assert(pDs);
+    if (!pDs) return;
+
+    AppGetAppDir(pDs);
+    if (!Str_EndsWithNoCase(pDs->pString, DIR_SEP_STR) && !(DIR_SEP_CHAR == pFilename[0])) {
+        DStringAppend(pDs, "/", 1);
+    }
+    DStringAppend(pDs, pFilename, -1);
+}
+
+static void Prefs_GetFileName(DString* pDs)
+{
+    assert(0 == pDs->length);
+    AppGenDataFilename(PREFS_FILE_NAME, pDs);
+}
+
+/* Load preferences from the preferences file. */
+void Prefs_Load(void)
+{
+    DString             path;
+    static int          loaded = FALSE;
+    unsigned long       prefsFileLen;
+    char *              prefsTxt = NULL;
+    BOOL                fOk;
+
+    assert(!loaded);
+    loaded = TRUE;
+
+    DBG_OUT("Prefs_Load()\n");
+
+    DStringInit(&path);
+    Prefs_GetFileName(&path);
+
+    prefsTxt = File_Slurp(path.pString, &prefsFileLen);
+    if (Str_Empty(prefsTxt)) {
+        DBG_OUT("  no prefs file or is empty\n");
+        return;
+    }
+    DBG_OUT("Prefs file %s:\n%s\n", path.pString, prefsTxt);
+
+    fOk = Prefs_Deserialize(prefsTxt, &gFileHistoryRoot);
+    assert(fOk);
+
+    DStringFree(&path);
+    free((void*)prefsTxt);
+}
+
+static BOOL gPrefsSaved = FALSE;
+
+void Prefs_Save(void)
+{
+    DString       path;
+    DString       prefsStr;
+    size_t        len = 0;
+    FILE*         pFile = NULL;
+    BOOL          fOk;
+    FileHistoryList *curr;
+    WindowInfo *    currWin;
+    const char *    fileName;
+    char *          winFileName;
+
+#if 0
+    if (gPrefsSaved)
+        return;
+    gPrefsSaved = TRUE;
+#endif
+
+    DStringInit(&prefsStr);
+
+    /* mark currently shown files as visible */
+    curr = gFileHistoryRoot;
+    while (curr) {
+        curr->state.visible = FALSE;
+        fileName = curr->state.filePath;
+        currWin = gWindowList;
+        while (currWin) {
+            winFileName = NULL;
+            if ((currWin->state == WS_SHOWING_PDF) && currWin->dm && currWin->dm->pdfDoc) {
+                winFileName = currWin->dm->pdfDoc->getFileName()->getCString();
+            }
+            if (winFileName && Str_EqNoCase(fileName, winFileName)) {
+                curr->state.visible = TRUE;
+                break;
+            }
+            currWin = currWin->next;
+        }
+        curr = curr->next;
+    }
+
+    fOk = Prefs_Serialize(&gFileHistoryRoot, &prefsStr);
+    if (!fOk)
+        goto Exit;
+
+    DStringInit(&path);
+    Prefs_GetFileName(&path);
+    DBG_OUT("prefs file=%s\nprefs:\n%s\n", path.pString, prefsStr.pString);
+    /* TODO: consider 2-step process:
+        * write to a temp file
+        * rename temp file to final file */
+    pFile = fopen(path.pString, "w");
+    if (!pFile) {
+        goto Exit;
+    }
+
+    len = prefsStr.length;
+    if (fwrite(prefsStr.pString, 1, len, pFile) != len) {
+        goto Exit;
+    }
+    
+Exit:
+    DStringFree(&prefsStr);
+    DStringFree(&path);
+    if (pFile)
+        fclose(pFile);
+}
+
+void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
+{
+    DisplayState    ds;
+    const char *    fileName = NULL;
+    FileHistoryList*node = NULL;
+
+    if (!win)
+        return;
+    if (WS_SHOWING_PDF != win->state)
+        return;
+    if (!win->dm)
+        return;
+    if (!win->dm->pdfDoc)
+        return;
+
+    fileName = win->dm->pdfDoc->getFileName()->getCString();
+    assert(fileName);
+    if (!fileName)
+        return;
+
+    node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
+    assert(node);
+    if (!node)
+        return;
+
+    DisplayState_Init(&ds);
+    /* TODO: save DisplayMode and fullscreen info in DisplayModel */
+    if (!DisplayState_FromDisplayModel(&ds, win->dm, DM_SINGLE_PAGE, 
+FALSE))
+        return;
+
+    DisplayState_Free(&(node->state));
+    node->state = ds;
+    node->state.visible = TRUE;
+}
+
+void UpdateCurrentFileDisplayState(void)
+{
+    WindowInfo *        currWin;
+    FileHistoryList *   currFile;
+
+    currFile = gFileHistoryRoot;
+    while (currFile) {
+        currFile->state.visible = FALSE;
+        currFile = currFile->next;
+    }
+
+    currWin = gWindowList;
+    while (currWin) {
+        UpdateCurrentFileDisplayStateForWin(currWin);
+        currWin = currWin->next;
+    }
 }
 
 static void WindowInfo_GetWindowSize(WindowInfo *win)
@@ -672,50 +887,50 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
-static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
+static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL fromHistory=FALSE)
 {
     int             err;
     WindowInfo *    win;
-    GooString *     file_name_str = NULL;
-    int             reuse_existing_window = FALSE;
+    GooString *     fileNameStr = NULL;
+    int             reuseExistingWindow = FALSE;
     PDFDoc *        pdfDoc;
     RectDSize       totalDrawAreaSize;
     int             scrollbarYDx, scrollbarXDy;
     SplashOutputDev *outputDev = NULL;
     GBool           bitmapTopDown = gTrue;
     int             continuous;
-    int             pagesAtATime;
+    int             coulumns;
 
-    GetStateFromDisplayMode(DEFAULT_DISPLAY_MODE, &continuous, &pagesAtATime);
+    GetStateFromDisplayMode(DEFAULT_DISPLAY_MODE, &continuous, &coulumns);
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
-        reuse_existing_window = TRUE;
+        reuseExistingWindow = TRUE;
     }
 
-    if (!reuse_existing_window) {
+    if (!reuseExistingWindow) {
         win = WindowInfo_CreateEmpty();
         if (!win)
             return NULL;
-        if (!file_name) {
+        if (!fileName) {
             WindowInfoList_Add(win);
             goto Exit;
         }
     }
 
-    file_name_str = new GooString(file_name);
-    if (!file_name_str)
+    fileNameStr = new GooString(fileName);
+    if (!fileNameStr)
         return win;
 
     err = errNone;
-    pdfDoc = new PDFDoc(file_name_str, NULL, NULL, (void*)win);
+    pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, (void*)win);
     if (!pdfDoc->isOk())
     {
         err = errOpenFile;
-        error(-1, "LoadPdf(): failed to open PDF file %s\n", file_name);
+        error(-1, "LoadPdf(): failed to open PDF file %s\n", fileName);
     }
 
-    if (close_invalid_files && (errNone != err) && !reuse_existing_window)
+    if (closeInvalidFiles && (errNone != err) && !reuseExistingWindow)
     {
         WindowInfo_Delete(win);
         return NULL;
@@ -742,7 +957,7 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
     scrollbarYDx = 0;
     scrollbarXDy = 0;
     win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarYDx, scrollbarXDy, continuous, pagesAtATime, 1);
+        scrollbarYDx, scrollbarXDy, continuous, coulumns, 1);
     if (!win->dm) {
         delete outputDev;
         WindowInfo_Delete(win);
@@ -755,8 +970,11 @@ static WindowInfo* LoadPdf(const TCHAR *file_name, BOOL close_invalid_files)
 
     win->dm->appData = (void*)win;
 
+    if (!fromHistory)
+        AddFileToHistory(fileName);
+
 Error:
-    if (!reuse_existing_window) {
+    if (!reuseExistingWindow) {
         if (errNone != err) {
             if (WindowInfoList_ExistsWithError()) {
                 /* don't create more than one window with errors */
@@ -767,16 +985,18 @@ Error:
         WindowInfoList_Add(win);
     }
 
+    /* TODO: if fromHistory, set the state based on gFileHistoryList node for
+       this entry */
     if (errNone != err) {
         win->state = WS_ERROR_LOADING_PDF;
-        DBG_OUT("failed to load file %s, error=%d\n", file_name, (int)err);
+        DBG_OUT("failed to load file %s, error=%d\n", fileName, (int)err);
     } else {
         win->state = WS_SHOWING_PDF;
         DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
         WindowInfo_ResizeToPage(win, 1);
         DisplayModel_GoToPage(win->dm, 1, 0);
     }
-    if (reuse_existing_window)
+    if (reuseExistingWindow)
         WindowInfo_RedrawAll(win);
 
 Exit:
@@ -787,6 +1007,11 @@ Exit:
         UpdateWindow(win->hwnd);
     }
     return win;
+}
+
+static WindowInfo* LoadPdfFromHistory(const TCHAR *fileName)
+{
+    return LoadPdf(fileName, FALSE, TRUE);
 }
 
 static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
@@ -1621,17 +1846,17 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
 void OnMenuOpen(WindowInfo *win)
 {
     OPENFILENAME ofn = {0};
-    char         file_name[260];
+    char         fileName[260];
     GooString      fileNameStr;
 
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = win->hwnd;
-    ofn.lpstrFile = file_name;
+    ofn.lpstrFile = fileName;
 
     // Set lpstrFile[0] to '\0' so that GetOpenFileName does not
     // use the contents of szFile to initialize itself.
     ofn.lpstrFile[0] = '\0';
-    ofn.nMaxFile = sizeof(file_name);
+    ofn.nMaxFile = sizeof(fileName);
     ofn.lpstrFilter = "PDF\0*.pdf\0All\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.lpstrFileTitle = NULL;
@@ -1643,7 +1868,7 @@ void OnMenuOpen(WindowInfo *win)
     if (FALSE == GetOpenFileName(&ofn))
         return;
 
-    win = LoadPdf(file_name, TRUE);
+    win = LoadPdf(fileName, TRUE);
     if (!win)
         return;
 }
@@ -2412,39 +2637,43 @@ void u_DoAllTests(void)
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
-    StrList *   cur;
+    StrList *   argListRoot;
+    StrList *   currArg;
     char *      exeName;
     char *      benchPageNumStr = NULL;
     MSG         msg;
     HACCEL      hAccelTable;
     WindowInfo* win;
+    FileHistoryList *currFile;
+    int pdfOpened = 0;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
 
     u_DoAllTests();
 
-    gArgListRoot = StrList_FromCmdLine(lpCmdLine);
-    assert(gArgListRoot);
-    if (!gArgListRoot)
+    argListRoot = StrList_FromCmdLine(lpCmdLine);
+    assert(argListRoot);
+    if (!argListRoot)
         return 0;
-    exeName = gArgListRoot->str;
+    exeName = argListRoot->str;
 
+    Prefs_Load();
     /* parse argument list. If BENCH_ARG_TXT was given, then we're in benchmarking mode. Otherwise
     we assume that all arguments are PDF file names.
     BENCH_ARG_TXT can be followed by file or directory name. If file, it can additionally be followed by
     a number which we interpret as page number */
-    cur = gArgListRoot->next;
-    while (cur) {
-        if (IsBenchArg(cur->str)) {
-            cur = cur->next;
-            if (cur) {
-                gBenchFileName = cur->str;
-                if (cur->next)
-                    benchPageNumStr = cur->next->str;
+    currArg = argListRoot->next;
+    while (currArg) {
+        if (IsBenchArg(currArg->str)) {
+            currArg = currArg->next;
+            if (currArg) {
+                gBenchFileName = currArg->str;
+                if (currArg->next)
+                    benchPageNumStr = currArg->next->str;
             }
             break;
         }
-        cur = cur->next;
+        currArg = currArg->next;
     }
 
     if (benchPageNumStr) {
@@ -2471,32 +2700,46 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     /* TODO: detect it's not me and show a dialog box ? */
     AssociatePdfWithExe(exeName);
 
-    int pdfOpened = 0;
     if (NULL != gBenchFileName) {
             win = LoadPdf(gBenchFileName, FALSE);
             if (win)
                 ++pdfOpened;
     } else {
-        cur = gArgListRoot->next;
-        while (cur) {
-            win = LoadPdf(cur->str, FALSE);
+        currArg = argListRoot->next;
+        while (currArg) {
+            win = LoadPdf(currArg->str, FALSE);
             if (!win)
                 goto Exit;
            ++pdfOpened;
-            cur = cur->next;
+            currArg = currArg->next;
         }
     }
 
     if (0 == pdfOpened) {
         /* disable benchmark mode if we couldn't open file to benchmark */
         gBenchFileName = 0;
-        win = WindowInfo_CreateEmpty();
-        if (!win)
-            goto Exit;
-        WindowInfoList_Add(win);
-        DragAcceptFiles(win->hwnd, TRUE);
-        ShowWindow(win->hwnd, SW_SHOW);
-        UpdateWindow(win->hwnd);
+        /* TODO: try to load all files from preferences */
+        currFile = gFileHistoryRoot;
+        while (currFile) {
+            if (currFile->state.visible) {
+                win = LoadPdfFromHistory(currFile->state.filePath);
+                if (!win)
+                    goto Exit;
+                ++pdfOpened;
+            }
+            currFile = currFile->next;
+        }
+        if (0 == pdfOpened) {
+            win = WindowInfo_CreateEmpty();
+            if (!win)
+                goto Exit;
+            WindowInfoList_Add(win);
+
+            /* TODO: should this be part of WindowInfo_CreateEmpty() ? */
+            DragAcceptFiles(win->hwnd, TRUE);
+            ShowWindow(win->hwnd, SW_SHOW);
+            UpdateWindow(win->hwnd);
+        }
     }
 
     if (IsBenchMode()) {
@@ -2514,14 +2757,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     }
 
 Exit:
+    Prefs_Save();
     WindowInfoList_DeleteAll();
+    FileHistoryList_Free(&gFileHistoryRoot);
     CaptionPens_Destroy();
     DeleteObject(gBrushBg);
     DeleteObject(gBrushShadow);
     DeleteObject(gBrushLinkDebug);
 
     delete globalParams;
-    //WinFontList_Destroy();
-    StrList_Destroy(&gArgListRoot);
+    StrList_Destroy(&argListRoot);
     return (int) msg.wParam;
 }

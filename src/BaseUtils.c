@@ -689,15 +689,15 @@ void win32_dbg_out(const char *format, ...) {
 #endif
 
 #ifdef _WIN32
-unsigned long File_GetSize(const char *file_name)
+unsigned long File_GetSize(const char *fileName)
 {
     int                         fOk;
     WIN32_FILE_ATTRIBUTE_DATA   fileInfo;
 
-    if (NULL == file_name)
+    if (NULL == fileName)
         return INVALID_FILE_SIZE;
 
-    fOk = GetFileAttributesEx(file_name, GetFileExInfoStandard, (void*)&fileInfo);
+    fOk = GetFileAttributesEx(fileName, GetFileExInfoStandard, (void*)&fileInfo);
     if (!fOk)
         return INVALID_FILE_SIZE;
     return (unsigned long)fileInfo.nFileSizeLow;
@@ -706,14 +706,14 @@ unsigned long File_GetSize(const char *file_name)
 #include <sys/types.h>
 #include <sys/stat.h>
 
-unsigned long File_GetSize(const char *file_name)
+unsigned long File_GetSize(const char *fileName)
 {
     struct stat stat_buf;
     int         res;
     unsigned long size;
-    if (NULL == file_name)
+    if (NULL == fileName)
         return INVALID_FILE_SIZE;
-    res = stat(file_name, &stat_buf);
+    res = stat(fileName, &stat_buf);
     if (0 != res)
         return INVALID_FILE_SIZE;
     size = (unsigned long)stat_buf.st_size;
@@ -722,7 +722,7 @@ unsigned long File_GetSize(const char *file_name)
 #endif
 
 #define BUF_SIZE 1024
-char *File_Slurp(const char *file_name, unsigned long *file_size_out)
+char *File_Slurp(const char *fileName, unsigned long *file_size_out)
 {
     FILE *fp = NULL;
     unsigned char buf[BUF_SIZE];
@@ -731,7 +731,7 @@ char *File_Slurp(const char *file_name, unsigned long *file_size_out)
     char *file_content = NULL;
     char *cur_content_pos;
 
-    unsigned long file_size = File_GetSize(file_name);
+    unsigned long file_size = File_GetSize(fileName);
     if (INVALID_FILE_SIZE == file_size)
         return NULL;
 
@@ -742,7 +742,7 @@ char *File_Slurp(const char *file_name, unsigned long *file_size_out)
 
     cur_content_pos = file_content;
     *file_size_out = file_size;
-    fp = fopen(file_name, "rb");
+    fp = fopen(fileName, "rb");
     if (!fp)
         goto Error;
 

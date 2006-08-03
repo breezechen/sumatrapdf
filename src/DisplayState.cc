@@ -68,6 +68,7 @@ void DisplayState_Init(DisplayState *ds)
 {
     memzero(ds, sizeof(DisplayState));
     ds->displayMode = DM_SINGLE_PAGE;
+    ds->visible = FALSE;
     ds->fullScreen = FALSE;
     ds->pageNo = 1;
     ds->zoomVirtual = 100.0;
@@ -90,19 +91,20 @@ BOOL DisplayState_Serialize(DisplayState *ds, DString *strOut)
         DStringSprintf(strOut, "  %s: %s\n", DISPLAY_MODE_STR, displayModeName);
     else
         DStringSprintf(strOut, "  %s: %s\n", DISPLAY_MODE_STR, DisplayModeNameFromEnum(DM_SINGLE_PAGE));
-        
-    DStringSprintf(strOut, "  %s: %d\n", PAGE_NO_STR, ds->pageNo);
+
+    DStringSprintf(strOut, "  %s: %d\n",   VISIBLE_STR, ds->visible);
+    DStringSprintf(strOut, "  %s: %d\n",   PAGE_NO_STR, ds->pageNo);
     DStringSprintf(strOut, "  %s: %.4f\n", ZOOM_VIRTUAL_STR, ds->zoomVirtual);
-    DStringSprintf(strOut, "  %s: %d\n", ROTATION_STR, ds->rotation);
-    DStringSprintf(strOut, "  %s: %d\n", FULLSCREEN_STR, (int)ds->fullScreen);
+    DStringSprintf(strOut, "  %s: %d\n",   ROTATION_STR, ds->rotation);
+    DStringSprintf(strOut, "  %s: %d\n",   FULLSCREEN_STR, (int)ds->fullScreen);
 
-    DStringSprintf(strOut, "  %s: %d\n", SCROLL_X_STR, ds->scrollX);
-    DStringSprintf(strOut, "  %s: %d\n", SCROLL_Y_STR, ds->scrollY);
+    DStringSprintf(strOut, "  %s: %d\n",   SCROLL_X_STR, ds->scrollX);
+    DStringSprintf(strOut, "  %s: %d\n",   SCROLL_Y_STR, ds->scrollY);
 
-    DStringSprintf(strOut, "  %s: %d\n", WINDOW_X_STR, ds->windowX);
-    DStringSprintf(strOut, "  %s: %d\n", WINDOW_Y_STR, ds->windowY);
-    DStringSprintf(strOut, "  %s: %d\n", WINDOW_DX_STR, ds->windowDx);
-    DStringSprintf(strOut, "  %s: %d\n", WINDOW_DY_STR, ds->windowDy);
+    DStringSprintf(strOut, "  %s: %d\n",   WINDOW_X_STR, ds->windowX);
+    DStringSprintf(strOut, "  %s: %d\n",   WINDOW_Y_STR, ds->windowY);
+    DStringSprintf(strOut, "  %s: %d\n",   WINDOW_DX_STR, ds->windowDx);
+    DStringSprintf(strOut, "  %s: %d\n",   WINDOW_DY_STR, ds->windowDy);
     return TRUE;
 }
 

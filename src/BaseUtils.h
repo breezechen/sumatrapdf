@@ -57,6 +57,7 @@ extern "C"
 #define MAX_FILENAME_SIZE 1024
 
 #ifdef _WIN32
+  typedef unsigned int uint32_t;
   void    win32_dbg_out(const char *format, ...);
   #define DIR_SEP_CHAR '\\'
   #define DIR_SEP_STR  "\\"

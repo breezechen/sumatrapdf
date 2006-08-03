@@ -12,29 +12,27 @@
 #define DEFAULT_WINDOW_DX    640
 #define DEFAULT_WINDOW_DY    480
 
-BOOL Prefs_Serialize(DisplayState *ds, FileHistoryList **root, DString *strOut)
+BOOL Prefs_Serialize(FileHistoryList **root, DString *strOut)
 {
-    int     fOk;
-
-    if (ds) {
-        DStringSprintf(strOut, "%s:\n", STATE_STR);
-        fOk = DisplayState_Serialize(ds, strOut);
-        if (!fOk)
-            return FALSE;
-    }
-
-    fOk = FileHistoryList_Serialize(root, strOut);
-    return fOk;
+    assert(0 == strOut->length);
+    return FileHistoryList_Serialize(root, strOut);
 }
 
 static BOOL ParseDisplayMode(const char *txt, DisplayMode *resOut)
 {
+    assert(txt);
+    if (!txt) return FALSE;
     return DisplayModeEnumFromName(txt, resOut);
 }
 
 static BOOL ParseDouble(const char *txt, double *resOut)
 {
-    int res = sscanf(txt, "%lf", resOut);
+    int res;
+
+    assert(txt);
+    if (!txt) return FALSE;
+
+    res = sscanf(txt, "%lf", resOut);
     if (1 != res)
         return FALSE;
     return TRUE;
@@ -42,12 +40,16 @@ static BOOL ParseDouble(const char *txt, double *resOut)
 
 static BOOL ParseInt(const char *txt, int *resOut)
 {
+    assert(txt);
+    if (!txt) return FALSE;
     *resOut = atoi(txt);
     return TRUE;
 }
 
 static BOOL ParseBool(const char *txt, BOOL *resOut)
 {
+    assert(txt);
+    if (!txt) return FALSE;
     int val = atoi(txt);
     if (val)
         *resOut = TRUE;
@@ -56,7 +58,7 @@ static BOOL ParseBool(const char *txt, BOOL *resOut)
     return TRUE;
 }
 
-enum PrefsParsingState { PPS_START, PPS_IN_STATE, PPS_IN_FILE_HISTORY };
+enum PrefsParsingState { PPS_START, PPS_IN_FILE_HISTORY };
 
 /* Return TRUE if 'str' is a comment line in preferences file.
    Comment lines start with '#'. */
@@ -78,11 +80,119 @@ static int Prefs_LineIsStructKey(const char *str)
     return FALSE;
 }
 
+static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
+{
+    BOOL    fOk;
+
+    assert(key);
+    assert(value);
+    assert(dsOut);
+    if (!key || !value || !dsOut)
+        return;
+
+    if (Str_Eq(FILE_STR, key)) {
+        assert(value);
+        if (!value) return;
+        assert(!dsOut->filePath);
+        free((void*)dsOut->filePath);
+        dsOut->filePath = Str_Dup(value);
+        return;
+    }
+
+    if (Str_Eq(DISPLAY_MODE_STR, key)) {
+        dsOut->displayMode = DM_SINGLE_PAGE;
+        fOk = ParseDisplayMode(value, &dsOut->displayMode);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(PAGE_NO_STR, key)) {
+        fOk = ParseInt(value, &dsOut->pageNo);
+        assert(fOk);
+        if (!fOk || (dsOut->pageNo < 1))
+            dsOut->pageNo = 1;
+        return;
+    }
+
+    if (Str_Eq(ZOOM_VIRTUAL_STR, key)) {
+        fOk = ParseDouble(value, &dsOut->zoomVirtual);
+        assert(fOk);
+        if (!fOk || !ValidZoomVirtual(dsOut->zoomVirtual))
+            dsOut->zoomVirtual = 100.0;
+        return;
+    }
+
+    if (Str_Eq(ROTATION_STR, key)) {
+        fOk = ParseInt(value, &dsOut->rotation);
+        assert(fOk);
+        if (!fOk || !ValidRotation(dsOut->rotation))
+            dsOut->rotation = 0;
+        return;
+    }
+
+    if (Str_Eq(VISIBLE_STR, key)) {
+        dsOut->visible= FALSE;
+        fOk = ParseBool(value, &dsOut->visible);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(FULLSCREEN_STR, key)) {
+        dsOut->fullScreen = FALSE;
+        fOk = ParseBool(value, &dsOut->fullScreen);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(SCROLL_X_STR, key)) {
+        dsOut->scrollX = 0;
+        fOk = ParseInt(value, &dsOut->scrollX);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(SCROLL_Y_STR, key)) {
+        dsOut->scrollY = 0;
+        fOk = ParseInt(value, &dsOut->scrollY);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(WINDOW_X_STR, key)) {
+        dsOut->windowX = DEFAULT_WINDOW_X;
+        fOk = ParseInt(value, &dsOut->windowX);
+        assert(fOk);
+        return;
+    } 
+
+    if (Str_Eq(WINDOW_Y_STR, key)) {
+        dsOut->windowY = DEFAULT_WINDOW_Y;
+        fOk = ParseInt(value, &dsOut->windowY);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(WINDOW_DX_STR, key)) {
+        dsOut->windowDx = DEFAULT_WINDOW_DX;
+        fOk = ParseInt(value, &dsOut->windowDx);
+        assert(fOk);
+        return;
+    }
+
+    if (Str_Eq(WINDOW_DY_STR, key)) {
+        dsOut->windowDy = DEFAULT_WINDOW_DY;
+        fOk = ParseInt(value, &dsOut->windowDy);
+        assert(fOk);
+        return;
+    }
+    assert(0);
+}
+
 /* Deserialize preferences from text. Put state into 'dsOut' and add all history
    items to file history list 'root'.
    Return FALSE if there was an error.
    An ode to a state machine. */
-BOOL Prefs_Deserialize(const char *prefsTxt, DisplayState *dsOut, FileHistoryList **fileHistoryRoot)
+BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 {
     PrefsParsingState   state = PPS_START;
     char *              prefsTxtNormalized = NULL;
@@ -135,11 +245,7 @@ BOOL Prefs_Deserialize(const char *prefsTxt, DisplayState *dsOut, FileHistoryLis
 StartOver:
         switch (state) {
             case PPS_START:
-                if (Str_Eq(STATE_STR, key)) {
-                    assert(!isStructVal);
-                    state = PPS_IN_STATE;
-                    assert(!value);
-                } else if (Str_Eq(FILE_HISTORY_STR, key)) {
+                if (Str_Eq(FILE_HISTORY_STR, key)) {
                     assert(!isStructVal);
                     state = PPS_IN_FILE_HISTORY;
                     assert(!fileHistoryNode);
@@ -153,114 +259,19 @@ StartOver:
                 }
                 break;
 
-            case PPS_IN_STATE:
-                if (isStructVal)
-                    goto ParseStateItem;
-
-                *dsOut = currState;
-
-                DisplayState_Init(&currState);
-                state = PPS_START;
-                goto StartOver;
-
             case PPS_IN_FILE_HISTORY:
-                if (isStructVal)
-                    goto ParseStateItem;
-
-                if (currState.filePath) {
-                    fileHistoryNode = FileHistoryList_Node_Create();
-                    fileHistoryNode->state = currState;
-                    FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
-                    fileHistoryNode = NULL;
-                }
-                DisplayState_Init(&currState);
-                state = PPS_START;
-                goto StartOver;
-
-ParseStateItem:
-                /* TODO: move this code into a function */
-                if (Str_Eq(FILE_STR, key)) {
-                    if (!value)
-                        goto Next;
-                    assert(!currState.filePath);
-                    free((void*)currState.filePath);
-                    currState.filePath = Str_Dup(value);
-                } else if (Str_Eq(DISPLAY_MODE_STR, key)) {
-                    fOk = ParseDisplayMode(value, &currState.displayMode);
-                    if (!fOk)
-                        currState.displayMode = DM_SINGLE_PAGE;
-                } else if (Str_Eq(PAGE_NO_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.pageNo);
-                    if (!fOk || (currState.pageNo < 1))
-                        currState.pageNo = 1;
-                } else if (Str_Eq(ZOOM_VIRTUAL_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseDouble(value, &currState.zoomVirtual);
-                    if (!fOk || !ValidZoomVirtual(currState.zoomVirtual))
-                        currState.zoomVirtual = 100.0;
-                } else if (Str_Eq(ROTATION_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.rotation);
-                    if (!fOk || !ValidRotation(currState.rotation))
-                        currState.rotation = 0;
-                } else if (Str_Eq(FULLSCREEN_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseBool(value, &currState.fullScreen);
-                    if (!fOk)
-                        currState.fullScreen = FALSE;
-                } else if (Str_Eq(SCROLL_X_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.scrollX);
-                    if (!fOk)
-                        currState.scrollX = 0;
-                } else if (Str_Eq(SCROLL_Y_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.scrollY);
-                    if (!fOk)
-                        currState.scrollY = 0;
-                } else if (Str_Eq(WINDOW_X_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.windowX);
-                    if (!fOk)
-                        currState.windowX = DEFAULT_WINDOW_X;
-                } else if (Str_Eq(WINDOW_Y_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.windowY);
-                    if (!fOk)
-                        currState.windowY = DEFAULT_WINDOW_Y;
-                } else if (Str_Eq(WINDOW_DX_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.windowDx);
-                    if (!fOk)
-                        currState.windowDx = DEFAULT_WINDOW_DX;
-                } else if (Str_Eq(WINDOW_DY_STR, key)) {
-                    assert(value);
-                    if (!value)
-                        goto Next;
-                    fOk = ParseInt(value, &currState.windowDy);
-                    if (!fOk)
-                        currState.windowDy = DEFAULT_WINDOW_DY;
+                if (isStructVal) {
+                    ParseKeyValue(key, value, &currState);
                 } else {
-                    assert(0);
+                    if (currState.filePath) {
+                        fileHistoryNode = FileHistoryList_Node_Create();
+                        fileHistoryNode->state = currState;
+                        FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
+                        fileHistoryNode = NULL;
+                    }
+                    DisplayState_Init(&currState);
+                    state = PPS_START;
+                    goto StartOver;
                 }
                 break;
 
@@ -280,10 +291,7 @@ Next:
             FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
             fileHistoryNode = NULL;
         }
-    } else if (PPS_IN_STATE == state) {
-        *dsOut = currState;
     }
-
 Exit:
     free((void*)prefsTxtNormalized);
     return TRUE;
