@@ -118,8 +118,8 @@ char *  Str_PathJoin(const char *path, const char *fileName);
 
 char *  CanonizeAbsolutePath(const char *path);
 
-unsigned long File_GetSize(const char *file_name);
-char *  File_Slurp(const char *file_name, unsigned long *file_size_out);
+unsigned long File_GetSize(const char *fileName);
+char *  File_Slurp(const char *fileName, unsigned long *file_size_out);
 
 #ifdef __cplusplus
 }

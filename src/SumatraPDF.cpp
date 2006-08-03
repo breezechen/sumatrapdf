@@ -257,6 +257,133 @@ const char *FileGetBaseName(const char *path)
     return fileBaseName;
 }
 
+HMENU FindMenuItem(WindowInfo *win, UINT id)
+{
+    HMENU   menuMain;
+    HMENU   subMenu;
+
+    UINT    thisId;
+    int     i, j;
+
+    menuMain = GetMenu(win->hwnd);
+
+    /* TODO: to be fully valid, it would have to be recursive */
+    for (i = 0; i < GetMenuItemCount(menuMain); i++) {
+        thisId = GetMenuItemID(menuMain, i);
+        subMenu = GetSubMenu(menuMain, i);
+        if (id == thisId)
+            return subMenu;
+        for (j = 0; j < GetMenuItemCount(subMenu); j++) {
+            thisId = GetMenuItemID(menuMain, j);
+            if (id == thisId)
+                return GetSubMenu(subMenu, j);
+        }
+    }
+    return NULL;
+}
+
+
+HMENU GetFileMenu(HWND hwnd)
+{
+    return GetSubMenu(GetMenu(hwnd), 0);
+}
+
+void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
+{
+    HMENU   menuMain;
+    UINT    id;
+    
+    menuMain = GetMenu(win->hwnd);
+    CheckMenuItem(menuMain, IDM_VIEW_SINGLE_PAGE, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
+    CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
+
+    if (DM_SINGLE_PAGE == displayMode) {
+        id = IDM_VIEW_SINGLE_PAGE;
+        DisplayModel_SwitchToSinglePage(win->dm);
+    } else if (DM_FACING == displayMode) {
+        id =  IDM_VIEW_FACING;
+        DisplayModel_SwitchToFacing(win->dm);
+    } else if (DM_CONTINUOUS == displayMode) {
+        id =  IDM_VIEW_CONTINUOUS;
+        DisplayModel_SwitchToContinuous(win->dm);
+    } else if (DM_CONTINUOUS_FACING == displayMode) {
+        id =  IDM_VIEW_CONTINUOUS_FACING;
+        DisplayModel_SwitchToContinuousFacing(win->dm);
+    } else
+        assert(0);
+
+    CheckMenuItem(menuMain, id, MF_BYCOMMAND | MF_CHECKED);
+}
+
+#define MAX_RECENT_FILES_IN_MENU 15
+
+UINT AllocNewMenuId(void)
+{
+    static UINT firstId = 1000;
+    ++firstId;
+    return firstId;
+}
+
+void AddMenuSepToFilesMenu(WindowInfo *win)
+{
+    HMENU               menuFile;
+    menuFile = GetFileMenu(win->hwnd);
+    AppendMenu(menuFile, MF_SEPARATOR, 0, NULL);
+}
+
+void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
+{
+    HMENU               menuFile;
+    UINT                newId;
+    const char *        txt;
+
+    assert(node);
+    if (!node)
+        return;
+    menuFile = GetFileMenu(win->hwnd);
+    assert(menuFile);
+    if (!menuFile)
+        return;
+
+    txt = FileGetBaseName(node->state.filePath);
+
+    newId = node->menuId;
+    if (INVALID_MENU_ID == node->menuId)
+        newId = AllocNewMenuId();
+    AppendMenu(menuFile, MF_ENABLED | MF_STRING, newId, txt);
+    DBG_OUT("AddMenuItemToFilesMenu() txt=%s, newId=%d\n", txt, (int)newId);
+    if (INVALID_MENU_ID == node->menuId)
+        node->menuId = newId;
+}
+
+void AddRecentFilesToMenu(WindowInfo *win)
+{
+    int                 itemsAdded = 0;
+    FileHistoryList *   curr;
+
+    if (!gFileHistoryRoot)
+        return;
+
+    AddMenuSepToFilesMenu(win);
+
+    curr = gFileHistoryRoot;
+    while (curr) {
+        assert(curr->state.filePath);
+        if (curr->state.filePath) {
+            AddMenuItemToFilesMenu(win, curr);
+            assert(curr->menuId != INVALID_MENU_ID);
+            ++itemsAdded;
+            if (itemsAdded >= MAX_RECENT_FILES_IN_MENU) {
+                DBG_OUT("  not adding, reached max %d items\n", MAX_RECENT_FILES_IN_MENU);
+                return;
+            }
+        }
+        curr = curr->next;
+    }
+}
+
 void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
 {
    ::SendMessage(hwnd, EM_SETSEL, (WPARAM)selStart, (WPARAM)selEnd);
@@ -770,6 +897,7 @@ static WindowInfo *WindowInfo_New(HWND hwnd)
 
     win->state = WS_EMPTY;
     win->hwnd = hwnd;
+    AddRecentFilesToMenu(win);
     return win;
 Error:
     WindowInfo_Delete(win);
@@ -2014,7 +2142,7 @@ static void OnMenuViewSinglePage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_SwitchToSinglePage(win->dm);
+    SwitchToDisplayMode(win, DM_SINGLE_PAGE);
 }
 
 static void OnMenuViewFacing(WindowInfo *win)
@@ -2023,7 +2151,7 @@ static void OnMenuViewFacing(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_SwitchToFacing(win->dm);
+    SwitchToDisplayMode(win, DM_FACING);
 }
 
 static void OnMenuViewContinuous(WindowInfo *win)
@@ -2032,7 +2160,7 @@ static void OnMenuViewContinuous(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_SwitchToContinuous(win->dm);
+    SwitchToDisplayMode(win, DM_CONTINUOUS);
 }
 
 static void OnMenuViewContinuousFacing(WindowInfo *win)
@@ -2041,7 +2169,7 @@ static void OnMenuViewContinuousFacing(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_SwitchToContinuousFacing(win->dm);
+    SwitchToDisplayMode(win, DM_CONTINUOUS_FACING);
 }
 
 static void OnMenuGoToNextPage(WindowInfo *win)
@@ -2290,12 +2418,28 @@ static BOOL IsBenchMode(void)
     return FALSE;
 }
 
+static const char *RecentFileNameFromMenuItemId(UINT  itemId)
+{
+    FileHistoryList *   curr;
+
+    DBG_OUT("RecentFileNameFromMenuItemId() looking for %d\n", (int)itemId);
+    curr = gFileHistoryRoot;
+    while (curr) {
+        DBG_OUT("  id=%d for '%s'\n", (int)curr->menuId, curr->state.filePath);
+        if (curr->menuId == itemId)
+            return curr->state.filePath;
+        curr = curr->next;
+    }
+    return NULL;
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
     WindowInfo *    win;
     static int      iDeltaPerLine, iAccumDelta;      // for mouse wheel logic
     ULONG           ulScrollLines;                   // for mouse wheel logic
+    const char *         fileName;
 
     win = WindowInfo_FindByHwnd(hwnd);
 
@@ -2308,6 +2452,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_COMMAND:
             wmId    = LOWORD(wParam);
             wmEvent = HIWORD(wParam);
+
+            fileName = RecentFileNameFromMenuItemId(wmId);
+            if (fileName) {
+                LoadPdf(fileName, TRUE);
+                break;
+            }
+
             switch (wmId)
             {
                 case IDM_OPEN:
