@@ -3,7 +3,6 @@ TODO list for Sumatra PDF.
 Must have before next (0.2) release:
 - much better "About" box
 - handle links (actions)
-- access encrypted files
 - remember the history of opened files (infinite "Recent Files"). Remember file name and
   UI state (windows posisition, current page, zoom level, scroll position) at the time
   file was close. Restore the UI state when file is re-opened. That way user gets where
@@ -16,6 +15,7 @@ Must have before next (0.2) release:
 - less intrusive icon
 
 Nice to have:
+- when pdf not opened, disable menus that are not relevant
 - when calculating the page size, use client area size as a guide, not the 
   window size
 - do loading in rendering in a background thread, without blocking the UI
@@ -58,6 +58,7 @@ Nice to have:
 
 Done:
 ---- v 0.2 released
+- access encrypted files
 - a better initial size of the window (size of a standard PDF page)
 - launch browser for the link
 - Go To page dialog

@@ -94,6 +94,9 @@ enum WinState {
 #define DEF_WIN_DX 612
 #define DEF_WIN_DY 792
 
+#define DIALOG_OK_PRESSED 1
+#define DIALOG_CANCEL_PRESSED 2
+
 /* Describes information related to one window with (optional) pdf document
    on the screen */
 typedef struct WindowInfo {
@@ -331,24 +334,100 @@ static void CaptionPens_Destroy(void)
     }
 }
 
-static char *GetPasswordForFile(const char *fileName)
+/* For passing data to/from GetPassword dialog */
+typedef struct {
+    const char *  fileName; /* name of the file for which we need the password */
+    char *  pwdOut;         /* password entered by the user */
+} Dialog_GetPassword_Data;
+
+BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    /* TODO: show a dialog */
-    return Str_Dup("kjk");
+    HWND                       edit;
+    HWND                       label;
+    DString                    ds;
+    Dialog_GetPassword_Data *  data;
+
+    switch (message)
+    {
+        case WM_INITDIALOG:
+            /* TODO: intelligently center the dialog within the parent window? */
+            data = (Dialog_GetPassword_Data*)lParam;
+            assert(data);
+            assert(data->fileName);
+            assert(!data->pwdOut);
+            SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
+            DStringInit(&ds);
+            DStringSprintf(&ds, "Enter password for %s", data->fileName);
+            label = GetDlgItem(hDlg, IDC_GET_PASSWORD_LABEL);
+            WinSetText(label, ds.pString);
+            DStringFree(&ds);
+            edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
+            WinSetText(edit, "");
+            SetFocus(edit);
+            return FALSE;
+
+        case WM_COMMAND:
+            switch (LOWORD(wParam))
+            {
+                case IDOK:
+                    data = (Dialog_GetPassword_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
+                    assert(data);
+                    edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
+                    data->pwdOut = WinGetText(edit);
+                    EndDialog(hDlg, DIALOG_OK_PRESSED);
+                    return TRUE;
+
+                case IDCANCEL:
+                    EndDialog(hDlg, DIALOG_CANCEL_PRESSED);
+                    return TRUE;
+            }
+            break;
+    }
+    return FALSE;
+}
+
+/* Shows a 'get password' dialog for a given file.
+   Returns a password entered by user as a newly allocated string or
+   NULL if user cancelled the dialog or there was an error.
+   Caller needs to free() the result.
+   TODO: should I get rid of fileName and get it from win? */
+static char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
+{
+    int                     dialogResult;
+    Dialog_GetPassword_Data data;
+    
+    assert(fileName);
+    if (!fileName) return NULL;
+
+    fileName = FileGetBaseName(fileName);
+    data.fileName = fileName;
+    data.pwdOut = NULL;
+    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GET_PASSWORD), win->hwnd, Dialog_GetPassword_Proc, (LPARAM)&data);
+    if (DIALOG_OK_PRESSED == dialogResult) {
+        return data.pwdOut;
+    }
+    free((void*)data.pwdOut);
+    return NULL;
+}
+
+
+static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
+{
+    return Dialog_GetPassword(win, fileName);
 }
 
 void *StandardSecurityHandler::getAuthData() 
 {
-    WindowInfo *        winInfo;
+    WindowInfo *        win;
     const char *        pwd;
     StandardAuthData *  authData;
 
-    winInfo = (WindowInfo*)doc->getGUIData();
-    assert(winInfo);
-    if (!winInfo)
+    win = (WindowInfo*)doc->getGUIData();
+    assert(win);
+    if (!win)
         return NULL;
 
-    pwd = GetPasswordForFile(doc->getFileName()->getCString());
+    pwd = GetPasswordForFile(win, doc->getFileName()->getCString());
     if (!pwd)
         return NULL;
 
@@ -1776,31 +1855,36 @@ static void OnMenuGoToFirstPage(WindowInfo *win)
     DisplayModel_GoToFirstPage(win->dm);
 }
 
-static int gDialogGoToPageCurrPageNo = INVALID_PAGE_NUM;
-static int gDialogGoToPagePageCount;
-static int gDialogGoToPageEnteredPageNo = INVALID_PAGE_NUM;
-
-#define DIALOG_GO_PRESSED 1
-#define DIALOG_CANCEL_PRESSED 2
+/* For passing data to/from GoToPage dialog */
+typedef struct {
+    int     currPageNo;      /* currently shown page number */
+    int     pageCount;       /* total number of pages */
+    int     pageEnteredOut;  /* page number entered by user */
+} Dialog_GoToPage_Data;
 
 BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    static HWND editPageNo = NULL;
-    HWND        labelOfPages;
-    DString     ds;
-    TCHAR *     newPageNoTxt;
+    HWND                    editPageNo;
+    HWND                    labelOfPages;
+    DString                 ds;
+    TCHAR *                 newPageNoTxt;
+    Dialog_GoToPage_Data *  data;
 
     switch (message)
     {
         case WM_INITDIALOG:
-            assert(INVALID_PAGE_NUM != gDialogGoToPageCurrPageNo);
-            assert(gDialogGoToPagePageCount >= 1);
+            /* TODO: intelligently center the dialog within the parent window? */
+            data = (Dialog_GoToPage_Data*)lParam;
+            assert(NULL != data);
+            SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
+            assert(INVALID_PAGE_NUM != data->currPageNo);
+            assert(data->pageCount >= 1);
             DStringInit(&ds);
-            DStringSprintf(&ds, "%d", gDialogGoToPageCurrPageNo);
+            DStringSprintf(&ds, "%d", data->currPageNo);
             editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
             WinSetText(editPageNo, ds.pString);
             DStringFree(&ds);
-            DStringSprintf(&ds, "(of %d)", gDialogGoToPagePageCount);
+            DStringSprintf(&ds, "(of %d)", data->pageCount);
             labelOfPages = GetDlgItem(hDlg, IDC_GOTO_PAGE_LABEL_OF);
             WinSetText(labelOfPages, ds.pString);
             DStringFree(&ds);
@@ -1811,18 +1895,19 @@ BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARA
         case WM_COMMAND:
             switch (LOWORD(wParam))
             {
-                case IDC_GOTO_PAGE_GO:
-                    assert(NULL != editPageNo);
+                case IDOK:
+                    data = (Dialog_GoToPage_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
+                    assert(data);
+                    data->pageEnteredOut = INVALID_PAGE_NUM;
+                    editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
                     newPageNoTxt = WinGetText(editPageNo);
-                    if (NULL != newPageNoTxt) {
-                        gDialogGoToPageEnteredPageNo = atoi(newPageNoTxt);
+                    if (newPageNoTxt) {
+                        data->pageEnteredOut = atoi(newPageNoTxt);
                         free((void*)newPageNoTxt);
-                    } else
-                        gDialogGoToPageEnteredPageNo = INVALID_PAGE_NUM;
-                    EndDialog(hDlg, DIALOG_GO_PRESSED);
+                    }
+                    EndDialog(hDlg, DIALOG_OK_PRESSED);
                     return TRUE;
 
-                case IDC_GOTO_PAGE_CANCEL:
                 case IDCANCEL:
                     EndDialog(hDlg, DIALOG_CANCEL_PRESSED);
                     return TRUE;
@@ -1834,21 +1919,21 @@ BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARA
 
 /* Shows a 'go to page' dialog and returns a page number entered by the user
    or INVALID_PAGE_NUM if user clicked "cancel" button, entered invalid
-   page number or there was an error.
-   TODO: intelligently center the dialog within the window? */
+   page number or there was an error. */
 static int Dialog_GoToPage(WindowInfo *win)
 {
-    int     dialogResult;
+    int                     dialogResult;
+    Dialog_GoToPage_Data    data;
     
     assert(win);
     if (!win) return INVALID_PAGE_NUM;
 
-    gDialogGoToPageCurrPageNo = win->dm->startPage;
-    gDialogGoToPagePageCount = win->dm->pageCount;
-    dialogResult = DialogBox(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwnd, Dialog_GoToPage_Proc);
-    if (DIALOG_GO_PRESSED == dialogResult) {
-        if (DisplayModel_ValidPageNo(win->dm, gDialogGoToPageEnteredPageNo)) {
-            return gDialogGoToPageEnteredPageNo;
+    data.currPageNo = win->dm->startPage;
+    data.pageCount = win->dm->pageCount;
+    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwnd, Dialog_GoToPage_Proc, (LPARAM)&data);
+    if (DIALOG_OK_PRESSED == dialogResult) {
+        if (DisplayModel_ValidPageNo(win->dm, data.pageEnteredOut)) {
+            return data.pageEnteredOut;
         }
     }
     return INVALID_PAGE_NUM;
