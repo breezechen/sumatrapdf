@@ -72,13 +72,6 @@ enum WinState {
 #define WM_VSCROLL_HANDLED 0
 #define WM_HSCROLL_HANDLED 0
 
-#define BORDER_TOP     4
-#define BORDER_BOTTOM  4
-
-/* TODO: those are not used yet */
-#define BORDER_LEFT    4
-#define BORDER_RIGHT   4
-
 /* A caption is 4 white/blue 2 pixel line and a 3 pixel white line */
 #define CAPTION_DY 2*(2*4)+3
 
@@ -96,10 +89,12 @@ enum WinState {
 #define APP_SUB_DIR     _T("SumatraPDF")
 
 #define INVALID_PAGE_NUM -1
-#define BENCH_ARG_TXT "-bench"
+#define BENCH_ARG_TXT   "-bench"
 
 #define DEF_WIN_DX 612
 #define DEF_WIN_DY 792
+
+#define MAX_RECENT_FILES_IN_MENU 15
 
 #define DIALOG_OK_PRESSED 1
 #define DIALOG_CANCEL_PRESSED 2
@@ -129,7 +124,7 @@ typedef struct StrList {
     char *              str;
 } StrList;
 
-FileHistoryList *   gFileHistoryRoot = NULL;
+static FileHistoryList *            gFileHistoryRoot = NULL;
 
 static SplashColor                  splashColRed;
 static SplashColor                  splashColGreen;
@@ -306,8 +301,6 @@ void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
 
     CheckMenuItem(menuMain, id, MF_BYCOMMAND | MF_CHECKED);
 }
-
-#define MAX_RECENT_FILES_IN_MENU 15
 
 UINT AllocNewMenuId(void)
 {
@@ -556,7 +549,6 @@ static char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
     free((void*)data.pwdOut);
     return NULL;
 }
-
 
 static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
 {
@@ -965,27 +957,68 @@ static void WindowInfo_RedrawAll(WindowInfo *win)
     UpdateWindow(win->hwnd);
 }
 
-/* Disable File\Close menu if we're not showing any PDF files,
-   enable otherwise */
-static void CloseMenuUpdateState(void)
+BOOL FileCloseMenuEnabled(void)
 {
-    BOOL            enabled = FALSE;
-    WindowInfo *    win = gWindowList;
-    HMENU           hmenu;
-
-    while (!enabled && win) {
+    WindowInfo *    win;
+    win = gWindowList;
+    while (win) {
         if (win->state == WS_SHOWING_PDF)
-            enabled = TRUE;
+            return TRUE;
         win = win->next;
     }
+    return FALSE;
+}
+
+static void MenuUpdateStateForWindow(WindowInfo *win)
+{
+    HMENU     hmenu;
+    BOOL      fileCloseEnabled;
+    UINT      menuId;
+    SCROLLINFO      si = {0};
+
+    static UINT menusToDisableIfNoPdf[] = {
+        IDM_VIEW_SINGLE_PAGE, IDM_VIEW_FACING, IDM_VIEW_CONTINUOUS, IDM_VIEW_CONTINUOUS_FACING,
+        IDM_VIEW_ROTATE_LEFT, IDM_VIEW_ROTATE_RIGHT, IDM_GOTO_NEXT_PAGE, IDM_GOTO_PREV_PAGE,
+        IDM_GOTO_FIRST_PAGE, IDM_GOTO_LAST_PAGE, IDM_GOTO_PAGE, IDM_ZOOM_FIT_PAGE,
+        IDM_ZOOM_ACTUAL_SIZE, IDM_ZOOM_FIT_WIDTH, IDM_ZOOM_6400, IDM_ZOOM_3200,
+        IDM_ZOOM_1600, IDM_ZOOM_800, IDM_ZOOM_400, IDM_ZOOM_200, IDM_ZOOM_150,
+        IDM_ZOOM_125, IDM_ZOOM_100, IDM_ZOOM_50, IDM_ZOOM_25, IDM_ZOOM_12_5,
+        IDM_ZOOM_8_33 };
+
+    fileCloseEnabled = FileCloseMenuEnabled();
+
+    hmenu = GetMenu(win->hwnd);
+    if (fileCloseEnabled)
+        EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_ENABLED);
+    else
+        EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_GRAYED);
+
+    for (int i = 0; i < dimof(menusToDisableIfNoPdf); i++) {
+        menuId = menusToDisableIfNoPdf[i];
+        if (WS_SHOWING_PDF == win->state)
+            EnableMenuItem(hmenu, menuId, MF_BYCOMMAND | MF_ENABLED);
+        else
+            EnableMenuItem(hmenu, menuId, MF_BYCOMMAND | MF_GRAYED);
+    }
+    /* Hide scrollbars if not showing a PDF */
+    /* TODO: doesn't really fit the name of the function */
+    if (WS_SHOWING_PDF == win->state)
+        ShowScrollBar(win->hwnd, SB_BOTH, TRUE);
+    else {
+        ShowScrollBar(win->hwnd, SB_BOTH, FALSE);
+        WinSetText(win->hwnd, APP_NAME);
+    }
+}
+
+/* Disable/enable menu items depending on wheter a given window shows a PDF 
+   file or not. */
+static void MenuUpdateStateForAllWindows(void)
+{
+    WindowInfo *    win;
 
     win = gWindowList;
     while (win) {
-        hmenu = GetMenu(win->hwnd);
-        if (enabled)
-            EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_ENABLED);
-        else
-            EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_GRAYED);
+        MenuUpdateStateForWindow(win);
         win = win->next;
     }
 }
@@ -1166,7 +1199,7 @@ Error:
         WindowInfo_RedrawAll(win);
 
 Exit:
-    CloseMenuUpdateState();
+    MenuUpdateStateForAllWindows();
     if (win) {
         DragAcceptFiles(win->hwnd, TRUE);
         ShowWindow(win->hwnd, SW_SHOW);
@@ -1940,7 +1973,8 @@ void CloseWindow(WindowInfo *win, BOOL quitIfLast)
     if (lastWindow && quitIfLast) {
         assert(0 == WindowInfoList_Len());
         PostQuitMessage(0);
-    }
+    } else
+        MenuUpdateStateForAllWindows();
 }
 
 static struct idToZoomMap {
@@ -2514,7 +2548,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 case IDM_CLOSE:
                     CloseWindow(win, FALSE);
-                    CloseMenuUpdateState();
                     break;
 
                 case IDM_EXIT:
@@ -2946,6 +2979,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             PostBenchNextAction(win->hwnd);
     }
 
+    if (0 == pdfOpened)
+        MenuUpdateStateForAllWindows();
     while (GetMessage(&msg, NULL, 0, 0)) {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
             TranslateMessage(&msg);
