@@ -72,6 +72,7 @@ void DisplayState_Init(DisplayState *ds)
     ds->fullScreen = FALSE;
     ds->pageNo = 1;
     ds->zoomVirtual = 100.0;
+    ds->rotation = 0;
 }
 
 void DisplayState_Free(DisplayState *ds)

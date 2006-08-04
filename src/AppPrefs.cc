@@ -201,7 +201,6 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
     int                 isStructVal;
     DisplayState        currState;
     FileHistoryList *   fileHistoryNode = NULL;
-    BOOL                fOk;
 
     DisplayState_Init(&currState);
 

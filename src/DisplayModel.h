@@ -152,8 +152,9 @@ typedef struct DisplayModel {
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
 
-    int             continuousMode;
-    int             columns;
+    DisplayMode     displayMode;
+
+    BOOL            fullScreen;
 
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.
@@ -206,14 +207,13 @@ typedef struct DisplayModel {
 BOOL          IsAllocatedBitmap(SplashBitmap *bmp);
 
 DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
-void             GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *columns);
 
 BOOL          ValidDisplayMode(DisplayMode dm);
 
 DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
-                                            int continuousMode, int columns, int startPage);
+                                            DisplayMode displayMode, int startPage);
 void          DisplayModel_Delete(DisplayModel *dm);
 
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
@@ -224,7 +224,7 @@ double        DisplayModel_GetZoomReal(DisplayModel *dm);
 double        DisplayModel_GetZoomVirtual(DisplayModel *dm);
 int           DisplayModel_GetRotation(DisplayModel *dm);
 
-void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY);
+void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scrollX=-1);
 bool          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
 bool          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
 bool          DisplayModel_GoToFirstPage(DisplayModel *dm);
@@ -237,17 +237,7 @@ void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
 void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
 void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage);
 
-void          DisplayModel_SetLayout(DisplayModel *dm, int continuousMode, int columns);
-
-int           DisplayModel_IsSinglePage(DisplayModel *dm);
-int           DisplayModel_IsFacing(DisplayModel *dm);
-int           DisplayModel_IsContinuous(DisplayModel *dm);
-int           DisplayModel_IsContinuousFacing(DisplayModel *dm);
-
-void          DisplayModel_SwitchToSinglePage(DisplayModel *dm);
-void          DisplayModel_SwitchToFacing(DisplayModel *dm);
-void          DisplayModel_SwitchToContinuous(DisplayModel *dm);
-void          DisplayModel_SwitchToContinuousFacing(DisplayModel *dm);
+void          DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode);
 
 void          DisplayModel_FreeBitmaps(DisplayModel *dm);
 
@@ -270,7 +260,7 @@ void          DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI);
 void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch);
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
 
-BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm, DisplayMode mode, BOOL fullScreen);
+BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo);
 
 /* Those need to be implemented somewhere else by the GUI */

@@ -2,14 +2,13 @@ TODO list for Sumatra PDF.
 
 Must have before next (0.2) release:
 - much better "About" box
-- handle links (actions)
 - less intrusive icon
-- save window positions into history
-- restore windows position from history
-- bug: file names in history get corrupted
 
 Nice to have:
 - toolbar
+- more links (actions) handling 
+- move document with a mouse
+- no scrollbars in an empty document
 - immediately add a file to "recent history" menu
 - do loading in rendering in a background thread, without blocking the UI
 - when pdf not opened, disable menus that are not relevant
@@ -54,6 +53,9 @@ Nice to have:
 
 Done:
 ---- v 0.2 released
+- restore windows position from history
+- save window positions into history
+- bug: file names in history get corrupted
 - when a file name is selected from history, open this file
 - remember the history of opened files (infinite "Recent Files"). Remember file name and
   UI state (windows posisition, current page, zoom level, scroll position) at the time

@@ -38,7 +38,7 @@ FileHistoryList *FileHistoryList_Node_Create(void)
         return NULL;
 
     memzero(node, sizeof(node));
-
+    DisplayState_Init(&(node->state));
     node->menuId = INVALID_MENU_ID;
     return node;
 }

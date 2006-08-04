@@ -151,13 +151,6 @@ static HBRUSH                       gBrushLinkDebug;
 static HPEN                         ghpenWhite = NULL;
 static HPEN                         ghpenBlue = NULL;
 
-static char *                       gStateFile = NULL;
-static DisplayMode                  gStateDisplayMode = DEFAULT_DISPLAY_MODE;
-static int                          gStatePageNo = 1;
-static int                          gStateRotation = 0;
-static double                       gStateZoomVirtual = 100.0;
-static BOOL                         gStateFullScreen = FALSE;
-
 #define SPLASH_COL_RED_PTR          (SplashColorPtr)&(splashColRed[0])
 #define SPLASH_COL_GREEN_PTR        (SplashColorPtr)&(splashColGreen[0])
 #define SPLASH_COL_BLUE_PTR         (SplashColorPtr)&(splashColBlue[0])
@@ -299,18 +292,15 @@ void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
 
+    DisplayModel_SetDisplayMode(win->dm, displayMode);
     if (DM_SINGLE_PAGE == displayMode) {
         id = IDM_VIEW_SINGLE_PAGE;
-        DisplayModel_SwitchToSinglePage(win->dm);
     } else if (DM_FACING == displayMode) {
         id =  IDM_VIEW_FACING;
-        DisplayModel_SwitchToFacing(win->dm);
     } else if (DM_CONTINUOUS == displayMode) {
         id =  IDM_VIEW_CONTINUOUS;
-        DisplayModel_SwitchToContinuous(win->dm);
     } else if (DM_CONTINUOUS_FACING == displayMode) {
         id =  IDM_VIEW_CONTINUOUS_FACING;
-        DisplayModel_SwitchToContinuousFacing(win->dm);
     } else
         assert(0);
 
@@ -439,7 +429,7 @@ void WinResizeClientArea(HWND hwnd, int dx, int dy)
     GetWindowRect(hwnd, &rw);
     win_dx = RectDx(&rw) + (dx - RectDx(&rc));
     win_dy = RectDy(&rw) + (dy - RectDy(&rc));
-    SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
+    SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
 }
 
 static void CaptionPens_Create(void)
@@ -655,73 +645,31 @@ void Prefs_Load(void)
     free((void*)prefsTxt);
 }
 
-static BOOL gPrefsSaved = FALSE;
-
-void Prefs_Save(void)
+void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
 {
-    DString       path;
-    DString       prefsStr;
-    size_t        len = 0;
-    FILE*         pFile = NULL;
-    BOOL          fOk;
-    FileHistoryList *curr;
-    WindowInfo *    currWin;
-    const char *    fileName;
-    char *          winFileName;
+    RECT    r;
+    *xOut = 0;
+    *yOut = 0;
 
-#if 0
-    if (gPrefsSaved)
-        return;
-    gPrefsSaved = TRUE;
-#endif
-
-    DStringInit(&prefsStr);
-
-    /* mark currently shown files as visible */
-    curr = gFileHistoryRoot;
-    while (curr) {
-        curr->state.visible = FALSE;
-        fileName = curr->state.filePath;
-        currWin = gWindowList;
-        while (currWin) {
-            winFileName = NULL;
-            if ((currWin->state == WS_SHOWING_PDF) && currWin->dm && currWin->dm->pdfDoc) {
-                winFileName = currWin->dm->pdfDoc->getFileName()->getCString();
-            }
-            if (winFileName && Str_EqNoCase(fileName, winFileName)) {
-                curr->state.visible = TRUE;
-                break;
-            }
-            currWin = currWin->next;
-        }
-        curr = curr->next;
+    if (GetWindowRect(hwnd, &r)) {
+        *xOut = r.left;
+        *yOut = r.top;
     }
+}
 
-    fOk = Prefs_Serialize(&gFileHistoryRoot, &prefsStr);
-    if (!fOk)
-        goto Exit;
+void Win32_Win_SetPos(HWND hwnd, int x, int y)
+{
+    SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSIZE);
+}
 
-    DStringInit(&path);
-    Prefs_GetFileName(&path);
-    DBG_OUT("prefs file=%s\nprefs:\n%s\n", path.pString, prefsStr.pString);
-    /* TODO: consider 2-step process:
-        * write to a temp file
-        * rename temp file to final file */
-    pFile = fopen(path.pString, "w");
-    if (!pFile) {
-        goto Exit;
-    }
+void UpdateDisplayStateWindowPos(WindowInfo *win, DisplayState *ds)
+{
+    int posX, posY;
 
-    len = prefsStr.length;
-    if (fwrite(prefsStr.pString, 1, len, pFile) != len) {
-        goto Exit;
-    }
-    
-Exit:
-    DStringFree(&prefsStr);
-    DStringFree(&path);
-    if (pFile)
-        fclose(pFile);
+    Win32_Win_GetPos(win->hwnd, &posX, &posY);
+
+    ds->windowX = posX;
+    ds->windowY = posY;
 }
 
 void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
@@ -750,11 +698,10 @@ void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
         return;
 
     DisplayState_Init(&ds);
-    /* TODO: save DisplayMode and fullscreen info in DisplayModel */
-    if (!DisplayState_FromDisplayModel(&ds, win->dm, DM_SINGLE_PAGE, 
-FALSE))
+    if (!DisplayState_FromDisplayModel(&ds, win->dm))
         return;
 
+    UpdateDisplayStateWindowPos(win, &ds);
     DisplayState_Free(&(node->state));
     node->state = ds;
     node->state.visible = TRUE;
@@ -776,6 +723,54 @@ void UpdateCurrentFileDisplayState(void)
         UpdateCurrentFileDisplayStateForWin(currWin);
         currWin = currWin->next;
     }
+}
+
+//static BOOL gPrefsSaved = FALSE;
+
+void Prefs_Save(void)
+{
+    DString       path;
+    DString       prefsStr;
+    size_t        len = 0;
+    FILE*         pFile = NULL;
+    BOOL          fOk;
+
+#if 0
+    if (gPrefsSaved)
+        return;
+    gPrefsSaved = TRUE;
+#endif
+
+    DStringInit(&prefsStr);
+
+    /* mark currently shown files as visible */
+    UpdateCurrentFileDisplayState();
+
+    fOk = Prefs_Serialize(&gFileHistoryRoot, &prefsStr);
+    if (!fOk)
+        goto Exit;
+
+    DStringInit(&path);
+    Prefs_GetFileName(&path);
+    DBG_OUT("prefs file=%s\nprefs:\n%s\n", path.pString, prefsStr.pString);
+    /* TODO: consider 2-step process:
+        * write to a temp file
+        * rename temp file to final file */
+    pFile = fopen(path.pString, "w");
+    if (!pFile) {
+        goto Exit;
+    }
+
+    len = prefsStr.length;
+    if (fwrite(prefsStr.pString, 1, len, pFile) != len) {
+        goto Exit;
+    }
+    
+Exit:
+    DStringFree(&prefsStr);
+    DStringFree(&path);
+    if (pFile)
+        fclose(pFile);
 }
 
 static void WindowInfo_GetWindowSize(WindowInfo *win)
@@ -1015,21 +1010,32 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
-static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL fromHistory=FALSE)
+static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
-    int             err;
-    WindowInfo *    win;
-    GooString *     fileNameStr = NULL;
-    int             reuseExistingWindow = FALSE;
-    PDFDoc *        pdfDoc;
-    RectDSize       totalDrawAreaSize;
-    int             scrollbarYDx, scrollbarXDy;
-    SplashOutputDev *outputDev = NULL;
-    GBool           bitmapTopDown = gTrue;
-    int             continuous;
-    int             coulumns;
+    int                 err;
+    WindowInfo *        win;
+    GooString *         fileNameStr = NULL;
+    int                 reuseExistingWindow = FALSE;
+    PDFDoc *            pdfDoc;
+    RectDSize           totalDrawAreaSize;
+    int                 scrollbarYDx, scrollbarXDy;
+    SplashOutputDev *   outputDev = NULL;
+    GBool               bitmapTopDown = gTrue;
+    BOOL                fromHistory;
+    FileHistoryList *   fileHistory = NULL;
+    int                 startPage;
+    double              zoomVirtual;
+    int                 rotation;
+    DisplayMode         displayMode;
+    int                 offsetX, offsetY;
 
-    GetStateFromDisplayMode(DEFAULT_DISPLAY_MODE, &continuous, &coulumns);
+    if (!ignoreHistory)
+        fileHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
+
+    if (fileHistory)
+        fromHistory = TRUE;
+    else
+        fromHistory = FALSE;
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -1075,6 +1081,14 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL f
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
+    if (fromHistory && !ignoreHistorySizePos) {
+        WinResizeClientArea(win->hwnd, fileHistory->state.windowDx, fileHistory->state.windowDy);
+        totalDrawAreaSize.dx = (double)fileHistory->state.windowDx;
+        totalDrawAreaSize.dy = (double)fileHistory->state.windowDy;
+        /* TODO: make sure it doesn't have a stupid position like 
+           outside of the screen etc. */
+        Win32_Win_SetPos(win->hwnd, fileHistory->state.windowX, fileHistory->state.windowY);
+    }
 
     /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
        but scrollbars are not part of the client area on windows so it's better
@@ -1084,8 +1098,18 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL f
              UI properly */
     scrollbarYDx = 0;
     scrollbarXDy = 0;
+    startPage = 1;
+    displayMode = DEFAULT_DISPLAY_MODE;
+    offsetX = 0;
+    offsetY = 0;
+    if (fromHistory) {
+        startPage = fileHistory->state.pageNo;
+        displayMode = fileHistory->state.displayMode;
+        offsetX = fileHistory->state.scrollX;
+        offsetY = fileHistory->state.scrollY;
+    }
     win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarYDx, scrollbarXDy, continuous, coulumns, 1);
+        scrollbarYDx, scrollbarXDy, displayMode, startPage);
     if (!win->dm) {
         delete outputDev;
         WindowInfo_Delete(win);
@@ -1120,9 +1144,23 @@ Error:
         DBG_OUT("failed to load file %s, error=%d\n", fileName, (int)err);
     } else {
         win->state = WS_SHOWING_PDF;
-        DisplayModel_Relayout(win->dm, DEFAULT_ZOOM, DEFAULT_ROTATION);
-        WindowInfo_ResizeToPage(win, 1);
-        DisplayModel_GoToPage(win->dm, 1, 0);
+        zoomVirtual = DEFAULT_ZOOM;
+        rotation = DEFAULT_ROTATION;
+        if (fromHistory) {
+            zoomVirtual = fileHistory->state.zoomVirtual;
+            rotation = fileHistory->state.rotation;
+        }
+        DisplayModel_Relayout(win->dm, zoomVirtual, rotation);
+        if (!DisplayModel_ValidPageNo(win->dm, startPage))
+            startPage = 1;
+        /* TODO: need to calculate proper offsetY, currently giving large offsetY
+           remembered for continuous mode breaks things (makes all pages invisible) */
+        offsetY = 0;
+        DisplayModel_GoToPage(win->dm, startPage, offsetY);
+        DisplayModel_ScrollXTo(win->dm, offsetX);
+        /* only resize the window if it's a newly opened window */
+        if (!reuseExistingWindow && !fromHistory)
+            WindowInfo_ResizeToPage(win, startPage);
     }
     if (reuseExistingWindow)
         WindowInfo_RedrawAll(win);
@@ -1135,11 +1173,6 @@ Exit:
         UpdateWindow(win->hwnd);
     }
     return win;
-}
-
-static WindowInfo* LoadPdfFromHistory(const TCHAR *fileName)
-{
-    return LoadPdf(fileName, FALSE, TRUE);
 }
 
 static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
@@ -1289,7 +1322,7 @@ void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 {
     int                 dx, dy;
     int                 displayDx, displayDy;
-    int                 fullScreen = 0;
+    BOOL                fullScreen = FALSE;
     DisplaySettings *   displaySettings;
     DisplayModel *      dm;
     PdfPageInfo *       pageInfo;
@@ -1612,7 +1645,7 @@ void WinResizeIfNeeded(WindowInfo *win)
     win_dy = RectDy(&rc);
 
     if ((win_dx == win->winDx) &&
-        (win_dy == win->winDy))
+        (win_dy == win->winDy) && win->hdcToDraw)
     {
         return;
     }
@@ -1869,6 +1902,7 @@ static void OnPaint(WindowInfo *win)
 
 void OnMenuExit(void)
 {
+    Prefs_Save();
     PostQuitMessage(0);
 }
 
@@ -1876,31 +1910,36 @@ void OnMenuExit(void)
    Closes the window unless this is the last window in which
    case it switches to empty window and disables the "File\Close"
    menu item. */
-void CloseWindow(WindowInfo *win, BOOL quit_if_last)
+void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 {
-    BOOL    last_window = FALSE;
-    HWND    hwnd_to_destroy = NULL;
-    win->state = WS_EMPTY;
+    BOOL    lastWindow = FALSE;
+    HWND    hwndToDestroy = NULL;
 
     if (1 == WindowInfoList_Len())
-        last_window = TRUE;
+        lastWindow = TRUE;
 
-    if (last_window && !quit_if_last) {
+
+    if (lastWindow)
+        Prefs_Save();
+    else
+        UpdateCurrentFileDisplayStateForWin(win);
+
+    win->state = WS_EMPTY;
+
+    if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
         //win->pdfCore->clear();
         WindowInfo_RedrawAll(win);
     } else {
-        hwnd_to_destroy = win->hwnd;
+        hwndToDestroy = win->hwnd;
         WindowInfoList_Remove(win);
         WindowInfo_Delete(win);
-        DestroyWindow(hwnd_to_destroy);
+        DestroyWindow(hwndToDestroy);
     }
 
-    if (last_window) {
-        if (quit_if_last) {
-            assert(0 == WindowInfoList_Len());
-            OnMenuExit();
-        }
+    if (lastWindow && quitIfLast) {
+        assert(0 == WindowInfoList_Len());
+        PostQuitMessage(0);
     }
 }
 
@@ -2384,8 +2423,9 @@ static void OnChar(WindowInfo *win, int key)
         if (win->dm)
             DisplayModel_GoToNextPage(win->dm, 0);
     } else if ('c' == key) {
+        // TODO: probably should preserve facing vs. non-facing
         if (win->dm)
-            DisplayModel_SwitchToContinuous(win->dm);
+            DisplayModel_SetDisplayMode(win->dm, DM_CONTINUOUS);
     } else if ('p' == key) {
         if (win->dm)
             DisplayModel_GoToPrevPage(win->dm, 0);
@@ -2418,16 +2458,22 @@ static BOOL IsBenchMode(void)
     return FALSE;
 }
 
-static const char *RecentFileNameFromMenuItemId(UINT  itemId)
+/* Find a file in a file history list that has a given 'menuId'.
+   Return a copy of filename or NULL if couldn't be found.
+   It's used to figure out if a menu item selected by the user
+   is one of the "recent files" menu items in File menu.
+   Caller needs to free() the memory.
+   */
+static const char *RecentFileNameFromMenuItemId(UINT  menuId)
 {
     FileHistoryList *   curr;
 
-    DBG_OUT("RecentFileNameFromMenuItemId() looking for %d\n", (int)itemId);
+    DBG_OUT("RecentFileNameFromMenuItemId() looking for %d\n", (int)menuId);
     curr = gFileHistoryRoot;
     while (curr) {
         DBG_OUT("  id=%d for '%s'\n", (int)curr->menuId, curr->state.filePath);
-        if (curr->menuId == itemId)
-            return curr->state.filePath;
+        if (curr->menuId == menuId)
+            return Str_Dup(curr->state.filePath);
         curr = curr->next;
     }
     return NULL;
@@ -2456,6 +2502,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             fileName = RecentFileNameFromMenuItemId(wmId);
             if (fileName) {
                 LoadPdf(fileName, TRUE);
+                free((void*)fileName);
                 break;
             }
 
@@ -2788,15 +2835,15 @@ void u_DoAllTests(void)
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
-    StrList *   argListRoot;
-    StrList *   currArg;
-    char *      exeName;
-    char *      benchPageNumStr = NULL;
-    MSG         msg;
-    HACCEL      hAccelTable;
-    WindowInfo* win;
-    FileHistoryList *currFile;
-    int pdfOpened = 0;
+    StrList *           argListRoot;
+    StrList *           currArg;
+    char *              exeName;
+    char *              benchPageNumStr = NULL;
+    MSG                 msg;
+    HACCEL              hAccelTable;
+    WindowInfo*         win;
+    FileHistoryList *   currFile;
+    int                 pdfOpened = 0;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
 
@@ -2869,11 +2916,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     if (0 == pdfOpened) {
         /* disable benchmark mode if we couldn't open file to benchmark */
         gBenchFileName = 0;
-        /* TODO: try to load all files from preferences */
         currFile = gFileHistoryRoot;
         while (currFile) {
             if (currFile->state.visible) {
-                win = LoadPdfFromHistory(currFile->state.filePath);
+                win = LoadPdf(currFile->state.filePath, TRUE, FALSE);
                 if (!win)
                     goto Exit;
                 ++pdfOpened;
@@ -2908,7 +2954,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     }
 
 Exit:
-    Prefs_Save();
     WindowInfoList_DeleteAll();
     FileHistoryList_Free(&gFileHistoryRoot);
     CaptionPens_Destroy();
