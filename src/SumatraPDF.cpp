@@ -956,6 +956,11 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     DisplayMode         displayMode;
     int                 offsetX, offsetY;
 
+    startPage = 1;
+    displayMode = DEFAULT_DISPLAY_MODE;
+    offsetX = 0;
+    offsetY = 0;
+
     if (!ignoreHistory)
         fileHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
 
@@ -1025,10 +1030,6 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
              UI properly */
     scrollbarYDx = 0;
     scrollbarXDy = 0;
-    startPage = 1;
-    displayMode = DEFAULT_DISPLAY_MODE;
-    offsetX = 0;
-    offsetY = 0;
     if (fromHistory) {
         startPage = fileHistory->state.pageNo;
         displayMode = fileHistory->state.displayMode;
@@ -1083,6 +1084,7 @@ Error:
         /* TODO: need to calculate proper offsetY, currently giving large offsetY
            remembered for continuous mode breaks things (makes all pages invisible) */
         offsetY = 0;
+        /* TODO: make sure offsetX isn't bogus */
         DisplayModel_GoToPage(win->dm, startPage, offsetY);
         DisplayModel_ScrollXTo(win->dm, offsetX);
         /* only resize the window if it's a newly opened window */
@@ -1759,7 +1761,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta"
+#define BETA_TXT                "Beta v0.2"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"

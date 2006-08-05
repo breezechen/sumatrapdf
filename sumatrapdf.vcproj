@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="sumatrapdf"
+	Name="SumatraPDF"
 	ProjectGUID="{836D470A-7050-4423-B938-0ADB24BFA581}"
 	RootNamespace="sumatrapdf"
 	Keyword="Win32Proj"

@@ -7,6 +7,10 @@ Must have before next (0.2) release:
 Nice to have:
 - toolbar
 - more links (actions) handling 
+- only one instance of the app - otherwise instances might over-write the 
+  prefs.txt file
+- bug: when opening a file through double-click and file is in history,
+       should restore the window size and position as well
 - move document with a mouse
 - do loading in rendering in a background thread, without blocking the UI
 - FIT VISIBLE option
