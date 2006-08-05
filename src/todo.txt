@@ -1,19 +1,17 @@
 TODO list for Sumatra PDF.
 
-Must have before next (0.2) release:
-- less intrusive icon
-- I think state preserving still has bugs and can nuke some settings
-
-Nice to have:
+Must have before next (0.3) release:
 - toolbar
-- more links (actions) handling 
-- only one instance of the app - otherwise instances might over-write the 
-  prefs.txt file
 - bug: when opening a file through double-click and file is in history,
        should restore the window size and position as well
 - move document with a mouse
 - do loading in rendering in a background thread, without blocking the UI
 - FIT VISIBLE option
+
+Nice to have:
+- more links (actions) handling 
+- only one instance of the app - otherwise instances might over-write the 
+  prefs.txt file
 - good UI for history of opened files. At the very least a type-down list, ordered by
   last access time. Type-down filters by file name (or maybe full path?). Filter out
   files that don't exist anymore (and remove them from history)
@@ -60,6 +58,8 @@ Probably won't happen:
 
 Done:
 ---- v 0.2 released
+- less intrusive icon
+- I think state preserving still has bugs and can nuke some settings
 - much better "About" box
 - when pdf not opened, disable menus that are not relevant
 - when calculating the page size, use client area size as a guide, not the 

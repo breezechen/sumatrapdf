@@ -2688,9 +2688,11 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
             DisplayModel_GoToNextPage(win->dm, 0);
         /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
     } else if (VK_UP == key) {
-        SendMessage (win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
+        if (win->dm)
+            SendMessage (win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
     } else if (VK_DOWN == key) {
-        /* SendMessage (win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0); */
+        if (win->dm)
+            SendMessage (win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
     } else if (VK_LEFT == key) {
         SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEUP, 0);
     } else if (VK_RIGHT == key) {
@@ -2786,7 +2788,6 @@ void OnMenuAbout(WindowInfo *win)
         AnimState_AnimStop(&(win->animState));
         win->state = win->prevState;
     }
-    //DialogBox(ghinst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)

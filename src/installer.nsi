@@ -37,7 +37,7 @@ Section "SumatraPDF"
   ; Set output path to the installation directory.
   SetOutPath $INSTDIR
 
-  File /oname=SumatraPDF.exe "vc8proj\Release\xpdf-win.exe"
+  File /oname=SumatraPDF.exe "..\Release\SumatraPDF.exe"
 
   SectionIn RO
   
