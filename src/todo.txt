@@ -1,8 +1,8 @@
 TODO list for Sumatra PDF.
 
 Must have before next (0.2) release:
-- much better "About" box
 - less intrusive icon
+- I think state preserving still has bugs and can nuke some settings
 
 Nice to have:
 - toolbar
@@ -56,6 +56,7 @@ Probably won't happen:
 
 Done:
 ---- v 0.2 released
+- much better "About" box
 - when pdf not opened, disable menus that are not relevant
 - when calculating the page size, use client area size as a guide, not the 
   window size

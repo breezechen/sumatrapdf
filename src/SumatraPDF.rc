@@ -84,10 +84,12 @@ BEGIN
         MENUITEM "12.5%",                       IDM_ZOOM_12_5
         MENUITEM "8.33%",                       IDM_ZOOM_8_33
     END
+#if 0
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",                  IDM_ABOUT
     END
+#endif
 END
 
 

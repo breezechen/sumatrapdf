@@ -44,9 +44,11 @@
 /* default UI settings */
 #define DEFAULT_DISPLAY_MODE DM_CONTINUOUS
 
-//#define DEFAULT_ZOOM         ZOOM_FIT_WIDTH
-#define DEFAULT_ZOOM         ZOOM_FIT_PAGE
-#define DEFAULT_ROTATION     0
+//#define DEFAULT_ZOOM            ZOOM_FIT_WIDTH
+#define DEFAULT_ZOOM            ZOOM_FIT_PAGE
+#define DEFAULT_ROTATION        0
+
+//#define START_WITH_ABOUT        1
 
 /* define if want to use double-buffering for rendering the PDF. Takes more memory!. */
 #define DOUBLE_BUFFER 1
@@ -770,7 +772,11 @@ static WindowInfo *WindowInfo_New(HWND hwnd)
     if (!WindowInfo_Dib_Init(win))
         goto Error;
 
+#if START_WITH_ABOUT
+    win->state = WS_ABOUT_ANIM;
+#else
     win->state = WS_EMPTY;
+#endif
     win->hwnd = hwnd;
     AddRecentFilesToMenu(win);
     return win;
@@ -1124,6 +1130,37 @@ static void ColorsInit(void)
     SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
     SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
     SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
+}
+
+static HFONT Win32_Font_GetSimple(HDC hdc, char *fontName, int fontSize)
+{
+    HFONT       font_dc;
+    HFONT       font;
+    LOGFONT     lf = {0};
+
+    font_dc = (HFONT)GetStockObject(SYSTEM_FONT);
+    if (!GetObject(font_dc, sizeof(LOGFONT), &lf))
+        return NULL;
+
+    lf.lfHeight = (LONG)-fontSize;
+    lf.lfWidth = 0;
+    //lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+    lf.lfItalic = FALSE;
+    lf.lfUnderline = FALSE;
+    lf.lfStrikeOut = FALSE;
+    lf.lfCharSet = DEFAULT_CHARSET;
+    lf.lfOutPrecision = OUT_TT_PRECIS;
+    lf.lfQuality = CLEARTYPE_QUALITY;
+    lf.lfPitchAndFamily = DEFAULT_PITCH;    
+    strcpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
+    lf.lfWeight = FW_DONTCARE;
+    font = CreateFontIndirect(&lf);
+    return font;
+}
+
+static void Win32_Font_Delete(HFONT font)
+{
+    DeleteObject(font);
 }
 
 void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
@@ -1704,6 +1741,284 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     }
 }
 
+/* TODO: change the name to DrawAbout.
+   Draws the about screen a remember some state for hyperlinking.
+   It transcribes the design I did in graphics software - hopeless
+   to understand without seeing the design. */
+#define ABOUT_RECT_PADDING          8
+#define ABOUT_RECT_BORDER_DX_DY     4
+#define ABOUT_LINE_OUTER_SIZE       2
+#define ABOUT_LINE_RECT_SIZE        5
+#define ABOUT_LINE_SEP_SIZE         1
+#define ABOUT_LEFT_RIGHT_SPACE_DX   8
+#define ABOUT_MARGIN_DX            10
+#define ABOUT_BOX_MARGIN_DY         6
+
+#define ABOUT_BORDER_COL            COL_BLACK
+
+#define SUMATRA_TXT             "Sumatra PDF"
+#define SUMATRA_TXT_FONT        "Arial Black"
+#define SUMATRA_TXT_FONT_SIZE   24
+#define BETA_TXT                "Beta"
+#define BETA_TXT_FONT           "Arial Black"
+#define BETA_TXT_FONT_SIZE      12
+#define LEFT_TXT_FONT           "Arial"
+#define LEFT_TXT_FONT_SIZE      12
+#define RIGHT_TXT_FONT          "Arial Black"
+#define RIGHT_TXT_FONT_SIZE     12
+
+#define ABOUT_BG_COLOR          RGB(255,242,0)
+#define ABOUT_RECT_BG_COLOR     RGB(247,148,29)
+
+#define ABOUT_TXT_DY            6
+
+typedef struct AboutLayoutInfoEl {
+    const char *    leftTxt;
+    const char *    rightTxt;
+    const char *    url;
+
+    int             leftTxtPosX;
+    int             leftTxtPosY;
+    int             leftTxtDx;
+    int             leftTxtDy;
+
+    int             rightTxtPosX;
+    int             rightTxtPosY;
+    int             rightTxtDx;
+    int             rightTxtDy;
+} AboutLayoutInfoEl;
+
+AboutLayoutInfoEl gAboutLayoutInfo[] = {
+    { "design", "Krzysztof Kowalczyk", "http://blog.kowalczyk.info",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "programming", "Krzysztof Kowalczyk", "http://blog.kowalczyk.info",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "pdf rendering", "poppler + xpdf", "http://poppler.freedesktop.org/",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "license", "GPL v2", "http://www.gnu.org/copyleft/gpl.html",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "website", "http://blog.kowalczyk.info/software/sumatra", "http://blog.kowalczyk.info/software/sumatrapdf",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "forums", "http://blog.kowalczyk.info/forum_sumatra", "http://blog.kowalczyk.info/forum_sumatra",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { NULL, NULL, NULL,
+    0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
+const char *AboutGetLink(WindowInfo *win, int x, int y)
+{
+    int         i;
+
+    for (i = 0; gAboutLayoutInfo[i].leftTxt; i++) {
+        if ((x < gAboutLayoutInfo[i].rightTxtPosX) ||
+            (x > gAboutLayoutInfo[i].rightTxtPosX + gAboutLayoutInfo[i].rightTxtDx))
+            continue;
+        if ((y < gAboutLayoutInfo[i].rightTxtPosY) ||
+            (y > gAboutLayoutInfo[i].rightTxtPosY + gAboutLayoutInfo[i].rightTxtDy))
+            continue;
+        return gAboutLayoutInfo[i].url;
+    }
+    return NULL;
+}
+
+static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+{
+    AnimState *     state = &(win->animState);
+    DString         str;
+    RECT            rc;
+    RECT            rcTmp;
+    HFONT           origFont = NULL;
+    HFONT           fontSumatraTxt = NULL;
+    HFONT           fontBetaTxt = NULL;
+    HFONT           fontLeftTxt = NULL;
+    HFONT           fontRightTxt = NULL;
+    int             areaDx, areaDy;
+    int             i;
+    SIZE            txtSize;
+    const char *    txt;
+    int             totalDx, totalDy;
+    int             leftDy, rightDy;
+    int             leftLargestDx, rightLargestDx;
+    int             sumatraPdfTxtDx, sumatraPdfTxtDy;
+    int             betaTxtDx, betaTxtDy;
+    HBRUSH          brushBg = NULL, brushRectBg = NULL;
+    HPEN            penRectBorder = NULL, penBorder = NULL, penDivideLine = NULL;
+    int             linePosX, linePosY, lineDy;
+    int             currY;
+    int             fontDyDiff;
+    int             offX, offY;
+    int             x, y;
+    int             boxDy;
+
+    brushBg = CreateSolidBrush(ABOUT_BG_COLOR);
+    brushRectBg = CreateSolidBrush(ABOUT_RECT_BG_COLOR);
+
+    penRectBorder = CreatePen(PS_SOLID, ABOUT_RECT_BORDER_DX_DY, COL_BLACK);
+    penBorder = CreatePen(PS_SOLID, ABOUT_LINE_OUTER_SIZE, COL_BLACK);
+    penDivideLine = CreatePen(PS_SOLID, ABOUT_LINE_SEP_SIZE, COL_BLACK);
+
+    GetClientRect(win->hwnd, &rc);
+
+    DStringInit(&str);
+
+    areaDx = RectDx(&rc);
+    areaDy = RectDy(&rc);
+
+    fontSumatraTxt = Win32_Font_GetSimple(hdc, SUMATRA_TXT_FONT, SUMATRA_TXT_FONT_SIZE);
+    fontBetaTxt = Win32_Font_GetSimple(hdc, BETA_TXT_FONT, BETA_TXT_FONT_SIZE);
+    fontLeftTxt = Win32_Font_GetSimple(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE);
+    fontRightTxt = Win32_Font_GetSimple(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE);
+
+    origFont = (HFONT)SelectObject(hdc, fontSumatraTxt); /* Just to remember the orig font */
+
+    SetBkMode(hdc, TRANSPARENT);
+
+    /* Layout stuff */
+    txt = SUMATRA_TXT;
+    GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
+    sumatraPdfTxtDx = txtSize.cx;
+    sumatraPdfTxtDy = txtSize.cy;
+
+    boxDy = sumatraPdfTxtDy + ABOUT_BOX_MARGIN_DY * 2;
+    txt = BETA_TXT;
+    GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
+    betaTxtDx = txtSize.cx;
+    betaTxtDy = txtSize.cy;
+
+    (HFONT)SelectObject(hdc, fontLeftTxt);
+    leftLargestDx = 0;
+    leftDy = 0;
+    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+        txt = gAboutLayoutInfo[i].leftTxt;
+        GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
+        gAboutLayoutInfo[i].leftTxtDx = (int)txtSize.cx;
+        gAboutLayoutInfo[i].leftTxtDy = (int)txtSize.cy;
+        if (0 == i)
+            leftDy = gAboutLayoutInfo[i].leftTxtDy;
+        else
+            assert(leftDy == gAboutLayoutInfo[i].leftTxtDy);
+        if (leftLargestDx < gAboutLayoutInfo[i].leftTxtDx)
+            leftLargestDx = gAboutLayoutInfo[i].leftTxtDx;
+    }
+
+    (HFONT)SelectObject(hdc, fontRightTxt);
+    rightLargestDx = 0;
+    rightDy = 0;
+    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+        txt = gAboutLayoutInfo[i].rightTxt;
+        GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
+        gAboutLayoutInfo[i].rightTxtDx = (int)txtSize.cx;
+        gAboutLayoutInfo[i].rightTxtDy = (int)txtSize.cy;
+        if (0 == i)
+            rightDy = gAboutLayoutInfo[i].rightTxtDy;
+        else
+            assert(rightDy == gAboutLayoutInfo[i].rightTxtDy);
+        if (rightLargestDx < gAboutLayoutInfo[i].rightTxtDx)
+            rightLargestDx = gAboutLayoutInfo[i].rightTxtDx;
+    }
+
+    fontDyDiff = (rightDy - leftDy) / 2;
+
+    /* in the x order */
+    totalDx  = ABOUT_LINE_OUTER_SIZE + ABOUT_MARGIN_DX + leftLargestDx;
+    totalDx += ABOUT_LEFT_RIGHT_SPACE_DX + ABOUT_LINE_SEP_SIZE + ABOUT_LEFT_RIGHT_SPACE_DX;
+    totalDx += rightLargestDx + ABOUT_MARGIN_DX + ABOUT_LINE_OUTER_SIZE;
+
+    totalDy = 0;
+    totalDy += boxDy;
+    totalDy += ABOUT_LINE_OUTER_SIZE;
+    totalDy += (dimof(gAboutLayoutInfo)-1) * (rightDy + ABOUT_TXT_DY);
+    totalDy += ABOUT_LINE_OUTER_SIZE + 4;
+
+    offX = (areaDx - totalDx) / 2;
+    offY = (areaDy - totalDy) / 2;
+
+    rcTmp.left = offX;
+    rcTmp.top = offY;
+    rcTmp.right = totalDx + offX;
+    rcTmp.bottom = totalDy + offY;
+
+    FillRect(hdc, &rc, brushBg);
+
+    SelectObject(hdc, brushBg);
+    SelectObject(hdc, penBorder);
+
+    Rectangle(hdc, offX, offY + ABOUT_LINE_OUTER_SIZE, offX + totalDx, offY + boxDy + ABOUT_LINE_OUTER_SIZE);
+
+    SetTextColor(hdc, ABOUT_BORDER_COL);
+    (HFONT)SelectObject(hdc, fontSumatraTxt);
+    x = offX + (totalDx - sumatraPdfTxtDx) / 2;
+    y = offY + (boxDy - sumatraPdfTxtDy) / 2;
+    txt = SUMATRA_TXT;
+    TextOut(hdc, x, y, txt, strlen(txt));
+
+    //SetTextColor(hdc, ABOUT_RECT_BG_COLOR);
+    (HFONT)SelectObject(hdc, fontBetaTxt);
+    //SelectObject(hdc, brushRectBg);
+    x = offX + (totalDx - sumatraPdfTxtDx) / 2 + sumatraPdfTxtDx + 2;
+    y = offY + (boxDy - sumatraPdfTxtDy) / 2;
+    txt = BETA_TXT;
+    TextOut(hdc, x, y, txt, strlen(txt));
+    SetTextColor(hdc, ABOUT_BORDER_COL);
+
+    offY += boxDy;
+    Rectangle(hdc, offX, offY, offX + totalDx, offY + totalDy - boxDy);
+
+    linePosX = ABOUT_LINE_OUTER_SIZE + ABOUT_MARGIN_DX + leftLargestDx + ABOUT_LEFT_RIGHT_SPACE_DX;
+    linePosY = 4;
+    lineDy = (dimof(gAboutLayoutInfo)-1) * (rightDy + ABOUT_TXT_DY);
+
+    /* render text on the left*/
+    currY = linePosY;
+    (HFONT)SelectObject(hdc, fontLeftTxt);
+    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+        txt = gAboutLayoutInfo[i].leftTxt;
+        x = linePosX + offX - ABOUT_LEFT_RIGHT_SPACE_DX - gAboutLayoutInfo[i].leftTxtDx;
+        y = currY + fontDyDiff + offY;
+        gAboutLayoutInfo[i].leftTxtPosX = x;
+        gAboutLayoutInfo[i].leftTxtPosY = y;
+        TextOut(hdc, x, y, txt, strlen(txt));
+        currY += rightDy + ABOUT_TXT_DY;
+    }
+
+    /* render text on the rigth */
+    currY = linePosY;
+    (HFONT)SelectObject(hdc, fontRightTxt);
+    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+        txt = gAboutLayoutInfo[i].rightTxt;
+        x = linePosX + offX + ABOUT_LEFT_RIGHT_SPACE_DX;
+        y = currY + offY;
+        gAboutLayoutInfo[i].rightTxtPosX = x;
+        gAboutLayoutInfo[i].rightTxtPosY = y;
+        TextOut(hdc, x, y, txt, strlen(txt));
+        currY += rightDy + ABOUT_TXT_DY;
+    }
+
+    SelectObject(hdc, penDivideLine);
+    MoveToEx(hdc, linePosX + offX, linePosY + offY, NULL);
+    LineTo(hdc, linePosX + offX, linePosY + lineDy + offY);
+
+    if (origFont)
+        SelectObject(hdc, origFont);
+
+    Win32_Font_Delete(fontSumatraTxt);
+    Win32_Font_Delete(fontBetaTxt);
+    Win32_Font_Delete(fontLeftTxt);
+    Win32_Font_Delete(fontRightTxt);
+
+    DeleteObject(brushBg);
+    DeleteObject(brushRectBg);
+    DeleteObject(penBorder);
+    DeleteObject(penDivideLine);
+    DeleteObject(penRectBorder);
+}
+
 static void HandleLink(DisplayModel *dm, PdfLink *pdfLink)
 {
     Link *          link;
@@ -1749,77 +2064,69 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
 {
     assert(win);
     if (!win) return;
-    if (!win->dm)
-        return;
-    win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+    if (WS_SHOWING_PDF == win->state) {
+        assert(win->dm);
+        if (!win->dm) return;
+        win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+    } else if (WS_ABOUT_ANIM == win->state) {
+        win->url = AboutGetLink(win, x, y);
+    }
 }
 
 static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
 {
-    PdfLink *   link;
+    PdfLink *       link;
+    const char *    url;
 
     assert(win);
     if (!win) return;
-    if (!win->dm)
-        return;
 
-    if (!win->linkOnLastButtonDown)
-        return;
+    if (WS_SHOWING_PDF == win->state) {
+        assert(win->dm);
+        if (!win->dm) return;
 
-    link = DisplayModel_GetLinkAtPosition(win->dm, x, y);
-    if (link && (link == win->linkOnLastButtonDown))
-        HandleLink(win->dm, link);
-    win->linkOnLastButtonDown = NULL;
+        if (!win->linkOnLastButtonDown)
+            return;
+
+        link = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+        if (link && (link == win->linkOnLastButtonDown))
+            HandleLink(win->dm, link);
+        win->linkOnLastButtonDown = NULL;
+    } else if (WS_ABOUT_ANIM == win->state) {
+        url = AboutGetLink(win, x, y);
+        if (url == win->url)
+            LaunchBrowser(url);
+        win->url = NULL;
+    }
 }
 
 static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
 {
     DisplayModel *  dm;
     PdfLink *       link;
+    const char *    url;
 
     assert(win);
     if (!win) return;
-    dm = win->dm;
-    if (!dm) return;
 
-    link = DisplayModel_GetLinkAtPosition(dm, x, y);
-    if (link) {
-        SetCursor(LoadCursor(NULL, IDC_HAND));
-        //DBG_OUT("OnMoseMove(): found link at pos (%d,%d)\n", x, y);
-    } else {
-        SetCursor(LoadCursor(NULL, IDC_ARROW));
+    if (WS_SHOWING_PDF == win->state) {
+        dm = win->dm;
+        assert(dm);
+        if (!dm) return;
+        link = DisplayModel_GetLinkAtPosition(dm, x, y);
+        if (link) {
+            SetCursor(LoadCursor(NULL, IDC_HAND));
+        } else {
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+        }
+    } else if (WS_ABOUT_ANIM == win->state) {
+        url = AboutGetLink(win, x, y);
+        if (url) {
+            SetCursor(LoadCursor(NULL, IDC_HAND));
+        } else {
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+        }
     }
-}
-
-static HFONT Win32_Font_GetSimple(HDC hdc, char *fontName, int fontSize)
-{
-    HFONT       font_dc;
-    HFONT       font;
-    LOGFONT     lf = {0};
-
-    font_dc = (HFONT)GetStockObject(SYSTEM_FONT);
-    if (!GetObject(font_dc, sizeof(LOGFONT), &lf))
-        return NULL;
-
-    lf.lfHeight = (LONG)-fontSize;
-    lf.lfWidth = 0;
-    //lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-    lf.lfItalic = FALSE;
-    lf.lfUnderline = FALSE;
-    lf.lfStrikeOut = FALSE;
-    lf.lfCharSet = DEFAULT_CHARSET;
-    lf.lfOutPrecision = OUT_TT_PRECIS;
-    lf.lfQuality = CLEARTYPE_QUALITY;
-    lf.lfPitchAndFamily = DEFAULT_PITCH;    
-    strcpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
-    lf.lfWeight = FW_DONTCARE;
-    font = CreateFontIndirect(&lf);
-    return font;
-}
-
-static void Win32_Font_Delete(HFONT font)
-{
-    DeleteObject(font);
 }
 
 #define ABOUT_ANIM_TIMER_ID 15
@@ -1911,222 +2218,6 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     Win32_Font_Delete(fontArial24);
 }
 
-/* TODO: change the name to DrawAbout.
-   Draws the about screen a remember some state for hyperlinking.
-   It transcribes the design I did in graphics software - hopeless
-   to understand without seeing the design. */
-#define ABOUT_RECT_PADDING          8
-#define ABOUT_RECT_BORDER_DX_DY     4
-#define ABOUT_LINE_OUTER_SIZE       3
-#define ABOUT_LINE_RECT_SIZE        5
-#define ABOUT_LINE_SEP_SIZE         1
-#define ABOUT_LEFT_RIGHT_SPACE_DX   8
-#define ABOUT_MARGIN_DX            10
-
-#define ABOUT_BORDER_COL            COL_BLACK
-
-#define SUMATRA_TXT             "Sumatra PDF"
-#define SUMATRA_TXT_FONT        "Arial Black"
-#define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta"
-#define BETA_TXT_FONT           SUMATRA_TXT_FONT
-#define BETA_TXT_FONT_SIZE      8
-#define LEFT_TXT_FONT           "Arial"
-#define LEFT_TXT_FONT_SIZE      12
-#define RIGHT_TXT_FONT          "Arial Black"
-#define RIGHT_TXT_FONT_SIZE     12
-
-#define ABOUT_BG_COLOR          RGB(255,242,0)
-#define ABOUT_RECT_BG_COLOR     RGB(247,148,29)
-
-#define ABOUT_TXT_DY            6
-
-typedef struct AboutLayoutInfoEl {
-    const char *    leftTxt;
-    const char *    rightTxt;
-    const char *    url;
-
-    int             leftTxtPosX;
-    int             leftTxtPosY;
-    int             leftTxtDx;
-    int             leftTxtDy;
-
-    int             rightTxtPosX;
-    int             rightTxtPosY;
-    int             rightTxtDx;
-    int             rightTxtDy;
-} AboutLayoutInfoEl;
-
-AboutLayoutInfoEl gAboutLayoutInfo[] = {
-    { "design", "Krzysztof Kowalczyk", "http://blog.kowalczyk.info",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { "programming", "Krzysztof Kowalczyk", "http://blog.kowalczyk.info",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { "pdf rendering", "poppler + xpdf", "http://poppler.freedesktop.org/",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { "license", "GPL v2", "http://www.gnu.org/copyleft/gpl.html",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { "website", "http://blog.kowalczyk.info/software/sumatra", "http://blog.kowalczyk.info/software/sumatra",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { "forums", "http://blog.kowalczyk.info/forum_sumatra", "http://blog.kowalczyk.info/forum_sumatra",
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
-    { NULL, NULL, NULL,
-    0, 0, 0, 0, 0, 0, 0, 0 }
-};
-
-static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
-{
-    AnimState *     state = &(win->animState);
-    DString         str;
-    RECT            rc;
-    RECT            rcTmp;
-    HFONT           origFont = NULL;
-    HFONT           fontSumatraTxt = NULL;
-    HFONT           fontBetaTxt = NULL;
-    HFONT           fontLeftTxt = NULL;
-    HFONT           fontRightTxt = NULL;
-    int             areaDx, areaDy;
-    int             i;
-    SIZE            txtSize;
-    const char *    txt;
-    int             totalDx, totalDy;
-    int             leftDy, rightDy;
-    int             leftLargestDx, rightLargestDx;
-    int             sumatraPdfTxtDx, sumatraPdfTxtDy;
-    int             betaTxtDx, betaTxtDy;
-    HBRUSH          brushBg = NULL, brushRectBg = NULL;
-    HPEN            penRectBorder = NULL, penBorder = NULL, penDivideLine = NULL;
-    int             linePosX, linePosY, lineDy;
-    
-    brushBg = CreateSolidBrush(ABOUT_BG_COLOR);
-    brushRectBg = CreateSolidBrush(ABOUT_RECT_BG_COLOR);
-
-    penRectBorder = CreatePen(PS_SOLID, ABOUT_RECT_BORDER_DX_DY, COL_BLACK);
-    penBorder = CreatePen(PS_SOLID, 2, COL_BLACK);
-    penDivideLine = CreatePen(PS_SOLID, ABOUT_LINE_SEP_SIZE, COL_BLACK);
-
-    GetClientRect(win->hwnd, &rc);
-
-    DStringInit(&str);
-
-    areaDx = RectDx(&rc);
-    areaDy = RectDy(&rc);
-
-    fontSumatraTxt = Win32_Font_GetSimple(hdc, SUMATRA_TXT_FONT, SUMATRA_TXT_FONT_SIZE);
-    fontBetaTxt = Win32_Font_GetSimple(hdc, BETA_TXT_FONT, BETA_TXT_FONT_SIZE);
-    fontLeftTxt = Win32_Font_GetSimple(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE);
-    fontRightTxt = Win32_Font_GetSimple(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE);
-
-    origFont = (HFONT)SelectObject(hdc, fontSumatraTxt); /* Just to remember the orig font */
-
-    SetBkMode(hdc, TRANSPARENT);
-
-    /* Layout stuff */
-    txt = SUMATRA_TXT;
-    GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
-    sumatraPdfTxtDx = txtSize.cx;
-    sumatraPdfTxtDy = txtSize.cy;
-
-    txt = BETA_TXT;
-    GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
-    betaTxtDx = txtSize.cx;
-    betaTxtDy = txtSize.cy;
-
-    (HFONT)SelectObject(hdc, fontLeftTxt);
-    leftLargestDx = 0;
-    leftDy = 0;
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
-        txt = gAboutLayoutInfo[i].leftTxt;
-        GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
-        gAboutLayoutInfo[i].leftTxtDx = (int)txtSize.cx;
-        gAboutLayoutInfo[i].leftTxtDy = (int)txtSize.cy;
-        if (0 == i)
-            leftDy = gAboutLayoutInfo[i].rightTxtDy;
-        else
-            assert(leftDy == gAboutLayoutInfo[i].rightTxtDy);
-        if (leftLargestDx < gAboutLayoutInfo[i].leftTxtDx)
-            leftLargestDx = gAboutLayoutInfo[i].leftTxtDx;
-    }
-
-    (HFONT)SelectObject(hdc, fontRightTxt);
-    rightLargestDx = 0;
-    rightDy = 0;
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
-        txt = gAboutLayoutInfo[i].rightTxt;
-        GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
-        gAboutLayoutInfo[i].rightTxtDx = (int)txtSize.cx;
-        gAboutLayoutInfo[i].rightTxtDy = (int)txtSize.cy;
-        if (0 == i)
-            rightDy = gAboutLayoutInfo[i].rightTxtDy;
-        else
-            assert(rightDy == gAboutLayoutInfo[i].rightTxtDy);
-        if (rightLargestDx < gAboutLayoutInfo[i].rightTxtDx)
-            rightLargestDx = gAboutLayoutInfo[i].rightTxtDx;
-    }
-
-    /* in the x order */
-    totalDx  = ABOUT_LINE_OUTER_SIZE + ABOUT_MARGIN_DX + leftLargestDx;
-    totalDx += ABOUT_LEFT_RIGHT_SPACE_DX + ABOUT_LINE_SEP_SIZE + ABOUT_LEFT_RIGHT_SPACE_DX;
-    totalDx += rightLargestDx + ABOUT_MARGIN_DX + ABOUT_LINE_OUTER_SIZE;
-
-    totalDy  = ABOUT_LINE_OUTER_SIZE;
-    totalDy += (dimof(gAboutLayoutInfo)-1) * (rightDy + ABOUT_TXT_DY);
-    totalDy += ABOUT_LINE_OUTER_SIZE;
-
-    rcTmp.left = 0;
-    rcTmp.top = 0;
-    rcTmp.right = totalDx;
-    rcTmp.bottom = totalDy;
-
-    FillRect(hdc, &rcTmp, brushBg);
-
-    linePosX = ABOUT_LINE_OUTER_SIZE + ABOUT_MARGIN_DX + leftLargestDx + ABOUT_LEFT_RIGHT_SPACE_DX;
-    linePosY = 4;
-    lineDy = (dimof(gAboutLayoutInfo)-1) * (rightDy + ABOUT_TXT_DY);
-
-    /* render text on the left*/
-    int currY = linePosY;
-    (HFONT)SelectObject(hdc, fontLeftTxt);
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
-        txt = gAboutLayoutInfo[i].leftTxt;
-        TextOut(hdc, linePosX - ABOUT_LEFT_RIGHT_SPACE_DX - gAboutLayoutInfo[i].leftTxtDx, currY, txt, strlen(txt));
-        currY += rightDy + ABOUT_TXT_DY;
-    }
-
-    /* render text on the rigth */
-    currY = linePosY;
-    (HFONT)SelectObject(hdc, fontRightTxt);
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
-        txt = gAboutLayoutInfo[i].rightTxt;
-        TextOut(hdc, linePosX + ABOUT_LEFT_RIGHT_SPACE_DX, currY, txt, strlen(txt));
-        currY += rightDy + ABOUT_TXT_DY;
-    }
-
-    SelectObject(hdc, penDivideLine);
-    MoveToEx(hdc, linePosX, linePosY, NULL);
-    LineTo(hdc, linePosX, linePosY + lineDy);
-
-    if (origFont)
-        SelectObject(hdc, origFont);
-
-    Win32_Font_Delete(fontSumatraTxt);
-    Win32_Font_Delete(fontBetaTxt);
-    Win32_Font_Delete(fontLeftTxt);
-    Win32_Font_Delete(fontRightTxt);
-
-    DeleteObject(brushBg);
-    DeleteObject(brushRectBg);
-    DeleteObject(penBorder);
-    DeleteObject(penDivideLine);
-    DeleteObject(penRectBorder);
-}
-
 void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
 {
     RECT    rc;
@@ -2162,14 +2253,14 @@ static void OnPaint(WindowInfo *win)
     SetBkMode(hdc, TRANSPARENT);
     GetClientRect(win->hwnd, &rc);
 
-    if (WS_EMPTY == win->state) {
+    if (WS_ABOUT_ANIM == win->state) {
+        OnPaintDrawAnim(win, hdc, &ps);
+    } else if (WS_EMPTY == win->state) {
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "No PDF file opened. Open a new PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
     } else if (WS_ERROR_LOADING_PDF == win->state) {
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
-    } else if (WS_ABOUT_ANIM == win->state) {
-        OnPaintDrawAnim(win, hdc, &ps);
     } else if (WS_SHOWING_PDF == win->state) {
         //TODO: it might cause infinite loop due to showing/hiding scrollbars
         WinResizeIfNeeded(win);
@@ -2804,12 +2895,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     OnMenuViewRotateRight(win);
                     break;
 
+#if 0
                 case IDM_ABOUT:
                     assert(win);
                     if (win)
                         OnMenuAbout(win);
                     break;
-
+#endif
                 default:
                     return DefWindowProc(hwnd, message, wParam, lParam);
             }

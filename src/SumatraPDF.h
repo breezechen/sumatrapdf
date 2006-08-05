@@ -48,7 +48,7 @@ enum WinState {
     WS_EMPTY = 1,
     WS_ERROR_LOADING_PDF,
     WS_SHOWING_PDF,
-    WS_ABOUT_ANIM
+    WS_ABOUT_ANIM = WS_EMPTY
 };
 
 #define INVALID_PAGE_NUM -1
@@ -83,6 +83,7 @@ typedef struct WindowInfo {
     HBITMAP         bmpDoubleBuffer;
 
     PdfLink *       linkOnLastButtonDown;
+    const char *    url;
 
     AnimState       animState;
 } WindowInfo;

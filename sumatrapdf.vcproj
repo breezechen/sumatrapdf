@@ -472,6 +472,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\SumatraDialogs.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\SumatraPDF.cpp"
 				>
 			</File>
@@ -839,6 +843,10 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\Stream.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\SumatraDialogs.h"
 				>
 			</File>
 			<File
