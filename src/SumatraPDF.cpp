@@ -21,6 +21,7 @@
 #include "Link.h"
 #include "SecurityHandler.h"
 
+#include "SumatraDialogs.h"
 #include "Win32FontList.h"
 #include "FileHistory.h"
 #include "AppPrefs.h"
@@ -31,25 +32,6 @@
 
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
-
-/* TODO: Currently not used. The idea is to be able to switch between different
-   visual styles. Because I can. */
-enum AppVisualStyle {
-    VS_WINDOWS = 1,
-    VS_AMIGA
-};
-
-/* Current state of a window:
-  - WS_EMPTY - an empty window with no PDF opened
-  - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
-  - WS_SHOWING_PDF - showing a PDF file
-  - WS_ABOUT_ANIM - showing "about" animation */
-enum WinState {
-    WS_EMPTY = 1,
-    WS_ERROR_LOADING_PDF,
-    WS_SHOWING_PDF,
-    WS_ABOUT_ANIM
-};
 
 #define ZOOM_IN_FACTOR      1.2
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
@@ -96,7 +78,6 @@ enum WinState {
 #define PREFS_FILE_NAME _T("prefs.txt")
 #define APP_SUB_DIR     _T("SumatraPDF")
 
-#define INVALID_PAGE_NUM -1
 #define BENCH_ARG_TXT   "-bench"
 
 /* Default size for the window, happens to be american A4 size (I think) */
@@ -104,43 +85,6 @@ enum WinState {
 #define DEF_WIN_DY 792
 
 #define MAX_RECENT_FILES_IN_MENU 15
-
-#define DIALOG_OK_PRESSED 1
-#define DIALOG_CANCEL_PRESSED 2
-
-/* When doing "about" animation, remembers the current animation state */
-typedef struct {
-    HWND        hwnd;
-    int         frame;
-    UINT_PTR    timerId;
-} AnimState;
-
-/* Describes information related to one window with (optional) pdf document
-   on the screen */
-typedef struct WindowInfo {
-    /* points to the next element in the list or the first element if
-       this is the first element */
-    WindowInfo *    next;
-    WinState        state;
-    WinState        prevState;
-    DisplayModel *  dm;
-    HWND            hwnd;
-
-    HDC             hdc;
-    BITMAPINFO *    dibInfo;
-    /* TODO: get rid of winDx, winDy, query it every time you need it */
-    int             winDx;
-    int             winDy;
-
-    /* bitmap and hdc for (optional) double-buffering */
-    HDC             hdcToDraw;
-    HDC             hdcDoubleBuffer;
-    HBITMAP         bmpDoubleBuffer;
-
-    PdfLink *       linkOnLastButtonDown;
-
-    AnimState       animState;
-} WindowInfo;
 
 typedef struct StrList {
     struct StrList *    next;
@@ -399,6 +343,7 @@ int WinGetTextLen(HWND hwnd)
 {
     return (int)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0);
 }
+
 void WinSetText(HWND hwnd, const TCHAR *txt)
 {
     SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)txt);
@@ -490,81 +435,6 @@ static void AddFileToHistory(const char *filePath)
         return;
     node->menuId = oldMenuId;
     FileHistoryList_Node_InsertHead(&gFileHistoryRoot, node);
-}
-
-/* For passing data to/from GetPassword dialog */
-typedef struct {
-    const char *  fileName; /* name of the file for which we need the password */
-    char *  pwdOut;         /* password entered by the user */
-} Dialog_GetPassword_Data;
-
-BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    HWND                       edit;
-    HWND                       label;
-    DString                    ds;
-    Dialog_GetPassword_Data *  data;
-
-    switch (message)
-    {
-        case WM_INITDIALOG:
-            /* TODO: intelligently center the dialog within the parent window? */
-            data = (Dialog_GetPassword_Data*)lParam;
-            assert(data);
-            assert(data->fileName);
-            assert(!data->pwdOut);
-            SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
-            DStringInit(&ds);
-            DStringSprintf(&ds, "Enter password for %s", data->fileName);
-            label = GetDlgItem(hDlg, IDC_GET_PASSWORD_LABEL);
-            WinSetText(label, ds.pString);
-            DStringFree(&ds);
-            edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
-            WinSetText(edit, "");
-            SetFocus(edit);
-            return FALSE;
-
-        case WM_COMMAND:
-            switch (LOWORD(wParam))
-            {
-                case IDOK:
-                    data = (Dialog_GetPassword_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
-                    assert(data);
-                    edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
-                    data->pwdOut = WinGetText(edit);
-                    EndDialog(hDlg, DIALOG_OK_PRESSED);
-                    return TRUE;
-
-                case IDCANCEL:
-                    EndDialog(hDlg, DIALOG_CANCEL_PRESSED);
-                    return TRUE;
-            }
-            break;
-    }
-    return FALSE;
-}
-
-/* Shows a 'get password' dialog for a given file.
-   Returns a password entered by user as a newly allocated string or
-   NULL if user cancelled the dialog or there was an error.
-   Caller needs to free() the result.
-   TODO: should I get rid of fileName and get it from win? */
-static char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
-{
-    int                     dialogResult;
-    Dialog_GetPassword_Data data;
-    
-    assert(fileName);
-    if (!fileName) return NULL;
-
-    data.fileName = fileName;
-    data.pwdOut = NULL;
-    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GET_PASSWORD), win->hwnd, Dialog_GetPassword_Proc, (LPARAM)&data);
-    if (DIALOG_OK_PRESSED == dialogResult) {
-        return data.pwdOut;
-    }
-    free((void*)data.pwdOut);
-    return NULL;
 }
 
 static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
@@ -2660,90 +2530,6 @@ static void OnMenuGoToFirstPage(WindowInfo *win)
     if (!WindowInfo_PdfLoaded(win))
         return;
     DisplayModel_GoToFirstPage(win->dm);
-}
-
-/* For passing data to/from GoToPage dialog */
-typedef struct {
-    int     currPageNo;      /* currently shown page number */
-    int     pageCount;       /* total number of pages */
-    int     pageEnteredOut;  /* page number entered by user */
-} Dialog_GoToPage_Data;
-
-BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    HWND                    editPageNo;
-    HWND                    labelOfPages;
-    DString                 ds;
-    TCHAR *                 newPageNoTxt;
-    Dialog_GoToPage_Data *  data;
-
-    switch (message)
-    {
-        case WM_INITDIALOG:
-            /* TODO: intelligently center the dialog within the parent window? */
-            data = (Dialog_GoToPage_Data*)lParam;
-            assert(NULL != data);
-            SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
-            assert(INVALID_PAGE_NUM != data->currPageNo);
-            assert(data->pageCount >= 1);
-            DStringInit(&ds);
-            DStringSprintf(&ds, "%d", data->currPageNo);
-            editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
-            WinSetText(editPageNo, ds.pString);
-            DStringFree(&ds);
-            DStringSprintf(&ds, "(of %d)", data->pageCount);
-            labelOfPages = GetDlgItem(hDlg, IDC_GOTO_PAGE_LABEL_OF);
-            WinSetText(labelOfPages, ds.pString);
-            DStringFree(&ds);
-            WinEditSelectAll(editPageNo);
-            SetFocus(editPageNo);
-            return FALSE;
-
-        case WM_COMMAND:
-            switch (LOWORD(wParam))
-            {
-                case IDOK:
-                    data = (Dialog_GoToPage_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
-                    assert(data);
-                    data->pageEnteredOut = INVALID_PAGE_NUM;
-                    editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
-                    newPageNoTxt = WinGetText(editPageNo);
-                    if (newPageNoTxt) {
-                        data->pageEnteredOut = atoi(newPageNoTxt);
-                        free((void*)newPageNoTxt);
-                    }
-                    EndDialog(hDlg, DIALOG_OK_PRESSED);
-                    return TRUE;
-
-                case IDCANCEL:
-                    EndDialog(hDlg, DIALOG_CANCEL_PRESSED);
-                    return TRUE;
-            }
-            break;
-    }
-    return FALSE;
-}
-
-/* Shows a 'go to page' dialog and returns a page number entered by the user
-   or INVALID_PAGE_NUM if user clicked "cancel" button, entered invalid
-   page number or there was an error. */
-static int Dialog_GoToPage(WindowInfo *win)
-{
-    int                     dialogResult;
-    Dialog_GoToPage_Data    data;
-    
-    assert(win);
-    if (!win) return INVALID_PAGE_NUM;
-
-    data.currPageNo = win->dm->startPage;
-    data.pageCount = win->dm->pageCount;
-    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwnd, Dialog_GoToPage_Proc, (LPARAM)&data);
-    if (DIALOG_OK_PRESSED == dialogResult) {
-        if (DisplayModel_ValidPageNo(win->dm, data.pageEnteredOut)) {
-            return data.pageEnteredOut;
-        }
-    }
-    return INVALID_PAGE_NUM;
 }
 
 static void OnMenuGoToPage(WindowInfo *win)

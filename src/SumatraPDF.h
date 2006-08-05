@@ -28,8 +28,68 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-
-
 #include "resource.h"
+
+#include "DisplayModel.h"
+
+/* TODO: Currently not used. The idea is to be able to switch between different
+   visual styles. Because I can. */
+enum AppVisualStyle {
+    VS_WINDOWS = 1,
+    VS_AMIGA
+};
+
+/* Current state of a window:
+  - WS_EMPTY - an empty window with no PDF opened
+  - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
+  - WS_SHOWING_PDF - showing a PDF file
+  - WS_ABOUT_ANIM - showing "about" animation */
+enum WinState {
+    WS_EMPTY = 1,
+    WS_ERROR_LOADING_PDF,
+    WS_SHOWING_PDF,
+    WS_ABOUT_ANIM
+};
+
+#define INVALID_PAGE_NUM -1
+
+/* When doing "about" animation, remembers the current animation state */
+typedef struct {
+    HWND        hwnd;
+    int         frame;
+    UINT_PTR    timerId;
+} AnimState;
+
+/* Describes information related to one window with (optional) pdf document
+   on the screen */
+typedef struct WindowInfo {
+    /* points to the next element in the list or the first element if
+       this is the first element */
+    WindowInfo *    next;
+    WinState        state;
+    WinState        prevState;
+    DisplayModel *  dm;
+    HWND            hwnd;
+
+    HDC             hdc;
+    BITMAPINFO *    dibInfo;
+    /* TODO: get rid of winDx, winDy, query it every time you need it */
+    int             winDx;
+    int             winDy;
+
+    /* bitmap and hdc for (optional) double-buffering */
+    HDC             hdcToDraw;
+    HDC             hdcDoubleBuffer;
+    HBITMAP         bmpDoubleBuffer;
+
+    PdfLink *       linkOnLastButtonDown;
+
+    AnimState       animState;
+} WindowInfo;
+
+void    WinSetText(HWND hwnd, const TCHAR *txt);
+void    WinEditSelectAll(HWND hwnd);
+void    WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd);
+TCHAR * WinGetText(HWND hwnd);
 
 #endif
