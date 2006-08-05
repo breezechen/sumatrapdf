@@ -35,8 +35,12 @@ Nice to have:
 - check for new version on-line
 - immediately add a file to "recent history" menu
 - select images
+- integrate with google desktop search so that you can find *.pdf files easily 
+  directly from the app (does it make sense? what if it's just as easy to find
+  the files from desktop search?)
 
 Probably won't happen:
+- annotation support
 - reading of C:\kjk\test_pdfs\pda\palm\dev tools\sdk\user_interface.pdf takes 
   an awfully long time
 - get rid of dependency on freetype, use windows functions instead (not sure if that's
