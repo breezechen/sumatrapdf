@@ -32,28 +32,35 @@
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
-#define dimof(X)    (sizeof(X)/sizeof((X)[0]))
-
+/* TODO: Currently not used. The idea is to be able to switch between different
+   visual styles. Because I can. */
 enum AppVisualStyle {
     VS_WINDOWS = 1,
     VS_AMIGA
 };
 
+/* Current state of a window:
+  - WS_EMPTY - an empty window with no PDF opened
+  - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
+  - WS_SHOWING_PDF - showing a PDF file
+  - WS_ABOUT_ANIM - showing "about" animation */
 enum WinState {
     WS_EMPTY = 1,
     WS_ERROR_LOADING_PDF,
-    WS_SHOWING_PDF
+    WS_SHOWING_PDF,
+    WS_ABOUT_ANIM
 };
 
 #define ZOOM_IN_FACTOR      1.2
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
 
 /* Uncomment to visually show links as blue rectangles, for easier links
-   debugging */
+   debugging. 
+   TODO: not implemented on windows */
 //#define DEBUG_SHOW_LINKS            1
 
 /* default UI settings */
-#define DEFAULT_DISPLAY_MODE DM_SINGLE_PAGE
+#define DEFAULT_DISPLAY_MODE DM_CONTINUOUS
 
 //#define DEFAULT_ZOOM         ZOOM_FIT_WIDTH
 #define DEFAULT_ZOOM         ZOOM_FIT_PAGE
@@ -91,6 +98,7 @@ enum WinState {
 #define INVALID_PAGE_NUM -1
 #define BENCH_ARG_TXT   "-bench"
 
+/* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_WIN_DX 612
 #define DEF_WIN_DY 792
 
@@ -99,24 +107,38 @@ enum WinState {
 #define DIALOG_OK_PRESSED 1
 #define DIALOG_CANCEL_PRESSED 2
 
+/* When doing "about" animation, remembers the current animation state */
+typedef struct {
+    HWND        hwnd;
+    int         frame;
+    UINT_PTR    timerId;
+} AnimState;
+
 /* Describes information related to one window with (optional) pdf document
    on the screen */
 typedef struct WindowInfo {
     /* points to the next element in the list or the first element if
        this is the first element */
     WindowInfo *    next;
+    WinState        state;
+    WinState        prevState;
     DisplayModel *  dm;
     HWND            hwnd;
 
     HDC             hdc;
     BITMAPINFO *    dibInfo;
+    /* TODO: get rid of winDx, winDy, query it every time you need it */
     int             winDx;
     int             winDy;
+
+    /* bitmap and hdc for (optional) double-buffering */
     HDC             hdcToDraw;
     HDC             hdcDoubleBuffer;
     HBITMAP         bmpDoubleBuffer;
-    WinState        state;
+
     PdfLink *       linkOnLastButtonDown;
+
+    AnimState       animState;
 } WindowInfo;
 
 typedef struct StrList {
@@ -211,7 +233,7 @@ int RectDy(RECT *r)
     return dy;
 }
 
-void LaunchUrl(const TCHAR *url)
+void LaunchBrowser(const TCHAR *url)
 {
     SHELLEXECUTEINFO sei;
     BOOL             res;
@@ -230,12 +252,8 @@ void LaunchUrl(const TCHAR *url)
     return;
 }
 
-void LaunchBrowser(const char *uri)
-{
-    LaunchUrl(uri);
-}
-
-const char *FileGetBaseName(const char *path)
+/* TODO: move to BaseUtils.h */
+const char *Path_GetBaseName(const char *path)
 {
     const char *fileBaseName = (const char*)strrchr(path, DIR_SEP_CHAR);
     if (NULL == fileBaseName)
@@ -269,7 +287,6 @@ HMENU FindMenuItem(WindowInfo *win, UINT id)
     }
     return NULL;
 }
-
 
 HMENU GetFileMenu(HWND hwnd)
 {
@@ -330,7 +347,7 @@ void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
     if (!menuFile)
         return;
 
-    txt = FileGetBaseName(node->state.filePath);
+    txt = Path_GetBaseName(node->state.filePath);
 
     newId = node->menuId;
     if (INVALID_MENU_ID == node->menuId)
@@ -539,7 +556,6 @@ static char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
     assert(fileName);
     if (!fileName) return NULL;
 
-    fileName = FileGetBaseName(fileName);
     data.fileName = fileName;
     data.pwdOut = NULL;
     dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GET_PASSWORD), win->hwnd, Dialog_GetPassword_Proc, (LPARAM)&data);
@@ -552,6 +568,7 @@ static char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
 
 static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
 {
+    fileName = Path_GetBaseName(fileName);
     return Dialog_GetPassword(win, fileName);
 }
 
@@ -1257,7 +1274,7 @@ void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
         return;
 
     pageCount = win->dm->pdfDoc->getNumPages();
-    baseName = FileGetBaseName(win->dm->pdfDoc->getFileName()->getCString());
+    baseName = Path_GetBaseName(win->dm->pdfDoc->getFileName()->getCString());
     if (pageCount <= 0)
         WinSetText(win->hwnd, baseName);
     else {
@@ -1903,6 +1920,143 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
     }
 }
 
+static HFONT Win32_Font_GetSimple(HDC hdc, char *fontName, int fontSize)
+{
+    HFONT       font_dc;
+    HFONT       font;
+    LOGFONT     lf = {0};
+
+    font_dc = (HFONT)GetStockObject(SYSTEM_FONT);
+    if (!GetObject(font_dc, sizeof(LOGFONT), &lf))
+        return NULL;
+
+    //lf.lfHeight = (LONG)fontSize;
+    lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+    lf.lfQuality = CLEARTYPE_QUALITY;
+    strcpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
+    lf.lfWeight = FW_HEAVY;
+    font = CreateFontIndirect(&lf);
+    return font;
+}
+
+static void Win32_Font_Delete(HFONT font)
+{
+    DeleteObject(font);
+}
+
+#define ABOUT_ANIM_TIMER_ID 15
+
+void AnimState_AnimStop(AnimState *state)
+{
+    KillTimer(state->hwnd, ABOUT_ANIM_TIMER_ID);
+}
+
+void AnimState_NextFrame(AnimState *state)
+{
+    state->frame += 1;
+    InvalidateRect(state->hwnd, NULL, FALSE);
+    UpdateWindow(state->hwnd);
+}
+
+void AnimState_AnimStart(AnimState *state, HWND hwnd, UINT freqInMs)
+{
+    assert(IsWindow(hwnd));
+    AnimState_AnimStop(state);
+    state->frame = 0;
+    state->hwnd = hwnd;
+    SetTimer(state->hwnd, ABOUT_ANIM_TIMER_ID, freqInMs, NULL);
+    AnimState_NextFrame(state);
+}
+
+#define ANIM_FONT_NAME "Georgia"
+#define ANIM_FONT_SIZE_START 20
+#define SCROLL_SPEED 3
+
+static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+{
+    AnimState *     state = &(win->animState);
+    DString         txt;
+    RECT            rc;
+    HFONT           fontArial24 = NULL;
+    HFONT           origFont = NULL;
+    int             curFontSize;
+    static int      curTxtPosX = -1;
+    static int      curTxtPosY = -1;
+    static int      curDir = SCROLL_SPEED;
+    int             areaDx, areaDy;
+
+    GetClientRect(win->hwnd, &rc);
+
+    DStringInit(&txt);
+
+    if (-1 == curTxtPosX)
+        curTxtPosX = 40;
+    if (-1 == curTxtPosY)
+        curTxtPosY = 25;
+
+    areaDx = RectDx(&rc);
+    areaDy = RectDy(&rc);
+
+#if 0
+    if (state->frame % 24 <= 12) {
+        curFontSize = ANIM_FONT_SIZE_START + (state->frame % 24);
+    } else {
+        curFontSize = ANIM_FONT_SIZE_START + 12 - (24 - (state->frame % 24));
+    }
+#else
+    curFontSize = ANIM_FONT_SIZE_START;
+#endif
+
+    curTxtPosY += curDir;
+    if (curTxtPosY < 20)
+        curDir = SCROLL_SPEED;
+    else if (curTxtPosY > areaDy - 40)
+        curDir = -SCROLL_SPEED;
+
+    fontArial24 = Win32_Font_GetSimple(hdc, ANIM_FONT_NAME, curFontSize);
+    assert(fontArial24);
+
+    origFont = (HFONT)SelectObject(hdc, fontArial24);
+    
+    SetBkMode(hdc, TRANSPARENT);
+    FillRect(hdc, &rc, gBrushBg);
+    //DStringSprintf(&txt, "Welcome to animation %d", state->frame);
+    DStringSprintf(&txt, "Welcome to animation");
+    //DrawText (hdc, txt.pString, -1, &rc, DT_SINGLELINE);
+    TextOut(hdc, curTxtPosX, curTxtPosY, txt.pString, txt.length);
+    WindowInfo_DoubleBuffer_Show(win, hdc);
+    if (state->frame > 99)
+        state->frame = 0;
+
+    if (origFont)
+        SelectObject(hdc, origFont);
+    Win32_Font_Delete(fontArial24);
+}
+
+void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
+{
+    RECT    rc;
+    int     win_dx, win_dy;
+    GetClientRect(win->hwnd, &rc);
+    win_dx = RectDx(&rc);
+    win_dy = RectDy(&rc);
+
+    if ((win_dx == win->winDx) &&
+        (win_dy == win->winDy) && win->hdcToDraw)
+    {
+        return;
+    }
+
+    WindowInfo_DoubleBuffer_New(win);
+}
+
+static void OnPaintDrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+{
+    WindowInfo_DoubleBuffer_Resize_IfNeeded(win);
+    DrawAnim(win, win->hdcToDraw, ps);
+    WindowInfo_DoubleBuffer_Show(win, hdc);
+}
+
 static void OnPaint(WindowInfo *win)
 {
     HDC         hdc;
@@ -1920,7 +2074,9 @@ static void OnPaint(WindowInfo *win)
     } else if (WS_ERROR_LOADING_PDF == win->state) {
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
-    } else {
+    } else if (WS_ABOUT_ANIM == win->state) {
+        OnPaintDrawAnim(win, hdc, &ps);
+    } else if (WS_SHOWING_PDF == win->state) {
         //TODO: it might cause infinite loop due to showing/hiding scrollbars
         WinResizeIfNeeded(win);
         WindowInfo_Paint(win, hdc, &ps);
@@ -1929,7 +2085,8 @@ static void OnPaint(WindowInfo *win)
             AmigaCaptionDraw(win);
 #endif
         WindowInfo_DoubleBuffer_Show(win, hdc);
-    }
+    } else
+        assert(0);
     EndPaint(win->hwnd, &ps);
 }
 
@@ -2513,6 +2670,22 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
     return NULL;
 }
 
+#define FRAMES_PER_SECS 60
+#define ANIM_FREQ_IN_MS  1000 / FRAMES_PER_SECS
+
+void OnMenuAbout(WindowInfo *win)
+{
+    if (WS_ABOUT_ANIM != win->state) {
+        win->prevState = win->state;
+        win->state = WS_ABOUT_ANIM;
+        AnimState_AnimStart(&(win->animState), win->hwnd, ANIM_FREQ_IN_MS);
+    } else {
+        AnimState_AnimStop(&(win->animState));
+        win->state = win->prevState;
+    }
+    //DialogBox(ghinst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
+}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
@@ -2622,7 +2795,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
                     break;
 
                 case IDM_ABOUT:
-                    DialogBox(ghinst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
+                    assert(win);
+                    if (win)
+                        OnMenuAbout(win);
                     break;
 
                 default:
@@ -2685,6 +2860,11 @@ InitMouseWheelInfo:
             if (win)
                 OnChar(win, wParam);
             break;
+
+        case WM_TIMER:
+            assert(win);
+            if (win)
+                AnimState_NextFrame(&win->animState);
 
         case WM_KEYDOWN:
             if (win)
