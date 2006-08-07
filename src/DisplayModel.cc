@@ -1623,7 +1623,12 @@ BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
     ds->rotation = DisplayModel_GetRotation(dm);
     ds->zoomVirtual = DisplayModel_GetZoomVirtual(dm);
     ds->scrollX = (int)dm->areaOffset.x;
-    ds->scrollY = (int)dm->areaOffset.y;
+    if (IsDisplayModeContinuous(dm->displayMode)) {
+        /* TODO: should be offset of top page */
+        ds->scrollY = 0;
+    } else {
+        ds->scrollY = (int)dm->areaOffset.y;
+    }
     ds->windowDx = (int)dm->drawAreaSize.dx;
     ds->windowDy = (int)dm->drawAreaSize.dy;
     ds->windowX = 0;

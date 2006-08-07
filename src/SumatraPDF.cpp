@@ -1426,6 +1426,41 @@ char *ExePathGet(void)
     return PossiblyUnescapePath(GetCommandLine());
 }
 
+static void RefreshIcons(void)
+{
+    DString ds;
+    BYTE    buff[256];
+    HKEY    hKey;
+    DWORD   sz;
+    DWORD   typ = REG_SZ;
+    LONG    result;
+    int     origIconSize;
+
+    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_READ, &hKey);
+
+    sz = sizeof(buff);
+    RegQueryValueEx(hKey, "Shell Icon Size", 0, &typ, buff, &sz);
+    RegCloseKey(hKey);
+
+    origIconSize = atoi((const char*)buff);
+
+    DStringInit(&ds);
+    DStringSprintf(&ds, "%d", origIconSize+1);
+
+    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_WRITE, &hKey);
+
+    RegSetValueEx(hKey,"Shell Icon Size", 0, REG_SZ, (const BYTE*)ds.pString, ds.length);
+    RegCloseKey(hKey);
+
+    ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
+
+    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_WRITE, &hKey);
+    RegSetValueEx(hKey,"Shell Icon Size",0,REG_SZ, (const BYTE*)buff,strlen((const char*)buff));
+    RegCloseKey(hKey);
+
+    ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
+}
+
 /* Make my app the default app for PDF files. */
 void AssociatePdfWithExe(TCHAR *exePath)
 {
@@ -1463,7 +1498,8 @@ void AssociatePdfWithExe(TCHAR *exePath)
                 KEY_WRITE, NULL, &kicon, &disp))
         goto Exit;
 
-    hr = StringCchPrintfA(tmp, dimof(tmp), "%s,1", exePath);
+    /* Note: I don't understand why icon index has to be 0, but it just has to */
+    hr = StringCchPrintfA(tmp, dimof(tmp), "%s,0", exePath);
     if (RegSetValueEx(kicon, "", 0, REG_SZ, (const BYTE*)tmp, strlen(tmp)+1))
         goto Exit;
 
@@ -1500,6 +1536,8 @@ Exit:
         RegCloseKey(kshell);
     if (key)
         RegCloseKey(key);
+
+    //RefreshIcons();
 }
 
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

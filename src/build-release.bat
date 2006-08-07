@@ -15,8 +15,8 @@ echo Compilation ok!
 @makensis installer
 @IF ERRORLEVEL 1 goto INSTALLER_FAILED
 
-move SumatraPDF-install.exe SumatraPDF-%VERSION%-install.exe
-copy SumatraPDF-%VERSION%-install.exe %FASTDL_PATH%\SumatraPDF-%VERSION%-install.exe
+move SumatraPDF-install.exe ..\Release\SumatraPDF-%VERSION%-install.exe
+copy ..\Release\SumatraPDF-%VERSION%-install.exe %FASTDL_PATH%\SumatraPDF-%VERSION%-install.exe
 
 @cd ..\Release
 zip -9 SumatraPDF-%VERSION%.zip SumatraPDF.exe
