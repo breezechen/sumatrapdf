@@ -671,17 +671,21 @@ char *CanonizeAbsolutePath(const char *path)
 
 #ifdef _WIN32
 void win32_dbg_out(const char *format, ...) {
-    char        buf[4096], *p = buf;
+    char        buf[4096];
+    char *      p = buf;
     va_list     args;
 
     va_start(args, format);
 
-    p += _vsnprintf(p, sizeof(buf) - 1, format, args);
-    while ( (p > buf)  &&  isspace(p[-1]) )
+    p += _vsnprintf(p, sizeof(buf) - 8, format, args);
+    while ( (p > buf)  && (p < (buf + sizeof(buf) - 1)) &&  isspace(p[-1]) )
             *--p = '\0';
-    *p++ = '\r';
-    *p++ = '\n';
-    *p   = '\0';
+    if ( (p >= buf) && (p < (buf + sizeof(buf) - 8))) {
+        *p++ = '\r';
+        *p++ = '\n';
+        *p   = '\0';
+    } else
+        buf[sizeof(buf)-1] = 0;
     OutputDebugString(buf);
 
     va_end(args);

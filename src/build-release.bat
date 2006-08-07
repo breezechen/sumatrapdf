@@ -41,4 +41,3 @@ echo NSIS doesn't seem to be installed. Get it from http://nsis.sourceforge.net/
 
 :END
 @popd
- 

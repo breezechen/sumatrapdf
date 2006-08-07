@@ -3321,5 +3321,6 @@ Exit:
 
     delete globalParams;
     StrList_Destroy(&argListRoot);
+    //histDump();
     return (int) msg.wParam;
 }
