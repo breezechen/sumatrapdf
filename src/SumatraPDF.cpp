@@ -778,6 +778,7 @@ static WindowInfo *WindowInfo_New(HWND hwnd)
     win->state = WS_EMPTY;
 #endif
     win->hwnd = hwnd;
+    win->dragging = FALSE;
     AddRecentFilesToMenu(win);
     return win;
 Error:
@@ -2100,6 +2101,22 @@ static void HandleLink(DisplayModel *dm, PdfLink *pdfLink)
     }
 }
 
+static void WinMoveDocBy(WindowInfo *win, int dx, int dy)
+{
+    assert(win);
+    if (!win) return;
+    assert (WS_SHOWING_PDF == win->state);
+    if (WS_SHOWING_PDF != win->state) return;
+    assert(win->dm);
+    if (!win->dm) return;
+    assert(!win->linkOnLastButtonDown);
+    if (win->linkOnLastButtonDown) return;
+    if (0 != dx)
+        DisplayModel_ScrollXBy(win->dm, dx);
+    if (0 != dy)
+        DisplayModel_ScrollYBy(win->dm, dy, FALSE);
+}
+
 static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
 {
     assert(win);
@@ -2108,6 +2125,15 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
         assert(win->dm);
         if (!win->dm) return;
         win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+        /* dragging mode only starts when we're not on a link */
+        if (!win->linkOnLastButtonDown) {
+            SetCapture(win->hwnd);
+            win->dragging = TRUE;
+            win->dragPrevPosX = x;
+            win->dragPrevPosY = y;
+            SetCursor(LoadCursor(NULL, IDC_HAND));
+            DBG_OUT(" dragging start, x=%d, y=%d\n", x, y);
+        }
     } else if (WS_ABOUT_ANIM == win->state) {
         win->url = AboutGetLink(win, x, y);
     }
@@ -2117,6 +2143,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
 {
     PdfLink *       link;
     const char *    url;
+    int             dragDx, dragDy;
 
     assert(win);
     if (!win) return;
@@ -2124,6 +2151,20 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
     if (WS_SHOWING_PDF == win->state) {
         assert(win->dm);
         if (!win->dm) return;
+        if (win->dragging && (GetCapture() == win->hwnd)) {
+            dragDx = 0; dragDy = 0;
+            dragDx = x - win->dragPrevPosX;
+            dragDy = y - win->dragPrevPosY;
+            DBG_OUT(" dragging ends, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
+            assert(!win->linkOnLastButtonDown);
+            WinMoveDocBy(win, dragDx, dragDy);
+            win->dragPrevPosX = x;
+            win->dragPrevPosY = y;
+            win->dragging = FALSE;
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+            ReleaseCapture();            
+            return;
+        }
 
         if (!win->linkOnLastButtonDown)
             return;
@@ -2145,6 +2186,7 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
     DisplayModel *  dm;
     PdfLink *       link;
     const char *    url;
+    int             dragDx, dragDy;
 
     assert(win);
     if (!win) return;
@@ -2153,6 +2195,16 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         dm = win->dm;
         assert(dm);
         if (!dm) return;
+        if (win->dragging) {
+            dragDx = 0; dragDy = 0;
+            dragDx = x - win->dragPrevPosX;
+            dragDy = y - win->dragPrevPosY;
+            DBG_OUT(" drag move, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
+            WinMoveDocBy(win, dragDx, dragDy);
+            win->dragPrevPosX = x;
+            win->dragPrevPosY = y;
+            return;
+        }
         link = DisplayModel_GetLinkAtPosition(dm, x, y);
         if (link) {
             SetCursor(LoadCursor(NULL, IDC_HAND));
@@ -3039,6 +3091,12 @@ InitMouseWheelInfo:
                 CloseWindow(win, TRUE);
             break;
 
+        case WM_SETCURSOR:
+            if (win && win->dragging) {
+                SetCursor(LoadCursor(NULL, IDC_HAND));
+                return TRUE;
+            }
+            break;
         case IDM_VIEW_WITH_ACROBAT:
             if (win)
                 ViewWithAcrobat(win);
@@ -3276,9 +3334,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         while (currFile) {
             if (currFile->state.visible) {
                 win = LoadPdf(currFile->state.filePath, TRUE, FALSE);
-                if (!win)
-                    goto Exit;
-                ++pdfOpened;
+                if (win)
+                    ++pdfOpened;
             }
             currFile = currFile->next;
         }

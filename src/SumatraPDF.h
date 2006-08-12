@@ -85,6 +85,11 @@ typedef struct WindowInfo {
     PdfLink *       linkOnLastButtonDown;
     const char *    url;
 
+    /* when dragging the document around, this is previous position of the
+       cursor. A delta between previous and current is by how much we
+       moved */
+    BOOL            dragging;
+    int             dragPrevPosX, dragPrevPosY;
     AnimState       animState;
 } WindowInfo;
 

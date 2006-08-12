@@ -859,6 +859,9 @@ void DisplayModel_ScrollXBy(DisplayModel *dm, int dx)
     DisplayModel_ScrollXTo(dm, (int)newX);
 }
 
+/* Scroll the doc in y-axis by 'dy'. If 'changePage' is TRUE, automatically
+   switch to prev/next page in non-continuous mode if we scroll past the edges
+   of current page */
 void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
 {
     PdfPageInfo *   pageInfo;
