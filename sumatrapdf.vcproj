@@ -244,6 +244,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\poppler\goo\FastAlloc.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\goo\FastFixedAllocator.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\FileHistory.cc"
 				>
 			</File>
@@ -587,6 +595,14 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\ErrorCodes.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\goo\FastAlloc.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\goo\FastFixedAllocator.h"
 				>
 			</File>
 			<File
