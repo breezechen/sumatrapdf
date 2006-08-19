@@ -30,6 +30,8 @@
 #include "DisplayModel.h"
 #include "BaseUtils.h"
 
+//#define FANCY_UI 1
+
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
@@ -923,6 +925,20 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     HWND        hwnd;
     WindowInfo* win;
 
+#if FANCY_UI
+    hwnd = CreateWindowEx(
+//            WS_EX_TOOLWINDOW,
+        0,
+//            WS_OVERLAPPEDWINDOW,
+//            WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE,
+        //WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_HSCROLL | WS_VSCROLL,
+        WIN_CLASS_NAME, szTitle,
+        WS_POPUP,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        DEF_WIN_DX, DEF_WIN_DY,
+        NULL, NULL,
+        ghinst, NULL);
+#else
     hwnd = CreateWindow(
             WIN_CLASS_NAME, szTitle,
             WS_OVERLAPPEDWINDOW | WS_HSCROLL | WS_VSCROLL,
@@ -930,6 +946,7 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
             DEF_WIN_DX, DEF_WIN_DY,
             NULL, NULL,
             ghinst, NULL);
+#endif
 
     if (!hwnd)
         return NULL;
