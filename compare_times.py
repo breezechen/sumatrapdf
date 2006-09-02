@@ -1,6 +1,7 @@
 import sys, os, os.path, string
 
-MAX_PERCENT_DIFF = 25.0
+BIG_PERCENT_DIFF = 45.0
+SMALL_PERCENT_DIFF = 10.0
 
 def uage_and_exit():
   print "Usage: compare_times.py <stats-file> <stats-file>"
@@ -45,41 +46,30 @@ def verify_stats(stats):
     assert count == len(stat.timings)
     assert count == stat.page_count
 
-def get_load_avg_time(results):
-  total_time = 0.0
-  for res in results:
-    total_time += res.load_time
-  avg = total_time / float(len(results))
-  count = 0
-  total_time = 0.0
-  for res in results:
-    percent_diff = percent_diff_abs(res.load_time, avg)
-    if percent_diff > MAX_PERCENT_DIFF:
-      #print "%.2f %.2f %.2f" % (res.load_time, avg, percent_diff)
-      continue
-    total_time += res.load_time
-    count += 1
-  avg = total_time / float(count)
-  return avg
+# given a list of float values, return their average
+def get_avg(float_list):
+  total = 0.0
+  for el in float_list:
+    total += el
+  return total / float(len(float_list))
+
+# given a list of float values, return a list with elements that differ by more
+# than <max_diff> from average removed
+def filter_avg(float_list, max_diff):
+  avg = get_avg(float_list)
+  return [el for el in float_list if percent_diff_abs(el, avg) <= max_diff]
+
+def get_load_avg_time(stats):
+  float_list = [stat.load_time for stat in stats]
+  filtered = filter_avg(float_list, BIG_PERCENT_DIFF)
+  filtered = filter_avg(filtered, SMALL_PERCENT_DIFF)
+  return get_avg(filtered)
 
 def get_page_avg_time(stats, page_no):
-  total_time = 0.0
-  #print page_no
-  for stat in stats:
-    #print stat.timings
-    total_time += stat.timings[page_no]
-  avg = total_time / float(len(stats))
-  count = 0
-  total_time = 0.0
-  for stat in stats:
-    percent_diff = percent_diff_abs(stat.timings[page_no], avg)
-    if percent_diff > MAX_PERCENT_DIFF:
-      #print "%.2f %.2f %.2f" % (stat.timings[page_no], avg, percent_diff)
-      continue
-    total_time += stat.timings[page_no]
-    count += 1
-  avg = total_time / float(count)
-  return avg
+  float_list = [stat.timings[page_no] for stat in stats]
+  filtered = filter_avg(float_list, BIG_PERCENT_DIFF)
+  filtered = filter_avg(filtered, SMALL_PERCENT_DIFF)
+  return get_avg(filtered)
 
 def parse_stats(file_name):
   stats = []
