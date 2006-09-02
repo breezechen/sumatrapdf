@@ -1,3 +1,5 @@
+# Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
+
 import sys, os, os.path, string
 
 BIG_PERCENT_DIFF = 45.0
@@ -71,12 +73,18 @@ def get_page_avg_time(stats, page_no):
   filtered = filter_avg(filtered, SMALL_PERCENT_DIFF)
   return get_avg(filtered)
 
-def parse_stats(file_name):
+def parse_stats_from_file(file_name):
+  fo = open(file_name, "rb")
+  txt = fo.read()
+  fo.close()
+  return parse_stats(txt)
+
+def parse_stats(txt):
   stats = []
   curStat = None  
-  fo = open(file_name, "rb")
-  for l in fo:
-    l = l.strip()
+  lines = txt.split("\n")
+  lines = [l.strip() for l in lines if len(l.strip()) > 0]
+  for l in lines:
     #print l
     lp = l.split(":", 1)
     assert 2 == len(lp)
@@ -103,7 +111,6 @@ def parse_stats(file_name):
       curStat.timings.append(get_time(lp[1]))
       continue
 
-  fo.close()
   return stats
 
 def calc_avg(stats):
@@ -129,10 +136,10 @@ def dump_stats(file_one, avg_one, file_two, avg_two):
     print "page %d, %.2f, %.2f, %%%.2f" % (page_no+1, one, two, d)
 
 def compare_stats(file_one, file_two):
-  stats_one = parse_stats(file_one)
+  stats_one = parse_stats_from_file(file_one)
   verify_stats(stats_one)
   avg_one = calc_avg(stats_one)
-  stats_two = parse_stats(file_two)  
+  stats_two = parse_stats_from_file(file_two)  
   verify_stats(stats_two)
   avg_two = calc_avg(stats_two)
   dump_stats(file_one, avg_one, file_two, avg_two)
