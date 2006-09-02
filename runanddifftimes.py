@@ -72,7 +72,6 @@ def main():
 
   one_out = []
   two_out = []
-  count = 1
   for c in range(count):
     out = run(exe_one, pdf_file)
     if None == out:
