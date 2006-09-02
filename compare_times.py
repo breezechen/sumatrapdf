@@ -119,13 +119,13 @@ def dump_stats(file_one, avg_one, file_two, avg_two):
   print file_one + ", " + file_two
   one = avg_one.load_time
   two = avg_two.load_time
-  d = percent_diff_abs(one, two)
+  d = percent_diff(one, two)
   print "loading time, %.2f, %.2f, %%%.2f" % (one, two, d)
   assert avg_one.page_count == avg_two.page_count
   for page_no in range(avg_one.page_count):
     one = avg_one.timings[page_no]
     two = avg_two.timings[page_no]
-    d = percent_diff_abs(one, two)
+    d = percent_diff(one, two)
     print "page %d, %.2f, %.2f, %%%.2f" % (page_no+1, one, two, d)
 
 def compare_stats(file_one, file_two):
