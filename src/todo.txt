@@ -5,7 +5,6 @@ Must have before next (0.3) release:
 - bug: when opening a file through double-click and file is in history,
        should restore the window size and position as well
 - do loading in rendering in a background thread, without blocking the UI
-- FIT VISIBLE option
 
 Nice to have:
 - only one instance of the app - otherwise instances might over-write the 
@@ -14,6 +13,7 @@ Nice to have:
 - even better icon
 - bug: the window resize handle is not being correctly redrawn
 - bug: sometimes dragging up in dy wraps the page
+- FIT VISIBLE option
 - more links (actions) handling 
 - good UI for history of opened files. At the very least a type-down list, ordered by
   last access time. Type-down filters by file name (or maybe full path?). Filter out

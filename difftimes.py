@@ -40,7 +40,8 @@ def verify_stats(stats):
   if 0 == len(stats): return
   file_name = stats[0].file_name
   count = len(stats[0].timings)
-  assert count == stats[0].page_count
+  # if we have -loadonly flag, we don't have stats for pages
+  if 0 == count: return
   for stat in stats:
     assert None != stat.page_count
     assert None != stat.load_time
@@ -116,7 +117,7 @@ def parse_stats(txt):
 def calc_avg(stats):
   avg = Stats(stats[0].file_name)
   avg.timings = []
-  avg.page_count = stats[0].page_count
+  avg.page_count = len(stats[0].timings)
   avg.load_time = get_load_avg_time(stats)
   for page_no in range(avg.page_count):
     avg.timings.append(get_page_avg_time(stats, page_no))
