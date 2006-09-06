@@ -678,16 +678,10 @@ void win32_dbg_out(const char *format, ...) {
     va_start(args, format);
 
     p += _vsnprintf(p, sizeof(buf) - 8, format, args);
-    while ( (p > buf)  && (p < (buf + sizeof(buf) - 1)) &&  isspace(p[-1]) )
-            *--p = '\0';
-    if ( (p >= buf) && (p < (buf + sizeof(buf) - 8))) {
-        *p++ = '\r';
-        *p++ = '\n';
-        *p   = '\0';
-    } else
-        buf[sizeof(buf)-1] = 0;
+    p[0] = 0;
+/*    printf(buf);
+    fflush(stdout); */
     OutputDebugString(buf);
-
     va_end(args);
 }
 #endif

@@ -51,6 +51,8 @@ def verify_stats(stats):
 
 # given a list of float values, return their average
 def get_avg(float_list):
+  if 0 == len(float_list):
+    return 0.0
   total = 0.0
   for el in float_list:
     total += el

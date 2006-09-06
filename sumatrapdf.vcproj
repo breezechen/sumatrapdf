@@ -67,7 +67,7 @@
 				AdditionalDependencies="freetype2110MT_D.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
-				IgnoreDefaultLibraryNames=""
+				IgnoreDefaultLibraryNames="libcmtd.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
