@@ -193,6 +193,7 @@ static void DumpLinks(DisplayModel *dm, PDFDoc *doc)
     upsideDown = dm->outputDevice->upsideDown();
     pagesCount = doc->getNumPages();
     for (int pageNo = 1; pageNo < pagesCount; ++pageNo) {
+        delete links;
         links = GetLinksForPage(doc, pageNo);
         if (!links)
             goto Exit;
