@@ -67,7 +67,7 @@
 				AdditionalDependencies="freetype2110MT_D.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
-				IgnoreDefaultLibraryNames="libcmtd.lib"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -123,6 +123,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA"
 				RuntimeLibrary="0"
@@ -151,7 +152,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				LinkTimeCodeGeneration="0"
+				LinkTimeCodeGeneration="1"
 				ProfileGuidedDatabase=""
 				TargetMachine="1"
 			/>
@@ -192,6 +193,14 @@
 			<File
 				RelativePath=".\poppler\poppler\Annot.cc"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						WholeProgramOptimization="true"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\src\AppPrefs.cc"
