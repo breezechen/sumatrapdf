@@ -343,8 +343,7 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     return bmp;
 }
 
-#ifdef _WIN32
-/* simple, single-threaded version */
+#ifdef SINGLE_THREADED_RENDERING
 void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
 {
     PdfPageInfo*    pageInfo;
