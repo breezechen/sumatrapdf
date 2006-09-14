@@ -673,11 +673,16 @@ char *CanonizeAbsolutePath(const char *path)
 void win32_dbg_out(const char *format, ...) {
     char        buf[4096];
     char *      p = buf;
+    int         written;
     va_list     args;
 
     va_start(args, format);
 
-    p += _vsnprintf(p, sizeof(buf) - 8, format, args);
+    written = _vsnprintf(p, sizeof(buf) - 2, format, args);
+    if (written > 0)
+        p += written;
+    else
+        p += sizeof(buf) - 2;
     p[0] = 0;
 /*    printf(buf);
     fflush(stdout); */

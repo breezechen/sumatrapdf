@@ -65,6 +65,8 @@
 #define WM_VSCROLL_HANDLED 0
 #define WM_HSCROLL_HANDLED 0
 
+#define WM_APP_MSG_REFRESH (WM_APP + 2)
+
 /* A caption is 4 white/blue 2 pixel line and a 3 pixel white line */
 #define CAPTION_DY 2*(2*4)+3
 
@@ -111,6 +113,7 @@ static WindowInfo*                  gWindowList = NULL;
 static HCURSOR                      gCursorArrow = NULL;
 static HCURSOR                      gCursorWait = NULL;
 static HBRUSH                       gBrushBg;
+static HBRUSH                       gBrushWhite;
 static HBRUSH                       gBrushShadow;
 static HBRUSH                       gBrushLinkDebug;
 
@@ -136,6 +139,8 @@ static BOOL                         gUseDoubleBuffer = TRUE;
 #else
 static BOOL                         gUseDoubleBuffer = FALSE;
 #endif
+
+static DWORD                        gUiThreadId = -1;
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 
@@ -851,7 +856,7 @@ static int WindowInfoList_Len(void)
 static void WindowInfo_RedrawAll(WindowInfo *win)
 {
     InvalidateRect(win->hwnd, NULL, FALSE);
-    UpdateWindow(win->hwnd);
+    //UpdateWindow(win->hwnd);
 }
 
 BOOL FileCloseMenuEnabled(void)
@@ -1684,6 +1689,12 @@ void OnBenchNextAction(WindowInfo *win)
         PostBenchNextAction(win->hwnd);
 }
 
+void DrawCenteredText(HDC hdc, RECT *r, char *txt)
+{    
+    SetBkMode(hdc, TRANSPARENT);
+    DrawText(hdc, txt, strlen(txt), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
 void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
     int                   pageNo;
@@ -1705,6 +1716,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     HBITMAP               hbmp = NULL;
     BITMAPINFOHEADER      bmih;
     HDC                   bmpDC = NULL;
+    RECT                  bounds;
 
     assert(win);
     if (!win) return;
@@ -1717,6 +1729,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     assert(win->hdcToDraw);
     hdc = win->hdcToDraw;
 
+    //TODO: FillRect() ps->rcPaint - bounds
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
@@ -1732,11 +1745,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
         }
 
-        splashBmpDx = splashBmp->getWidth();
-        splashBmpDy = splashBmp->getHeight();
-        splashBmpRowSize = splashBmp->getRowSize();
-        splashBmpData = splashBmp->getDataPtr();
-        splashBmpColorMode = splashBmp->getMode();
+        //TODO: FillRect() ps->rcPaint - bounds
 
         xSrc = (int)pageInfo->bitmapX;
         ySrc = (int)pageInfo->bitmapY;
@@ -1744,6 +1753,32 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         bmpDy = (int)pageInfo->bitmapDy;
         xDest = (int)pageInfo->screenX;
         yDest = (int)pageInfo->screenY;
+
+        if (BITMAP_BEING_RENDERED == splashBmp) {
+            bounds.left = xDest;
+            bounds.top = yDest;
+            bounds.right = xDest + bmpDx;
+            bounds.bottom = yDest + bmpDy;
+            FillRect(hdc, &bounds, gBrushWhite);
+            DrawCenteredText(hdc, &bounds, "Please wait - rendering...");
+            continue;
+        }
+
+        if (BITMAP_CANNOT_RENDER == splashBmp) {
+            bounds.left = xDest;
+            bounds.top = yDest;
+            bounds.right = xDest + bmpDx;
+            bounds.bottom = yDest + bmpDy;
+            FillRect(hdc, &bounds, gBrushWhite);
+            DrawCenteredText(hdc, &bounds, "Couldn't render the page");
+            continue;
+        }
+
+        splashBmpDx = splashBmp->getWidth();
+        splashBmpDy = splashBmp->getHeight();
+        splashBmpRowSize = splashBmp->getRowSize();
+        splashBmpData = splashBmp->getDataPtr();
+        splashBmpColorMode = splashBmp->getMode();
 
         bmih.biSize = sizeof(bmih);
         bmih.biHeight = -splashBmpDy;
@@ -2174,7 +2209,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
             dragDy = y - win->dragPrevPosY;
             DBG_OUT(" dragging ends, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
             assert(!win->linkOnLastButtonDown);
-            WinMoveDocBy(win, dragDx, dragDy);
+            WinMoveDocBy(win, dragDx, -dragDy);
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
             win->dragging = FALSE;
@@ -2897,6 +2932,9 @@ void OnMenuAbout(WindowInfo *win)
     }
 }
 
+#define REPAINT_TIMER_ID 1
+#define REPAINT_DELAY_IN_MS 400
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
@@ -2912,6 +2950,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_CREATE:
             // do nothing
             goto InitMouseWheelInfo;
+
+        case WM_APP_MSG_REFRESH:
+            if (win) {
+                SetTimer(win->hwnd, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
+            }
+            break;
 
         case WM_COMMAND:
             wmId    = LOWORD(wParam);
@@ -3064,8 +3108,11 @@ InitMouseWheelInfo:
 
         case WM_PAINT:
             /* it might happen that we get WM_PAINT after destroying a window */
-            if (win)
+            if (win) {
+                /* blindly kill the timer, just in case it's there */
+                KillTimer(win->hwnd, REPAINT_TIMER_ID);
                 OnPaint(win);
+            }
             break;
 
         case WM_CHAR:
@@ -3075,9 +3122,13 @@ InitMouseWheelInfo:
 
         case WM_TIMER:
             assert(win);
-            if (win)
-                AnimState_NextFrame(&win->animState);
-
+            if (win) {
+                if (REPAINT_TIMER_ID == wParam)
+                    WindowInfo_RedrawAll(win);
+                else
+                    AnimState_NextFrame(&win->animState);
+            }
+            break;
         case WM_KEYDOWN:
             if (win)
                 OnKeydown(win, wParam, lParam);
@@ -3114,6 +3165,7 @@ InitMouseWheelInfo:
                 return TRUE;
             }
             break;
+
         case IDM_VIEW_WITH_ACROBAT:
             if (win)
                 ViewWithAcrobat(win);
@@ -3168,6 +3220,7 @@ BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
     gCursorWait  = LoadCursor(NULL, IDC_WAIT);
 
     gBrushBg     = CreateSolidBrush(COL_WINDOW_BG);
+    gBrushWhite  = CreateSolidBrush(COL_WHITE);
     gBrushShadow = CreateSolidBrush(COL_WINDOW_SHADOW);
     gBrushLinkDebug = CreateSolidBrush(RGB(0x00,0x00,0xff));
     return TRUE;
@@ -3264,6 +3317,113 @@ void u_DoAllTests(void)
 #endif
 }
 
+typedef struct {
+    DisplayModel *  dm;
+    int             pageNo;
+} PageRenderRequest_t;
+
+#define MAX_PAGE_REQUESTS 64
+static PageRenderRequest_t *gPageRenderRequests[MAX_PAGE_REQUESTS];
+static int gPageRenderRequestsCount = 0;
+
+static HANDLE            gPageRenderThreadHandle = NULL;
+static HANDLE            gPageRenderSem = NULL;
+static CRITICAL_SECTION  gPageRenderQueueCs;
+
+/* Send a request to a worker thread to render a given page */
+void PageRenderSendRequest(DisplayModel *dm, int pageNo)
+{
+    PageRenderRequest_t *   pRequest = NULL;
+    PdfPageInfo *           pageInfo;
+
+    DBG_OUT("PageRenderSendRequest: enqueue for page %d\n", pageNo);
+    assert(dm);
+    if (!dm) goto Exit;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    assert(!pageInfo->bitmap);
+    pageInfo->bitmap = BITMAP_BEING_RENDERED;
+    pRequest = (PageRenderRequest_t*)malloc(sizeof(PageRenderRequest_t));
+    if (!pRequest) goto Exit;
+    memset(pRequest, 0, sizeof(PageRenderRequest_t));
+    pRequest->dm = dm;
+    pRequest->pageNo = pageNo;
+
+    EnterCriticalSection(&gPageRenderQueueCs);
+    gPageRenderRequests[gPageRenderRequestsCount++] = pRequest;
+    LeaveCriticalSection(&gPageRenderQueueCs);    
+    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
+
+    LONG prevCount;
+    ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
+Exit:
+    return;
+}
+
+DWORD WINAPI PageRenderThread(PVOID data)
+{
+    PageRenderRequest_t *   req;
+    SplashBitmap *          bmp;
+    PdfPageInfo *           pageInfo;
+    BOOL                    fOk;
+    HWND                    hwnd;
+    DWORD                   waitResult;
+    int                     count;
+
+    DBG_OUT("PageRenderThread() started\n");
+    while (1) {
+        DBG_OUT("Worker: wait\n");
+        EnterCriticalSection(&gPageRenderQueueCs);
+        count = gPageRenderRequestsCount;
+        LeaveCriticalSection(&gPageRenderQueueCs);
+        if (0 == count) {
+            waitResult = WaitForSingleObject(gPageRenderSem, INFINITE);
+            assert(WAIT_OBJECT_0 == waitResult);
+        }
+        EnterCriticalSection(&gPageRenderQueueCs);
+        if (0 == gPageRenderRequestsCount) {
+            LeaveCriticalSection(&gPageRenderQueueCs);
+            continue;
+        }
+        req = (PageRenderRequest_t*)gPageRenderRequests[--gPageRenderRequestsCount];
+        assert(gPageRenderRequestsCount >= 0);
+        LeaveCriticalSection(&gPageRenderQueueCs);
+        assert(req);
+        if (!req) {
+            DBG_OUT("PageRenderThread(): missing req\n");
+            continue;
+        }
+        DBG_OUT("PageRenderThread(): dequeued %d\n", req->pageNo);
+        bmp = DisplayModel_GetBitmapForPage(req->dm, req->pageNo);
+        pageInfo = DisplayModel_GetPageInfo(req->dm, req->pageNo);
+        assert(BITMAP_BEING_RENDERED == pageInfo->bitmap);
+        pageInfo->bitmap = bmp;
+        DBG_OUT("PageRenderThread(): finished rendering %d\n", req->pageNo);
+        WindowInfo *            win = NULL;
+        win = (WindowInfo*)req->dm->appData;
+        hwnd = win->hwnd;
+        free((void*)req);
+        fOk = PostMessage(hwnd, WM_APP_MSG_REFRESH, 0, 0);
+        if (!fOk)
+            assert(0);
+    }
+    DBG_OUT("PageRenderThread() finished\n");
+    return 0;
+}
+
+void CreatePageRenderThread(void)
+{
+    LONG semMaxCount = 1000; /* don't really know what the limit should be */
+    DWORD dwThread1ID = 0;
+    assert(NULL == gPageRenderThreadHandle);
+
+    gPageRenderSem = CreateSemaphore(NULL, 0, semMaxCount, NULL);
+    InitializeCriticalSection(&gPageRenderQueueCs);
+
+    gPageRenderThreadHandle = CreateThread(NULL, 0, PageRenderThread, (void*)NULL, 0, &dwThread1ID);
+    assert(NULL != gPageRenderThreadHandle);
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *           argListRoot;
@@ -3326,6 +3486,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
+    CreatePageRenderThread();
+    gUiThreadId = GetCurrentThreadId();
     /* TODO: detect it's not me and show a dialog box ? */
     AssociatePdfWithExe(exeName);
 
@@ -3390,6 +3552,7 @@ Exit:
     FileHistoryList_Free(&gFileHistoryRoot);
     CaptionPens_Destroy();
     DeleteObject(gBrushBg);
+    DeleteObject(gBrushWhite);
     DeleteObject(gBrushShadow);
     DeleteObject(gBrushLinkDebug);
 
