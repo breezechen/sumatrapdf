@@ -30,6 +30,15 @@
 #include "DisplayModel.h"
 #include "BaseUtils.h"
 
+/*
+Icons I need:
+* open
+* next/prev page
+* zoom in/zoom out
+* close (?)
+* rotate left/right (?)
+*/
+
 //#define FANCY_UI 1
 
 /* Next action for the benchmark mode */
@@ -3317,40 +3326,68 @@ void u_DoAllTests(void)
 #endif
 }
 
-typedef struct {
-    DisplayModel *  dm;
-    int             pageNo;
-} PageRenderRequest_t;
+static BOOL pageRenderAbortCb(void *data)
+{
+    PageRenderRequest *req = (PageRenderRequest*)data;
+    if (req->abort) {
+        DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
+        return TRUE;
+    }
+    else
+        return FALSE;
+}
 
 #define MAX_PAGE_REQUESTS 64
-static PageRenderRequest_t *gPageRenderRequests[MAX_PAGE_REQUESTS];
+static PageRenderRequest *gPageRenderRequests[MAX_PAGE_REQUESTS];
 static int gPageRenderRequestsCount = 0;
 
 static HANDLE            gPageRenderThreadHandle = NULL;
 static HANDLE            gPageRenderSem = NULL;
 static CRITICAL_SECTION  gPageRenderQueueCs;
+static PageRenderRequest *gCurPageRenderReq = NULL;
 
 /* Send a request to a worker thread to render a given page */
 void PageRenderSendRequest(DisplayModel *dm, int pageNo)
 {
-    PageRenderRequest_t *   pRequest = NULL;
-    PdfPageInfo *           pageInfo;
+    PageRenderRequest *   pRequest = NULL;
+    PageRenderRequest *   req = NULL;
+    PdfPageInfo *         pageInfo;
+    int                   replaced = 0;
 
     DBG_OUT("PageRenderSendRequest: enqueue for page %d\n", pageNo);
     assert(dm);
     if (!dm) goto Exit;
 
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    assert(!pageInfo->bitmap);
+    assert(!IsAllocatedBitmap(pageInfo->bitmap));
     pageInfo->bitmap = BITMAP_BEING_RENDERED;
-    pRequest = (PageRenderRequest_t*)malloc(sizeof(PageRenderRequest_t));
+    pRequest = (PageRenderRequest*)malloc(sizeof(PageRenderRequest));
     if (!pRequest) goto Exit;
-    memset(pRequest, 0, sizeof(PageRenderRequest_t));
     pRequest->dm = dm;
     pRequest->pageNo = pageNo;
+    pRequest->abort = FALSE;    
 
     EnterCriticalSection(&gPageRenderQueueCs);
-    gPageRenderRequests[gPageRenderRequestsCount++] = pRequest;
+    /* abort currently rendered request if it's the same as the one we queue.
+       This is so that if user changes the parameters (e.g. zoom) while we're
+       still rendering the page with previous settings */
+    if (gCurPageRenderReq && 
+        (gCurPageRenderReq->pageNo == pageNo) &&
+        (gCurPageRenderReq->dm == dm)) {
+        gCurPageRenderReq->abort = TRUE;
+    }
+    for (int i=0; i  < gPageRenderRequestsCount; i++) {
+        req = gPageRenderRequests[i];
+        if ((req->pageNo == pRequest->pageNo) && (req->dm == pRequest->dm)) {
+            DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
+            free((void*)req);
+            gPageRenderRequests[i] = pRequest;
+            replaced = 1;
+            break;
+        }
+    }
+    if (!replaced)
+        gPageRenderRequests[gPageRenderRequestsCount++] = pRequest;
     LeaveCriticalSection(&gPageRenderQueueCs);    
     assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
 
@@ -3362,7 +3399,7 @@ Exit:
 
 DWORD WINAPI PageRenderThread(PVOID data)
 {
-    PageRenderRequest_t *   req;
+    PageRenderRequest *   req;
     SplashBitmap *          bmp;
     PdfPageInfo *           pageInfo;
     BOOL                    fOk;
@@ -3374,6 +3411,7 @@ DWORD WINAPI PageRenderThread(PVOID data)
     while (1) {
         DBG_OUT("Worker: wait\n");
         EnterCriticalSection(&gPageRenderQueueCs);
+        gCurPageRenderReq = NULL;
         count = gPageRenderRequestsCount;
         LeaveCriticalSection(&gPageRenderQueueCs);
         if (0 == count) {
@@ -3385,8 +3423,9 @@ DWORD WINAPI PageRenderThread(PVOID data)
             LeaveCriticalSection(&gPageRenderQueueCs);
             continue;
         }
-        req = (PageRenderRequest_t*)gPageRenderRequests[--gPageRenderRequestsCount];
+        req = (PageRenderRequest*)gPageRenderRequests[--gPageRenderRequestsCount];
         assert(gPageRenderRequestsCount >= 0);
+        gCurPageRenderReq = req;
         LeaveCriticalSection(&gPageRenderQueueCs);
         assert(req);
         if (!req) {
@@ -3394,12 +3433,21 @@ DWORD WINAPI PageRenderThread(PVOID data)
             continue;
         }
         DBG_OUT("PageRenderThread(): dequeued %d\n", req->pageNo);
-        bmp = DisplayModel_GetBitmapForPage(req->dm, req->pageNo);
+        bmp = DisplayModel_GetBitmapForPage(req->dm, req->pageNo, pageRenderAbortCb, (void*)req);
+        if (req->abort) {
+            /* was aborted */
+            delete bmp;
+            free((void*)req);
+            continue;
+        }
         pageInfo = DisplayModel_GetPageInfo(req->dm, req->pageNo);
         assert(BITMAP_BEING_RENDERED == pageInfo->bitmap);
+        if (IsAllocatedBitmap(pageInfo->bitmap)) {
+            delete pageInfo->bitmap;
+        }
         pageInfo->bitmap = bmp;
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req->pageNo);
-        WindowInfo *            win = NULL;
+        WindowInfo * win = NULL;
         win = (WindowInfo*)req->dm->appData;
         hwnd = win->hwnd;
         free((void*)req);

@@ -295,7 +295,9 @@ PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
     return &(dm->pagesInfo[pageNo-1]);
 }
 
-SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
+SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
+    BOOL (*abortCheckCbkA)(void *data),
+    void *abortCheckCbkDataA)
 {
     PdfPageInfo *   pageInfo;
     int             pageDx, pageDy;
@@ -307,6 +309,8 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     int             rotation;
     SplashBitmap *  bmp;
     int             bmpDx, bmpDy;
+    PageRenderRequest *req;
+    BOOL            aborted = FALSE;
 
     assert(dm);
     if (!dm) return NULL;
@@ -330,15 +334,19 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo)
     vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     assert(dm->outputDevice);
     if (!dm->outputDevice) return NULL;
-    dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks);
+    dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
+        abortCheckCbkA, abortCheckCbkDataA);
     bmp = dm->outputDevice->takeBitmap();
     bmpDx = bmp->getWidth();
     bmpDy = bmp->getHeight();
+    req = (PageRenderRequest*)abortCheckCbkDataA;
+    if (req && req->abort)
+        aborted = TRUE;
     if ( (bmpDx != (int)pageInfo->currDx) || (bmpDy != (int)pageInfo->currDy)) {
-        DBG_OUT("  mismatched bitmap sizes!!!\n");
+        DBG_OUT("  mismatched bitmap sizes (aborted=%d)!!!\n", aborted);
         DBG_OUT("  calculated: (%4d-%4d)\n", (int)pageInfo->currDx, (int)pageInfo->currDy);
         DBG_OUT("  real:       (%4d-%4d)\n", bmpDx, bmpDy);
-        assert(0);
+        assert(aborted);
     }
     return bmp;
 }
@@ -360,7 +368,7 @@ void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
     PdfPageInfo*    pageInfo;
 
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    assert(NULL == pageInfo->bitmap);
+    assert(!IsAllocatedBitmap(pageInfo->bitmap));
     PageRenderSendRequest(dm, pageNo);
 }
 #endif
@@ -388,12 +396,12 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    DBG_OUT("DisplayModel_RenderVisibleParts()\n");
+    //DBG_OUT("DisplayModel_RenderVisibleParts()\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (pageInfo->visible) {
             assert(pageInfo->shown);
-            if (!pageInfo->bitmap)
+            if (!IsAllocatedBitmap(pageInfo->bitmap))
                 DisplayModel_StartRenderingPage(dm, pageNo);
         } else {
             DisplayModel_FreeBitmap(dm, pageNo);
@@ -406,7 +414,7 @@ void DisplayModel_FreeBitmaps(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    DBG_OUT("DisplayModel_FreeBitmaps()\n");
+    //DBG_OUT("DisplayModel_FreeBitmaps()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         DisplayModel_FreeBitmap(dm, pageNo);
     }
@@ -417,7 +425,7 @@ void DisplayModel_FreeLinks(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    DBG_OUT("DisplayModel_FreeBitmaps()\n");
+    //DBG_OUT("DisplayModel_FreeLinks()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         delete dm->pagesInfo[pageNo-1].links;
         dm->pagesInfo[pageNo-1].links = NULL;
@@ -586,7 +594,7 @@ int DisplayModel_GetCurrentPageNo(DisplayModel *dm)
     }
 
 Exit:
-    DBG_OUT("DisplayModel_GetCurrentPageNo() currPageNo=%d\n", currPageNo);
+    //DBG_OUT("DisplayModel_GetCurrentPageNo() currPageNo=%d\n", currPageNo);
     return currPageNo;
 }
 
@@ -670,7 +678,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scroll
            the size of canvas */
         DisplayModel_SetStartPage(dm, pageNo);
     }
-    DBG_OUT("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    //DBG_OUT("DisplayModel_GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     if (-1 != scrollX)
         dm->areaOffset.x = (double)scrollX;
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
@@ -966,7 +974,7 @@ void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
 {
     int     currPageNo;
 
-    DBG_OUT("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
+    //DBG_OUT("DisplayModel_ZoomTo() zoomVirtual=%.6f\n", zoomVirtual);
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
     DisplayModel_Relayout(dm, zoomVirtual, dm->rotation);
     DisplayModel_GoToPage(dm, currPageNo, 0);
@@ -976,7 +984,7 @@ void DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor)
 {
     double newZoom;
     newZoom = dm->zoomReal * zoomFactor;
-    DBG_OUT("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
+    //DBG_OUT("DisplayModel_ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
     if (newZoom > ZOOM_MAX)
         return;
     DisplayModel_ZoomTo(dm, newZoom);
@@ -1105,7 +1113,7 @@ static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    DBG_OUT("DisplayModel_RecalcLinksCanvasPos() links=%d, rotation=%d, zoom=%2.f\n", dm->linkCount, dm->rotation, dm->zoomReal);
+    //DBG_OUT("DisplayModel_RecalcLinksCanvasPos() links=%d, rotation=%d, zoom=%2.f\n", dm->linkCount, dm->rotation, dm->zoomReal);
     if (0 == dm->linkCount)
         return;
     assert(dm->links);
@@ -1136,9 +1144,9 @@ static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
         rectCanvas.dx = (int)rect.dx;
         rectCanvas.dy = (int)rect.dy;
         pdfLink->rectCanvas = rectCanvas;
-        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
+/*        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
                   rectCanvas.x, rectCanvas.y,
-                  rectCanvas.dx, rectCanvas.dy);
+                  rectCanvas.dx, rectCanvas.dy); */
     }
 }
 
@@ -1242,8 +1250,8 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     currPosY = PADDING_PAGE_BORDER_TOP;
     DisplayModel_SetZoomVirtual(dm, zoomVirtual);
 
-    DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
-        pageCount, dm->zoomReal, dm->zoomVirtual);
+    /*DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
+        pageCount, dm->zoomReal, dm->zoomVirtual); */
     totalAreaDx = 0;
 
     /* calculate the position of each page on the canvas, given current zoom,
@@ -1288,10 +1296,10 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             pagesLeft = columns;
             currPosX = PADDING_PAGE_BORDER_LEFT;
         }
-        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
+/*        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
                     (int)pageInfo->currDx, (int)pageInfo->currDy,
-                    (int)pageDx, (int)pageDy);
+                    (int)pageDx, (int)pageDy); */
     }
 
     if (pagesLeft < columns) {
@@ -1382,8 +1390,8 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
     drawAreaRect.dx = (int)dm->drawAreaSize.dx;
     drawAreaRect.dy = (int)dm->drawAreaSize.dy;
 
-    DBG_OUT("DisplayModel_RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
-        drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
+//    DBG_OUT("DisplayModel_RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
+//        drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
     visibleCount = 0;
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
@@ -1411,10 +1419,10 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
             pageInfo->screenY = (int) ((double)intersect.y - dm->areaOffset.y);
             assert(pageInfo->screenX >= 0);
             assert(pageInfo->screenY <= dm->drawAreaSize.dy);
-            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
+/*            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
                 pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
                           pageInfo->bitmapDx, pageInfo->bitmapDy,
-                          pageInfo->screenX, pageInfo->screenY);
+                          pageInfo->screenX, pageInfo->screenY); */
         }
         /* lazily (i.e. only when a page becomes visible for the first time)
            recalculate links. If there are any new links, note to self that

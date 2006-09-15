@@ -204,6 +204,13 @@ typedef struct DisplayModel {
     int             debugShowLinks;
 } DisplayModel;
 
+
+typedef struct {
+    DisplayModel *  dm;
+    int             pageNo;
+    int             abort;
+} PageRenderRequest;
+
 BOOL          IsAllocatedBitmap(SplashBitmap *bmp);
 
 DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
@@ -261,7 +268,9 @@ void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLa
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
 
 BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
-SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo);
+SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
+    BOOL (*abortCheckCbkA)(void *data) = NULL,
+    void *abortCheckCbkDataA = NULL);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
