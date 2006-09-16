@@ -204,6 +204,17 @@ typedef struct DisplayModel {
     int             debugShowLinks;
 } DisplayModel;
 
+/* We keep a cache of rendered bitmaps. RenderedBitmapCacheEntry keeps data
+   that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
+   and corresponding rendered bitmap.
+*/
+typedef struct {
+  DisplayModel * dm;
+  int            pageNo;
+  int            rotation;
+  double         zoomReal;
+  SplashBitmap * bitmap;
+} RenderedBitmapCacheEntry;
 
 typedef struct {
     DisplayModel *  dm;

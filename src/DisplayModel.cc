@@ -11,6 +11,8 @@
 #include "PDFDoc.h"
 #include "BaseUtils.h"
 
+#define MAX_BITMAP_CACHED 100
+
 #define ACTION_NEXT_PAGE    "NextPage"
 #define ACTION_PREV_PAGE    "PrevPage"
 #define ACTION_FIRST_PAGE   "FirstPage"
@@ -38,6 +40,8 @@
 #define PADDING_PAGE_BORDER_RIGHT    gDisplaySettings.paddingPageBorderRight
 #define PADDING_BETWEEN_PAGES_X      gDisplaySettings.paddingBetweenPagesX
 #define PADDING_BETWEEN_PAGES_Y      gDisplaySettings.paddingBetweenPagesY
+
+static RenderedBitmapCacheEntry *gRenderedBitmapsCache[MAX_BITMAP_CACHED] = {0};
 
 static DisplaySettings gDisplaySettings = {
   PADDING_PAGE_BORDER_TOP_DEF,
@@ -72,7 +76,6 @@ DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void)
 {
     return &gDisplaySettings;
 }
-
 
 static void GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *columns)
 {
