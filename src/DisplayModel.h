@@ -91,13 +91,9 @@ typedef struct PdfLink {
     SimpleRect      rectCanvas; /* position of the link on canvas */
 } PdfLink;
 
-/* A special "pointer" value indicating that this bitmap is being rendered
-   on a separate thread */
-/*TODO: remove me */
-/*#define BITMAP_BEING_RENDERED (SplashBitmap*)-1*/
 /* A special "pointer" vlaue indicating that we tried to render this bitmap
    but couldn't (e.g. due to lack of memory) */
-#define BITMAP_CANNOT_RENDER (SplashBitmap*)-2
+#define BITMAP_CANNOT_RENDER (SplashBitmap*)-1
 
 /* Describes many attributes of one page in one, convenient place */
 typedef struct PdfPageInfo {
@@ -128,10 +124,6 @@ typedef struct PdfPageInfo {
     int             bitmapX, bitmapY, bitmapDx, bitmapDy;
     /* where it should be blitted on the screen */
     int             screenX, screenY;
-
-    /* a bitmap representing the whole page. Should be of (currDx,currDy) size */
-    /* TODO: remove me */
-    /*SplashBitmap *  bitmap;*/
 
     Links *         links;
 } PdfPageInfo;
@@ -259,8 +251,6 @@ void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool 
 
 void          DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode);
 
-void          DisplayModel_FreeBitmaps(DisplayModel *dm);
-
 void          DisplayModel_SetZoomVirtual(DisplayModel *dm, double zoomVirtual);
 void          DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual);
 void          DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor);
@@ -281,9 +271,9 @@ void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLa
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
 
 BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
+
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
-    BOOL (*abortCheckCbkA)(void *data) = NULL,
-    void *abortCheckCbkDataA = NULL);
+    BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
 
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
@@ -292,13 +282,19 @@ extern void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo);
 /* called when we decide that the display needs to be redrawn */
 extern void DisplayModel_RepaintDisplay(DisplayModel *dm);
 
-SplashBitmap* RenderBitmap(PDFDoc *pdfDoc, SplashOutputDev *outputDevice,
+/* Lock protecting both bitmap cache and page render queue */
+void LockCache();
+void UnlockCache();
+
+SplashBitmap* RenderBitmap(DisplayModel *dm,
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-BOOL BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp);
+BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
+void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp);
+void              BitmapCache_FreeAll(void);
+void              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
 
 #endif

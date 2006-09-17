@@ -5,12 +5,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <assert.h>
 
 #define DEFAULT_WINDOW_X     40
 #define DEFAULT_WINDOW_Y     20
 #define DEFAULT_WINDOW_DX    640
 #define DEFAULT_WINDOW_DY    480
+
+static BOOL FileExists(const char *fileName)
+{
+  struct stat buf;
+  int         res;
+  
+  res = stat(fileName, &buf);
+  if (0 != res)
+    return FALSE;
+  return TRUE;
+}
 
 BOOL Prefs_Serialize(FileHistoryList **root, DString *strOut)
 {
@@ -188,6 +200,20 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
     assert(0);
 }
 
+void FileHistory_Add(FileHistoryList **fileHistoryRoot, DisplayState *state)
+{
+    FileHistoryList *   fileHistoryNode = NULL;
+    if (!FileExists(state->filePath)) {
+        DBG_OUT("FileHistory_Add() file '%s' doesn't exist anymore\n", state->filePath);
+        return;
+    }
+
+    fileHistoryNode = FileHistoryList_Node_Create();
+    fileHistoryNode->state = *state;
+    FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
+    fileHistoryNode = NULL;
+}
+
 /* Deserialize preferences from text. Put state into 'dsOut' and add all history
    items to file history list 'root'.
    Return FALSE if there was an error.
@@ -200,7 +226,6 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
     char *              key, *value, *keyToFree = NULL;
     int                 isStructVal;
     DisplayState        currState;
-    FileHistoryList *   fileHistoryNode = NULL;
 
     DisplayState_Init(&currState);
 
@@ -247,7 +272,6 @@ StartOver:
                 if (Str_Eq(FILE_HISTORY_STR, key)) {
                     assert(!isStructVal);
                     state = PPS_IN_FILE_HISTORY;
-                    assert(!fileHistoryNode);
                     assert(!value);
                 } else {
                     if (line)
@@ -263,12 +287,9 @@ StartOver:
                     ParseKeyValue(key, value, &currState);
                 } else {
                     if (currState.filePath) {
-                        fileHistoryNode = FileHistoryList_Node_Create();
-                        fileHistoryNode->state = currState;
-                        FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
-                        fileHistoryNode = NULL;
+                        FileHistory_Add(fileHistoryRoot, &currState);
+                        DisplayState_Init(&currState);
                     }
-                    DisplayState_Init(&currState);
                     state = PPS_START;
                     goto StartOver;
                 }
@@ -284,11 +305,8 @@ Next:
 
     if (PPS_IN_FILE_HISTORY == state) {
         if (currState.filePath) {
-            fileHistoryNode = FileHistoryList_Node_Create();
-            fileHistoryNode->state = currState;
-            DisplayState_Init(&currState);
-            FileHistoryList_Node_Append(fileHistoryRoot, fileHistoryNode);
-            fileHistoryNode = NULL;
+            if (FileExists(currState.filePath))
+                FileHistory_Add(fileHistoryRoot, &currState);
         }
     }
 Exit:

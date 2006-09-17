@@ -10,6 +10,7 @@
 #include "Link.h"
 #include "PDFDoc.h"
 #include "BaseUtils.h"
+#include "GooMutex.h"
 
 #ifdef _WIN32
 #define PREDICTIVE_RENDER 1
@@ -45,8 +46,19 @@
 #define PADDING_BETWEEN_PAGES_X      gDisplaySettings.paddingBetweenPagesX
 #define PADDING_BETWEEN_PAGES_Y      gDisplaySettings.paddingBetweenPagesY
 
-static BitmapCacheEntry *gBitmapCache[MAX_BITMAPS_CACHED] = {0};
-static int gBitmapCacheCount = 0;
+static GooMutex             cacheMutex;
+static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};
+static int                  gBitmapCacheCount = 0;
+
+static MutexAutoInitDestory gAutoCacheMutex(&cacheMutex);
+
+void LockCache(void) {
+    gLockMutex(&cacheMutex);
+}
+
+void UnlockCache(void) {
+    gUnlockMutex(&cacheMutex);
+}
 
 static DisplaySettings gDisplaySettings = {
   PADDING_PAGE_BORDER_TOP_DEF,
@@ -295,27 +307,6 @@ PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
     return &(dm->pagesInfo[pageNo-1]);
 }
 
-SplashBitmap* RenderBitmap(PDFDoc *pdfDoc, SplashOutputDev *outputDevice,
-                           int pageNo, double zoomReal, int rotation,
-                           BOOL (*abortCheckCbkA)(void *data),
-                           void *abortCheckCbkDataA)
-{
-    double          hDPI, vDPI;
-    GBool           useMediaBox = gFalse;
-    GBool           crop        = gTrue;
-    GBool           doLinks     = gTrue;
-
-    DBG_OUT("RenderBitmapForPage(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
-
-    hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    assert(outputDevice);
-    if (!outputDevice) return NULL;
-    pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
-        abortCheckCbkA, abortCheckCbkDataA);
-    return outputDevice->takeBitmap();
-}
-
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
     BOOL (*abortCheckCbkA)(void *data),
     void *abortCheckCbkDataA)
@@ -344,7 +335,7 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo,
 
     assert(dm->outputDevice);
     if (!dm->outputDevice) return NULL;
-    bmp = RenderBitmap(dm->pdfDoc, dm->outputDevice, pageNo, dm->zoomReal, dm->rotation, abortCheckCbkA, abortCheckCbkDataA);
+    bmp = RenderBitmap(dm, pageNo, dm->zoomReal, dm->rotation, abortCheckCbkA, abortCheckCbkDataA);
 
     bmpDx = bmp->getWidth();
     bmpDy = bmp->getHeight();
@@ -360,33 +351,11 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo,
     return bmp;
 }
 
-#ifdef SINGLE_THREADED_RENDERING
-void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
-{
-    PdfPageInfo*    pageInfo;
-
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    /* TODO: either fix me or remove me */
-    pageInfo->bitmap = DisplayModel_GetBitmapForPage(dm, pageNo);
-}
-#else
-extern void QueueRenderBitmap(DisplayModel *dm, int pageNo);
-
+extern void RenderQueue_Add(DisplayModel *dm, int pageNo);
 /* Send the request to render a given page to a rendering thread */
 void DisplayModel_StartRenderingPage(DisplayModel *dm, int pageNo)
 {
-    QueueRenderBitmap(dm, pageNo);
-}
-#endif
-
-/* TODO: do something clever to make sure that if a page is being rendered,
-   we wait until it's being rendered */
-void DisplayModel_FreeBitmap(DisplayModel *dm, int pageNo)
-{
-    PdfPageInfo*    pageInfo;
-
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    /* TODO: write me */
+    RenderQueue_Add(dm, pageNo);
 }
 
 void DisplayModel_RenderVisibleParts(DisplayModel *dm)
@@ -405,8 +374,6 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
             assert(pageInfo->shown);
             DisplayModel_StartRenderingPage(dm, pageNo);
             lastVisible = pageNo;
-        } else {
-            DisplayModel_FreeBitmap(dm, pageNo);
         }
     }
     assert(0 != lastVisible);
@@ -415,17 +382,6 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
         DisplayModel_StartRenderingPage(dm, lastVisible+1);
     }        
 #endif
-}
-
-void DisplayModel_FreeBitmaps(DisplayModel *dm)
-{
-    assert(dm);
-    if (!dm) return;
-
-    //DBG_OUT("DisplayModel_FreeBitmaps()\n");
-    for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
-        DisplayModel_FreeBitmap(dm, pageNo);
-    }
 }
 
 void DisplayModel_FreeLinks(DisplayModel *dm)
@@ -440,11 +396,14 @@ void DisplayModel_FreeLinks(DisplayModel *dm)
     }
 }
 
+extern void RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
+
 void DisplayModel_Delete(DisplayModel *dm)
 {
     if (!dm) return;
 
-    DisplayModel_FreeBitmaps(dm);
+    RenderQueue_RemoveForDisplayModel(dm);
+    BitmapCache_FreeForDisplayModel(dm);
     DisplayModel_FreeLinks(dm);
 
     delete dm->outputDevice;
@@ -656,7 +615,6 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
     dm->startPage = startPage;
     for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-        DisplayModel_FreeBitmap(dm, pageNo);
         if (IsDisplayModeContinuous(dm->displayMode))
             pageInfo->shown = true;
         else
@@ -1240,6 +1198,8 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     int         pagesLeft;
     int         pageInARow;
     int         columns;
+    double      currZoomReal;
+    BOOL        freeCache = FALSE;
 
     assert(dm);
     if (!dm) return;
@@ -1250,11 +1210,16 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     NormalizeRotation(&rotation);
     assert(ValidRotation(rotation));
 
+    if (rotation != dm->rotation)
+        freeCache = TRUE;
     dm->rotation = rotation;
     pageCount = dm->pageCount;
 
     currPosY = PADDING_PAGE_BORDER_TOP;
+    currZoomReal = dm->zoomReal;
     DisplayModel_SetZoomVirtual(dm, zoomVirtual);
+    if (currZoomReal != dm->zoomReal)
+        freeCache = TRUE;
 
     /*DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
         pageCount, dm->zoomReal, dm->zoomVirtual); */
@@ -1367,8 +1332,11 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     dm->canvasSize.dy = totalAreaDy;
 
     DisplayModel_RecalcLinksCanvasPos(dm);
-    /* bitmaps generated before are no longer valid after we changed sizes of pages */
-    DisplayModel_FreeBitmaps(dm);
+    if (freeCache) {
+        /* bitmaps generated before are no longer valid if we changed rotation
+           or zoom level */
+        BitmapCache_FreeForDisplayModel(dm);
+    }
 }
 
 /* Given positions of each page in a large sheet that is continous view and
@@ -1640,6 +1608,36 @@ BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
     return TRUE;
 }
 
+SplashBitmap* RenderBitmap(DisplayModel *dm,
+                           int pageNo, double zoomReal, int rotation,
+                           BOOL (*abortCheckCbkA)(void *data),
+                           void *abortCheckCbkDataA)
+{
+    double          hDPI, vDPI;
+    GBool           useMediaBox = gFalse;
+    GBool           crop        = gTrue;
+    GBool           doLinks     = gTrue;
+    PdfPageInfo *   pageInfo;
+
+    DBG_OUT("RenderBitmapForPage(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
+
+    hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
+    vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
+    assert(dm->outputDevice);
+    if (!dm->outputDevice) return NULL;
+    dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
+        abortCheckCbkA, abortCheckCbkDataA);
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    if (!pageInfo->links) {
+        /* displayPage calculates links for this page (if doLinks is true)
+           and puts inside pdfDoc */
+        pageInfo->links = dm->pdfDoc->takeLinks();
+        if (pageInfo->links->getNumLinks() > 0)
+            DisplayModel_RecalcLinks(dm);
+    }
+    return dm->outputDevice->takeBitmap();
+}
+
 static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     assert(entry);
     if (!entry) return;
@@ -1648,22 +1646,48 @@ static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     entry->bitmap = NULL;
 }
 
-void BitmapCache_Free(void) {
+void BitmapCache_FreeAll(void) {
+    LockCache();
     for (int i=0; i < gBitmapCacheCount; i++) {
         BitmapCacheEntry_Free(gBitmapCache[i]);
     }
     gBitmapCacheCount = 0;
+    UnlockCache();
+}
+
+void BitmapCache_FreeForDisplayModel(DisplayModel *dm)
+{
+    int     curPos = 0;
+    int     i;
+    BOOL    shouldFree;
+
+    DBG_OUT("BitmapCache_FreeForDisplayModel()\n");
+    LockCache();
+    for (i = 0; i < gBitmapCacheCount; i++) {
+        shouldFree = (gBitmapCache[i]->dm == dm);
+        if (shouldFree)
+            BitmapCacheEntry_Free(gBitmapCache[i]);
+
+        if (curPos != i)
+            gBitmapCache[curPos] = gBitmapCache[i];
+
+        if (!shouldFree)
+            ++curPos;
+    }
+    gBitmapCacheCount = 0;
+    UnlockCache();
 }
 
 void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp)
 {
     BitmapCacheEntry *entry;
-    assert(gBitmapCacheCount < MAX_BITMAPS_CACHED);
+    assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
     assert(dm);
     assert(bmp);
     assert(ValidRotation(rotation));
     assert(ValidZoomReal(zoomLevel));
 
+    LockCache();
     DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
     if (!entry) {
@@ -1675,29 +1699,35 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     entry->zoomLevel = zoomLevel;
     entry->rotation = rotation;
     entry->bitmap = bmp;
-    if (gBitmapCacheCount >= MAX_BITMAPS_CACHED) {
+    if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
         /* TODO: find entry that is not visible and remove it from cache to
            make room for new entry */
         BitmapCacheEntry_Free(entry);
+        UnlockCache();
         return;
     }
     gBitmapCache[gBitmapCacheCount++] = entry;
+    UnlockCache();
 }
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation) {
     BitmapCacheEntry *entry;
 
     DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%, rotation=%d)\n", pageNo, zoomLevel, rotation);
+    LockCache();
     for (int i = 0; i < gBitmapCacheCount; i++) {
         entry = gBitmapCache[i];
         if ( (dm == entry->dm) && (pageNo == entry->pageNo) && 
              (zoomLevel == entry->zoomLevel) && (rotation == entry->rotation)) {
              DBG_OUT("   found\n");
-             return entry;
+             goto Exit;
         }
     }
     DBG_OUT("   didn't find\n");
-    return NULL;
+    entry = NULL;
+Exit:
+    UnlockCache();
+    return entry;
 }
 
 /* Return TRUE if a bitmap for a page defined by <dm>, <pageNo>, <zoomLevel>

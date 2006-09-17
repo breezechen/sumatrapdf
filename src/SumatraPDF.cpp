@@ -29,6 +29,7 @@
 #include "SimpleRect.h"
 #include "DisplayModel.h"
 #include "BaseUtils.h"
+#include <windowsx.h>
 
 /*
 Icons I need:
@@ -149,7 +150,14 @@ static BOOL                         gUseDoubleBuffer = TRUE;
 static BOOL                         gUseDoubleBuffer = FALSE;
 #endif
 
-static DWORD                        gUiThreadId = -1;
+#define MAX_PAGE_REQUESTS 64
+static PageRenderRequest            gPageRenderRequests[MAX_PAGE_REQUESTS];
+static int                          gPageRenderRequestsCount = 0;
+
+static HANDLE                       gPageRenderThreadHandle = NULL;
+static HANDLE                       gPageRenderSem = NULL;
+static PageRenderRequest *          gCurPageRenderReq = NULL;
+
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 
@@ -215,8 +223,130 @@ void LaunchBrowser(const TCHAR *url)
     return;
 }
 
+static BOOL pageRenderAbortCb(void *data)
+{
+    PageRenderRequest *req = (PageRenderRequest*)data;
+    if (req->abort) {
+        DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
+        return TRUE;
+    }
+    else
+        return FALSE;
+}
+
+void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
+    int                 i = 0;
+    int                 curPos = 0;
+    int                 reqCount = gPageRenderRequestsCount;
+    BOOL                shouldRemove;
+    PageRenderRequest * req = NULL;
+
+    LockCache();
+    while (i < reqCount) {
+        req = &(gPageRenderRequests[i]);
+        shouldRemove = (req->dm == dm);
+        if (i != curPos)
+            gPageRenderRequests[curPos] = gPageRenderRequests[i];
+        if (shouldRemove)
+            --gPageRenderRequestsCount;
+        else
+            ++curPos;
+        ++i;
+    }
+    UnlockCache();
+}
+
+/* Render a bitmap for page <pageNo> in <dm>. */
+void RenderQueue_Add(DisplayModel *dm, int pageNo) {
+    PageRenderRequest *   newRequest = NULL;
+    PageRenderRequest *   req = NULL;
+    PdfPageInfo *         pageInfo;
+    int                   replaced = 0;
+    LONG                  prevCount;
+    int                   rotation;
+    double                zoomLevel;
+
+    DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
+    assert(dm);
+    if (!dm) goto Exit;
+
+    LockCache();
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    rotation = pageInfo->rotation;
+    zoomLevel = dm->zoomReal;
+
+    if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
+        goto LeaveCsAndExit;
+    }
+
+    if (gCurPageRenderReq && 
+        (gCurPageRenderReq->pageNo == pageNo) && (gCurPageRenderReq->dm == dm)) {
+        if ((gCurPageRenderReq->zoomLevel != zoomLevel) || (gCurPageRenderReq->rotation != rotation)) {
+            /* Currently rendered page is for the same page but with different zoom
+            or rotation, so abort it */
+            DBG_OUT("  aborting rendering\n");
+            gCurPageRenderReq->abort = TRUE;
+        } else {
+            /* we're already rendering exactly the same page */
+            DBG_OUT("  already rendering this page\n");
+            goto LeaveCsAndExit;
+        }
+    }
+
+    for (int i=0; i  < gPageRenderRequestsCount; i++) {
+        req = &(gPageRenderRequests[i]);
+        if ((req->pageNo == pageNo) && (req->dm == dm)) {
+            if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
+                /* Request with exactly the same parameters already queued for
+                   rendering. Move it to the top of the queue so that it'll
+                   be rendered faster. */
+                PageRenderRequest tmp;
+                tmp = gPageRenderRequests[gPageRenderRequestsCount-1];
+                gPageRenderRequests[gPageRenderRequestsCount-1] = *req;
+                *req = tmp;
+                DBG_OUT("  already queued\n");
+                goto LeaveCsAndExit;
+            } else {
+                /* There was a request queued for the same page but with different
+                   zoom or rotation, so only replace this request */
+                DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
+                req->zoomLevel = zoomLevel;
+                req->rotation = rotation;
+                goto LeaveCsAndExit;
+            
+}
+        }
+    }
+
+    /* add request to the queue */
+    newRequest = &(gPageRenderRequests[gPageRenderRequestsCount++]);
+    newRequest->dm = dm;
+    newRequest->pageNo = pageNo;
+    newRequest->zoomLevel = zoomLevel;
+    newRequest->rotation = rotation;
+    newRequest->abort = FALSE;
+
+    UnlockCache();
+    /* tell rendering thread there's a new request to render */
+    ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
+Exit:
+    return;
+LeaveCsAndExit:
+    UnlockCache();
+    return;
+}
+
+void RenderQueue_Pop(PageRenderRequest *req)
+{
+    LockCache();
+    --gPageRenderRequestsCount;
+    *req = gPageRenderRequests[gPageRenderRequestsCount];
+    assert(gPageRenderRequestsCount >= 0);
+    UnlockCache();
+}
+
 /* TODO: move to BaseUtils.h */
-const char *Path_GetBaseName(const char *path)
+static const char *Path_GetBaseName(const char *path)
 {
     const char *fileBaseName = (const char*)strrchr(path, DIR_SEP_CHAR);
     if (NULL == fileBaseName)
@@ -226,7 +356,7 @@ const char *Path_GetBaseName(const char *path)
     return fileBaseName;
 }
 
-HMENU FindMenuItem(WindowInfo *win, UINT id)
+static HMENU FindMenuItem(WindowInfo *win, UINT id)
 {
     HMENU   menuMain;
     HMENU   subMenu;
@@ -251,12 +381,12 @@ HMENU FindMenuItem(WindowInfo *win, UINT id)
     return NULL;
 }
 
-HMENU GetFileMenu(HWND hwnd)
+static HMENU GetFileMenu(HWND hwnd)
 {
     return GetSubMenu(GetMenu(hwnd), 0);
 }
 
-void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
+static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
 {
     HMENU   menuMain;
     UINT    id;
@@ -282,21 +412,21 @@ void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, id, MF_BYCOMMAND | MF_CHECKED);
 }
 
-UINT AllocNewMenuId(void)
+static UINT AllocNewMenuId(void)
 {
     static UINT firstId = 1000;
     ++firstId;
     return firstId;
 }
 
-void AddMenuSepToFilesMenu(WindowInfo *win)
+static void AddMenuSepToFilesMenu(WindowInfo *win)
 {
     HMENU               menuFile;
     menuFile = GetFileMenu(win->hwnd);
     AppendMenu(menuFile, MF_SEPARATOR, 0, NULL);
 }
 
-void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
+static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
 {
     HMENU               menuFile;
     UINT                newId;
@@ -321,7 +451,7 @@ void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
         node->menuId = newId;
 }
 
-void AddRecentFilesToMenu(WindowInfo *win)
+static void AddRecentFilesToMenu(WindowInfo *win)
 {
     int                 itemsAdded = 0;
     FileHistoryList *   curr;
@@ -347,7 +477,7 @@ void AddRecentFilesToMenu(WindowInfo *win)
     }
 }
 
-void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
+static void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
 {
    ::SendMessage(hwnd, EM_SETSEL, (WPARAM)selStart, (WPARAM)selEnd);
 }
@@ -357,7 +487,7 @@ void WinEditSelectAll(HWND hwnd)
     WinEditSetSel(hwnd, 0, -1);
 }
 
-int WinGetTextLen(HWND hwnd)
+static int WinGetTextLen(HWND hwnd)
 {
     return (int)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0);
 }
@@ -382,7 +512,8 @@ TCHAR *WinGetText(HWND hwnd)
     txt[cchTxtLen] = 0;
     return txt;
 }
-void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
+
+static void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
 {
     if (scrollbarYDxOut)
         *scrollbarYDxOut = GetSystemMetrics(SM_CXHSCROLL);
@@ -391,7 +522,7 @@ void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
 }
 
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
-void WinResizeClientArea(HWND hwnd, int dx, int dy)
+static void WinResizeClientArea(HWND hwnd, int dx, int dy)
 {
     RECT rc;
     RECT rw;
@@ -481,7 +612,7 @@ void *StandardSecurityHandler::getAuthData()
     return (void*)authData;
 }
 
-void AppGetAppDir(DString* pDs)
+static void AppGetAppDir(DString* pDs)
 {
     char        dir[MAX_PATH];
 
@@ -491,7 +622,7 @@ void AppGetAppDir(DString* pDs)
 }
 
 /* Generate the full path for a filename used by the app in the userdata path. */
-void AppGenDataFilename(char* pFilename, DString* pDs)
+static void AppGenDataFilename(char* pFilename, DString* pDs)
 {
     assert(0 == pDs->length);
     assert(pFilename);
@@ -513,7 +644,7 @@ static void Prefs_GetFileName(DString* pDs)
 }
 
 /* Load preferences from the preferences file. */
-void Prefs_Load(void)
+static void Prefs_Load(void)
 {
     DString             path;
     static int          loaded = FALSE;
@@ -543,7 +674,7 @@ void Prefs_Load(void)
     free((void*)prefsTxt);
 }
 
-void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
+static void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
 {
     RECT    r;
     *xOut = 0;
@@ -555,12 +686,12 @@ void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
     }
 }
 
-void Win32_Win_SetPos(HWND hwnd, int x, int y)
+static void Win32_Win_SetPos(HWND hwnd, int x, int y)
 {
     SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSIZE);
 }
 
-void UpdateDisplayStateWindowPos(WindowInfo *win, DisplayState *ds)
+static void UpdateDisplayStateWindowPos(WindowInfo *win, DisplayState *ds)
 {
     int posX, posY;
 
@@ -570,7 +701,7 @@ void UpdateDisplayStateWindowPos(WindowInfo *win, DisplayState *ds)
     ds->windowY = posY;
 }
 
-void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
+static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
 {
     DisplayState    ds;
     const char *    fileName = NULL;
@@ -605,7 +736,7 @@ void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
     node->state.visible = TRUE;
 }
 
-void UpdateCurrentFileDisplayState(void)
+static void UpdateCurrentFileDisplayState(void)
 {
     WindowInfo *        currWin;
     FileHistoryList *   currFile;
@@ -623,9 +754,7 @@ void UpdateCurrentFileDisplayState(void)
     }
 }
 
-//static BOOL gPrefsSaved = FALSE;
-
-void Prefs_Save(void)
+static void Prefs_Save(void)
 {
     DString       path;
     DString       prefsStr;
@@ -757,6 +886,12 @@ static void WindowInfo_DoubleBuffer_Show(WindowInfo *win, HDC hdc)
 
 static void WindowInfo_Delete(WindowInfo *win)
 {
+    LockCache();
+    if (gCurPageRenderReq && (gCurPageRenderReq->dm == win->dm)) {
+        /* TODO: should somehow wait for for the page to finish rendering */
+        gCurPageRenderReq->abort = TRUE;
+    }
+    UnlockCache();
     DisplayModel_Delete(win->dm);
     WindowInfo_Dib_Deinit(win);
     WindowInfo_DoubleBuffer_Delete(win);
@@ -865,10 +1000,9 @@ static int WindowInfoList_Len(void)
 static void WindowInfo_RedrawAll(WindowInfo *win)
 {
     InvalidateRect(win->hwnd, NULL, FALSE);
-    //UpdateWindow(win->hwnd);
 }
 
-BOOL FileCloseMenuEnabled(void)
+static BOOL FileCloseMenuEnabled(void)
 {
     WindowInfo *    win;
     win = gWindowList;
@@ -1291,7 +1425,7 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
     SetScrollInfo(win->hwnd, SB_VERT, &si, TRUE);
 }
 
-void WindowInfo_ResizeToWindow(WindowInfo *win)
+static void WindowInfo_ResizeToWindow(WindowInfo *win)
 {
     DisplayModel *dm;
     RectDSize     totalDrawAreaSize;
@@ -1310,7 +1444,7 @@ void WindowInfo_ResizeToWindow(WindowInfo *win)
     DisplayModel_SetTotalDrawAreaSize(dm, totalDrawAreaSize);
 }
 
-void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
+static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 {
     int                 dx, dy;
     int                 displayDx, displayDy;
@@ -1357,7 +1491,7 @@ void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
     WinResizeClientArea(win->hwnd, dx, dy);
 }
 
-void WindowInfo_ToggleZoom(WindowInfo *win)
+static void WindowInfo_ToggleZoom(WindowInfo *win)
 {
     DisplayModel *  dm;
 
@@ -1374,7 +1508,7 @@ void WindowInfo_ToggleZoom(WindowInfo *win)
         DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_PAGE);
 }
 
-BOOL WindowInfo_PdfLoaded(WindowInfo *win)
+static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
 {
     assert(win);
     if (!win) return FALSE;
@@ -1390,7 +1524,7 @@ BOOL WindowInfo_PdfLoaded(WindowInfo *win)
   - unescaped, in which case it start with != '"' and ends with ' ' or eol (0)
   This function extracts escaped or unescaped path from 'txt'. Returns NULL in case of error.
   Caller needs to free() the result. */
-char *PossiblyUnescapePath(char *txt)
+static char *PossiblyUnescapePath(char *txt)
 {
     char   *exePathStart, *exePathEnd;
     char   *exePath, *src, *dst;
@@ -1453,7 +1587,7 @@ char *PossiblyUnescapePath(char *txt)
 
 /* Return the full exe path of my own executable.
    Caller needs to free() the result. */
-char *ExePathGet(void)
+static char *ExePathGet(void)
 {
     return PossiblyUnescapePath(GetCommandLine());
 }
@@ -1494,7 +1628,7 @@ static void RefreshIcons(void)
 }
 
 /* Make my app the default app for PDF files. */
-void AssociatePdfWithExe(TCHAR *exePath)
+static void AssociatePdfWithExe(TCHAR *exePath)
 {
     char        tmp[256];
     HKEY        key = NULL, kicon = NULL, kshell = NULL, kopen = NULL, kcmd = NULL;
@@ -1572,25 +1706,6 @@ Exit:
     //RefreshIcons();
 }
 
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-        case WM_INITDIALOG:
-            return (INT_PTR)TRUE;
-
-        case WM_COMMAND:
-            if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-            {
-                EndDialog(hDlg, LOWORD(wParam));
-                return (INT_PTR)TRUE;
-            }
-            break;
-    }
-    return (INT_PTR)FALSE;
-}
-
 static void OnDropFiles(WindowInfo *win, HDROP hDrop)
 {
     int         i;
@@ -1608,14 +1723,14 @@ static void OnDropFiles(WindowInfo *win, HDROP hDrop)
         WindowInfo_RedrawAll(win);
 }
 
-void DrawLineSimple(HDC hdc, int sx, int sy, int ex, int ey)
+static void DrawLineSimple(HDC hdc, int sx, int sy, int ex, int ey)
 {
     MoveToEx(hdc, sx, sy, NULL);
     LineTo(hdc, ex, ey);
 }
 
 /* Draw caption area for a given window 'win' in the classic AmigaOS style */
-void AmigaCaptionDraw(WindowInfo *win)
+static void AmigaCaptionDraw(WindowInfo *win)
 {
     HGDIOBJ prevPen;
     HDC     hdc = win->hdc;
@@ -1666,7 +1781,7 @@ void AmigaCaptionDraw(WindowInfo *win)
     SelectObject(hdc, prevPen);
 }
 
-void WinResizeIfNeeded(WindowInfo *win)
+static void WinResizeIfNeeded(WindowInfo *win)
 {
     RECT    rc;
     int     win_dx, win_dy;
@@ -1684,12 +1799,12 @@ void WinResizeIfNeeded(WindowInfo *win)
     WindowInfo_ResizeToWindow(win);
 }
 
-void PostBenchNextAction(HWND hwnd)
+static void PostBenchNextAction(HWND hwnd)
 {
     PostMessage(hwnd, MSG_BENCH_NEXT_ACTION, 0, 0);
 }
 
-void OnBenchNextAction(WindowInfo *win)
+static void OnBenchNextAction(WindowInfo *win)
 {
     if (!win->dm)
         return;
@@ -1698,13 +1813,13 @@ void OnBenchNextAction(WindowInfo *win)
         PostBenchNextAction(win->hwnd);
 }
 
-void DrawCenteredText(HDC hdc, RECT *r, char *txt)
+static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
 {    
     SetBkMode(hdc, TRANSPARENT);
     DrawText(hdc, txt, strlen(txt), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
     int                   pageNo;
     PdfPageInfo*          pageInfo;
@@ -1742,6 +1857,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     //TODO: FillRect() ps->rcPaint - bounds
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
+    DBG_OUT("WindowInfo_Paint() start\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (!pageInfo->visible)
@@ -1750,14 +1866,12 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         if (!pageInfo->shown)
             continue;
 
-        /* TODO: lock the bitmap cache */
-        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, pageInfo->rotation);
         splashBmp = NULL;
+        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, pageInfo->rotation);
         if (entry)
             splashBmp = entry->bitmap;
-        if (!splashBmp) {
-            DBG_OUT("WindowInfo_Paint() missing bitmap on visible page %d\n", pageNo);
-        }
+        if (!splashBmp)
+            DBG_OUT("   missing bitmap on visible page %d\n", pageNo);
 
         //TODO: FillRect() ps->rcPaint - bounds
 
@@ -1776,6 +1890,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             bounds.bottom = yDest + bmpDy;
             FillRect(hdc, &bounds, gBrushWhite);
             DrawCenteredText(hdc, &bounds, "Please wait - rendering...");
+            DBG_OUT("   drawing empty for %d\n", pageNo);
             continue;
         }
 
@@ -1789,6 +1904,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
         }
 
+        DBG_OUT("   drawing bitmap for %d\n", pageNo);
         splashBmpDx = splashBmp->getWidth();
         splashBmpDy = splashBmp->getHeight();
         splashBmpRowSize = splashBmp->getRowSize();
@@ -1819,6 +1935,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         }
     }
 
+    DBG_OUT("WindowInfo_Paint() finish\n");
     if (!dm->debugShowLinks)
         return;
 
@@ -1919,7 +2036,7 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     0, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-const char *AboutGetLink(WindowInfo *win, int x, int y)
+static const char *AboutGetLink(WindowInfo *win, int x, int y)
 {
     int         i;
 
@@ -2290,19 +2407,19 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
 
 #define ABOUT_ANIM_TIMER_ID 15
 
-void AnimState_AnimStop(AnimState *state)
+static void AnimState_AnimStop(AnimState *state)
 {
     KillTimer(state->hwnd, ABOUT_ANIM_TIMER_ID);
 }
 
-void AnimState_NextFrame(AnimState *state)
+static void AnimState_NextFrame(AnimState *state)
 {
     state->frame += 1;
     InvalidateRect(state->hwnd, NULL, FALSE);
     UpdateWindow(state->hwnd);
 }
 
-void AnimState_AnimStart(AnimState *state, HWND hwnd, UINT freqInMs)
+static void AnimState_AnimStart(AnimState *state, HWND hwnd, UINT freqInMs)
 {
     assert(IsWindow(hwnd));
     AnimState_AnimStop(state);
@@ -2377,7 +2494,7 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     Win32_Font_Delete(fontArial24);
 }
 
-void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
+static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
 {
     RECT    rc;
     int     win_dx, win_dy;
@@ -2434,7 +2551,7 @@ static void OnPaint(WindowInfo *win)
     EndPaint(win->hwnd, &ps);
 }
 
-void OnMenuExit(void)
+static void OnMenuExit(void)
 {
     Prefs_Save();
     PostQuitMessage(0);
@@ -2444,14 +2561,13 @@ void OnMenuExit(void)
    Closes the window unless this is the last window in which
    case it switches to empty window and disables the "File\Close"
    menu item. */
-void CloseWindow(WindowInfo *win, BOOL quitIfLast)
+static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 {
     BOOL    lastWindow = FALSE;
     HWND    hwndToDestroy = NULL;
 
     if (1 == WindowInfoList_Len())
         lastWindow = TRUE;
-
 
     if (lastWindow)
         Prefs_Save();
@@ -2545,7 +2661,7 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
     ZoomMenuItemCheck(GetMenu(win->hwnd), menuId);
 }
 
-void OnMenuOpen(WindowInfo *win)
+static void OnMenuOpen(WindowInfo *win)
 {
     OPENFILENAME ofn = {0};
     char         fileName[260];
@@ -2705,7 +2821,7 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
         DisplayModel_ScrollXTo(win->dm, si.nPos);
 }
 
-void ViewWithAcrobat(WindowInfo *win)
+static void ViewWithAcrobat(WindowInfo *win)
 {
     // TODO: write me
 }
@@ -2807,7 +2923,7 @@ static void OnMenuViewRotateRight(WindowInfo *win)
     RotateRight(win);
 }
 
-BOOL  IsCtrlLeftPressed(void)
+static BOOL IsCtrlLeftPressed(void)
 {
     int state = GetKeyState(VK_LCONTROL);
     if (0 != state)
@@ -2815,7 +2931,7 @@ BOOL  IsCtrlLeftPressed(void)
     return FALSE;
 }
 
-BOOL  IsCtrlRightPressed(void)
+static BOOL  IsCtrlRightPressed(void)
 {
     int state = GetKeyState(VK_RCONTROL);
     if (0 != state)
@@ -2823,7 +2939,7 @@ BOOL  IsCtrlRightPressed(void)
     return FALSE;
 }
 
-BOOL  IsCtrlPressed(void)
+static BOOL  IsCtrlPressed(void)
 {
     if (IsCtrlLeftPressed() || IsCtrlRightPressed())
         return TRUE;
@@ -2935,7 +3051,7 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
 #define FRAMES_PER_SECS 60
 #define ANIM_FREQ_IN_MS  1000 / FRAMES_PER_SECS
 
-void OnMenuAbout(WindowInfo *win)
+static void OnMenuAbout(WindowInfo *win)
 {
     if (WS_ABOUT_ANIM != win->state) {
         win->prevState = win->state;
@@ -2950,7 +3066,7 @@ void OnMenuAbout(WindowInfo *win)
 #define REPAINT_TIMER_ID 1
 #define REPAINT_DELAY_IN_MS 400
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
     WindowInfo *    win;
@@ -3151,16 +3267,17 @@ InitMouseWheelInfo:
 
         case WM_MOUSEMOVE:
             if (win)
-                OnMouseMove(win, LOWORD(lParam), HIWORD(lParam), wParam);
+                OnMouseMove(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
             break;
 
         case WM_LBUTTONDOWN:
             if (win)
-                OnMouseLeftButtonDown(win, LOWORD(lParam), HIWORD(lParam));
+                OnMouseLeftButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             break;
+
         case WM_LBUTTONUP:
             if (win)
-                OnMouseLeftButtonUp(win, LOWORD(lParam), HIWORD(lParam));
+                OnMouseLeftButtonUp(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             break;
 
         case WM_DROPFILES:
@@ -3197,7 +3314,7 @@ InitMouseWheelInfo:
     return 0;
 }
 
-BOOL RegisterWinClass(HINSTANCE hInstance)
+static BOOL RegisterWinClass(HINSTANCE hInstance)
 {
     WNDCLASSEX  wcex;
     ATOM        atom;
@@ -3222,7 +3339,7 @@ BOOL RegisterWinClass(HINSTANCE hInstance)
     return FALSE;
 }
 
-BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
+static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
 {
     ghinst = hInstance;
 
@@ -3241,7 +3358,7 @@ BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
     return TRUE;
 }
 
-void StrList_Reverse(StrList **strListRoot)
+static void StrList_Reverse(StrList **strListRoot)
 {
     StrList *newRoot = NULL;
     StrList *cur, *next;
@@ -3257,7 +3374,7 @@ void StrList_Reverse(StrList **strListRoot)
     *strListRoot = newRoot;
 }
 
-BOOL StrList_InsertAndOwn(StrList **root, char *txt)
+static BOOL StrList_InsertAndOwn(StrList **root, char *txt)
 {
     StrList *   el;
     assert(root && txt);
@@ -3273,7 +3390,7 @@ BOOL StrList_InsertAndOwn(StrList **root, char *txt)
     return TRUE;
 }
 
-void StrList_Destroy(StrList **root)
+static void StrList_Destroy(StrList **root)
 {
     StrList *   cur;
     StrList *   next;
@@ -3290,7 +3407,7 @@ void StrList_Destroy(StrList **root)
     *root = NULL;
 }
 
-StrList *StrList_FromCmdLine(char *cmdLine)
+static StrList *StrList_FromCmdLine(char *cmdLine)
 {
     char *     exePath;
     StrList *   strList = NULL;
@@ -3322,7 +3439,7 @@ StrList *StrList_FromCmdLine(char *cmdLine)
     return strList;
 }
 
-void u_DoAllTests(void)
+static void u_DoAllTests(void)
 {
 #ifdef DEBUG
     printf("Running tests\n");
@@ -3332,106 +3449,7 @@ void u_DoAllTests(void)
 #endif
 }
 
-static BOOL pageRenderAbortCb(void *data)
-{
-    PageRenderRequest *req = (PageRenderRequest*)data;
-    if (req->abort) {
-        DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
-        return TRUE;
-    }
-    else
-        return FALSE;
-}
-
-#define MAX_PAGE_REQUESTS 64
-static PageRenderRequest gPageRenderRequests[MAX_PAGE_REQUESTS];
-static int gPageRenderRequestsCount = 0;
-
-static HANDLE            gPageRenderThreadHandle = NULL;
-static HANDLE            gPageRenderSem = NULL;
-static CRITICAL_SECTION  gPageRenderQueueCs;
-static PageRenderRequest *gCurPageRenderReq = NULL;
-
-/* Render a bitmap for page <pageNo> in <dm>. */
-void QueueRenderBitmap(DisplayModel *dm, int pageNo) {
-    PageRenderRequest *   newRequest = NULL;
-    PageRenderRequest *   req = NULL;
-    PdfPageInfo *         pageInfo;
-    int                   replaced = 0;
-    LONG                  prevCount;
-    int                   rotation;
-    double                zoomLevel;
-
-    DBG_OUT("QueueRenderBitmap(pageNo=%d)\n", pageNo);
-    assert(dm);
-    if (!dm) goto Exit;
-
-    EnterCriticalSection(&gPageRenderQueueCs);
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    rotation = pageInfo->rotation;
-    zoomLevel = dm->zoomReal;
-
-    if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
-        goto LeaveCsAndExit;
-    }
-
-    if (gCurPageRenderReq && 
-        (gCurPageRenderReq->pageNo == pageNo) && (gCurPageRenderReq->dm == dm)) {
-        if ((gCurPageRenderReq->zoomLevel != zoomLevel) || (gCurPageRenderReq->rotation != rotation)) {
-            /* Currently rendered page is for the same page but with different zoom
-            or rotation, so abort it */
-            gCurPageRenderReq->abort = TRUE;
-        } else {
-            /* we're already rendering exactly the same page */
-            goto LeaveCsAndExit;
-        }
-    }
-
-    for (int i=0; i  < gPageRenderRequestsCount; i++) {
-        req = &(gPageRenderRequests[i]);
-        if ((req->pageNo == pageNo) && (req->dm == dm)) {
-            if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
-                /* Request with exactly the same parameters already queued for
-                   rendering. Move it to the top of the queue so that it'll
-                   be rendered faster. */
-                PageRenderRequest tmp;
-                tmp = gPageRenderRequests[gPageRenderRequestsCount-1];
-                gPageRenderRequests[gPageRenderRequestsCount-1] = *req;
-                *req = tmp;
-                goto LeaveCsAndExit;
-            } else {
-                /* There was a request queued for the same page but with different
-                   zoom or rotation, so only replace this request */
-                DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
-                req->zoomLevel = zoomLevel;
-                req->rotation = rotation;
-                goto LeaveCsAndExit;
-            
-}
-        }
-    }
-
-    /* add request to the queue */
-    newRequest = &(gPageRenderRequests[gPageRenderRequestsCount++]);
-    newRequest->dm = dm;
-    newRequest->pageNo = pageNo;
-    newRequest->zoomLevel = zoomLevel;
-    newRequest->rotation = rotation;
-    newRequest->abort = FALSE;
-
-    LeaveCriticalSection(&gPageRenderQueueCs);    
-
-
-    /* tell rendering thread there's a new request to render */
-    ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
-Exit:
-    return;
-LeaveCsAndExit:
-    LeaveCriticalSection(&gPageRenderQueueCs);
-    return;
-}
-
-DWORD WINAPI PageRenderThread(PVOID data)
+static DWORD WINAPI PageRenderThread(PVOID data)
 {
     PageRenderRequest       req;
     SplashBitmap *          bmp;
@@ -3443,10 +3461,10 @@ DWORD WINAPI PageRenderThread(PVOID data)
     DBG_OUT("PageRenderThread() started\n");
     while (1) {
         DBG_OUT("Worker: wait\n");
-        EnterCriticalSection(&gPageRenderQueueCs);
+        LockCache();
         gCurPageRenderReq = NULL;
         count = gPageRenderRequestsCount;
-        LeaveCriticalSection(&gPageRenderQueueCs);
+        UnlockCache();
         if (0 == count) {
             waitResult = WaitForSingleObject(gPageRenderSem, INFINITE);
             if (WAIT_OBJECT_0 != waitResult) {
@@ -3457,15 +3475,12 @@ DWORD WINAPI PageRenderThread(PVOID data)
         if (0 == gPageRenderRequestsCount) {
             continue;
         }
-        EnterCriticalSection(&gPageRenderQueueCs);
-        req = gPageRenderRequests[--gPageRenderRequestsCount];
-        assert(gPageRenderRequestsCount >= 0);
+        RenderQueue_Pop(&req);
         gCurPageRenderReq = &req;
-        LeaveCriticalSection(&gPageRenderQueueCs);
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
         assert(!req.abort);
-        bmp = RenderBitmap(req.dm->pdfDoc, req.dm->outputDevice, req.pageNo, 
-                           req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        bmp = RenderBitmap(req.dm, req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        gCurPageRenderReq = NULL;
         if (req.abort) {
             delete bmp;
             continue;
@@ -3485,15 +3500,13 @@ DWORD WINAPI PageRenderThread(PVOID data)
     return 0;
 }
 
-void CreatePageRenderThread(void)
+static void CreatePageRenderThread(void)
 {
     LONG semMaxCount = 1000; /* don't really know what the limit should be */
     DWORD dwThread1ID = 0;
     assert(NULL == gPageRenderThreadHandle);
 
     gPageRenderSem = CreateSemaphore(NULL, 0, semMaxCount, NULL);
-    InitializeCriticalSection(&gPageRenderQueueCs);
-
     gPageRenderThreadHandle = CreateThread(NULL, 0, PageRenderThread, (void*)NULL, 0, &dwThread1ID);
     assert(NULL != gPageRenderThreadHandle);
 }
@@ -3561,7 +3574,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
     CreatePageRenderThread();
-    gUiThreadId = GetCurrentThreadId();
     /* TODO: detect it's not me and show a dialog box ? */
     AssociatePdfWithExe(exeName);
 
