@@ -50,7 +50,7 @@ static GooMutex             cacheMutex;
 static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};
 static int                  gBitmapCacheCount = 0;
 
-static MutexAutoInitDestory gAutoCacheMutex(&cacheMutex);
+static MutexAutoInitDestroy gAutoCacheMutex(&cacheMutex);
 
 void LockCache(void) {
     gLockMutex(&cacheMutex);
