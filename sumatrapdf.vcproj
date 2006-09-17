@@ -144,10 +144,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype2110MT_D.lib"
+				AdditionalDependencies="freetype2110MT.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
-				IgnoreDefaultLibraryNames="libcmtd.lib"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

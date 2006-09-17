@@ -1726,6 +1726,7 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     BITMAPINFOHEADER      bmih;
     HDC                   bmpDC = NULL;
     RECT                  bounds;
+    BitmapCacheEntry *    entry;
 
     assert(win);
     if (!win) return;
@@ -1748,10 +1749,14 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         assert(pageInfo->shown);
         if (!pageInfo->shown)
             continue;
-        splashBmp = pageInfo->bitmap;
+
+        /* TODO: lock the bitmap cache */
+        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, pageInfo->rotation);
+        splashBmp = NULL;
+        if (entry)
+            splashBmp = entry->bitmap;
         if (!splashBmp) {
-            DBG_OUT("DisplayModel_Draw() missing bitmap on visible page %d\n", pageNo+1);
-            continue;
+            DBG_OUT("WindowInfo_Paint() missing bitmap on visible page %d\n", pageNo);
         }
 
         //TODO: FillRect() ps->rcPaint - bounds
@@ -1763,7 +1768,8 @@ void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         xDest = (int)pageInfo->screenX;
         yDest = (int)pageInfo->screenY;
 
-        if (BITMAP_BEING_RENDERED == splashBmp) {
+        if (!splashBmp) {
+            /* TODO: assert is queued for rendering ? */
             bounds.left = xDest;
             bounds.top = yDest;
             bounds.right = xDest + bmpDx;
@@ -2218,7 +2224,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
             dragDy = y - win->dragPrevPosY;
             DBG_OUT(" dragging ends, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
             assert(!win->linkOnLastButtonDown);
-            WinMoveDocBy(win, dragDx, -dragDy);
+            WinMoveDocBy(win, dragDx, -dragDy*2);
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
             win->dragging = FALSE;
@@ -2261,7 +2267,7 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
             dragDx = x - win->dragPrevPosX;
             dragDy = y - win->dragPrevPosY;
             DBG_OUT(" drag move, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
-            WinMoveDocBy(win, dragDx, dragDy);
+            WinMoveDocBy(win, dragDx, dragDy*2);
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
             return;
@@ -3338,7 +3344,7 @@ static BOOL pageRenderAbortCb(void *data)
 }
 
 #define MAX_PAGE_REQUESTS 64
-static PageRenderRequest *gPageRenderRequests[MAX_PAGE_REQUESTS];
+static PageRenderRequest gPageRenderRequests[MAX_PAGE_REQUESTS];
 static int gPageRenderRequestsCount = 0;
 
 static HANDLE            gPageRenderThreadHandle = NULL;
@@ -3346,62 +3352,89 @@ static HANDLE            gPageRenderSem = NULL;
 static CRITICAL_SECTION  gPageRenderQueueCs;
 static PageRenderRequest *gCurPageRenderReq = NULL;
 
-/* Send a request to a worker thread to render a given page */
-void PageRenderSendRequest(DisplayModel *dm, int pageNo)
-{
-    PageRenderRequest *   pRequest = NULL;
+/* Render a bitmap for page <pageNo> in <dm>. */
+void QueueRenderBitmap(DisplayModel *dm, int pageNo) {
+    PageRenderRequest *   newRequest = NULL;
     PageRenderRequest *   req = NULL;
     PdfPageInfo *         pageInfo;
     int                   replaced = 0;
+    LONG                  prevCount;
+    int                   rotation;
+    double                zoomLevel;
 
-    DBG_OUT("PageRenderSendRequest: enqueue for page %d\n", pageNo);
+    DBG_OUT("QueueRenderBitmap(pageNo=%d)\n", pageNo);
     assert(dm);
     if (!dm) goto Exit;
 
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    assert(!IsAllocatedBitmap(pageInfo->bitmap));
-    pageInfo->bitmap = BITMAP_BEING_RENDERED;
-    pRequest = (PageRenderRequest*)malloc(sizeof(PageRenderRequest));
-    if (!pRequest) goto Exit;
-    pRequest->dm = dm;
-    pRequest->pageNo = pageNo;
-    pRequest->abort = FALSE;    
-
     EnterCriticalSection(&gPageRenderQueueCs);
-    /* abort currently rendered request if it's the same as the one we queue.
-       This is so that if user changes the parameters (e.g. zoom) while we're
-       still rendering the page with previous settings */
-    if (gCurPageRenderReq && 
-        (gCurPageRenderReq->pageNo == pageNo) &&
-        (gCurPageRenderReq->dm == dm)) {
-        gCurPageRenderReq->abort = TRUE;
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    rotation = pageInfo->rotation;
+    zoomLevel = dm->zoomReal;
+
+    if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
+        goto LeaveCsAndExit;
     }
-    for (int i=0; i  < gPageRenderRequestsCount; i++) {
-        req = gPageRenderRequests[i];
-        if ((req->pageNo == pRequest->pageNo) && (req->dm == pRequest->dm)) {
-            DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
-            free((void*)req);
-            gPageRenderRequests[i] = pRequest;
-            replaced = 1;
-            break;
+
+    if (gCurPageRenderReq && 
+        (gCurPageRenderReq->pageNo == pageNo) && (gCurPageRenderReq->dm == dm)) {
+        if ((gCurPageRenderReq->zoomLevel != zoomLevel) || (gCurPageRenderReq->rotation != rotation)) {
+            /* Currently rendered page is for the same page but with different zoom
+            or rotation, so abort it */
+            gCurPageRenderReq->abort = TRUE;
+        } else {
+            /* we're already rendering exactly the same page */
+            goto LeaveCsAndExit;
         }
     }
-    if (!replaced)
-        gPageRenderRequests[gPageRenderRequestsCount++] = pRequest;
-    LeaveCriticalSection(&gPageRenderQueueCs);    
-    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
 
-    LONG prevCount;
+    for (int i=0; i  < gPageRenderRequestsCount; i++) {
+        req = &(gPageRenderRequests[i]);
+        if ((req->pageNo == pageNo) && (req->dm == dm)) {
+            if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
+                /* Request with exactly the same parameters already queued for
+                   rendering. Move it to the top of the queue so that it'll
+                   be rendered faster. */
+                PageRenderRequest tmp;
+                tmp = gPageRenderRequests[gPageRenderRequestsCount-1];
+                gPageRenderRequests[gPageRenderRequestsCount-1] = *req;
+                *req = tmp;
+                goto LeaveCsAndExit;
+            } else {
+                /* There was a request queued for the same page but with different
+                   zoom or rotation, so only replace this request */
+                DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
+                req->zoomLevel = zoomLevel;
+                req->rotation = rotation;
+                goto LeaveCsAndExit;
+            
+}
+        }
+    }
+
+    /* add request to the queue */
+    newRequest = &(gPageRenderRequests[gPageRenderRequestsCount++]);
+    newRequest->dm = dm;
+    newRequest->pageNo = pageNo;
+    newRequest->zoomLevel = zoomLevel;
+    newRequest->rotation = rotation;
+    newRequest->abort = FALSE;
+
+    LeaveCriticalSection(&gPageRenderQueueCs);    
+
+
+    /* tell rendering thread there's a new request to render */
     ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
 Exit:
+    return;
+LeaveCsAndExit:
+    LeaveCriticalSection(&gPageRenderQueueCs);
     return;
 }
 
 DWORD WINAPI PageRenderThread(PVOID data)
 {
-    PageRenderRequest *   req;
+    PageRenderRequest       req;
     SplashBitmap *          bmp;
-    PdfPageInfo *           pageInfo;
     BOOL                    fOk;
     HWND                    hwnd;
     DWORD                   waitResult;
@@ -3416,41 +3449,34 @@ DWORD WINAPI PageRenderThread(PVOID data)
         LeaveCriticalSection(&gPageRenderQueueCs);
         if (0 == count) {
             waitResult = WaitForSingleObject(gPageRenderSem, INFINITE);
-            assert(WAIT_OBJECT_0 == waitResult);
+            if (WAIT_OBJECT_0 != waitResult) {
+                DBG_OUT("  WaitForSingleObject() failed\n");
+                continue;
+            }
+        }
+        if (0 == gPageRenderRequestsCount) {
+            continue;
         }
         EnterCriticalSection(&gPageRenderQueueCs);
-        if (0 == gPageRenderRequestsCount) {
-            LeaveCriticalSection(&gPageRenderQueueCs);
-            continue;
-        }
-        req = (PageRenderRequest*)gPageRenderRequests[--gPageRenderRequestsCount];
+        req = gPageRenderRequests[--gPageRenderRequestsCount];
         assert(gPageRenderRequestsCount >= 0);
-        gCurPageRenderReq = req;
+        gCurPageRenderReq = &req;
         LeaveCriticalSection(&gPageRenderQueueCs);
-        assert(req);
-        if (!req) {
-            DBG_OUT("PageRenderThread(): missing req\n");
-            continue;
-        }
-        DBG_OUT("PageRenderThread(): dequeued %d\n", req->pageNo);
-        bmp = DisplayModel_GetBitmapForPage(req->dm, req->pageNo, pageRenderAbortCb, (void*)req);
-        if (req->abort) {
-            /* was aborted */
+        DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
+        assert(!req.abort);
+        bmp = RenderBitmap(req.dm->pdfDoc, req.dm->outputDevice, req.pageNo, 
+                           req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        if (req.abort) {
             delete bmp;
-            free((void*)req);
             continue;
         }
-        pageInfo = DisplayModel_GetPageInfo(req->dm, req->pageNo);
-        assert(BITMAP_BEING_RENDERED == pageInfo->bitmap);
-        if (IsAllocatedBitmap(pageInfo->bitmap)) {
-            delete pageInfo->bitmap;
-        }
-        pageInfo->bitmap = bmp;
-        DBG_OUT("PageRenderThread(): finished rendering %d\n", req->pageNo);
+        /* TODO: can bmp be NULL ? */
+        assert(bmp);
+        DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
+        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp);
         WindowInfo * win = NULL;
-        win = (WindowInfo*)req->dm->appData;
+        win = (WindowInfo*)req.dm->appData;
         hwnd = win->hwnd;
-        free((void*)req);
         fOk = PostMessage(hwnd, WM_APP_MSG_REFRESH, 0, 0);
         if (!fOk)
             assert(0);
