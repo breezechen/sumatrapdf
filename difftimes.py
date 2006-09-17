@@ -47,7 +47,7 @@ def verify_stats(stats):
     assert None != stat.load_time
     assert file_name == stat.file_name
     assert count == len(stat.timings)
-    assert count == stat.page_count
+    #assert count == stat.page_count
 
 # given a list of float values, return their average
 def get_avg(float_list):

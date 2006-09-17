@@ -22,7 +22,7 @@ DEFAULT_COUNT = 6
 MAX_COUNT = 51
 
 def usage_and_exit():
-  print "Usage: runanddifftimes.py <exe-one> <exe-two> <pdf-file> [<count>] [-loadonly]"
+  print "Usage: runanddifftimes.py <exe-one> <exe-two> <pdf-file> [-count N] [-loadonly] [-preview] [-page N]"
   sys.exit(1)
 
 def ensure_valid_count(count):
@@ -35,11 +35,14 @@ def ensure_file_exists(file_name):
     print "file '%s' doesn't exist" % file_name
     usage_and_exit()
 
-def run(exe, pdf, loadOnly):
+def run(exe, pdf, load_only, preview, page_no):
   args = [exe, "-timings"]
-  if loadOnly: 
+  if load_only: 
     args.append("-loadonly")
-  else:
+  if page_no:
+    args.append("-page")
+    args.append(page_no)
+  if preview:
     args.append("-preview")
   args.append(pdf)
   print "executing '%s'" % string.join(args, " ")
@@ -62,25 +65,43 @@ def save_results_to_file(one_txt, two_txt):
   save_to_file(file_two, two_txt)
   return (file_one, file_two)
 
-def detect_remove_cmd_flag(flag):
+def get_remove_cmd_flag(flag_name):
     flag_present = False
     try:
-        pos = sys.argv.index(flag)
+        pos = sys.argv.index(flag_name)
         flag_present = True
         sys.argv[pos:pos+1] = []
     except:
         pass
     return flag_present
 
+def get_remove_cmd_arg(arg_name):
+    arg = None
+    try:
+        pos = sys.argv.index(arg_name)
+        arg = sys.argv[pos+1]
+        sys.argv[pos:pos+2] = []
+    except:
+        pass
+    return arg
+
 def main():
-  load_only = detect_remove_cmd_flag("-loadonly")
-  if len(sys.argv) < 4 or len(sys.argv) > 6:
+  count = get_remove_cmd_arg("-count")
+  load_only = get_remove_cmd_flag("-loadonly")
+  page_no = get_remove_cmd_arg("-page")
+  print "page_no: %s" % page_no
+  preview = get_remove_cmd_flag("-preview")
+  if len(sys.argv) != 4:
+    # we must have 2 exe names and pdf name 
+    usage_and_exit()
+  if load_only and page_no:
+    print "can't use -loadonly and -page at the same time"
     usage_and_exit()
   exe_one = sys.argv[1]
   exe_two = sys.argv[2]
   pdf_file = sys.argv[3]
-  if 5 == len(sys.argv):
-    count = int(sys.argv[4])
+  if count:
+    count = int(count)
   else:
     count = DEFAULT_COUNT
 
@@ -92,12 +113,12 @@ def main():
   one_out = []
   two_out = []
   for c in range(count):
-    out = run(exe_one, pdf_file, load_only)
+    out = run(exe_one, pdf_file, load_only, preview, page_no)
     if None == out:
       print "run(%s, %s) failed" % (exe_one, pdf_file)
       sys.exit(1)
     one_out.append(out)
-    out = run(exe_two, pdf_file, load_only)
+    out = run(exe_two, pdf_file, load_only, preview, page_no)
     if None == out:
       print "run(%s, %s) failed" % (exe_two, pdf_file)
       sys.exit(1)

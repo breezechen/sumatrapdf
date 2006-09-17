@@ -261,7 +261,6 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     PageRenderRequest *   newRequest = NULL;
     PageRenderRequest *   req = NULL;
     PdfPageInfo *         pageInfo;
-    int                   replaced = 0;
     LONG                  prevCount;
     int                   rotation;
     double                zoomLevel;
@@ -3493,8 +3492,6 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         win = (WindowInfo*)req.dm->appData;
         hwnd = win->hwnd;
         fOk = PostMessage(hwnd, WM_APP_MSG_REFRESH, 0, 0);
-        if (!fOk)
-            assert(0);
     }
     DBG_OUT("PageRenderThread() finished\n");
     return 0;
