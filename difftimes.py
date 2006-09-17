@@ -110,7 +110,6 @@ def parse_stats(txt):
       continue
     if key.startswith("page"):
       pageNo = get_page_no(key)
-      assert pageNo == (len(curStat.timings) + 1)
       curStat.timings.append(get_time(lp[1]))
       continue
 
