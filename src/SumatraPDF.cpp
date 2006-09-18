@@ -276,7 +276,7 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
 
     LockCache();
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    rotation = pageInfo->rotation;
+    rotation = dm->rotation + pageInfo->rotation;
     zoomLevel = dm->zoomReal;
 
     if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
@@ -1871,7 +1871,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
 
         splashBmp = NULL;
-        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, pageInfo->rotation);
+        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, pageInfo->rotation + dm->rotation);
         if (entry)
             splashBmp = entry->bitmap;
         if (!splashBmp)
