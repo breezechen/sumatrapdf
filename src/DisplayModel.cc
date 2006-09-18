@@ -83,24 +83,6 @@ DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void)
     return &gDisplaySettings;
 }
 
-static void GetStateFromDisplayMode(DisplayMode displayMode, BOOL *continuous, int *columns)
-{
-    if (DM_SINGLE_PAGE == displayMode) {
-        *continuous = FALSE;
-        *columns = 1;
-    } else if (DM_FACING == displayMode) {
-        *continuous = FALSE;
-        *columns = 2;
-    } else if (DM_CONTINUOUS == displayMode) {
-        *continuous = TRUE;
-        *columns = 1;
-    } else if (DM_CONTINUOUS_FACING == displayMode) {
-        *continuous = TRUE;
-        *columns = 2;
-    } else
-        assert(0);
-}
-
 static int ColumnsFromDisplayMode(DisplayMode displayMode)
 {
     if (DM_SINGLE_PAGE == displayMode) {
@@ -1273,10 +1255,10 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             columnsLeft = columns;
             currPosX = PADDING_PAGE_BORDER_LEFT;
         }
-        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
+/*        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
                     (int)pageInfo->currDx, (int)pageInfo->currDy,
-                    (int)pageDx, (int)pageDy);
+                    (int)pageDx, (int)pageDy); */
     }
 
     if (columnsLeft < columns) {
@@ -1751,7 +1733,7 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     assert(ValidZoomReal(zoomLevel));
 
     LockCache();
-    DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%, rotation=%d)\n", pageNo, zoomLevel, rotation);
+    DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
     if (!entry) {
         delete bmp;
@@ -1776,7 +1758,7 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation) {
     BitmapCacheEntry *entry;
 
-    DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%, rotation=%d)\n", pageNo, zoomLevel, rotation);
+    DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     LockCache();
     for (int i = 0; i < gBitmapCacheCount; i++) {
         entry = gBitmapCache[i];
