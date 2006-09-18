@@ -1195,11 +1195,12 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     double      rowMaxPageDy;
     double      offX, offY;
     double      pageOffX;
-    int         pagesLeft;
+    int         columnsLeft;
     int         pageInARow;
     int         columns;
     double      currZoomReal;
     BOOL        freeCache = FALSE;
+    double      newAreaOffsetX;
 
     assert(dm);
     if (!dm) return;
@@ -1221,15 +1222,20 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     if (currZoomReal != dm->zoomReal)
         freeCache = TRUE;
 
-    /*DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
-        pageCount, dm->zoomReal, dm->zoomVirtual); */
+    DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
+        pageCount, dm->zoomReal, dm->zoomVirtual);
     totalAreaDx = 0;
 
+    if (0 == currZoomReal)
+        newAreaOffsetX = 0.0;
+    else
+        newAreaOffsetX = dm->areaOffset.x * dm->zoomReal / currZoomReal;
+    dm->areaOffset.x = newAreaOffsetX;
     /* calculate the position of each page on the canvas, given current zoom,
        rotation, columns parameters. You can think of it as a simple
-       table layout, each row has columns pages columns. */
+       table layout i.e. rows with a fixed number of columns. */
     columns = ColumnsFromDisplayMode(dm->displayMode);
-    pagesLeft = columns;
+    columnsLeft = columns;
     currPosX = PADDING_PAGE_BORDER_LEFT;
     rowMaxPageDy = 0;
     for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
@@ -1255,26 +1261,26 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
            substract it when we create new page */
         currPosX += (pageInfo->currDx + PADDING_BETWEEN_PAGES_X);
 
-        --pagesLeft;
-        assert(pagesLeft >= 0);
-        if (0 == pagesLeft) {
+        --columnsLeft;
+        assert(columnsLeft >= 0);
+        if (0 == columnsLeft) {
             /* starting next row */
             currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
             rowMaxPageDy = 0;
             thisRowDx = currPosX - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
             if (totalAreaDx < thisRowDx)
                 totalAreaDx = thisRowDx;
-            pagesLeft = columns;
+            columnsLeft = columns;
             currPosX = PADDING_PAGE_BORDER_LEFT;
         }
-/*        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
+        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
                     (int)pageInfo->currDx, (int)pageInfo->currDy,
-                    (int)pageDx, (int)pageDy); */
+                    (int)pageDx, (int)pageDy);
     }
 
-    if (pagesLeft < columns) {
-        /* this is a partial row that we need to take into account */
+    if (columnsLeft < columns) {
+        /* this is a partial row */
         currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
         thisRowDx = currPosX + (pageInfo->currDx + PADDING_BETWEEN_PAGES_X) - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
         if (totalAreaDx < thisRowDx)
@@ -1283,6 +1289,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
 
     /* since pages can be smaller than the drawing area, center them in x axis */
     if (totalAreaDx < dm->drawAreaSize.dx) {
+        dm->areaOffset.x = 0.0;
         offX = (dm->drawAreaSize.dx - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
         assert(offX >= 0.0);
         areaPerPageDx = totalAreaDx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT;
@@ -1305,6 +1312,13 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
             if (pageInARow == columns)
                 pageInARow = 0;
         }
+    }
+
+    /* if after resizing we would have blank space on the right due to x offset
+       being too much, make x offset smaller so that there's no blank space */
+    if (dm->drawAreaSize.dx - (totalAreaDx - newAreaOffsetX) > 0) {
+        newAreaOffsetX = totalAreaDx - dm->drawAreaSize.dx;
+        dm->areaOffset.x = newAreaOffsetX;
     }
 
     /* if a page is smaller than drawing area in y axis, y-center the page */
@@ -1641,6 +1655,7 @@ SplashBitmap* RenderBitmap(DisplayModel *dm,
 static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     assert(entry);
     if (!entry) return;
+    DBG_OUT("BitmapCacheEntry_Free() page=%d\n", entry->pageNo);
     assert(entry->bitmap);
     delete entry->bitmap;
     entry->bitmap = NULL;
@@ -1655,18 +1670,35 @@ void BitmapCache_FreeAll(void) {
     UnlockCache();
 }
 
-void BitmapCache_FreeForDisplayModel(DisplayModel *dm)
+/* Free all bitmaps in the cache that are not visible. Returns TRUE if freed
+   at least one item. */
+BOOL BitmapCache_FreeNotVisible(void)
 {
-    int     curPos = 0;
-    int     i;
-    BOOL    shouldFree;
+    int                 curPos = 0;
+    int                 i;
+    BOOL                shouldFree;
+    BitmapCacheEntry *  entry;
+    DisplayModel *      dm;
+    PdfPageInfo *       pageInfo;
+    BOOL                freedSomething = FALSE;
+    int                 cacheCount;
 
-    DBG_OUT("BitmapCache_FreeForDisplayModel()\n");
+    DBG_OUT("BitmapCache_FreeNotVisible()\n");
     LockCache();
-    for (i = 0; i < gBitmapCacheCount; i++) {
-        shouldFree = (gBitmapCache[i]->dm == dm);
-        if (shouldFree)
+    cacheCount = gBitmapCacheCount;
+    for (i = 0; i < cacheCount; i++) {
+        entry = gBitmapCache[i];
+        dm = entry->dm;
+        pageInfo = DisplayModel_GetPageInfo(dm, entry->pageNo);
+        shouldFree = FALSE;
+        if (!pageInfo->visible)
+            shouldFree = TRUE;
+        
+        if (shouldFree) {
+            freedSomething = TRUE;
             BitmapCacheEntry_Free(gBitmapCache[i]);
+            --gBitmapCacheCount;
+        }
 
         if (curPos != i)
             gBitmapCache[curPos] = gBitmapCache[i];
@@ -1674,8 +1706,39 @@ void BitmapCache_FreeForDisplayModel(DisplayModel *dm)
         if (!shouldFree)
             ++curPos;
     }
-    gBitmapCacheCount = 0;
     UnlockCache();
+    return freedSomething;
+}
+
+/* Free all bitmaps cached for a given <dm>. Returns TRUE if freed
+   at least one item. */
+BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
+{
+    int     curPos = 0;
+    int     i;
+    BOOL    shouldFree;
+    BOOL    freedSomething = FALSE;
+    int     cacheCount;
+
+    DBG_OUT("BitmapCache_FreeForDisplayModel()\n");
+    LockCache();
+    cacheCount = gBitmapCacheCount;
+    for (i = 0; i < cacheCount; i++) {
+        shouldFree = (gBitmapCache[i]->dm == dm);
+        if (shouldFree) {
+            freedSomething = TRUE;
+            BitmapCacheEntry_Free(gBitmapCache[i]);
+            --gBitmapCacheCount;
+        }
+
+        if (curPos != i)
+            gBitmapCache[curPos] = gBitmapCache[i];
+
+        if (!shouldFree)
+            ++curPos;
+    }
+    UnlockCache();
+    return freedSomething;
 }
 
 void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp)

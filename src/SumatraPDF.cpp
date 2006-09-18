@@ -42,6 +42,11 @@ Icons I need:
 
 //#define FANCY_UI 1
 
+/* Define if you want to conserve memory by always freeing cached bitmaps
+   for pages not visible. Only enable for stress-testing the logic. On
+   desktop machine we usually have plenty memory */
+//#define CONSERVE_MEMORY 1
+
 /* Next action for the benchmark mode */
 #define MSG_BENCH_NEXT_ACTION WM_USER + 1
 
@@ -3488,6 +3493,9 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         assert(bmp);
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
         BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp);
+#ifdef CONSERVE_MEMORY
+        BitmapCache_FreeNotVisible();
+#endif
         WindowInfo * win = NULL;
         win = (WindowInfo*)req.dm->appData;
         hwnd = win->hwnd;
