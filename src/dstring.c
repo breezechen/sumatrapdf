@@ -265,6 +265,7 @@ Error:
   len = vasprintf(&pBuffer, pFormat, args);
   DStringAppend(pDs, pBuffer, len);
   free(pBuffer);
+  va_end(args);
 #endif
 }
 
