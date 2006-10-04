@@ -1615,7 +1615,7 @@ SplashBitmap* RenderBitmap(DisplayModel *dm,
     GBool           doLinks     = gTrue;
     PdfPageInfo *   pageInfo;
 
-    DBG_OUT("RenderBitmapForPage(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
+    DBG_OUT("RenderBitmap(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
 
     hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
     vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
@@ -1732,8 +1732,9 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     assert(ValidRotation(rotation));
     assert(ValidZoomReal(zoomLevel));
 
-    LockCache();
+    NormalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
+    LockCache();
     entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
     if (!entry) {
         delete bmp;
@@ -1758,6 +1759,7 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation) {
     BitmapCacheEntry *entry;
 
+    NormalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     LockCache();
     for (int i = 0; i < gBitmapCacheCount; i++) {
