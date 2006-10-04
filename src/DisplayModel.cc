@@ -1639,7 +1639,8 @@ static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     if (!entry) return;
     DBG_OUT("BitmapCacheEntry_Free() page=%d\n", entry->pageNo);
     assert(entry->bitmap);
-    delete entry->bitmap;
+    if (entry->bitmap && (BITMAP_CANNOT_RENDER != entry->bitmap))
+        delete entry->bitmap;
     entry->bitmap = NULL;
 }
 
