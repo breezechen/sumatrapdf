@@ -54,6 +54,37 @@
 #define IDC_DIALOG_GET_PASSWORD_EDIT    1004
 #define IDC_GET_PASSWORD_EDIT           1004
 #define IDC_GET_PASSWORD_LABEL          1005
+#define IDC_TOOLBAR                     1006
+#define IDC_REBAR                       1007
+#define IDB_TOOLBAR                     2000
+#define IDB_TOOLBAR_DISABLED            2001
+#define IDT_FILE_NEW                    3000
+#define IDT_FILE_OPEN                   3001
+#define IDT_FILE_METAPATH               3002
+#define IDT_FILE_SAVE                   3003
+#define IDT_EDIT_UNDO                   3004
+#define IDT_EDIT_REDO                   3005
+#define IDT_EDIT_CUT                    3006
+#define IDT_EDIT_COPY                   3007
+#define IDT_EDIT_PASTE                  3008
+#define IDT_EDIT_FIND                   3009
+#define IDT_EDIT_REPLACE                3010
+#define IDT_VIEW_WORDWRAP               3011
+#define IDT_VIEW_ZOOMIN                 3012
+#define IDT_VIEW_ZOOMOUT                3013
+#define IDT_VIEW_SCHEME                 3014
+#define IDT_VIEW_SCHEMECONFIG           3015
+#define IDT_FILE_EXIT                   3016
+#define IDT_FILE_SAVEAS                 3017
+#define IDT_FILE_SAVECOPY               3018
+#define IDT_EDIT_COPYALL                3019
+#define IDT_EDIT_CLEAR                  3020
+#define IDT_EDIT_FINDNEXT               3021
+#define IDT_EDIT_FINDPREV               3022
+#define IDT_FILE_PRINT                  3023
+#define IDT_FILE_OPENFAV                3024
+#define IDT_FILE_ADDTOFAV               3025
+
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

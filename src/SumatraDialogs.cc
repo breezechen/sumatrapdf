@@ -69,7 +69,7 @@ char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
 
     data.fileName = fileName;
     data.pwdOut = NULL;
-    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GET_PASSWORD), win->hwnd, Dialog_GetPassword_Proc, (LPARAM)&data);
+    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GET_PASSWORD), win->hwndFrame, Dialog_GetPassword_Proc, (LPARAM)&data);
     if (DIALOG_OK_PRESSED == dialogResult) {
         return data.pwdOut;
     }
@@ -145,7 +145,7 @@ int Dialog_GoToPage(WindowInfo *win)
 
     data.currPageNo = win->dm->startPage;
     data.pageCount = win->dm->pageCount;
-    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwnd, Dialog_GoToPage_Proc, (LPARAM)&data);
+    dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwndFrame, Dialog_GoToPage_Proc, (LPARAM)&data);
     if (DIALOG_OK_PRESSED == dialogResult) {
         if (DisplayModel_ValidPageNo(win->dm, data.pageEnteredOut)) {
             return data.pageEnteredOut;

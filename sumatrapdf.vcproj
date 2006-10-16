@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype2110MT_D.lib"
+				AdditionalDependencies="freetype2110MT_D.lib comctl32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
 				IgnoreDefaultLibraryNames=""
@@ -144,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype2110MT.lib"
+				AdditionalDependencies="freetype2110MT.lib comctl32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
 				IgnoreDefaultLibraryNames=""

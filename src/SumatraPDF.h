@@ -69,7 +69,10 @@ typedef struct WindowInfo {
     WinState        state;
     WinState        prevState;
     DisplayModel *  dm;
-    HWND            hwnd;
+    HWND            hwndFrame;
+    HWND            hwndCanvas;
+    HWND            hwndToolbar;
+    HWND            hwndReBar;
 
     HDC             hdc;
     BITMAPINFO *    dibInfo;

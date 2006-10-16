@@ -92,7 +92,8 @@ Icons I need:
 //#define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 #define COL_WINDOW_SHADOW RGB(0x40, 0x40, 0x40)
 
-#define WIN_CLASS_NAME  _T("SUMATRA_PDF_WIN")
+#define FRAME_CLASS_NAME   _T("SUMATRA_PDF_FRAME")
+#define CANVAS_CLASS_NAME  _T("SUMATRA_PDF_CANVAS")
 #define APP_NAME        _T("SumatraPDF")
 #define PDF_DOC_NAME    _T("Adobe PDF Document")
 
@@ -104,6 +105,59 @@ Icons I need:
 /* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_WIN_DX 612
 #define DEF_WIN_DY 792
+
+#define REPAINT_TIMER_ID    1
+#define REPAINT_DELAY_IN_MS 400
+
+#define NUMTOOLBITMAPS      26
+#define NUMINITIALTOOLS 24
+
+TBBUTTON  tbbMainWnd[] = {
+    {0,  IDT_FILE_NEW,          TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {1,  IDT_FILE_OPEN,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {2,  IDT_FILE_METAPATH,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {3,  IDT_FILE_SAVE,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {4,  IDT_EDIT_UNDO,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {5,  IDT_EDIT_REDO,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {6,  IDT_EDIT_CUT,          TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {7,  IDT_EDIT_COPY,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {8,  IDT_EDIT_PASTE,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {9,  IDT_EDIT_FIND,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {10, IDT_EDIT_REPLACE,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {11, IDT_VIEW_WORDWRAP,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {12, IDT_VIEW_ZOOMIN,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {13, IDT_VIEW_ZOOMOUT,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+    {14, IDT_VIEW_SCHEME,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {15, IDT_VIEW_SCHEMECONFIG, TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {0,  0,                     0,                  TBSTYLE_SEP,0,0},
+    {16, IDT_FILE_EXIT,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {17, IDT_FILE_SAVEAS,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {18, IDT_FILE_SAVECOPY,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {19, IDT_EDIT_COPYALL,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {20, IDT_EDIT_CLEAR,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {21, IDT_EDIT_FINDNEXT,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {22, IDT_EDIT_FINDPREV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {24, IDT_FILE_OPENFAV,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {25, IDT_FILE_ADDTOFAV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0} 
+};
+
+#define WS_TOOLBAR (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | \
+                    TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | TBSTYLE_ALTDRAG | \
+                    TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN | \
+                    CCS_ADJUSTABLE)
+
+#define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
+                  RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
+
+//#define IDC_TOOLBAR      0xFB01
+//#define IDC_REBAR        0xFB02
 
 #define MAX_RECENT_FILES_IN_MENU 15
 
@@ -165,6 +219,7 @@ static PageRenderRequest *          gCurPageRenderReq = NULL;
 
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
+static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
 
 void CDECL error(int pos, char *msg, ...) {
     va_list args;
@@ -369,7 +424,7 @@ static HMENU FindMenuItem(WindowInfo *win, UINT id)
     UINT    thisId;
     int     i, j;
 
-    menuMain = GetMenu(win->hwnd);
+    menuMain = GetMenu(win->hwndFrame);
 
     /* TODO: to be fully valid, it would have to be recursive */
     for (i = 0; i < GetMenuItemCount(menuMain); i++) {
@@ -396,7 +451,7 @@ static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     HMENU   menuMain;
     UINT    id;
     
-    menuMain = GetMenu(win->hwnd);
+    menuMain = GetMenu(win->hwndFrame);
     CheckMenuItem(menuMain, IDM_VIEW_SINGLE_PAGE, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
@@ -427,7 +482,7 @@ static UINT AllocNewMenuId(void)
 static void AddMenuSepToFilesMenu(WindowInfo *win)
 {
     HMENU               menuFile;
-    menuFile = GetFileMenu(win->hwnd);
+    menuFile = GetFileMenu(win->hwndFrame);
     AppendMenu(menuFile, MF_SEPARATOR, 0, NULL);
 }
 
@@ -440,7 +495,7 @@ static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
     assert(node);
     if (!node)
         return;
-    menuFile = GetFileMenu(win->hwnd);
+    menuFile = GetFileMenu(win->hwndFrame);
     assert(menuFile);
     if (!menuFile)
         return;
@@ -700,7 +755,7 @@ static void UpdateDisplayStateWindowPos(WindowInfo *win, DisplayState *ds)
 {
     int posX, posY;
 
-    Win32_Win_GetPos(win->hwnd, &posX, &posY);
+    Win32_Win_GetPos(win->hwndCanvas, &posX, &posY);
 
     ds->windowX = posX;
     ds->windowY = posY;
@@ -808,7 +863,7 @@ Exit:
 static void WindowInfo_GetWindowSize(WindowInfo *win)
 {
     RECT  rc;
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
     win->winDx = RectDx(&rc);
     win->winDy = RectDy(&rc);
     // DBG_OUT("WindowInfo_GetWindowSize() win_dx=%d, win_dy=%d\n", win->win_dx, win->win_dy);
@@ -856,7 +911,7 @@ static BOOL WindowInfo_DoubleBuffer_New(WindowInfo *win)
     RECT r = {0};
     WindowInfo_DoubleBuffer_Delete(win);
 
-    win->hdc = GetDC(win->hwnd);
+    win->hdc = GetDC(win->hwndCanvas);
     win->hdcToDraw = win->hdc;
     WindowInfo_GetWindowSize(win);
     if (!gUseDoubleBuffer || (0 == win->winDx) || (0 == win->winDy))
@@ -907,18 +962,22 @@ static WindowInfo* WindowInfo_FindByHwnd(HWND hwnd)
 {
     WindowInfo  *win = gWindowList;
     while (win) {
-        if (hwnd == win->hwnd)
+        if (hwnd == win->hwndFrame)
+            return win;
+        if (hwnd == win->hwndCanvas)
+            return win;
+        if (hwnd == win->hwndReBar)
             return win;
         win = win->next;
     }
     return NULL;
 }
 
-static WindowInfo *WindowInfo_New(HWND hwnd)
+static WindowInfo *WindowInfo_New(HWND hwndFrame)
 {
     WindowInfo  *win;
 
-    win = WindowInfo_FindByHwnd(hwnd);
+    win = WindowInfo_FindByHwnd(hwndFrame);
     assert(!win);
 
     win = (WindowInfo*)calloc(sizeof(WindowInfo), 1);
@@ -933,7 +992,7 @@ static WindowInfo *WindowInfo_New(HWND hwnd)
 #else
     win->state = WS_EMPTY;
 #endif
-    win->hwnd = hwnd;
+    win->hwndFrame = hwndFrame;
     win->dragging = FALSE;
     AddRecentFilesToMenu(win);
     return win;
@@ -1004,7 +1063,7 @@ static int WindowInfoList_Len(void)
 
 static void WindowInfo_RedrawAll(WindowInfo *win)
 {
-    InvalidateRect(win->hwnd, NULL, FALSE);
+    InvalidateRect(win->hwndCanvas, NULL, FALSE);
 }
 
 static BOOL FileCloseMenuEnabled(void)
@@ -1037,7 +1096,7 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
 
     fileCloseEnabled = FileCloseMenuEnabled();
 
-    hmenu = GetMenu(win->hwnd);
+    hmenu = GetMenu(win->hwndFrame);
     if (fileCloseEnabled)
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_ENABLED);
     else
@@ -1053,10 +1112,10 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
     /* Hide scrollbars if not showing a PDF */
     /* TODO: doesn't really fit the name of the function */
     if (WS_SHOWING_PDF == win->state)
-        ShowScrollBar(win->hwnd, SB_BOTH, TRUE);
+        ShowScrollBar(win->hwndCanvas, SB_BOTH, TRUE);
     else {
-        ShowScrollBar(win->hwnd, SB_BOTH, FALSE);
-        WinSetText(win->hwnd, APP_NAME);
+        ShowScrollBar(win->hwndCanvas, SB_BOTH, FALSE);
+        WinSetText(win->hwndFrame, APP_NAME);
     }
 }
 
@@ -1075,36 +1134,48 @@ static void MenuUpdateStateForAllWindows(void)
 
 static WindowInfo* WindowInfo_CreateEmpty(void)
 {
-    HWND        hwnd;
+    HWND        hwndFrame, hwndCanvas;
     WindowInfo* win;
 
 #if FANCY_UI
-    hwnd = CreateWindowEx(
+    hwndFrame = CreateWindowEx(
 //            WS_EX_TOOLWINDOW,
         0,
 //            WS_OVERLAPPEDWINDOW,
 //            WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE,
         //WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_HSCROLL | WS_VSCROLL,
-        WIN_CLASS_NAME, szTitle,
+        FRAME_CLASS_NAME, szTitle,
         WS_POPUP,
         CW_USEDEFAULT, CW_USEDEFAULT,
         DEF_WIN_DX, DEF_WIN_DY,
         NULL, NULL,
         ghinst, NULL);
 #else
-    hwnd = CreateWindow(
-            WIN_CLASS_NAME, szTitle,
-            WS_OVERLAPPEDWINDOW | WS_HSCROLL | WS_VSCROLL,
+    hwndFrame = CreateWindow(
+            FRAME_CLASS_NAME, szTitle,
+            WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT,
             DEF_WIN_DX, DEF_WIN_DY,
             NULL, NULL,
             ghinst, NULL);
+
 #endif
 
-    if (!hwnd)
+    if (!hwndFrame)
         return NULL;
 
-    win = WindowInfo_New(hwnd);
+    win = WindowInfo_New(hwndFrame);
+    hwndCanvas = CreateWindow(
+            CANVAS_CLASS_NAME, NULL,
+            WS_CHILD | WS_HSCROLL | WS_VSCROLL,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            DEF_WIN_DX, DEF_WIN_DY,
+            hwndFrame, NULL,
+            ghinst, NULL);
+    if (!hwndCanvas)
+        return NULL;
+    win->hwndCanvas = hwndCanvas;
+    CreateToolbar(win, ghinst);
     return win;
 }
 
@@ -1185,12 +1256,12 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
     if (fromHistory && !ignoreHistorySizePos) {
-        WinResizeClientArea(win->hwnd, fileHistory->state.windowDx, fileHistory->state.windowDy);
+        WinResizeClientArea(win->hwndCanvas, fileHistory->state.windowDx, fileHistory->state.windowDy);
         totalDrawAreaSize.dx = (double)fileHistory->state.windowDx;
         totalDrawAreaSize.dy = (double)fileHistory->state.windowDy;
         /* TODO: make sure it doesn't have a stupid position like 
            outside of the screen etc. */
-        Win32_Win_SetPos(win->hwnd, fileHistory->state.windowX, fileHistory->state.windowY);
+        Win32_Win_SetPos(win->hwndFrame, fileHistory->state.windowX, fileHistory->state.windowY);
     }
 
     /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
@@ -1268,9 +1339,12 @@ Error:
 Exit:
     MenuUpdateStateForAllWindows();
     if (win) {
-        DragAcceptFiles(win->hwnd, TRUE);
-        ShowWindow(win->hwnd, SW_SHOW);
-        UpdateWindow(win->hwnd);
+        DragAcceptFiles(win->hwndFrame, TRUE);
+        DragAcceptFiles(win->hwndCanvas, TRUE);
+        ShowWindow(win->hwndCanvas, SW_SHOW);
+        UpdateWindow(win->hwndCanvas);
+        ShowWindow(win->hwndFrame, SW_SHOW);
+        UpdateWindow(win->hwndFrame);
     }
     return win;
 }
@@ -1357,10 +1431,10 @@ void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
     pageCount = win->dm->pdfDoc->getNumPages();
     baseName = Path_GetBaseName(win->dm->pdfDoc->getFileName()->getCString());
     if (pageCount <= 0)
-        WinSetText(win->hwnd, baseName);
+        WinSetText(win->hwndFrame, baseName);
     else {
         hr = StringCchPrintfA(titleBuf, dimof(titleBuf), "%s page %d of %d", baseName, currPageNo, pageCount);
-        WinSetText(win->hwnd, titleBuf);
+        WinSetText(win->hwndFrame, titleBuf);
     }
 }
 
@@ -1414,7 +1488,7 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
         si.nMax = canvasDx-1;
         si.nPage = drawAreaDx;
     }
-    SetScrollInfo(win->hwnd, SB_HORZ, &si, TRUE);
+    SetScrollInfo(win->hwndCanvas, SB_HORZ, &si, TRUE);
 
     if (drawAreaDy >= canvasDy) {
         si.nPos = 0;
@@ -1427,7 +1501,7 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
         si.nMax = canvasDy-1;
         si.nPage = drawAreaDy;
     }
-    SetScrollInfo(win->hwnd, SB_VERT, &si, TRUE);
+    SetScrollInfo(win->hwndCanvas, SB_VERT, &si, TRUE);
 }
 
 static void WindowInfo_ResizeToWindow(WindowInfo *win)
@@ -1467,7 +1541,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
         return;
 
     /* TODO: should take current monitor into account? */
-    hdc = GetDC(win->hwnd);
+    hdc = GetDC(win->hwndCanvas);
     displayDx = GetDeviceCaps(hdc, HORZRES);
     displayDy = GetDeviceCaps(hdc, VERTRES);
 
@@ -1493,7 +1567,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
             dy = displayDy - 10;
     }
 
-    WinResizeClientArea(win->hwnd, dx, dy);
+    WinResizeClientArea(win->hwndCanvas, dx, dy);
 }
 
 static void WindowInfo_ToggleZoom(WindowInfo *win)
@@ -1790,7 +1864,7 @@ static void WinResizeIfNeeded(WindowInfo *win)
 {
     RECT    rc;
     int     win_dx, win_dy;
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
     win_dx = RectDx(&rc);
     win_dy = RectDy(&rc);
 
@@ -1815,7 +1889,7 @@ static void OnBenchNextAction(WindowInfo *win)
         return;
 
     if (DisplayModel_GoToNextPage(win->dm, 0))
-        PostBenchNextAction(win->hwnd);
+        PostBenchNextAction(win->hwndFrame);
 }
 
 static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
@@ -2093,7 +2167,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     penBorder = CreatePen(PS_SOLID, ABOUT_LINE_OUTER_SIZE, COL_BLACK);
     penDivideLine = CreatePen(PS_SOLID, ABOUT_LINE_SEP_SIZE, COL_BLACK);
 
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
 
     DStringInit(&str);
 
@@ -2316,7 +2390,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
         win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
         /* dragging mode only starts when we're not on a link */
         if (!win->linkOnLastButtonDown) {
-            SetCapture(win->hwnd);
+            SetCapture(win->hwndCanvas);
             win->dragging = TRUE;
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
@@ -2340,7 +2414,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
     if (WS_SHOWING_PDF == win->state) {
         assert(win->dm);
         if (!win->dm) return;
-        if (win->dragging && (GetCapture() == win->hwnd)) {
+        if (win->dragging && (GetCapture() == win->hwndCanvas)) {
             dragDx = 0; dragDy = 0;
             dragDx = x - win->dragPrevPosX;
             dragDy = y - win->dragPrevPosY;
@@ -2451,7 +2525,7 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     static int      curDir = SCROLL_SPEED;
     int             areaDx, areaDy;
 
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
 
     DStringInit(&txt);
 
@@ -2503,7 +2577,7 @@ static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
 {
     RECT    rc;
     int     win_dx, win_dy;
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
     win_dx = RectDx(&rc);
     win_dy = RectDy(&rc);
 
@@ -2529,10 +2603,10 @@ static void OnPaint(WindowInfo *win)
     PAINTSTRUCT ps;
     RECT        rc;
 
-    hdc = BeginPaint(win->hwnd, &ps);
+    hdc = BeginPaint(win->hwndCanvas, &ps);
 
     SetBkMode(hdc, TRANSPARENT);
-    GetClientRect(win->hwnd, &rc);
+    GetClientRect(win->hwndCanvas, &rc);
 
     if (WS_ABOUT_ANIM == win->state) {
         OnPaintDrawAnim(win, hdc, &ps);
@@ -2553,7 +2627,7 @@ static void OnPaint(WindowInfo *win)
         WindowInfo_DoubleBuffer_Show(win, hdc);
     } else
         assert(0);
-    EndPaint(win->hwnd, &ps);
+    EndPaint(win->hwndCanvas, &ps);
 }
 
 static void OnMenuExit(void)
@@ -2586,10 +2660,10 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
         //win->pdfCore->clear();
         WindowInfo_RedrawAll(win);
     } else {
-        hwndToDestroy = win->hwnd;
         WindowInfoList_Remove(win);
         WindowInfo_Delete(win);
-        DestroyWindow(hwndToDestroy);
+        DragAcceptFiles(hwndToDestroy, FALSE);
+        DestroyWindow(win->hwndFrame);
     }
 
     if (lastWindow && quitIfLast) {
@@ -2663,7 +2737,7 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
 
     zoom = ZoomMenuItemToZoom(menuId);
     DisplayModel_ZoomTo(win->dm, zoom);
-    ZoomMenuItemCheck(GetMenu(win->hwnd), menuId);
+    ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
 static void OnMenuOpen(WindowInfo *win)
@@ -2673,7 +2747,7 @@ static void OnMenuOpen(WindowInfo *win)
     GooString      fileNameStr;
 
     ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = win->hwnd;
+    ofn.hwndOwner = win->hwndFrame;
     ofn.lpstrFile = fileName;
 
     // Set lpstrFile[0] to '\0' so that GetOpenFileName does not
@@ -2721,7 +2795,7 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
 
     si.cbSize = sizeof (si);
     si.fMask  = SIF_ALL;
-    GetScrollInfo(win->hwnd, SB_VERT, &si);
+    GetScrollInfo(win->hwndCanvas, SB_VERT, &si);
 
     iVertPos = si.nPos;
 
@@ -2762,8 +2836,8 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
     // Set the position and then retrieve it.  Due to adjustments
     // by Windows it may not be the same as the value set.
     si.fMask = SIF_POS;
-    SetScrollInfo(win->hwnd, SB_VERT, &si, TRUE);
-    GetScrollInfo(win->hwnd, SB_VERT, &si);
+    SetScrollInfo(win->hwndCanvas, SB_VERT, &si, TRUE);
+    GetScrollInfo(win->hwndCanvas, SB_VERT, &si);
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
@@ -2777,7 +2851,7 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
 
     si.cbSize = sizeof (si);
     si.fMask  = SIF_ALL;
-    GetScrollInfo(win->hwnd, SB_HORZ, &si);
+    GetScrollInfo(win->hwndCanvas, SB_HORZ, &si);
 
     iVertPos = si.nPos;
 
@@ -2818,8 +2892,8 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
     // Set the position and then retrieve it.  Due to adjustments
     // by Windows it may not be the same as the value set.
     si.fMask = SIF_POS;
-    SetScrollInfo(win->hwnd, SB_HORZ, &si, TRUE);
-    GetScrollInfo(win->hwnd, SB_HORZ, &si);
+    SetScrollInfo(win->hwndCanvas, SB_HORZ, &si, TRUE);
+    GetScrollInfo(win->hwndCanvas, SB_HORZ, &si);
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
@@ -2967,14 +3041,14 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
     } else if (VK_UP == key) {
         if (win->dm)
-            SendMessage (win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
+            SendMessage (win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
     } else if (VK_DOWN == key) {
         if (win->dm)
-            SendMessage (win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
+            SendMessage (win->hwndCanvas, WM_VSCROLL, SB_LINEDOWN, 0);
     } else if (VK_LEFT == key) {
-        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEUP, 0);
+        SendMessage (win->hwndCanvas, WM_HSCROLL, SB_PAGEUP, 0);
     } else if (VK_RIGHT == key) {
-        SendMessage (win->hwnd, WM_HSCROLL, SB_PAGEDOWN, 0);
+        SendMessage (win->hwndCanvas, WM_HSCROLL, SB_PAGEDOWN, 0);
     } else if (('g' == key) || ('G' == key)) {
         if (IsCtrlLeftPressed())
             OnMenuGoToPage(win);
@@ -2990,9 +3064,9 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('g' == key) {
         OnMenuGoToPage(win);
     } else if ('k' == key) {
-        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
+        SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEDOWN, 0);
     } else if ('j' == key) {
-        SendMessage(win->hwnd, WM_VSCROLL, SB_LINEUP, 0);
+        SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
     } else if ('n' == key) {
         if (win->dm)
             DisplayModel_GoToNextPage(win->dm, 0);
@@ -3006,7 +3080,7 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('z' == key) {
         WindowInfo_ToggleZoom(win);
     } else if ('q' == key) {
-        DestroyWindow(win->hwnd);
+        DestroyWindow(win->hwndFrame);
     } else if ('+' == key) {
         DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
     } else if ('-' == key) {
@@ -3061,23 +3135,207 @@ static void OnMenuAbout(WindowInfo *win)
     if (WS_ABOUT_ANIM != win->state) {
         win->prevState = win->state;
         win->state = WS_ABOUT_ANIM;
-        AnimState_AnimStart(&(win->animState), win->hwnd, ANIM_FREQ_IN_MS);
+        AnimState_AnimStart(&(win->animState), win->hwndCanvas, ANIM_FREQ_IN_MS);
     } else {
         AnimState_AnimStop(&(win->animState));
         win->state = win->prevState;
     }
 }
 
-#define REPAINT_TIMER_ID 1
-#define REPAINT_DELAY_IN_MS 400
+/* TODO: mark as global */
+int     cyReBar;
+int     cyReBarFrame;
 
-static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+BOOL PrivateIsAppThemed()
+{
+    BOOL isThemed = FALSE;
+    HMODULE hDll = LoadLibrary("uxtheme.dll");
+    if (!hDll) return FALSE;
+
+    FARPROC fp = GetProcAddress(hDll,"IsAppThemed");
+    if (fp)
+        isThemed = fp();
+
+    FreeLibrary(hDll);
+    return isThemed;
+}
+
+static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
+{
+    HWND            hwndToolbar;
+    DWORD           dwToolbarStyle = WS_TOOLBAR;
+    DWORD           dwReBarStyle = WS_REBAR;
+    HBITMAP         hbmp;
+    BITMAP          bmp;
+    HIMAGELIST      himl;
+    RECT            rc;
+    REBARINFO       rbi;
+    REBARBANDINFO   rbBand;
+    HWND            hwndParent = win->hwndFrame;
+    BOOL            bIsAppThemed = PrivateIsAppThemed();
+
+    hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, dwToolbarStyle,
+                                 0,0,0,0, hwndParent,(HMENU)IDC_TOOLBAR, hInst,NULL);
+
+    SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+
+    hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_TOOLBAR));
+
+    GetObject(hbmp,sizeof(BITMAP), &bmp);
+    himl = ImageList_Create(bmp.bmWidth / NUMTOOLBITMAPS, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
+    ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
+    DeleteObject(hbmp);
+    SendMessage(hwndToolbar,TB_SETIMAGELIST,0,(LPARAM)himl);
+
+    hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_TOOLBAR_DISABLED));
+    GetObject(hbmp, sizeof(BITMAP), &bmp);
+    himl = ImageList_Create(bmp.bmWidth / NUMTOOLBITMAPS, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
+    ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
+    DeleteObject(hbmp);
+    SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
+
+    SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE,0,
+    SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE,0,0) | TBSTYLE_EX_MIXEDBUTTONS);
+
+    SendMessage(hwndToolbar, TB_ADDBUTTONS,NUMINITIALTOOLS, (LPARAM)tbbMainWnd);
+    //SendMessage(hwndToolbar, TB_SAVERESTORE, FALSE, (LPARAM)lptbsp);
+    SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
+
+    // Create ReBar and add Toolbar
+
+    dwReBarStyle |= WS_VISIBLE;
+    win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, dwReBarStyle,
+                             0,0,0,0, hwndParent, (HMENU)IDC_REBAR, hInst, NULL);
+
+    rbi.cbSize = sizeof(REBARINFO);
+    rbi.fMask  = 0;
+    rbi.himl   = (HIMAGELIST)NULL;
+    SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
+
+    rbBand.cbSize  = sizeof(REBARBANDINFO);
+    rbBand.fMask   = /*RBBIM_COLORS | RBBIM_TEXT | RBBIM_BACKGROUND | */
+                   RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE /*| RBBIM_SIZE*/;
+    rbBand.fStyle  = /*RBBS_CHILDEDGE |*//* RBBS_BREAK |*/ RBBS_FIXEDSIZE /*| RBBS_GRIPPERALWAYS*/;
+    if (bIsAppThemed)
+        rbBand.fStyle |= RBBS_CHILDEDGE;
+    rbBand.hbmBack = NULL;
+    rbBand.lpText     = "Toolbar";
+    rbBand.hwndChild  = hwndToolbar;
+    rbBand.cxMinChild = (rc.right - rc.left) * dimof(tbbMainWnd);
+    rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
+    rbBand.cx         = 0;
+    SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+
+    SetWindowPos(win->hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
+    GetWindowRect(win->hwndReBar, &rc);
+    cyReBar = rc.bottom - rc.top;
+    cyReBarFrame = bIsAppThemed ? 0 : 2;
+}
+
+static void OnSize(WindowInfo *win, int dx, int dy)
+{
+    int dyRebBar = cyReBar + cyReBarFrame;
+    SetWindowPos(win->hwndReBar, NULL, 0, 0, dx, dyRebBar, SWP_NOZORDER);
+    SetWindowPos(win->hwndCanvas, NULL, 0, dyRebBar, dx, dy-dyRebBar, SWP_NOZORDER);
+}
+
+/* TODO: gAccumDelta must be per WindowInfo */
+static int      gDeltaPerLine, gAccumDelta;      // for mouse wheel logic
+
+static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *    win;
+    win = WindowInfo_FindByHwnd(hwnd);
+    switch (message)
+    {
+        case WM_VSCROLL:
+            OnVScroll(win, wParam);
+            return WM_VSCROLL_HANDLED;
+
+        case WM_HSCROLL:
+            OnHScroll(win, wParam);
+            return WM_HSCROLL_HANDLED;
+
+        case WM_MOUSEMOVE:
+            if (win)
+                OnMouseMove(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
+            break;
+
+        case WM_LBUTTONDOWN:
+            if (win)
+                OnMouseLeftButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            break;
+
+        case WM_LBUTTONUP:
+            if (win)
+                OnMouseLeftButtonUp(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            break;
+
+        case WM_SETCURSOR:
+            if (win && win->dragging) {
+                SetCursor(LoadCursor(NULL, IDC_HAND));
+                return TRUE;
+            }
+            break;
+
+        case WM_TIMER:
+            assert(win);
+            if (win) {
+                if (REPAINT_TIMER_ID == wParam)
+                    WindowInfo_RedrawAll(win);
+                else
+                    AnimState_NextFrame(&win->animState);
+            }
+            break;
+
+        case WM_MOUSEWHEEL:
+            if (!win || !win->dm) /* TODO: check for pdfDoc as well ? */
+                break;
+
+            if (gDeltaPerLine == 0)
+               break;
+
+            gAccumDelta += (short) HIWORD (wParam);     // 120 or -120
+
+            while (gAccumDelta >= gDeltaPerLine)
+            {
+               SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0);
+               gAccumDelta -= gDeltaPerLine;
+            }
+
+            while (gAccumDelta <= -gDeltaPerLine)
+            {
+               SendMessage (hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
+               gAccumDelta += gDeltaPerLine;
+            }
+            return 0;
+
+        case WM_ERASEBKGND:
+            // do nothing, helps to avoid flicker
+            return TRUE;
+
+        case WM_PAINT:
+            /* it might happen that we get WM_PAINT after destroying a window */
+            if (win) {
+                /* blindly kill the timer, just in case it's there */
+                KillTimer(win->hwndCanvas, REPAINT_TIMER_ID);
+                OnPaint(win);
+            }
+            break;
+
+        default:
+            return DefWindowProc(hwnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int             wmId, wmEvent;
     WindowInfo *    win;
-    static int      iDeltaPerLine, iAccumDelta;      // for mouse wheel logic
     ULONG           ulScrollLines;                   // for mouse wheel logic
-    const char *         fileName;
+    const char *    fileName;
+    int             dx, dy;
 
     win = WindowInfo_FindByHwnd(hwnd);
 
@@ -3089,9 +3347,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 
         case WM_APP_MSG_REFRESH:
             if (win) {
-                SetTimer(win->hwnd, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
+                SetTimer(win->hwndCanvas, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
             }
             break;
+
+        case WM_SIZE:
+            if (win) {
+                dx = LOWORD(lParam);
+                dy = HIWORD(lParam);
+                OnSize(win, dx, dy);
+            }
 
         case WM_COMMAND:
             wmId    = LOWORD(wParam);
@@ -3197,13 +3462,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
             }
             break;
 
-        case WM_VSCROLL:
-            OnVScroll(win, wParam);
-            return WM_VSCROLL_HANDLED;
+        case WM_CHAR:
+            if (win)
+                OnChar(win, wParam);
+            break;
 
-        case WM_HSCROLL:
-            OnHScroll(win, wParam);
-            return WM_HSCROLL_HANDLED;
+        case WM_KEYDOWN:
+            if (win)
+                OnKeydown(win, wParam, lParam);
+            break;
 
         case WM_SETTINGCHANGE:
 InitMouseWheelInfo:
@@ -3211,79 +3478,10 @@ InitMouseWheelInfo:
             // ulScrollLines usually equals 3 or 0 (for no scrolling)
             // WHEEL_DELTA equals 120, so iDeltaPerLine will be 40
             if (ulScrollLines)
-                iDeltaPerLine = WHEEL_DELTA / ulScrollLines;
+                gDeltaPerLine = WHEEL_DELTA / ulScrollLines;
             else
-                iDeltaPerLine = 0;
+                gDeltaPerLine = 0;
             return 0;
-
-        case WM_MOUSEWHEEL:
-            if (!win || !win->dm) /* TODO: check for pdfDoc as well ? */
-                break;
-
-            if (iDeltaPerLine == 0)
-               break;
-
-            iAccumDelta += (short) HIWORD (wParam);     // 120 or -120
-
-            while (iAccumDelta >= iDeltaPerLine)
-            {
-               SendMessage (hwnd, WM_VSCROLL, SB_LINEUP, 0);
-               iAccumDelta -= iDeltaPerLine;
-            }
-
-            while (iAccumDelta <= -iDeltaPerLine)
-            {
-               SendMessage (hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
-               iAccumDelta += iDeltaPerLine;
-            }
-            return 0;
-
-        case WM_ERASEBKGND:
-            // do nothing, helps to avoid flicker
-            return TRUE;
-
-        case WM_PAINT:
-            /* it might happen that we get WM_PAINT after destroying a window */
-            if (win) {
-                /* blindly kill the timer, just in case it's there */
-                KillTimer(win->hwnd, REPAINT_TIMER_ID);
-                OnPaint(win);
-            }
-            break;
-
-        case WM_CHAR:
-            if (win)
-                OnChar(win, wParam);
-            break;
-
-        case WM_TIMER:
-            assert(win);
-            if (win) {
-                if (REPAINT_TIMER_ID == wParam)
-                    WindowInfo_RedrawAll(win);
-                else
-                    AnimState_NextFrame(&win->animState);
-            }
-            break;
-        case WM_KEYDOWN:
-            if (win)
-                OnKeydown(win, wParam, lParam);
-            break;
-
-        case WM_MOUSEMOVE:
-            if (win)
-                OnMouseMove(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
-            break;
-
-        case WM_LBUTTONDOWN:
-            if (win)
-                OnMouseLeftButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            break;
-
-        case WM_LBUTTONUP:
-            if (win)
-                OnMouseLeftButtonUp(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            break;
 
         case WM_DROPFILES:
             if (win)
@@ -3294,13 +3492,6 @@ InitMouseWheelInfo:
             /* WM_DESTROY might be sent as a result of File\Close, in which case CloseWindow() has already been called */
             if (win)
                 CloseWindow(win, TRUE);
-            break;
-
-        case WM_SETCURSOR:
-            if (win && win->dragging) {
-                SetCursor(LoadCursor(NULL, IDC_HAND));
-                return TRUE;
-            }
             break;
 
         case IDM_VIEW_WITH_ACROBAT:
@@ -3327,7 +3518,7 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.cbSize = sizeof(WNDCLASSEX);
 
     wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
+    wcex.lpfnWndProc    = WndProcFrame;
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
@@ -3335,12 +3526,29 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground  = NULL;
     wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_SUMATRAPDF);
-    wcex.lpszClassName  = WIN_CLASS_NAME;
+    wcex.lpszClassName  = FRAME_CLASS_NAME;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    atom = RegisterClassEx(&wcex);
+    if (!atom)
+        return FALSE;
+
+    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc    = WndProcCanvas;
+    wcex.cbClsExtra     = 0;
+    wcex.cbWndExtra     = 0;
+    wcex.hInstance      = hInstance;
+    wcex.hIcon          = 0;
+    wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground  = NULL;
+    wcex.lpszMenuName   = NULL;
+    wcex.lpszClassName  = CANVAS_CLASS_NAME;
+    wcex.hIconSm        = 0;
 
     atom = RegisterClassEx(&wcex);
     if (atom)
         return TRUE;
+
     return FALSE;
 }
 
@@ -3459,7 +3667,6 @@ static DWORD WINAPI PageRenderThread(PVOID data)
     PageRenderRequest       req;
     SplashBitmap *          bmp;
     BOOL                    fOk;
-    HWND                    hwnd;
     DWORD                   waitResult;
     int                     count;
 
@@ -3499,8 +3706,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
 #endif
         WindowInfo * win = NULL;
         win = (WindowInfo*)req.dm->appData;
-        hwnd = win->hwnd;
-        fOk = PostMessage(hwnd, WM_APP_MSG_REFRESH, 0, 0);
+        fOk = PostMessage(win->hwndCanvas, WM_APP_MSG_REFRESH, 0, 0);
     }
     DBG_OUT("PageRenderThread() finished\n");
     return 0;
@@ -3617,9 +3823,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             WindowInfoList_Add(win);
 
             /* TODO: should this be part of WindowInfo_CreateEmpty() ? */
-            DragAcceptFiles(win->hwnd, TRUE);
-            ShowWindow(win->hwnd, SW_SHOW);
-            UpdateWindow(win->hwnd);
+            DragAcceptFiles(win->hwndFrame, TRUE);
+            ShowWindow(win->hwndCanvas, SW_SHOW);
+            UpdateWindow(win->hwndCanvas);
+            ShowWindow(win->hwndFrame, SW_SHOW);
+            UpdateWindow(win->hwndFrame);
         }
     }
 
@@ -3627,7 +3835,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         assert(win);
         assert(pdfOpened > 0);
         if (win)
-            PostBenchNextAction(win->hwnd);
+            PostBenchNextAction(win->hwndFrame);
     }
 
     if (0 == pdfOpened)
