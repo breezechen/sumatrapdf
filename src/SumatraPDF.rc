@@ -43,6 +43,7 @@ BEGIN
     BEGIN
         MENUITEM "&Open\tCtrl-O",               IDM_OPEN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
+        MENUITEM "&Print",						IDM_PRINT
         MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
     END
     POPUP "&View"

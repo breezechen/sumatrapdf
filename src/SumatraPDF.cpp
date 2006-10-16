@@ -2740,6 +2740,213 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
     ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
+/* Show Print Dialog box to allow user to select the printer
+and the pages to print.
+
+Creates a new dummy page for each page with a large zoom factor,
+and then uses StretchDIBits to copy this to the printer's dc.
+
+So far have tested printing from XP to
+ - Acrobat Professional 6 (note that acrobat is usually set to
+   downgrade the resolution of its bitmaps to 150dpi)
+ - HP Laserjet 2300d
+ - Lexmark Z515 inkjet, which should cover most bases.
+
+TODO:
+ * test on my printer
+ * a better, synchronous way of generating a bitmap to print
+*/
+static void OnMenuPrint(WindowInfo *win)
+{
+    int                 pageNo;
+    PdfPageInfo*        pageInfo;
+    DisplayModel *      dm;
+    SplashBitmap *      splashBmp;
+    int                 splashBmpDx, splashBmpDy;
+    SplashColorMode     splashBmpColorMode;
+    SplashColorPtr      splashBmpData;
+    int                 splashBmpRowSize;
+    BITMAPINFOHEADER    bmih;
+    BitmapCacheEntry *  entry;
+    PRINTDLG            pd;
+
+    assert(win);
+    if (!win) return;
+    dm = win->dm;
+    assert(dm);
+    if (!dm) return;
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return;
+
+    /* store current page number and zoom state to reset
+       when finished printing */
+    int pageNoInitial = dm->startPage;
+    int zoomInitial = dm->zoomReal;
+
+    /* printing uses the WindowInfo win that is created for the
+       screen, it may be possible to create a new WindowInfo
+       for printing to so we don't mess with the screen one,
+       but the user is not inconvenienced too much, and this
+       way we only need to concern ourselves with one dm.
+       TODO: don't re-use WindowInfo, use a different, synchronious
+       way of creating a bitmap */
+
+    ZeroMemory(&pd, sizeof(pd));
+    pd.lStructSize = sizeof(pd);
+    pd.hwndOwner   = win->hwndFrame;
+    pd.hDevMode    = NULL;   
+    pd.hDevNames   = NULL;   
+    pd.Flags       = PD_USEDEVMODECOPIESANDCOLLATE | PD_RETURNDC;
+    pd.nCopies     = 1;
+    /* by default print all pages */
+    pd.nFromPage   = 1;
+    pd.nToPage     = dm->pageCount;
+    pd.nMinPage    = 1;
+    pd.nMaxPage    = dm->pageCount;
+
+    if (FALSE == PrintDlg(&pd)) {
+        if (CommDlgExtendedError()) {
+            /* if PrintDlg was cancelled then
+               CommDlgExtendedError is zero, otherwise it returns the
+               error code, which we could look at here if we wanted.
+               for now just warn the user that printing has stopped
+               becasue of an error */
+            MessageBox(win->hwndFrame, "Cannot initialise printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        }
+    }
+
+    DOCINFO di;
+    ZeroMemory(&di,sizeof(DOCINFO));
+    di.cbSize = sizeof (DOCINFO);
+
+    //set the print job name from the file name
+    di.lpszDocName = (LPCSTR) dm->pdfDoc->getFileName()->getCString() ;
+
+    //to increase the resolution of the bitmap created for
+    //the printed page, zoom in by say 300, seems to work ok.
+    DisplayModel_ZoomTo(win->dm, 300);
+
+    //start the printing
+    if (StartDoc(pd.hDC, &di) <= 0)
+        goto Exit;
+
+    BOOL printingOk = TRUE;
+
+    // print all the pages the user requested unless
+    // bContinue flags there is a problem.
+    for (pageNo = pd.nFromPage;
+        pageNo <= pd.nToPage && printingOk;
+        pageNo++)
+    {
+
+        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+
+        int rotation = dm->rotation + pageInfo->rotation;
+        double zoomLevel = dm->zoomReal;
+
+        splashBmp = NULL;
+
+        // initiate the creation of the bitmap for the page.
+        DisplayModel_GoToPage(dm, pageNo, 0);
+
+        // because we're multithreaded the bitmap may not be
+        // ready yet so keep checking until it is available
+        do
+        {
+            entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
+            if (entry)
+                splashBmp = entry->bitmap;
+            Sleep(10);
+        } while (!splashBmp);
+
+        DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
+        splashBmpDx = splashBmp->getWidth();
+        splashBmpDy = splashBmp->getHeight();
+        splashBmpRowSize = splashBmp->getRowSize();
+        splashBmpData = splashBmp->getDataPtr();
+        splashBmpColorMode = splashBmp->getMode();
+
+        bmih.biSize = sizeof(bmih);
+        bmih.biHeight = -splashBmpDy;
+        bmih.biWidth = splashBmpDx;
+        bmih.biPlanes = 1;
+        //we could create this dibsection in monochrome
+        //if the printer is monochrome, to reduce memory consumption
+        //but splash is currently setup to return a full colour bitmap
+        bmih.biBitCount = 24;
+        bmih.biCompression = BI_RGB;
+        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
+        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+        bmih.biClrUsed = bmih.biClrImportant = 0;
+
+        //initiate the printed page
+        StartPage(pd.hDC);
+
+        //initialise device context
+        SetMapMode(pd.hDC, MM_TEXT);
+        //MM_TEXT: Each logical unit is mapped to one device pixel.
+        //Positive x is to the right; positive y is down.
+
+        //most printers can support stretchdibits,
+        //whereas a lot of printers do not support bitblt
+
+        //we check here that the printer does support
+        //StretchDIBits and if it does then we StretchDIBits
+        //the dibsection bmih to the printer dc.
+
+        if (GetDeviceCaps(pd.hDC, RASTERCAPS) & RC_STRETCHDIB) {
+            //printer is capabable of performing StretchDIBits
+            //get the full printable area in pixels of the paper,
+            //note, this is not the full paper size, so we're in
+            //effect resizing the page to fit printable area.
+            int nPageHeight = GetDeviceCaps (pd.hDC, VERTRES);
+            int nPageWidth = GetDeviceCaps (pd.hDC, HORZRES);
+
+            StretchDIBits(pd.hDC,
+                //destination rectanngle
+                0, 0, nPageWidth, nPageHeight,
+                //source rectangle
+                0, 0, splashBmpDx, splashBmpDy,
+                splashBmpData,
+                (BITMAPINFO *)&bmih ,
+                DIB_RGB_COLORS,
+                SRCCOPY);
+
+            // we're creating about 30MB per page so clear the
+            // bitmap now to avoid running out of RAM on old machines.
+            // ideally call BitmapCacheEntry_Free(entry) but that's
+            // not available to us here, so clear all instead!
+            BitmapCache_FreeAll();
+
+            // end the page, and check no error occurred
+            if (EndPage(pd.hDC) <= 0)
+                printingOk = FALSE;
+        }
+        else
+        {
+            // printer is not capabable of preforming StretchDIBits
+            // so stop printing
+            EndPage(pd.hDC);
+            printingOk = FALSE;
+        }
+    }
+
+    if (printingOk)
+        EndDoc(pd.hDC);
+    else
+        AbortDoc(pd.hDC);
+
+Exit:
+    DeleteDC(pd.hDC);
+
+    if (pd.hDevNames != NULL) GlobalFree(pd.hDevNames);
+    if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
+
+    // reset the page and zoom that the user had before starting to print.
+    DisplayModel_GoToPage(dm,pageNoInitial,0);
+    DisplayModel_ZoomTo(win->dm, zoomInitial);
+}
+
 static void OnMenuOpen(WindowInfo *win)
 {
     OPENFILENAME ofn = {0};
@@ -3373,6 +3580,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
             {
                 case IDM_OPEN:
                     OnMenuOpen(win);
+                    break;
+
+                case IDM_PRINT:
+                    OnMenuPrint(win);
                     break;
 
                 case IDM_CLOSE:
