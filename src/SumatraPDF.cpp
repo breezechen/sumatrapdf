@@ -110,40 +110,22 @@ Icons I need:
 #define REPAINT_DELAY_IN_MS 400
 
 #define NUMTOOLBITMAPS      26
-#define NUMINITIALTOOLS 24
+#define NUMINITIALTOOLS     11
 
 TBBUTTON  tbbMainWnd[] = {
-    {0,  IDT_FILE_NEW,          TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {1,  IDT_FILE_OPEN,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {2,  IDT_FILE_METAPATH,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {3,  IDT_FILE_SAVE,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {4,  IDT_EDIT_UNDO,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {5,  IDT_EDIT_REDO,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {6,  IDT_EDIT_CUT,          TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {7,  IDT_EDIT_COPY,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {8,  IDT_EDIT_PASTE,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
     {9,  IDT_EDIT_FIND,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {10, IDT_EDIT_REPLACE,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {11, IDT_VIEW_WORDWRAP,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
     {12, IDT_VIEW_ZOOMIN,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {13, IDT_VIEW_ZOOMOUT,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {14, IDT_VIEW_SCHEME,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {15, IDT_VIEW_SCHEMECONFIG, TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,                  TBSTYLE_SEP,0,0},
     {16, IDT_FILE_EXIT,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {17, IDT_FILE_SAVEAS,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {18, IDT_FILE_SAVECOPY,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {19, IDT_EDIT_COPYALL,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {20, IDT_EDIT_CLEAR,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {21, IDT_EDIT_FINDNEXT,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {22, IDT_EDIT_FINDPREV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {24, IDT_FILE_OPENFAV,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {25, IDT_FILE_ADDTOFAV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0} 
 };
@@ -3404,7 +3386,7 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE,0,
     SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE,0,0) | TBSTYLE_EX_MIXEDBUTTONS);
 
-    SendMessage(hwndToolbar, TB_ADDBUTTONS,NUMINITIALTOOLS, (LPARAM)tbbMainWnd);
+    SendMessage(hwndToolbar, TB_ADDBUTTONS, NUMINITIALTOOLS, (LPARAM)tbbMainWnd);
     //SendMessage(hwndToolbar, TB_SAVERESTORE, FALSE, (LPARAM)lptbsp);
     SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
@@ -3579,19 +3561,30 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
             switch (wmId)
             {
                 case IDM_OPEN:
+                case IDT_FILE_OPEN:
                     OnMenuOpen(win);
                     break;
 
+                case IDT_FILE_PRINT:
                 case IDM_PRINT:
                     OnMenuPrint(win);
                     break;
 
+                case IDT_FILE_EXIT:
                 case IDM_CLOSE:
                     CloseWindow(win, FALSE);
                     break;
 
                 case IDM_EXIT:
                     OnMenuExit();
+                    break;
+
+                case IDT_VIEW_ZOOMIN:
+                    DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+                    break;
+
+                case IDT_VIEW_ZOOMOUT:
+                    DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
                     break;
 
                 case IDM_ZOOM_6400:
