@@ -785,6 +785,7 @@ void DisplayModel_ScrollXTo(DisplayModel *dm, int xOff)
     DBG_OUT("DisplayModel_ScrollXTo(xOff=%d)\n", xOff);
     dm->areaOffset.x = (double)xOff;
     DisplayModel_RecalcVisibleParts(dm);
+    DisplayModel_SetScrollbarsState(dm);
     DisplayModel_RepaintDisplay(dm);
 }
 
