@@ -3437,6 +3437,12 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
     win = WindowInfo_FindByHwnd(hwnd);
     switch (message)
     {
+        case WM_APP_MSG_REFRESH:
+            if (win) {
+                SetTimer(win->hwndCanvas, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
+            }
+            break;
+
         case WM_VSCROLL:
             OnVScroll(win, wParam);
             return WM_VSCROLL_HANDLED;
@@ -3533,12 +3539,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
         case WM_CREATE:
             // do nothing
             goto InitMouseWheelInfo;
-
-        case WM_APP_MSG_REFRESH:
-            if (win) {
-                SetTimer(win->hwndCanvas, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
-            }
-            break;
 
         case WM_SIZE:
             if (win) {

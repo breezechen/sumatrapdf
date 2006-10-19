@@ -108,6 +108,16 @@ static BOOL IsDisplayModeContinuous(DisplayMode displayMode)
     return FALSE;
 }
 
+static BOOL IsDisplayModeFacing(DisplayMode displayMode)
+{
+    if ((DM_SINGLE_PAGE == displayMode) || (DM_CONTINUOUS == displayMode))
+        return FALSE;
+    else if ((DM_FACING == displayMode) || (DM_CONTINUOUS_FACING == displayMode))
+        return TRUE;
+    assert(0);
+    return FALSE;
+}
+
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
 {
     Object obj;
@@ -913,8 +923,12 @@ void DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode)
         }
         DisplayModel_Relayout(dm, dm->zoomVirtual, dm->rotation);
     }
-    DisplayModel_GoToPage(dm, currPageNo, 0);
 
+    /* When switching to facing mode only start at odd pages (odd because page
+       numbering starts with 1, so it's really at even page) */
+    if (IsDisplayModeFacing(displayMode))
+      currPageNo = ((currPageNo-1) & ~1) + 1;
+    DisplayModel_GoToPage(dm, currPageNo, 0);
 }
 
 void DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual)
