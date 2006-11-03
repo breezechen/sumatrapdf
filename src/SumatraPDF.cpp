@@ -298,6 +298,33 @@ void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
     UnlockCache();
 }
 
+static void SleepMilliseconds(int milliseconds)
+{
+    Sleep((DWORD)milliseconds);
+}
+
+/* Wait until rendering of a page beloging to <dm> has finished. */
+/* TODO: this might take some time, would be good to show a dialog to let the
+   user know he has to wait until we finish */
+void CancelRenderingForDisplayModel(DisplayModel *dm)
+{
+    BOOL renderingFinished = FALSE;
+
+    DBG_OUT("CancelRenderingForDisplayModel()\n");
+    for (;;) {
+        LockCache();
+        if (!gCurPageRenderReq || (gCurPageRenderReq->dm != dm))
+            renderingFinished = TRUE;
+        else
+            gCurPageRenderReq->abort = TRUE;
+        UnlockCache();
+        if (renderingFinished)
+            break;
+        /* TODO: busy loop is not good, but I don't have a better idea */
+        SleepMilliseconds(500);
+    }
+}
+
 /* Render a bitmap for page <pageNo> in <dm>. */
 void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     PageRenderRequest *   newRequest = NULL;
@@ -1392,7 +1419,7 @@ static void Win32_Font_Delete(HFONT font)
     DeleteObject(font);
 }
 
-void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
+void DisplayModel_PageChanged(DisplayModel *dm)
 {
     char            titleBuf[256];
     const char *    baseName;
@@ -1403,6 +1430,7 @@ void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
     assert(dm);
     if (!dm) return;
 
+
     win = (WindowInfo*)dm->appData;
     assert(win);
     if (!win) return;
@@ -1410,6 +1438,7 @@ void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo)
     if (!win->dm->pdfDoc)
         return;
 
+    int currPageNo = DisplayModel_GetCurrentPageNo(dm);
     pageCount = win->dm->pdfDoc->getNumPages();
     baseName = Path_GetBaseName(win->dm->pdfDoc->getFileName()->getCString());
     if (pageCount <= 0)

@@ -269,6 +269,8 @@ void          DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoTo
 void          DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI);
 void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch);
 void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
+BOOL          DisplayModel_CanGoToNextPage(DisplayModel *dm);
+BOOL          DisplayModel_CanGoToPrevPage(DisplayModel *dm);
 
 BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
 
@@ -278,7 +280,7 @@ SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo,
 /* Those need to be implemented somewhere else by the GUI */
 extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
 /* called when a page number changes */
-extern void DisplayModel_PageChanged(DisplayModel *dm, int currPageNo);
+extern void DisplayModel_PageChanged(DisplayModel *dm);
 /* called when we decide that the display needs to be redrawn */
 extern void DisplayModel_RepaintDisplay(DisplayModel *dm);
 

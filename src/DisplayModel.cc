@@ -118,6 +118,29 @@ static BOOL IsDisplayModeFacing(DisplayMode displayMode)
     return FALSE;
 }
 
+/* Flip coordinates <y1>, <y2>, <y3> and <y4> upside-down if a page <pageNo>
+   in <dm> is upside-down */
+static void TransformUpsideDown(DisplayModel *dm, int pageNo, double *y1, double *y2, double *y3, double *y4)
+{
+    PdfPageInfo *   pageInfo;
+    double          pageDy;
+    assert(dm);
+    if (!dm) return;
+    if (!dm->outputDevice->upsideDown())
+        return;
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    pageDy = pageInfo->pageDy;
+    if (y1)
+        *y1 = pageDy - *y1;
+    if (y2)
+        *y2 = pageDy - *y2;
+    if (y3)
+        *y3 = pageDy - *y3;
+    if (y4)
+        *y4 = pageDy - *y4;
+}
+
+#if 0
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
 {
     Object obj;
@@ -156,28 +179,6 @@ static const char * GetLinkActionKindName(LinkActionKind kind) {
             assert(0);
             return "unknown action";
     }
-}
-
-/* Flip coordinates <y1>, <y2>, <y3> and <y4> upside-down if a page <pageNo>
-   in <dm> is upside-down */
-static void TransformUpsideDown(DisplayModel *dm, int pageNo, double *y1, double *y2, double *y3, double *y4)
-{
-    PdfPageInfo *   pageInfo;
-    double          pageDy;
-    assert(dm);
-    if (!dm) return;
-    if (!dm->outputDevice->upsideDown())
-        return;
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    pageDy = pageInfo->pageDy;
-    if (y1)
-        *y1 = pageDy - *y1;
-    if (y2)
-        *y2 = pageDy - *y2;
-    if (y3)
-        *y3 = pageDy - *y3;
-    if (y4)
-        *y4 = pageDy - *y4;
 }
 
 static void DumpLinks(DisplayModel *dm, PDFDoc *doc)
@@ -228,6 +229,7 @@ Exit:
     delete links;
     DBG_OUT("DumpLinks() finished\n");
 }
+#endif
 
 static int FlippedRotation(int rotation)
 {
@@ -359,7 +361,7 @@ void DisplayModel_RenderVisibleParts(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    DBG_OUT("DisplayModel_RenderVisibleParts()\n");
+//    DBG_OUT("DisplayModel_RenderVisibleParts()\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
         if (pageInfo->visible) {
@@ -389,6 +391,7 @@ void DisplayModel_FreeLinks(DisplayModel *dm)
 }
 
 extern void RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
+extern void CancelRenderingForDisplayModel(DisplayModel *dm);
 
 void DisplayModel_Delete(DisplayModel *dm)
 {
@@ -396,6 +399,7 @@ void DisplayModel_Delete(DisplayModel *dm)
 
     RenderQueue_RemoveForDisplayModel(dm);
     BitmapCache_FreeForDisplayModel(dm);
+    CancelRenderingForDisplayModel(dm);
     DisplayModel_FreeLinks(dm);
 
     delete dm->outputDevice;
@@ -425,7 +429,7 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
     DisplayModel_SetScrollbarsState(dm);
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
-        DisplayModel_PageChanged(dm, newPageNo);
+        DisplayModel_PageChanged(dm);
     DisplayModel_RepaintDisplay(dm);
 }
 
@@ -612,7 +616,7 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
         else
             pageInfo->shown = false;
         if ((pageNo >= startPage) && (pageNo < startPage + columns)) {
-            DBG_OUT("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
+            //DBG_OUT("DisplayModel_SetStartPage() set page %d as shown\n", pageNo);
             pageInfo->shown = true;
         }
         pageInfo->visible = false;
@@ -629,6 +633,11 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scroll
     assert(DisplayModel_ValidPageNo(dm, pageNo));
     if (!DisplayModel_ValidPageNo(dm, pageNo))
         return;
+
+    /* in facing mode only start at odd pages (odd because page
+       numbering starts with 1, so odd is really an even page) */
+    if (IsDisplayModeFacing(dm->displayMode))
+      pageNo = ((pageNo-1) & ~1) + 1;
 
     if (!IsDisplayModeContinuous(dm->displayMode)) {
         /* in single page mode going to another page involves recalculating
@@ -655,7 +664,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scroll
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RenderVisibleParts(dm);
     DisplayModel_SetScrollbarsState(dm);
-    DisplayModel_PageChanged(dm, pageNo);
+    DisplayModel_PageChanged(dm);
     DisplayModel_RepaintDisplay(dm);
 }
 
@@ -694,7 +703,7 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
     newPageNo = currPageNo + columns;
     firstPageInNewRow = FirstPageInARowNo(newPageNo, columns);
 
-    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
+//    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
     if ((firstPageInNewRow > dm->pageCount) || (firstPageInCurrRow == firstPageInNewRow)) {
         /* we're on a last row or after it, can't go any further */
         return false;
@@ -783,7 +792,7 @@ void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
 
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
-        DisplayModel_PageChanged(dm, newPageNo);
+        DisplayModel_PageChanged(dm);
     DisplayModel_RepaintDisplay(dm);
 }
 
@@ -885,7 +894,7 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
     DisplayModel_SetScrollbarsState(dm);
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
-        DisplayModel_PageChanged(dm, newPageNo);
+        DisplayModel_PageChanged(dm);
     DisplayModel_RepaintDisplay(dm);
 }
 
@@ -923,11 +932,6 @@ void DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode)
         }
         DisplayModel_Relayout(dm, dm->zoomVirtual, dm->rotation);
     }
-
-    /* When switching to facing mode only start at odd pages (odd because page
-       numbering starts with 1, so it's really at even page) */
-    if (IsDisplayModeFacing(displayMode))
-      currPageNo = ((currPageNo-1) & ~1) + 1;
     DisplayModel_GoToPage(dm, currPageNo, 0);
 }
 
@@ -1219,8 +1223,7 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
     if (currZoomReal != dm->zoomReal)
         freeCache = TRUE;
 
-    DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n",
-        pageCount, dm->zoomReal, dm->zoomVirtual);
+//    DBG_OUT("DisplayModel_Relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n", pageCount, dm->zoomReal, dm->zoomVirtual);
     totalAreaDx = 0;
 
     if (0 == currZoomReal)
@@ -1485,6 +1488,8 @@ static void DisplayModel_GoToDest(DisplayModel *dm, LinkDest *linkDest)
             break;
         case destFitR:
             break;
+        default:
+            break;
     }
     DisplayModel_GoToPage(dm, newPage, scrollY);
 }
@@ -1595,6 +1600,32 @@ void DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed)
     }
 }
 
+/* Return TRUE if can go to previous page (i.e. is not on the first page) */
+BOOL DisplayModel_CanGoToPrevPage(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return FALSE;
+    if (1 == DisplayModel_GetCurrentPageNo(dm))
+        return FALSE;
+    return TRUE;
+}
+
+/* Return TRUE if can go to next page (i.e. doesn't already show last page) */
+BOOL DisplayModel_CanGoToNextPage(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return FALSE;
+
+    if (IsDisplayModeFacing(dm->displayMode)) {
+        if (DisplayModel_GetCurrentPageNo(dm)+1 >= dm->pageCount)
+            return FALSE;
+    } else {
+        if (dm->pageCount == DisplayModel_GetCurrentPageNo(dm))
+            return FALSE;
+    }
+    return TRUE;
+}
+
 BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
 {
     ds->filePath = Str_Escape(dm->pdfDoc->getFileName()->getCString());
@@ -1656,13 +1687,14 @@ static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     assert(entry->bitmap);
     if (entry->bitmap && (BITMAP_CANNOT_RENDER != entry->bitmap))
         delete entry->bitmap;
-    entry->bitmap = NULL;
+    free((void*)entry);
 }
 
 void BitmapCache_FreeAll(void) {
     LockCache();
     for (int i=0; i < gBitmapCacheCount; i++) {
         BitmapCacheEntry_Free(gBitmapCache[i]);
+        gBitmapCache[i] = NULL;
     }
     gBitmapCacheCount = 0;
     UnlockCache();
@@ -1695,6 +1727,7 @@ BOOL BitmapCache_FreeNotVisible(void)
         if (shouldFree) {
             freedSomething = TRUE;
             BitmapCacheEntry_Free(gBitmapCache[i]);
+            gBitmapCache[i] = NULL;
             --gBitmapCacheCount;
         }
 
@@ -1726,6 +1759,7 @@ BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
         if (shouldFree) {
             freedSomething = TRUE;
             BitmapCacheEntry_Free(gBitmapCache[i]);
+            gBitmapCache[i] = NULL;
             --gBitmapCacheCount;
         }
 
@@ -1751,24 +1785,23 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     NormalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     LockCache();
+    if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
+        /* TODO: find entry that is not visible and remove it from cache to
+           make room for new entry */
+        goto UnlockAndExit;
+    }
     entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
     if (!entry) {
         delete bmp;
-        return;
+        goto UnlockAndExit;
     }
     entry->dm = dm;
     entry->pageNo = pageNo;
     entry->zoomLevel = zoomLevel;
     entry->rotation = rotation;
     entry->bitmap = bmp;
-    if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
-        /* TODO: find entry that is not visible and remove it from cache to
-           make room for new entry */
-        BitmapCacheEntry_Free(entry);
-        UnlockCache();
-        return;
-    }
     gBitmapCache[gBitmapCacheCount++] = entry;
+UnlockAndExit:
     UnlockCache();
 }
 
@@ -1776,17 +1809,16 @@ BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLeve
     BitmapCacheEntry *entry;
 
     NormalizeRotation(&rotation);
-    DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     LockCache();
     for (int i = 0; i < gBitmapCacheCount; i++) {
         entry = gBitmapCache[i];
         if ( (dm == entry->dm) && (pageNo == entry->pageNo) && 
              (zoomLevel == entry->zoomLevel) && (rotation == entry->rotation)) {
-             DBG_OUT("   found\n");
+             DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) found\n", pageNo, zoomLevel, rotation);
              goto Exit;
         }
     }
-    DBG_OUT("   didn't find\n");
+    DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) didn't find\n", pageNo, zoomLevel, rotation);
     entry = NULL;
 Exit:
     UnlockCache();
