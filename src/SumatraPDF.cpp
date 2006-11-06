@@ -191,7 +191,7 @@ static BOOL                         gUseDoubleBuffer = TRUE;
 static BOOL                         gUseDoubleBuffer = FALSE;
 #endif
 
-#define MAX_PAGE_REQUESTS 64
+#define MAX_PAGE_REQUESTS 8
 static PageRenderRequest            gPageRenderRequests[MAX_PAGE_REQUESTS];
 static int                          gPageRenderRequestsCount = 0;
 
@@ -279,11 +279,12 @@ static BOOL pageRenderAbortCb(void *data)
 void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
     int                 i = 0;
     int                 curPos = 0;
-    int                 reqCount = gPageRenderRequestsCount;
+    int                 reqCount;
     BOOL                shouldRemove;
     PageRenderRequest * req = NULL;
 
     LockCache();
+    reqCount = gPageRenderRequestsCount;
     while (i < reqCount) {
         req = &(gPageRenderRequests[i]);
         shouldRemove = (req->dm == dm);
@@ -388,7 +389,15 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     }
 
     /* add request to the queue */
-    newRequest = &(gPageRenderRequests[gPageRenderRequestsCount++]);
+    if (gPageRenderRequestsCount == MAX_PAGE_REQUESTS) {
+        /* queue is full -> remove the oldest items on the queue */
+        memmove(&(gPageRenderRequests[0]), &(gPageRenderRequests[1]), sizeof(PageRenderRequest)*(MAX_PAGE_REQUESTS-1));
+        newRequest = &(gPageRenderRequests[MAX_PAGE_REQUESTS-1]);
+    } else {
+        newRequest = &(gPageRenderRequests[gPageRenderRequestsCount]);
+        gPageRenderRequestsCount++;
+    }
+    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
     newRequest->dm = dm;
     newRequest->pageNo = pageNo;
     newRequest->zoomLevel = zoomLevel;
@@ -408,6 +417,8 @@ LeaveCsAndExit:
 void RenderQueue_Pop(PageRenderRequest *req)
 {
     LockCache();
+    assert(gPageRenderRequestsCount > 0);
+    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
     --gPageRenderRequestsCount;
     *req = gPageRenderRequests[gPageRenderRequestsCount];
     assert(gPageRenderRequestsCount >= 0);
@@ -3902,6 +3913,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
     BOOL                    fOk;
     DWORD                   waitResult;
     int                     count;
+    BOOL                    aborted;
 
     DBG_OUT("PageRenderThread() started\n");
     while (1) {
@@ -3920,12 +3932,16 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         if (0 == gPageRenderRequestsCount) {
             continue;
         }
+        LockCache();
         RenderQueue_Pop(&req);
         gCurPageRenderReq = &req;
+        UnlockCache();
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
         assert(!req.abort);
         bmp = RenderBitmap(req.dm, req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        LockCache();
         gCurPageRenderReq = NULL;
+        UnlockCache();
         if (req.abort) {
             delete bmp;
             continue;
