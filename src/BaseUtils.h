@@ -40,11 +40,14 @@ extern "C"
 #ifdef DEBUG
   #ifdef _WIN32
   #define DBG_OUT win32_dbg_out
+  #define DBG_OUT_HEX win32_dbg_out_hex
   #else
   #define DBG_OUT printf
+  #define DBG_OUT_HEX(...) no_op()
   #endif
 #else
   #define DBG_OUT(...) no_op()
+  #define DBG_OUT_HEX(...) no_op()
 #endif
 
 #ifndef _WIN32
@@ -59,6 +62,7 @@ extern "C"
 #ifdef _WIN32
   typedef unsigned int uint32_t;
   void    win32_dbg_out(const char *format, ...);
+  void    win32_dbg_out_hex(const char *dsc, const char *data, int dataLen);
   #define DIR_SEP_CHAR '\\'
   #define DIR_SEP_STR  "\\"
 #else

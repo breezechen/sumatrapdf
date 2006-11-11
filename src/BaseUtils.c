@@ -669,8 +669,16 @@ char *CanonizeAbsolutePath(const char *path)
 #endif
 }
 
+#define U_HEX_TXT "0123456789ABCDEF"
+// buf must be at least 2 characters in size!!!
+static void ByteToHexStr(unsigned char b, char *buf) {
+    buf[0] = U_HEX_TXT[b / 16];
+    buf[1] = U_HEX_TXT[b % 16];
+}
+
 #ifdef _WIN32
-void win32_dbg_out(const char *format, ...) {
+void win32_dbg_out(const char *format, ...) 
+{
     char        buf[4096];
     char *      p = buf;
     int         written;
@@ -688,6 +696,38 @@ void win32_dbg_out(const char *format, ...) {
     fflush(stdout); */
     OutputDebugString(buf);
     va_end(args);
+}
+
+void win32_dbg_out_hex(const char *dsc, const char *data, int dataLen)
+{
+    unsigned char    buf[64+1];
+    unsigned char *  curPos;
+    int              bufCharsLeft;
+
+    if (dsc) win32_dbg_out(dsc); /* a bit dangerous if contains formatting codes */
+    if (!data) return;
+
+    bufCharsLeft = sizeof(buf)-1;
+    curPos = buf;
+    while (dataLen > 0) {
+        if (bufCharsLeft <= 1) {
+            *curPos = 0;
+            win32_dbg_out((unsigned char*)buf);
+            bufCharsLeft = sizeof(buf)-1;
+            curPos = buf;
+        }
+        ByteToHexStr(*data, curPos);
+        curPos += 2;
+        bufCharsLeft -= 2;
+        --dataLen;
+        ++data;
+    }
+
+    if (curPos != buf) {
+        *curPos = 0;
+        win32_dbg_out((unsigned char*)buf);
+    }
+    win32_dbg_out("\n");
 }
 #endif
 
