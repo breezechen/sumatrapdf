@@ -237,21 +237,6 @@ static int FlippedRotation(int rotation)
     return FALSE;
 }
 
-/* Transform coordinates in <rectInOut> by a given <rotation> and <zoomLevel> */
-static void RectD_Transform(RectD *rectInOut, int rotation, double zoomLevel)
-{
-    NormalizeRotation(&rotation);
-    assert(ValidRotation(rotation));
-
-    if (FlippedRotation(rotation))
-        SwapDouble(&(rectInOut->dx), &(rectInOut->dy));
-
-    rectInOut->x = rectInOut->x * zoomLevel;
-    rectInOut->y = rectInOut->y * zoomLevel;
-    rectInOut->dx = rectInOut->dx * zoomLevel;
-    rectInOut->dy = rectInOut->dy * zoomLevel;
-}
-
 static bool ValidZoomReal(double zoomReal)
 {
     if ((zoomReal < ZOOM_MIN) || (zoomReal > ZOOM_MAX)) {
