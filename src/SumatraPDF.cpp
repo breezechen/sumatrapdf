@@ -53,10 +53,14 @@ Icons I need:
 #define ZOOM_IN_FACTOR      1.2
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
 
-/* Uncomment to visually show links as blue rectangles, for easier links
-   debugging. 
-   TODO: not implemented on windows */
-//#define DEBUG_SHOW_LINKS            1
+/* if TRUE, we're in debug mode where we show links as blue rectangle on
+   the screen. Makes debugging code related to links easier.
+   TODO: make a menu item in DEBUG build to turn it on/off. */
+#ifdef DEBUG
+static BOOL             gDebugShowLinks = TRUE;
+#else
+static BOOL             gDebugShowLinks = FALSE;
+#endif
 
 /* default UI settings */
 #define DEFAULT_DISPLAY_MODE DM_CONTINUOUS
@@ -1306,10 +1310,6 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         return NULL;
     }
 
-#ifdef DEBUG_SHOW_LINKS
-    win->dm->debugShowLinks = TRUE;
-#endif
-
     win->dm->appData = (void*)win;
 
     if (!fromHistory)
@@ -2037,7 +2037,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     }
 
     DBG_OUT("WindowInfo_Paint() finish\n");
-    if (!dm->debugShowLinks)
+    if (!gDebugShowLinks)
         return;
 
     /* debug code to visualize links */

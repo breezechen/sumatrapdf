@@ -192,10 +192,6 @@ typedef struct DisplayModel {
 
     /* an array of 'totalLinksCount' size, each entry describing a link */
     PdfLink *       links;
-
-    /* if TRUE, we're in debug mode where we show links as blue rectangle on
-       the screen. Makes debugging code related to links easier. */
-    int             debugShowLinks;
 } DisplayModel;
 
 /* We keep a cache of rendered bitmaps. RenderedBitmapCacheEntry keeps data
