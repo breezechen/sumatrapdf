@@ -407,6 +407,112 @@ void DisplayModel_Delete(DisplayModel *dm)
     free((void*)dm);
 }
 
+/* Map point <x>/<y> on the page <pageNo> to point on the screen. */
+static void DisplayModel_MapPointPageToScreen(DisplayModel *dm, int pageNo, double *x, double *y)
+{
+    double          xTmp = *x;
+    double          yTmp = *y;
+    PdfPageInfo *   pageInfo;
+    double          ctm[6];
+    double          dpi;
+    int             rotation;
+
+    assert(dm);
+    if (!dm) return;
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return;
+
+    dpi = (double)PDF_FILE_DPI * dm->zoomReal * 0.01;
+    rotation = dm->rotation;
+    NormalizeRotation(&rotation);
+    /* Note: I'm too lazy to understand this math. I arrived at this +180 fixup empirically */
+    if (FlippedRotation(rotation))
+        rotation += 180;
+    dm->pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotation, !dm->outputDevice->upsideDown());
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->currPosX;
+    *y = ctm[1] * xTmp + ctm[3] * yTmp + ctm[5] + 0.5 + pageInfo->currPosY;
+}
+
+/* Map rectangle <r> on the page <pageNo> to point on the screen. */
+static void DisplayModel_MapRectDPageToScreen(DisplayModel *dm, int pageNo, RectD *r)
+{
+    double          sx, sy, ex, ey;
+    PdfPageInfo *   pageInfo;
+
+    sx = r->x;
+    sy = r->y;
+    ex = r->x + r->dx;
+    ey = r->y + r->dy;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+
+    DisplayModel_MapPointPageToScreen(dm, pageNo, &sx, &sy);
+    DisplayModel_MapPointPageToScreen(dm, pageNo, &ex, &ey);
+
+    if (sx > ex)
+        SwapDouble(&sx, &ex);
+    if (sy > ey)
+        SwapDouble(&sy, &ey);
+    r->x = sx;
+    r->y = sy;
+    r->dx = ex - sx;
+    r->dy = ey - sy;
+    assert(r->dx >= 0.0);
+    assert(r->dy >= 0.0);
+}
+
+/* Recalculates the position of each link on the canvas i.e. applies current
+   rotation and zoom level and offsets it by the offset of each page in
+   the canvas.
+   TODO: applying rotation and zoom level could be split into a separate
+         function for speedup, since it only has to change after rotation/zoomLevel
+         changes while this function has to be called after each scrolling.
+         But I'm not sure if this would be a significant speedup */
+static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
+{
+    PdfLink *       pdfLink;
+    PdfPageInfo *   pageInfo;
+    int             linkNo;
+    RectD           rect;
+
+    assert(dm);
+    if (!dm) return;
+
+    if (0 == dm->linkCount)
+        return;
+    assert(dm->links);
+    if (!dm->links)
+        return;
+
+    for (linkNo = 0; linkNo < dm->linkCount; linkNo++) {
+        pdfLink = &(dm->links[linkNo]);
+        pageInfo = DisplayModel_GetPageInfo(dm, pdfLink->pageNo);
+        if (!pageInfo->visible) {
+            /* hack: make the links on pages that are not shown invisible by
+                     moving it off canvas. A better solution would probably be
+                     not adding those links in the first place */
+            pdfLink->rectCanvas.x = -100;
+            pdfLink->rectCanvas.y = -100;
+            pdfLink->rectCanvas.dx = 0;
+            pdfLink->rectCanvas.dy = 0;
+            continue;
+        }
+
+        rect = pdfLink->rectPage;
+        DisplayModel_MapRectDPageToScreen(dm, pdfLink->pageNo, &rect);
+        pdfLink->rectCanvas.x = (int)rect.x;
+        pdfLink->rectCanvas.y = (int)rect.y;
+        pdfLink->rectCanvas.dx = (int)rect.dx;
+        pdfLink->rectCanvas.dy = (int)rect.dy;
+/*        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
+                  rectCanvas.x, rectCanvas.y,
+                  rectCanvas.dx, rectCanvas.dy); */
+    }
+}
+
+
 void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawAreaSize)
 {
     int     newPageNo;
@@ -423,6 +529,7 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
 
     DisplayModel_Relayout(dm, dm->zoomVirtual, dm->rotation);
     DisplayModel_RecalcVisibleParts(dm);
+    DisplayModel_RecalcLinksCanvasPos(dm);
     DisplayModel_RenderVisibleParts(dm);
     DisplayModel_SetScrollbarsState(dm);
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
@@ -619,63 +726,6 @@ static void DisplayModel_SetStartPage(DisplayModel *dm, int startPage)
         pageInfo->visible = false;
     }
     DisplayModel_Relayout(dm, dm->zoomVirtual, dm->rotation);
-}
-
-/* Recalculates the position of each link on the canvas i.e. applies current
-   rotation and zoom level and offsets it by the offset of each page in
-   the canvas.
-   TODO: applying rotation and zoom level could be split into a separate
-         function for speedup, since it only has to change after rotation/zoomLevel
-         changes while this function has to be called after each scrolling.
-         But I'm not sure if this would be a significant speedup */
-static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
-{
-    PdfLink *       pdfLink;
-    PdfPageInfo *   pageInfo;
-    int             rotation;
-    int             linkNo;
-    double          zoomReal;
-    RectD           rect;
-    SimpleRect      rectCanvas;
-
-    assert(dm);
-    if (!dm) return;
-
-    //DBG_OUT("DisplayModel_RecalcLinksCanvasPos() links=%d, rotation=%d, zoom=%2.f\n", dm->linkCount, dm->rotation, dm->zoomReal);
-    if (0 == dm->linkCount)
-        return;
-    assert(dm->links);
-    if (!dm->links)
-        return;
-
-    zoomReal = dm->zoomReal * 0.01;
-
-    for (linkNo = 0; linkNo < dm->linkCount; linkNo++) {
-        pdfLink = &(dm->links[linkNo]);
-        pageInfo = DisplayModel_GetPageInfo(dm, pdfLink->pageNo);
-        rotation = dm->rotation + pageInfo->rotation;
-        if (!pageInfo->visible) {
-            /* hack: make the links on pages that are not shown invisible by
-                     moving it off canvas. A better solution would probably be
-                     not adding those links in the first place */
-            pdfLink->rectCanvas.x = -100;
-            pdfLink->rectCanvas.y = -100;
-            pdfLink->rectCanvas.dx = 0;
-            pdfLink->rectCanvas.dy = 0;
-            continue;
-        }
-
-        rect = pdfLink->rectPage;
-        RectD_Transform(&rect, rotation, zoomReal);
-        rectCanvas.x = (int)pageInfo->currPosX + (int)rect.x;
-        rectCanvas.y = (int)pageInfo->currPosY + (int)rect.y;
-        rectCanvas.dx = (int)rect.dx;
-        rectCanvas.dy = (int)rect.dy;
-        pdfLink->rectCanvas = rectCanvas;
-/*        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
-                  rectCanvas.x, rectCanvas.y,
-                  rectCanvas.dx, rectCanvas.dy); */
-    }
 }
 
 void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scrollX)
@@ -1670,6 +1720,7 @@ SplashBitmap* RenderBitmap(DisplayModel *dm,
     if (!dm->outputDevice) return NULL;
     dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
         abortCheckCbkA, abortCheckCbkDataA);
+
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
     if (!pageInfo->links) {
         /* displayPage calculates links for this page (if doLinks is true)

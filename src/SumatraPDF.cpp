@@ -3913,7 +3913,6 @@ static DWORD WINAPI PageRenderThread(PVOID data)
     BOOL                    fOk;
     DWORD                   waitResult;
     int                     count;
-    BOOL                    aborted;
 
     DBG_OUT("PageRenderThread() started\n");
     while (1) {
