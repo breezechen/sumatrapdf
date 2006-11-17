@@ -11,6 +11,7 @@
 #include "PDFDoc.h"
 #include "BaseUtils.h"
 #include "GooMutex.h"
+#include "TextOutputDev.h"
 
 #ifdef _WIN32
 #define PREDICTIVE_RENDER 1
@@ -366,10 +367,20 @@ void DisplayModel_FreeLinks(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
-    //DBG_OUT("DisplayModel_FreeLinks()\n");
     for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
         delete dm->pagesInfo[pageNo-1].links;
         dm->pagesInfo[pageNo-1].links = NULL;
+    }
+}
+
+static void DisplayModel_FreeTextPages(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+
+    for (int pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
+        delete dm->pagesInfo[pageNo-1].textPage;
+        dm->pagesInfo[pageNo-1].textPage = NULL;
     }
 }
 
@@ -384,6 +395,7 @@ void DisplayModel_Delete(DisplayModel *dm)
     BitmapCache_FreeForDisplayModel(dm);
     CancelRenderingForDisplayModel(dm);
     DisplayModel_FreeLinks(dm);
+    DisplayModel_FreeTextPages(dm);
 
     delete dm->outputDevice;
     free((void*)dm->links);
@@ -581,6 +593,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
         pageInfo->pageDy = pdfDoc->getPageCropHeight(pageNo);
         pageInfo->rotation = pdfDoc->getPageRotate(pageNo);
         pageInfo->links = NULL;
+        pageInfo->textPage = NULL;
         pageInfo->visible = false;
         pageInfo->shown = false;
         if (IsDisplayModeContinuous(dm->displayMode)) {

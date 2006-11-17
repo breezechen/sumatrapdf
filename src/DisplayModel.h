@@ -59,6 +59,7 @@ class LinkGoToR;
 class LinkURI;
 class LinkLaunch;
 class LinkNamed;
+class TextPage;
 
 /* must be implemented somewhere else */
 extern void LaunchBrowser(const char *uri);
@@ -126,6 +127,7 @@ typedef struct PdfPageInfo {
     int             screenX, screenY;
 
     Links *         links;
+    TextPage *      textPage;
 } PdfPageInfo;
 
 /* Information needed to drive the display of a given PDF document on a screen.
