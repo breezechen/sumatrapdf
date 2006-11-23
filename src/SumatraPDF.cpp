@@ -114,24 +114,24 @@ static BOOL             gDebugShowLinks = FALSE;
 #define REPAINT_DELAY_IN_MS 400
 
 #define NUMTOOLBITMAPS      26
-#define NUMINITIALTOOLS     11
+#define NUMINITIALTOOLS     6
 
 TBBUTTON  tbbMainWnd[] = {
     {1,  IDT_FILE_OPEN,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {7,  IDT_EDIT_COPY,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {9,  IDT_EDIT_FIND,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+//    {7,  IDT_EDIT_COPY,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {0,  0,                     0,TBSTYLE_SEP,      0,0},
+//    {9,  IDT_EDIT_FIND,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
     {12, IDT_VIEW_ZOOMIN,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {13, IDT_VIEW_ZOOMOUT,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
     {0,  0,                     0,TBSTYLE_SEP,      0,0},
     {16, IDT_FILE_EXIT,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {21, IDT_EDIT_FINDNEXT,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {22, IDT_EDIT_FINDPREV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {24, IDT_FILE_OPENFAV,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {25, IDT_FILE_ADDTOFAV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0} 
+//    {21, IDT_EDIT_FINDNEXT,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {22, IDT_EDIT_FINDPREV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {24, IDT_FILE_OPENFAV,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
+//    {25, IDT_FILE_ADDTOFAV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0} 
 };
 
 #define WS_TOOLBAR (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | \
@@ -301,11 +301,6 @@ void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
         ++i;
     }
     UnlockCache();
-}
-
-static void SleepMilliseconds(int milliseconds)
-{
-    Sleep((DWORD)milliseconds);
 }
 
 /* Wait until rendering of a page beloging to <dm> has finished. */
@@ -2085,7 +2080,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta upcoming v0.3"
+#define BETA_TXT                "Beta v0.3 (soon)"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"
@@ -2099,10 +2094,12 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define ABOUT_TXT_DY            6
 
 typedef struct AboutLayoutInfoEl {
+    /* static data, must be provided */
     const char *    leftTxt;
     const char *    rightTxt;
     const char *    url;
 
+    /* data calculated by the layout */
     int             leftTxtPosX;
     int             leftTxtPosY;
     int             leftTxtDx;
@@ -3152,6 +3149,13 @@ static void OnMenuViewFacing(WindowInfo *win)
     SwitchToDisplayMode(win, DM_FACING);
 }
 
+static void OnMenuViewShowHideToolbar(win)
+{
+    assert(win);
+    if (!win) return;
+    // TODO: for each window, hide toolbar, set preferences
+}
+
 static void OnMenuViewContinuous(WindowInfo *win)
 {
     assert(win);
@@ -3431,7 +3435,6 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
     // Create ReBar and add Toolbar
-
     dwReBarStyle |= WS_VISIBLE;
     win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, dwReBarStyle,
                              0,0,0,0, hwndParent, (HMENU)IDC_REBAR, hInst, NULL);
@@ -3607,7 +3610,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDT_FILE_PRINT:
                 case IDM_PRINT:
-                    OnMenuPrint(win);
+                    //OnMenuPrint(win);
                     break;
 
                 case IDT_FILE_EXIT:
@@ -3620,11 +3623,13 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     break;
 
                 case IDT_VIEW_ZOOMIN:
-                    DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+                    if (win->dm)
+                        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
                     break;
 
                 case IDT_VIEW_ZOOMOUT:
-                    DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
+                    if (win->dm)
+                        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
                     break;
 
                 case IDM_ZOOM_6400:
@@ -3660,6 +3665,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDM_VIEW_CONTINUOUS:
                     OnMenuViewContinuous(win);
+                    break;
+
+                case IDM_VIEW_SHOW_HIDE_TOOLBAR:
+                    OnMenuViewShowHideToolbar(win);
                     break;
 
                 case IDM_GOTO_NEXT_PAGE:

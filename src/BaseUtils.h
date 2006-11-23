@@ -53,6 +53,7 @@ extern "C"
 #ifndef _WIN32
   #define REL_OUT printf
   #define stricmp strcasecmp
+  #define strnicmp strncasecmp
 #else
   #define REL_OUT win32_dbg_out
 #endif
@@ -100,6 +101,7 @@ char *  Str_DupN(const char *str, size_t len);
 char *  Str_Dup(const char *str);
 int     Str_Eq(const char *str1, const char *str2);
 int     Str_EqNoCase(const char *str1, const char *str2);
+int     Str_StartsWithNoCase(const char *txt, const char *start);
 int     Str_EndsWithNoCase(const char *txt, const char *end);
 
 char *  Str_Printf(const char* pFormat, ...);
@@ -125,6 +127,7 @@ char *  CanonizeAbsolutePath(const char *path);
 unsigned long File_GetSize(const char *fileName);
 char *  File_Slurp(const char *fileName, unsigned long *file_size_out);
 
+void    SleepMilliseconds(int milliseconds);
 #ifdef __cplusplus
 }
 #endif

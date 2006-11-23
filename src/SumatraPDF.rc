@@ -43,7 +43,7 @@ BEGIN
     BEGIN
         MENUITEM "&Open\tCtrl-O",               IDM_OPEN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
-        MENUITEM "&Print",						IDM_PRINT
+//        MENUITEM "&Print",						IDM_PRINT
         MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
     END
     POPUP "&View"
@@ -55,6 +55,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Rotate left",                 IDM_VIEW_ROTATE_LEFT
         MENUITEM "Rotate right",                IDM_VIEW_ROTATE_RIGHT
+        MENUITEM SEPARATOR
+        MENUITEM "Hide toolbar"                 IDM_VIEW_SHOW_HIDE_TOOLBAR
     END
     POPUP "&Go To"
     BEGIN

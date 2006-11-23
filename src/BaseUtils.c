@@ -8,6 +8,8 @@
 #include <strsafe.h>
 #else
 #include <unistd.h>
+#include <time.h>
+#include <errno.h>
 #endif
 #include <stdarg.h>
 #include <stdlib.h>
@@ -250,6 +252,23 @@ int Str_EndsWithNoCase(const char *txt, const char *end)
     if (Str_EqNoCase(txt+txt_len-end_len, end))
         return TRUE;
     return FALSE;
+}
+
+/* Return TRUE if string <txt> starts with string <start>, case-insensitive */
+int Str_StartsWithNoCase(const char *txt, const char *start)
+{
+    size_t txt_len;
+    size_t start_len;
+
+    if (!txt || !start)
+        return FALSE;
+    txt_len = strlen(txt);
+    start_len = strlen(start);
+    if (start_len > txt_len)
+        return FALSE;
+    if (0 == strnicmp(txt, start, start_len))
+        return TRUE;
+    return FALSE;    
 }
 
 int Str_Contains(const char *str, char c)
@@ -813,5 +832,33 @@ Error:
         fclose(fp);
     free((void*)file_content);
     return NULL;
+}
+
+void SleepMilliseconds(int milliseconds)
+{
+#ifdef WIN32
+    Sleep((DWORD)milliseconds);
+#else
+    struct timespec tv;
+    int             secs, nanosecs;
+    secs = milliseconds / 1000;
+    nanosecs = (milliseconds - (secs * 1000)) * 1000;
+    tv.tv_sec = (time_t) secs;
+    tv.tv_nsec = (long) nanosecs;
+    while (1)
+    {
+        int rval = nanosleep(&tv, &tv);
+        if (rval == 0)
+            /* Completed the entire sleep time; all done. */
+            return;
+        else if (errno == EINTR)
+            /* Interrupted by a signal. Try again. */
+            continue;
+        else
+            /* Some other error; bail out. */
+            return;
+    }
+    return;
+#endif
 }
 

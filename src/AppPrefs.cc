@@ -222,6 +222,7 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 {
     PrefsParsingState   state = PPS_START;
     char *              prefsTxtNormalized = NULL;
+    char *              strTmp = NULL;
     char *              line;
     char *              key, *value, *keyToFree = NULL;
     int                 isStructVal;
@@ -233,8 +234,9 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
     if (!prefsTxtNormalized)
         goto Exit;
 
+    strTmp = prefsTxtNormalized;
     for (;;) {
-        line = Str_SplitIter(&prefsTxtNormalized, UNIX_NEWLINE_C);
+        line = Str_SplitIter(&strTmp, UNIX_NEWLINE_C);
         if (!line)
             break;
         Str_StripWsRight(line);

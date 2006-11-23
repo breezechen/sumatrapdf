@@ -43,6 +43,7 @@
 #define IDM_GOTO_LAST_PAGE              431
 #define IDM_GOTO_PAGE                   432
 #define IDM_PRINT                       433
+#define IDM_VIEW_SHOW_HIDE_TOOLBAR      434
 #define IDI_SUMATRAPDF                  1
 #define IDI_SMALL                       601
 #define IDC_SUMATRAPDF                  600
