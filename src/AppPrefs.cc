@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+extern BOOL gShowToolbar;
+
 #define DEFAULT_WINDOW_X     40
 #define DEFAULT_WINDOW_Y     20
 #define DEFAULT_WINDOW_DX    640
@@ -27,6 +29,7 @@ static BOOL FileExists(const char *fileName)
 BOOL Prefs_Serialize(FileHistoryList **root, DString *strOut)
 {
     assert(0 == strOut->length);
+    DStringSprintf(strOut, "  %s: %d\n", SHOW_TOOLBAR_STR, gShowToolbar);
     return FileHistoryList_Serialize(root, strOut);
 }
 
@@ -197,6 +200,7 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
         assert(fOk);
         return;
     }
+
     assert(0);
 }
 
@@ -271,6 +275,11 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 StartOver:
         switch (state) {
             case PPS_START:
+                if (Str_Eq(SHOW_TOOLBAR_STR, key)) {
+                    gShowToolbar = TRUE;
+                    ParseBool(value, &gShowToolbar);
+                    break;
+                }
                 if (Str_Eq(FILE_HISTORY_STR, key)) {
                     assert(!isStructVal);
                     state = PPS_IN_FILE_HISTORY;

@@ -112,9 +112,6 @@ static BOOL             gDebugShowLinks = FALSE;
 #define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
                   RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
 
-//#define IDC_TOOLBAR      0xFB01
-//#define IDC_REBAR        0xFB02
-
 #define MAX_RECENT_FILES_IN_MENU 15
 
 typedef struct StrList {
@@ -158,7 +155,7 @@ static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName = NULL;
 static int                          gBenchPageNum = INVALID_PAGE_NUM;
-
+BOOL                                gShowToolbar = TRUE;
 #ifdef DOUBLE_BUFFER
 static BOOL                         gUseDoubleBuffer = TRUE;
 #else
@@ -173,6 +170,31 @@ static HANDLE                       gPageRenderThreadHandle = NULL;
 static HANDLE                       gPageRenderSem = NULL;
 static PageRenderRequest *          gCurPageRenderReq = NULL;
 
+static int                          gReBarDy;
+static int                          gReBarDyFrame;
+
+typedef struct ToolbarButtonInfo {
+    /* information provided at compile time */
+    int         bitmapResourceId;
+    int         cmdId;
+
+    /* information calculated at runtime */
+    int         index;
+} ToolbarButtonInfo;
+
+#define IDB_SEPARATOR  -1
+
+ToolbarButtonInfo gToolbarButtons[] = {
+    { IDB_SILK_OPEN,     IDM_OPEN, 0 },
+    { IDB_SEPARATOR,     IDB_SEPARATOR, 0 },
+    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, 0 },
+    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, 0 },
+    { IDB_SEPARATOR,     IDB_SEPARATOR, 0 },
+    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, 0 },
+    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, 0 }
+};
+
+#define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
@@ -723,6 +745,22 @@ static void Prefs_Load(void)
     free((void*)prefsTxt);
 }
 
+static void Win32_Win_GetSize(HWND hwnd, int *dxOut, int *dyOut)
+{
+    RECT    r;
+    *dxOut = 0;
+    *dyOut = 0;
+
+    if (GetWindowRect(hwnd, &r)) {
+        *dxOut = (r.right - r.left);
+        *dyOut = (r.bottom - r.top);
+    }
+}
+
+static void Win32_Win_SetSize(HWND hwnd, int dx, int dy)
+{
+    SetWindowPos(hwnd, NULL, 0, 0, dx, dy, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_DRAWFRAME);
+}
 static void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
 {
     RECT    r;
@@ -1050,9 +1088,11 @@ static int WindowInfoList_Len(void)
     return len;
 }
 
-static void WindowInfo_RedrawAll(WindowInfo *win)
+static void WindowInfo_RedrawAll(WindowInfo *win, BOOL update=FALSE)
 {
     InvalidateRect(win->hwndCanvas, NULL, FALSE);
+    if (update)
+        UpdateWindow(win->hwndCanvas);
 }
 
 static BOOL FileCloseMenuEnabled(void)
@@ -1065,6 +1105,37 @@ static BOOL FileCloseMenuEnabled(void)
         win = win->next;
     }
     return FALSE;
+}
+
+static void ToolbarUpdateStateForWindow(WindowInfo *win)
+{
+    int     cmdId;
+    LPARAM  enable = (LPARAM)MAKELONG(1,0);
+    LPARAM  disable = (LPARAM)MAKELONG(0,0);
+    LPARAM buttonState;
+
+    for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
+        cmdId = gToolbarButtons[i].cmdId;
+        if (IDB_SEPARATOR == cmdId)
+            continue;
+        buttonState = enable;
+        if (IDM_OPEN != cmdId) {
+            if (WS_SHOWING_PDF != win->state)
+                buttonState = disable;
+        }
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, cmdId, buttonState);
+    }
+}
+
+static void MenuUpdateShowToolbarStateForWindow(WindowInfo *win)
+{
+    HMENU     hmenu;
+    hmenu = GetMenu(win->hwndFrame);
+
+    if (gShowToolbar)
+        CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_CHECKED);
+    else
+        CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_UNCHECKED);
 }
 
 static void MenuUpdateStateForWindow(WindowInfo *win)
@@ -1091,6 +1162,8 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
     else
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_GRAYED);
 
+    MenuUpdateShowToolbarStateForWindow(win);
+        
     for (int i = 0; i < dimof(menusToDisableIfNoPdf); i++) {
         menuId = menusToDisableIfNoPdf[i];
         if (WS_SHOWING_PDF == win->state)
@@ -1108,15 +1181,15 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
     }
 }
 
-/* Disable/enable menu items depending on wheter a given window shows a PDF 
-   file or not. */
-static void MenuUpdateStateForAllWindows(void)
+/* Disable/enable menu items and toolbar buttons depending on wheter a
+   given window shows a PDF file or not. */
+static void MenuToolbarUpdateStateForAllWindows(void)
 {
-    WindowInfo *    win;
+    WindowInfo *    win = gWindowList;
 
-    win = gWindowList;
     while (win) {
         MenuUpdateStateForWindow(win);
+        ToolbarUpdateStateForWindow(win);
         win = win->next;
     }
 }
@@ -1322,7 +1395,7 @@ Error:
         WindowInfo_RedrawAll(win);
 
 Exit:
-    MenuUpdateStateForAllWindows();
+    MenuToolbarUpdateStateForAllWindows();
     if (win) {
         DragAcceptFiles(win->hwndFrame, TRUE);
         DragAcceptFiles(win->hwndCanvas, TRUE);
@@ -2050,7 +2123,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta v0.3 (soon)"
+#define BETA_TXT                "Beta v0.3"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"
@@ -2100,7 +2173,7 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     { "forums", "http://blog.kowalczyk.info/forum_sumatra", "http://blog.kowalczyk.info/forum_sumatra",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
-    { "icons", "Mark James", "http://www.famfamfam.com/lab/icons/silk/",
+    { "toolbar icons", "Mark James", "http://www.famfamfam.com/lab/icons/silk/",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { NULL, NULL, NULL,
@@ -2257,7 +2330,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     //SetTextColor(hdc, ABOUT_RECT_BG_COLOR);
     (HFONT)SelectObject(hdc, fontBetaTxt);
     //SelectObject(hdc, brushRectBg);
-    x = offX + (totalDx - sumatraPdfTxtDx) / 2 + sumatraPdfTxtDx + 2;
+    x = offX + (totalDx - sumatraPdfTxtDx) / 2 + sumatraPdfTxtDx + 6;
     y = offY + (boxDy - sumatraPdfTxtDy) / 2;
     txt = BETA_TXT;
     TextOut(hdc, x, y, txt, strlen(txt));
@@ -2662,7 +2735,7 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
         assert(0 == WindowInfoList_Len());
         PostQuitMessage(0);
     } else
-        MenuUpdateStateForAllWindows();
+        MenuToolbarUpdateStateForAllWindows();
 }
 
 static struct idToZoomMap {
@@ -3122,11 +3195,39 @@ static void OnMenuViewFacing(WindowInfo *win)
     SwitchToDisplayMode(win, DM_FACING);
 }
 
+static void OnSize(WindowInfo *win, int dx, int dy)
+{
+    int rebBarDy = 0;
+    if (gShowToolbar) {
+        SetWindowPos(win->hwndReBar, NULL, 0, 0, dx, rebBarDy, SWP_NOZORDER);
+        rebBarDy = gReBarDy + gReBarDyFrame;
+    }
+    SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy-rebBarDy, SWP_NOZORDER);
+}
+
 static void OnMenuViewShowHideToolbar(WindowInfo *win)
 {
+    int     dx, dy;
     assert(win);
-    if (!win) return;
-    // TODO: for each window, hide toolbar, set preferences
+
+    DBG_OUT("OnMenuViewShowHideToolbar()\n");
+
+    if (gShowToolbar)
+        gShowToolbar = FALSE;
+    else
+        gShowToolbar = TRUE;
+
+    win = gWindowList;
+    while (win) {
+        if (gShowToolbar)
+            ShowWindow(win->hwndReBar, SW_SHOW);
+        else
+            ShowWindow(win->hwndReBar, SW_HIDE);
+        Win32_Win_GetSize(win->hwndFrame, &dx, &dy);
+        OnSize(win, dx, dy);
+        MenuUpdateShowToolbarStateForWindow(win);
+        win = win->next;
+    }
 }
 
 static void OnMenuViewContinuous(WindowInfo *win)
@@ -3348,10 +3449,6 @@ static void OnMenuAbout(WindowInfo *win)
     }
 }
 
-/* TODO: mark as global */
-int     cyReBar;
-int     cyReBarFrame;
-
 BOOL PrivateIsAppThemed()
 {
     BOOL isThemed = FALSE;
@@ -3366,74 +3463,24 @@ BOOL PrivateIsAppThemed()
     return isThemed;
 }
 
-typedef struct ToolbarBitmapInfo {
-    /* information provided by programmer */
-    int         bitmapResourceId;
-    int         cmdId;
-
-    /* information calculated at runtime */
-    int         index;
-} ToolbarBitmapInfo;
-
-static TBBUTTON CreateToolBarButton(int iBitmap, int idCommand, BYTE fsState, BYTE fsStyle, DWORD dwData, int iString)
+static TBBUTTON TbButtonFromButtonInfo(int i)
 {
-  TBBUTTON tbButton;
-  tbButton.iBitmap = iBitmap;
-  tbButton.idCommand = idCommand;
-  tbButton.fsState = fsState;
-  tbButton.fsStyle = fsStyle;
-  tbButton.dwData = dwData;
-  tbButton.iString = iString;
+    TBBUTTON tbButton = {0};
 
-  return tbButton;
-}
-
-#define BITMAP_OPEN     0
-#define BITMAP_NEXT     1
-#define BITMAP_PREV     2
-#define BITMAP_ZOOM_IN  3
-#define BITMAP_ZOOM_OUT 4
-
-ToolbarBitmapInfo gToolbarBitmaps[] = {
-    { IDB_SILK_OPEN,     IDM_OPEN, 0 },
-    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, 0 },
-    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, 0 },
-    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, 0 },
-    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, 0 }
-};
-
-#define TOOLBAR_BITMAPS_COUNT dimof(gToolbarBitmaps)
-
-static TBBUTTON TbButtonFromBitmapInfo(int i)
-{
-    TBBUTTON tbButton;
-
-    tbButton.iBitmap = gToolbarBitmaps[i].index;
-    tbButton.idCommand = gToolbarBitmaps[i].cmdId;
-    tbButton.fsState = TBSTATE_ENABLED;
-    tbButton.fsStyle = TBSTYLE_BUTTON;
-    tbButton.dwData = 0;
-    tbButton.iString = 0;
+    if (IDB_SEPARATOR == gToolbarButtons[i].cmdId) {
+        tbButton.fsStyle = TBSTYLE_SEP;
+    } else {
+        tbButton.iBitmap = gToolbarButtons[i].index;
+        tbButton.idCommand = gToolbarButtons[i].cmdId;
+        tbButton.fsState = TBSTATE_ENABLED;
+        tbButton.fsStyle = TBSTYLE_BUTTON;
+    }
     return tbButton;
 }
 
-static TBBUTTON TbButtonSeparator(void)
-{
-    TBBUTTON tbButton;
-
-    tbButton.iBitmap = 0;
-    tbButton.idCommand = 0;
-    tbButton.fsState = 0;
-    tbButton.fsStyle = TBSTYLE_SEP;
-    tbButton.dwData = 0;
-    tbButton.iString = 0;
-    return tbButton;
-}
-
-#define TB_BUTTONS_COUNT 7
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 {
-    TBBUTTON        tbButtons[TB_BUTTONS_COUNT];
+    TBBUTTON        tbButtons[TOOLBAR_BUTTONS_COUNT];
     HWND            hwndToolbar;
     DWORD           dwToolbarStyle = WS_TOOLBAR;
     DWORD           dwReBarStyle = WS_REBAR;
@@ -3448,39 +3495,33 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 
     hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, dwToolbarStyle,
                                  0,0,0,0, hwndParent,(HMENU)IDC_TOOLBAR, hInst,NULL);
+    win->hwndToolbar = hwndToolbar;
     SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
-    for (int i=0; i < TOOLBAR_BITMAPS_COUNT; i++) {
-        hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarBitmaps[i].bitmapResourceId));
-        if (!himl) {
-            GetObject(hbmp, sizeof(BITMAP), &bmp);
-            int dx = bmp.bmWidth;
-            int dy = bmp.bmHeight;
-            himl = ImageList_Create(dx, dy, ILC_COLORDDB | ILC_MASK, 0, 0);
+    for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
+        if (IDB_SEPARATOR != gToolbarButtons[i].bitmapResourceId) {
+            hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarButtons[i].bitmapResourceId));
+            if (!himl) {
+                GetObject(hbmp, sizeof(BITMAP), &bmp);
+                int dx = bmp.bmWidth;
+                int dy = bmp.bmHeight;
+                himl = ImageList_Create(dx, dy, ILC_COLORDDB | ILC_MASK, 0, 0);
+            }
+            int index = ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
+            DeleteObject(hbmp);
+            gToolbarButtons[i].index = index;
         }
-        int index = ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
-        DeleteObject(hbmp);
-        gToolbarBitmaps[i].index = index;
+        tbButtons[i] = TbButtonFromButtonInfo(i);
     }
     SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
 
     // TODO: construct disabled image list as well?
     //SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
 
-    // TODO: add tooltips
-
-    tbButtons[0] = TbButtonFromBitmapInfo(BITMAP_OPEN);
-    tbButtons[1] = TbButtonSeparator();
-    tbButtons[2] = TbButtonFromBitmapInfo(BITMAP_PREV);
-    tbButtons[3] = TbButtonFromBitmapInfo(BITMAP_NEXT);
-    tbButtons[4] = TbButtonSeparator();
-    tbButtons[5] = TbButtonFromBitmapInfo(BITMAP_ZOOM_OUT);
-    tbButtons[6] = TbButtonFromBitmapInfo(BITMAP_ZOOM_IN);
-
     SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0,
           SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0) | TBSTYLE_EX_MIXEDBUTTONS);
 
-    SendMessage(hwndToolbar, TB_ADDBUTTONS, TB_BUTTONS_COUNT, (LPARAM)tbButtons);
+    SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
 
     SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
@@ -3502,22 +3543,15 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     rbBand.hbmBack = NULL;
     rbBand.lpText     = "Toolbar";
     rbBand.hwndChild  = hwndToolbar;
-    rbBand.cxMinChild = (rc.right - rc.left) * TB_BUTTONS_COUNT;
+    rbBand.cxMinChild = (rc.right - rc.left) * TOOLBAR_BUTTONS_COUNT;
     rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
     rbBand.cx         = 0;
     SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
 
     SetWindowPos(win->hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
     GetWindowRect(win->hwndReBar, &rc);
-    cyReBar = rc.bottom - rc.top;
-    cyReBarFrame = bIsAppThemed ? 0 : 2;
-}
-
-static void OnSize(WindowInfo *win, int dx, int dy)
-{
-    int dyRebBar = cyReBar + cyReBarFrame;
-    SetWindowPos(win->hwndReBar, NULL, 0, 0, dx, dyRebBar, SWP_NOZORDER);
-    SetWindowPos(win->hwndCanvas, NULL, 0, dyRebBar, dx, dy-dyRebBar, SWP_NOZORDER);
+    gReBarDy = rc.bottom - rc.top;
+    gReBarDyFrame = bIsAppThemed ? 0 : 2;
 }
 
 /* TODO: gAccumDelta must be per WindowInfo */
@@ -4145,7 +4179,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     }
 
     if (0 == pdfOpened)
-        MenuUpdateStateForAllWindows();
+        MenuToolbarUpdateStateForAllWindows();
+
     while (GetMessage(&msg, NULL, 0, 0)) {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
             TranslateMessage(&msg);

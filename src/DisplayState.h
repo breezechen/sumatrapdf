@@ -38,6 +38,7 @@ enum DisplayMode {
 #define WINDOW_Y_STR                "Window Y"
 #define WINDOW_DX_STR               "Window DX"
 #define WINDOW_DY_STR               "Window DY"
+#define SHOW_TOOLBAR_STR            "ShowToolbar"
 
 typedef struct DisplayState {
     const char *        filePath;

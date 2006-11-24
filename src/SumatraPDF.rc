@@ -56,7 +56,7 @@ BEGIN
         MENUITEM "Rotate left",                 IDM_VIEW_ROTATE_LEFT
         MENUITEM "Rotate right",                IDM_VIEW_ROTATE_RIGHT
         MENUITEM SEPARATOR
-        MENUITEM "Hide toolbar"                 IDM_VIEW_SHOW_HIDE_TOOLBAR
+        MENUITEM "Show toolbar"                 IDM_VIEW_SHOW_HIDE_TOOLBAR
     END
     POPUP "&Go To"
     BEGIN
