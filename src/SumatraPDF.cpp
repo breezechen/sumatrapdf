@@ -177,6 +177,7 @@ typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
     int         bitmapResourceId;
     int         cmdId;
+    TCHAR *     toolTip;
 
     /* information calculated at runtime */
     int         index;
@@ -185,13 +186,13 @@ typedef struct ToolbarButtonInfo {
 #define IDB_SEPARATOR  -1
 
 ToolbarButtonInfo gToolbarButtons[] = {
-    { IDB_SILK_OPEN,     IDM_OPEN, 0 },
-    { IDB_SEPARATOR,     IDB_SEPARATOR, 0 },
-    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, 0 },
-    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, 0 },
-    { IDB_SEPARATOR,     IDB_SEPARATOR, 0 },
-    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, 0 },
-    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, 0 }
+    { IDB_SILK_OPEN,     IDM_OPEN, _T("Open"), 0 },
+    { IDB_SEPARATOR,     IDB_SEPARATOR, 0, 0 },
+    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, _T("Previous page"), 0 },
+    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, _T("Next page"), 0 },
+    { IDB_SEPARATOR,     IDB_SEPARATOR, 0, 0 },
+    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, _T("Zoom in"), 0 },
+    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, _T("Zoom out"), 0 }
 };
 
 #define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
@@ -2710,6 +2711,10 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
     BOOL    lastWindow = FALSE;
     HWND    hwndToDestroy = NULL;
 
+    assert(win);
+    if (!win)
+        return;
+
     if (1 == WindowInfoList_Len())
         lastWindow = TRUE;
 
@@ -3207,7 +3212,7 @@ static void OnSize(WindowInfo *win, int dx, int dy)
 
 static void OnMenuViewShowHideToolbar(WindowInfo *win)
 {
-    int     dx, dy;
+    int     dx, dy, x, y;
     assert(win);
 
     DBG_OUT("OnMenuViewShowHideToolbar()\n");
@@ -3223,8 +3228,13 @@ static void OnMenuViewShowHideToolbar(WindowInfo *win)
             ShowWindow(win->hwndReBar, SW_SHOW);
         else
             ShowWindow(win->hwndReBar, SW_HIDE);
+        Win32_Win_GetPos(win->hwndFrame, &x, &y);
         Win32_Win_GetSize(win->hwndFrame, &dx, &dy);
-        OnSize(win, dx, dy);
+        // TODO: a hack. I add 1 to dy to cause sending WM_SIZE msg to hwndFrame
+        // but I shouldn't really change the size. But I don't know how to
+        // cause sending WM_SIZE otherwise. I tried calling OnSize() directly,
+        // but it left scrollbar partially hidden
+        MoveWindow(win->hwndFrame, x, y, dx, dy+1, TRUE);
         MenuUpdateShowToolbarStateForWindow(win);
         win = win->next;
     }
@@ -3474,6 +3484,7 @@ static TBBUTTON TbButtonFromButtonInfo(int i)
         tbButton.idCommand = gToolbarButtons[i].cmdId;
         tbButton.fsState = TBSTATE_ENABLED;
         tbButton.fsStyle = TBSTYLE_BUTTON;
+        tbButton.iString = (INT_PTR)gToolbarButtons[i].toolTip;
     }
     return tbButton;
 }
