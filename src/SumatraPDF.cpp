@@ -31,15 +31,6 @@
 #include "BaseUtils.h"
 #include <windowsx.h>
 
-/*
-Icons I need:
-* open
-* next/prev page
-* zoom in/zoom out
-* close (?)
-* rotate left/right (?)
-*/
-
 //#define FANCY_UI 1
 
 /* Define if you want to conserve memory by always freeing cached bitmaps
@@ -2107,6 +2098,9 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { "forums", "http://blog.kowalczyk.info/forum_sumatra", "http://blog.kowalczyk.info/forum_sumatra",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "icons", "Mark James", "http://www.famfamfam.com/lab/icons/silk/",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { NULL, NULL, NULL,
