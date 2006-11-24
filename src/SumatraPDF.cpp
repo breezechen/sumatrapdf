@@ -113,27 +113,6 @@ static BOOL             gDebugShowLinks = FALSE;
 #define REPAINT_TIMER_ID    1
 #define REPAINT_DELAY_IN_MS 400
 
-#define NUMTOOLBITMAPS      26
-#define NUMINITIALTOOLS     6
-
-TBBUTTON  tbbMainWnd[] = {
-    {1,  IDT_FILE_OPEN,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {23, IDT_FILE_PRINT,        TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-//    {7,  IDT_EDIT_COPY,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-//    {9,  IDT_EDIT_FIND,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {12, IDT_VIEW_ZOOMIN,       TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {13, IDT_VIEW_ZOOMOUT,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-    {0,  0,                     0,TBSTYLE_SEP,      0,0},
-    {16, IDT_FILE_EXIT,         TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {21, IDT_EDIT_FINDNEXT,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {22, IDT_EDIT_FINDPREV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {24, IDT_FILE_OPENFAV,      TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0},
-//    {25, IDT_FILE_ADDTOFAV,     TBSTATE_ENABLED,    TBSTYLE_BUTTON,0,0} 
-};
-
 #define WS_TOOLBAR (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | \
                     TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | TBSTYLE_ALTDRAG | \
                     TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN | \
@@ -3149,7 +3128,7 @@ static void OnMenuViewFacing(WindowInfo *win)
     SwitchToDisplayMode(win, DM_FACING);
 }
 
-static void OnMenuViewShowHideToolbar(win)
+static void OnMenuViewShowHideToolbar(WindowInfo *win)
 {
     assert(win);
     if (!win) return;
@@ -3393,14 +3372,80 @@ BOOL PrivateIsAppThemed()
     return isThemed;
 }
 
+typedef struct ToolbarBitmapInfo {
+    /* information provided by programmer */
+    int         bitmapResourceId;
+    int         cmdId;
+
+    /* information calculated at runtime */
+    int         index;
+} ToolbarBitmapInfo;
+
+static TBBUTTON CreateToolBarButton(int iBitmap, int idCommand, BYTE fsState, BYTE fsStyle, DWORD dwData, int iString)
+{
+  TBBUTTON tbButton;
+  tbButton.iBitmap = iBitmap;
+  tbButton.idCommand = idCommand;
+  tbButton.fsState = fsState;
+  tbButton.fsStyle = fsStyle;
+  tbButton.dwData = dwData;
+  tbButton.iString = iString;
+
+  return tbButton;
+}
+
+#define BITMAP_OPEN     0
+#define BITMAP_NEXT     1
+#define BITMAP_PREV     2
+#define BITMAP_ZOOM_IN  3
+#define BITMAP_ZOOM_OUT 4
+
+ToolbarBitmapInfo gToolbarBitmaps[] = {
+    { IDB_SILK_OPEN,     IDM_OPEN, 0 },
+    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, 0 },
+    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, 0 },
+    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, 0 },
+    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, 0 }
+};
+
+#define TOOLBAR_BITMAPS_COUNT dimof(gToolbarBitmaps)
+
+static TBBUTTON TbButtonFromBitmapInfo(int i)
+{
+    TBBUTTON tbButton;
+
+    tbButton.iBitmap = gToolbarBitmaps[i].index;
+    tbButton.idCommand = gToolbarBitmaps[i].cmdId;
+    tbButton.fsState = TBSTATE_ENABLED;
+    tbButton.fsStyle = TBSTYLE_BUTTON;
+    tbButton.dwData = 0;
+    tbButton.iString = 0;
+    return tbButton;
+}
+
+static TBBUTTON TbButtonSeparator(void)
+{
+    TBBUTTON tbButton;
+
+    tbButton.iBitmap = 0;
+    tbButton.idCommand = 0;
+    tbButton.fsState = 0;
+    tbButton.fsStyle = TBSTYLE_SEP;
+    tbButton.dwData = 0;
+    tbButton.iString = 0;
+    return tbButton;
+}
+
+#define TB_BUTTONS_COUNT 7
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 {
+    TBBUTTON        tbButtons[TB_BUTTONS_COUNT];
     HWND            hwndToolbar;
     DWORD           dwToolbarStyle = WS_TOOLBAR;
     DWORD           dwReBarStyle = WS_REBAR;
+    HIMAGELIST      himl = 0;
     HBITMAP         hbmp;
     BITMAP          bmp;
-    HIMAGELIST      himl;
     RECT            rc;
     REBARINFO       rbi;
     REBARBANDINFO   rbBand;
@@ -3409,32 +3454,42 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 
     hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, dwToolbarStyle,
                                  0,0,0,0, hwndParent,(HMENU)IDC_TOOLBAR, hInst,NULL);
-
     SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
-    hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_TOOLBAR));
+    for (int i=0; i < TOOLBAR_BITMAPS_COUNT; i++) {
+        hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarBitmaps[i].bitmapResourceId));
+        if (!himl) {
+            GetObject(hbmp, sizeof(BITMAP), &bmp);
+            int dx = bmp.bmWidth;
+            int dy = bmp.bmHeight;
+            himl = ImageList_Create(dx, dy, ILC_COLORDDB | ILC_MASK, 0, 0);
+        }
+        int index = ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
+        DeleteObject(hbmp);
+        gToolbarBitmaps[i].index = index;
+    }
+    SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
 
-    GetObject(hbmp,sizeof(BITMAP), &bmp);
-    himl = ImageList_Create(bmp.bmWidth / NUMTOOLBITMAPS, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
-    ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
-    DeleteObject(hbmp);
-    SendMessage(hwndToolbar,TB_SETIMAGELIST,0,(LPARAM)himl);
+    // TODO: construct disabled image list as well?
+    //SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
 
-    hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(IDB_TOOLBAR_DISABLED));
-    GetObject(hbmp, sizeof(BITMAP), &bmp);
-    himl = ImageList_Create(bmp.bmWidth / NUMTOOLBITMAPS, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
-    ImageList_AddMasked(himl, hbmp, RGB(255,0,255));
-    DeleteObject(hbmp);
-    SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
+    // TODO: add tooltips
 
-    SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE,0,
-    SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE,0,0) | TBSTYLE_EX_MIXEDBUTTONS);
+    tbButtons[0] = TbButtonFromBitmapInfo(BITMAP_OPEN);
+    tbButtons[1] = TbButtonSeparator();
+    tbButtons[2] = TbButtonFromBitmapInfo(BITMAP_PREV);
+    tbButtons[3] = TbButtonFromBitmapInfo(BITMAP_NEXT);
+    tbButtons[4] = TbButtonSeparator();
+    tbButtons[5] = TbButtonFromBitmapInfo(BITMAP_ZOOM_OUT);
+    tbButtons[6] = TbButtonFromBitmapInfo(BITMAP_ZOOM_IN);
 
-    SendMessage(hwndToolbar, TB_ADDBUTTONS, NUMINITIALTOOLS, (LPARAM)tbbMainWnd);
-    //SendMessage(hwndToolbar, TB_SAVERESTORE, FALSE, (LPARAM)lptbsp);
+    SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0,
+          SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0) | TBSTYLE_EX_MIXEDBUTTONS);
+
+    SendMessage(hwndToolbar, TB_ADDBUTTONS, TB_BUTTONS_COUNT, (LPARAM)tbButtons);
+
     SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
-    // Create ReBar and add Toolbar
     dwReBarStyle |= WS_VISIBLE;
     win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, dwReBarStyle,
                              0,0,0,0, hwndParent, (HMENU)IDC_REBAR, hInst, NULL);
@@ -3453,7 +3508,7 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     rbBand.hbmBack = NULL;
     rbBand.lpText     = "Toolbar";
     rbBand.hwndChild  = hwndToolbar;
-    rbBand.cxMinChild = (rc.right - rc.left) * dimof(tbbMainWnd);
+    rbBand.cxMinChild = (rc.right - rc.left) * TB_BUTTONS_COUNT;
     rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
     rbBand.cx         = 0;
     SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
