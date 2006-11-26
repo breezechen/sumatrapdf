@@ -2709,7 +2709,7 @@ static void OnMenuExit(void)
 static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 {
     BOOL    lastWindow = FALSE;
-    HWND    hwndToDestroy = NULL;
+    HWND    hwndToDestroy;
 
     assert(win);
     if (!win)
@@ -2727,13 +2727,13 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
-        //win->pdfCore->clear();
         WindowInfo_RedrawAll(win);
     } else {
+        hwndToDestroy = win->hwndFrame;
         WindowInfoList_Remove(win);
         WindowInfo_Delete(win);
         DragAcceptFiles(hwndToDestroy, FALSE);
-        DestroyWindow(win->hwndFrame);
+        DestroyWindow(hwndToDestroy);
     }
 
     if (lastWindow && quitIfLast) {
