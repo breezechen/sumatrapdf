@@ -2746,6 +2746,11 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
+        DisplayModel *dm = win->dm;
+        if (dm) {
+            DisplayModel_Delete(dm);
+            win->dm = NULL;
+        }
         WindowInfo_RedrawAll(win);
     } else {
         hwndToDestroy = win->hwndFrame;
