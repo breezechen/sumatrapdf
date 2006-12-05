@@ -68,6 +68,13 @@ int Char_IsWs(char c)
     return FALSE;
 }
 
+int Char_IsDigit(char c)
+{
+    if ((c >= '0') && (c <= '9'))
+        return TRUE;
+    return FALSE;
+}
+
 void memzero(void *dst, size_t len)
 {
     if (len <= 0)
@@ -82,6 +89,17 @@ int Str_Empty(const char *txt)
     if (0 == *txt)
         return TRUE;
     return FALSE;
+}
+int Str_ValidNumber(const char *txt)
+{
+    if (!txt)
+        return FALSE;
+    while (*txt) {
+        if (!Char_IsDigit(*txt))
+            return FALSE;
+        ++txt;
+    }
+    return TRUE;
 }
 
 char *Str_New3(const char *str1, const char *str2, const char *str3)

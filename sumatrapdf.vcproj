@@ -42,7 +42,7 @@
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="_WIN32;WIN32;_WINDOWS;_DEBUG;DEBUG;USE_OWN_GET_AUTH_DATA"
+				PreprocessorDefinitions="_WIN32;WIN32;_WINDOWS;_DEBUG;DEBUG;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -125,7 +125,7 @@
 				UseUnicodeResponseFiles="true"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -416,6 +416,10 @@
 			</File>
 			<File
 				RelativePath=".\src\SimpleRect.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\Sound.cc"
 				>
 			</File>
 			<File
@@ -778,6 +782,10 @@
 			</File>
 			<File
 				RelativePath=".\poppler\poppler\SecurityHandler.h"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\Sound.h"
 				>
 			</File>
 			<File

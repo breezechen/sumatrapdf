@@ -93,7 +93,9 @@ void    memzero(void *dst, size_t len);
 
 int     Char_IsWs(char c);
 int     Char_IsWsOrZero(char c);
+int     Char_IsDigit(char c);
 int     Str_Empty(const char *txt);
+int     Str_ValidNumber(const char *txt);
 char *  Str_New3(const char *str1, const char *str2, const char *str3);
 char *  Str_New2(const char *str1, const char *str2);
 char *  Str_New(const char *str1);
