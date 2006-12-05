@@ -85,6 +85,14 @@ void SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye)
     rOut->dy = ye - ys;
 }
 
+void RectD_FromSimpleRect(RectD *rOut, SimpleRect *rIn)
+{
+    rOut->x = (double)rIn->x;
+    rOut->y = (double)rIn->y;
+    rOut->dx = (double)rIn->dx;
+    rOut->dy = (double)rIn->dy;
+}
+
 void RectD_FromXY(RectD *rOut, double xs, double xe, double ys, double ye)
 {
     assert(rOut);

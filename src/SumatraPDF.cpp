@@ -33,6 +33,18 @@
 
 //#define FANCY_UI 1
 
+class WinRenderedBitmap : public PlatformCachedBitmap {
+public:
+    WinRenderedBitmap(SplashBitmap *b) : mBitmap(b) {}
+    virtual ~WinRenderedBitmap() {
+        delete mBitmap;
+    }
+    SplashBitmap *bitmap(void) { return mBitmap; }
+
+protected:
+    SplashBitmap *mBitmap;
+};
+
 /* Define if you want to conserve memory by always freeing cached bitmaps
    for pages not visible. Only enable for stress-testing the logic. On
    desktop machine we usually have plenty memory */
@@ -103,6 +115,10 @@ static BOOL             gDebugShowLinks = FALSE;
 
 #define REPAINT_TIMER_ID    1
 #define REPAINT_DELAY_IN_MS 400
+
+/* A special "pointer" vlaue indicating that we tried to render this bitmap
+   but couldn't (e.g. due to lack of memory) */
+#define BITMAP_CANNOT_RENDER (SplashBitmap*)NULL
 
 #define WS_TOOLBAR (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | \
                     TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | TBSTYLE_ALTDRAG | \
@@ -1499,7 +1515,7 @@ void DisplayModel_PageChanged(DisplayModel *dm)
     }
 }
 
-void DisplayModel_RepaintDisplay(DisplayModel *dm)
+void DisplayModel_RepaintDisplay(DisplayModel *dm, bool delayed)
 {
     WindowInfo *win;
 
@@ -2008,8 +2024,11 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         splashBmp = NULL;
         entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, dm->rotation);
-        if (entry)
-            splashBmp = entry->bitmap;
+        if (entry) {
+            WinRenderedBitmap *renderedBmp = (WinRenderedBitmap*)entry->bitmap;
+            splashBmp = renderedBmp->bitmap();
+        }
+
         if (!splashBmp)
             DBG_OUT("   missing bitmap on visible page %d\n", pageNo);
 
@@ -2022,7 +2041,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         xDest = (int)pageInfo->screenX;
         yDest = (int)pageInfo->screenY;
 
-        if (!splashBmp) {
+        if (!entry) {
             /* TODO: assert is queued for rendering ? */
             bounds.left = xDest;
             bounds.top = yDest;
@@ -2925,7 +2944,7 @@ static void OnMenuPrint(WindowInfo *win)
         {
             entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
             if (entry)
-                splashBmp = entry->bitmap;
+                splashBmp = ((WinRenderedBitmap*)entry->bitmap)->bitmap();
             Sleep(10);
         } while (!splashBmp);
 
@@ -4051,7 +4070,8 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         /* TODO: can bmp be NULL ? */
         assert(bmp);
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
-        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp);
+        WinRenderedBitmap *renderedBmp = new WinRenderedBitmap(bmp);
+        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, renderedBmp);
 #ifdef CONSERVE_MEMORY
         BitmapCache_FreeNotVisible();
 #endif

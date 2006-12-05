@@ -36,6 +36,7 @@ int    SimpleRect_Intersect(SimpleRect *r1, SimpleRect *r2, SimpleRect *rInterse
 void   SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye);
 int    SimpleRect_Inside(SimpleRect *r, int x, int y);
 void   RectD_FromXY(RectD *rOut, double xs, double xe,  double ys, double ye);
+void   RectD_FromSimpleRect(RectD *rOut, SimpleRect *rIn);
 void   u_SimpleRect_Intersect(void);
 
 #ifdef __cplusplus

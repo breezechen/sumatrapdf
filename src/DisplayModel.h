@@ -45,21 +45,32 @@
   those pages to a bitmap and display those bitmaps.
 */
 
-#include "SimpleRect.h"
 #include "BaseUtils.h"
 #include "DisplayState.h"
+#include "SimpleRect.h"
 
-class SplashBitmap;
-class PDFDoc;
-class SplashOutputDev;
+class GooString;
 class Link;
-class Links;
 class LinkGoTo;
 class LinkGoToR;
-class LinkURI;
 class LinkLaunch;
 class LinkNamed;
+class LinkURI;
+class Links;
+class PDFDoc;
+class SplashOutputDev;
+class SplashBitmap;
+class TextOutputDev;
 class TextPage;
+
+/* Abstract class representing cached bitmap. Allows different implementations
+   on different platforms. */
+class PlatformCachedBitmap {
+public:
+  virtual ~PlatformCachedBitmap() {};
+protected:
+  PlatformCachedBitmap() {}; /* disallow creating objects of this class */
+};
 
 /* must be implemented somewhere else */
 extern void LaunchBrowser(const char *uri);
@@ -91,10 +102,6 @@ typedef struct PdfLink {
     RectD           rectPage;   /* position of the link on the page */
     SimpleRect      rectCanvas; /* position of the link on canvas */
 } PdfLink;
-
-/* A special "pointer" vlaue indicating that we tried to render this bitmap
-   but couldn't (e.g. due to lack of memory) */
-#define BITMAP_CANNOT_RENDER (SplashBitmap*)-1
 
 /* Describes many attributes of one page in one, convenient place */
 typedef struct PdfPageInfo {
@@ -143,6 +150,9 @@ typedef struct DisplayModel {
     PDFDoc *        pdfDoc;
 
     SplashOutputDev * outputDevice;
+
+    TextOutputDev * textOutDevice;
+
     /* number of pages in PDF document. A cache of pdfDoc->getNumPages() */
     int             pageCount;
     /* an array of PdfPageInfo, len of array is pageCount */
@@ -194,9 +204,13 @@ typedef struct DisplayModel {
 
     /* an array of 'totalLinksCount' size, each entry describing a link */
     PdfLink *       links;
+
+    int             searchHitPageNo;
+    RectD           searchHitRectPage;
+    SimpleRect      searchHitRectCanvas;
 } DisplayModel;
 
-/* We keep a cache of rendered bitmaps. RenderedBitmapCacheEntry keeps data
+/* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
    and corresponding rendered bitmap.
 */
@@ -205,7 +219,7 @@ typedef struct {
   int            pageNo;
   int            rotation;
   double         zoomLevel;
-  SplashBitmap * bitmap;
+  PlatformCachedBitmap *bitmap;
 } BitmapCacheEntry;
 
 typedef struct {
@@ -227,6 +241,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *out
 void          DisplayModel_Delete(DisplayModel *dm);
 
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
+TextPage *    DisplayModel_GetTextPage(DisplayModel *dm, int pageNo);
 
 bool          DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo);
 int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
@@ -246,6 +261,8 @@ void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
 void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
 void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
 void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage);
+
+void          DisplayModel_EnsureSearchHitVisible(DisplayModel *dm);
 
 void          DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode);
 
@@ -270,7 +287,12 @@ void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkName
 BOOL          DisplayModel_CanGoToNextPage(DisplayModel *dm);
 BOOL          DisplayModel_CanGoToPrevPage(DisplayModel *dm);
 
+void          DisplayModel_ClearSearchHit(DisplayModel *dm);
+void          DisplayModel_SetSearchHit(DisplayModel *dm, int pageNo, RectD *hitRect);
+
 BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
+
+GooString *  DisplayModel_GetTextInRegion(DisplayModel *dm, int pageNo, RectD *region);
 
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
     BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
@@ -280,7 +302,7 @@ extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
 /* called when a page number changes */
 extern void DisplayModel_PageChanged(DisplayModel *dm);
 /* called when we decide that the display needs to be redrawn */
-extern void DisplayModel_RepaintDisplay(DisplayModel *dm);
+extern void DisplayModel_RepaintDisplay(DisplayModel *dm, bool delayed);
 
 /* Lock protecting both bitmap cache and page render queue */
 void LockCache();
@@ -293,7 +315,7 @@ SplashBitmap* RenderBitmap(DisplayModel *dm,
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp);
+void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap);
 void              BitmapCache_FreeAll(void);
 BOOL              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
 BOOL              BitmapCache_FreeNotVisible(void);

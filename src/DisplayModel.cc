@@ -1,16 +1,17 @@
 /* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
    License: GPLv2 */
 
-#include <assert.h>
-#include <stdlib.h> /* malloc etc. */
 #include "DisplayModel.h"
-#include "SplashBitmap.h"
-#include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
-#include "SplashOutputDev.h"
-#include "Link.h"
-#include "PDFDoc.h"
+#include <assert.h>
 #include "BaseUtils.h"
 #include "GooMutex.h"
+#include "GooString.h"
+#include "Link.h"
+#include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
+#include "PDFDoc.h"
+#include "SplashBitmap.h"
+#include "SplashOutputDev.h"
+#include <stdlib.h> /* malloc etc. */
 #include "TextOutputDev.h"
 
 #ifdef _WIN32
@@ -119,28 +120,7 @@ static BOOL IsDisplayModeFacing(DisplayMode displayMode)
     return FALSE;
 }
 
-/* Flip coordinates <y1>, <y2>, <y3> and <y4> upside-down if a page <pageNo>
-   in <dm> is upside-down */
-static void TransformUpsideDown(DisplayModel *dm, int pageNo, double *y1, double *y2, double *y3, double *y4)
-{
-    PdfPageInfo *   pageInfo;
-    double          pageDy;
-    assert(dm);
-    if (!dm) return;
-    if (!dm->outputDevice->upsideDown())
-        return;
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    pageDy = pageInfo->pageDy;
-    if (y1)
-        *y1 = pageDy - *y1;
-    if (y2)
-        *y2 = pageDy - *y2;
-    if (y3)
-        *y3 = pageDy - *y3;
-    if (y4)
-        *y4 = pageDy - *y4;
-}
-
+#if 0
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
 {
     Object obj;
@@ -211,9 +191,6 @@ static void DumpLinks(DisplayModel *dm, PDFDoc *doc)
             LinkActionKind actionKind = action->getKind();
             double xs, ys, xe, ye;
             link->getRect(&xs, &ys, &xe, &ye);
-            TransformUpsideDown(dm, pageNo, &ys, &ye, NULL, NULL);
-            if (ys > ye)
-                SwapDouble(&ys, &ye);
             DBG_OUT( "   link %d: pageRotation=%d upsideDown=%d, action=%d (%s), (xs=%d,ys=%d - xe=%d,ye=%d)\n", i,
                 pageRotation, (int)upsideDown,
                 (int)actionKind,
@@ -229,6 +206,7 @@ Exit:
     delete links;
     DBG_OUT("DumpLinks() finished\n");
 }
+#endif
 
 static int FlippedRotation(int rotation)
 {
@@ -283,6 +261,39 @@ PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
     assert(dm->pagesInfo);
     if (!dm->pagesInfo) return NULL;
     return &(dm->pagesInfo[pageNo-1]);
+}
+
+static TextOutputDev *DisplayModel_GetTextOutDevice(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return NULL;
+    if (!dm->textOutDevice)
+        dm->textOutDevice = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
+    return dm->textOutDevice;
+}
+
+TextPage *DisplayModel_GetTextPage(DisplayModel *dm, int pageNo)
+{
+    PdfPageInfo *   pdfPageInfo;
+    TextOutputDev * textOut;
+
+    assert(dm);
+    if (!dm) return NULL;
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return NULL;
+    assert(DisplayModel_ValidPageNo(dm, pageNo));
+    assert(dm->pagesInfo);
+    if (!dm->pagesInfo) return NULL;
+
+    pdfPageInfo = &(dm->pagesInfo[pageNo-1]);
+    if (!pdfPageInfo->textPage) {
+        textOut = DisplayModel_GetTextOutDevice(dm);
+        if (!textOut || !textOut->isOk())
+            return NULL;
+        dm->pdfDoc->displayPage(textOut, pageNo, 72, 72, 0, gFalse, gTrue, gFalse);
+        pdfPageInfo->textPage = textOut->takeText();
+    }
+    return pdfPageInfo->textPage;
 }
 
 SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
@@ -398,6 +409,7 @@ void DisplayModel_Delete(DisplayModel *dm)
     DisplayModel_FreeTextPages(dm);
 
     delete dm->outputDevice;
+    delete dm->textOutDevice;
     free((void*)dm->links);
     free((void*)dm->pagesInfo);
     delete dm->pdfDoc;
@@ -405,7 +417,7 @@ void DisplayModel_Delete(DisplayModel *dm)
 }
 
 /* Map point <x>/<y> on the page <pageNo> to point on the screen. */
-static void DisplayModel_MapPointPageToScreen(DisplayModel *dm, int pageNo, double *x, double *y)
+static void DisplayModel_CvtUserToScreen(DisplayModel *dm, int pageNo, double *x, double *y)
 {
     double          xTmp = *x;
     double          yTmp = *y;
@@ -422,10 +434,7 @@ static void DisplayModel_MapPointPageToScreen(DisplayModel *dm, int pageNo, doub
     dpi = (double)PDF_FILE_DPI * dm->zoomReal * 0.01;
     rotation = dm->rotation;
     NormalizeRotation(&rotation);
-    /* Note: I'm too lazy to understand this math. I arrived at this +180 fixup empirically */
-    if (FlippedRotation(rotation))
-        rotation += 180;
-    dm->pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotation, !dm->outputDevice->upsideDown());
+    dm->pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotation, dm->outputDevice->upsideDown());
 
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
     *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->currPosX;
@@ -433,31 +442,87 @@ static void DisplayModel_MapPointPageToScreen(DisplayModel *dm, int pageNo, doub
 }
 
 /* Map rectangle <r> on the page <pageNo> to point on the screen. */
-static void DisplayModel_MapRectDPageToScreen(DisplayModel *dm, int pageNo, RectD *r)
+static void DisplayModel_RectCvtUserToScreen(DisplayModel *dm, int pageNo, RectD *r)
 {
     double          sx, sy, ex, ey;
-    PdfPageInfo *   pageInfo;
 
     sx = r->x;
     sy = r->y;
     ex = r->x + r->dx;
     ey = r->y + r->dy;
 
+    DisplayModel_CvtUserToScreen(dm, pageNo, &sx, &sy);
+    DisplayModel_CvtUserToScreen(dm, pageNo, &ex, &ey);
+    RectD_FromXY(r, sx, ex, sy, ey);
+}
+
+/* Given <region> (in user coordinates ) on page <pageNo>, return a text in that
+   region or NULL if no text */
+GooString *DisplayModel_GetTextInRegion(DisplayModel *dm, int pageNo, RectD *region)
+{
+    TextOutputDev *     textOut = NULL;
+    GooString *         txt = NULL;
+    double              xMin, yMin, xMax, yMax;
+    double              dpi;
+    PdfPageInfo *       pageInfo;
+    int                 rotation;
+    GBool               useMediaBox = gFalse;
+    GBool               crop = gTrue;
+    GBool               doLinks = gFalse;
+
+    assert(dm);
+    if (!dm) return NULL;
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return NULL;
+    assert(dm->outputDevice);
+    if (!dm->outputDevice) return NULL;
+
     pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    rotation = dm->rotation;
+    dpi = (double)PDF_FILE_DPI * dm->zoomReal * 0.01;
 
-    DisplayModel_MapPointPageToScreen(dm, pageNo, &sx, &sy);
-    DisplayModel_MapPointPageToScreen(dm, pageNo, &ex, &ey);
+    /* TODO: cache textOut? */
+    textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
+    if (!textOut->isOk()) {
+        delete textOut;
+        goto Exit;
+    }
+    /* TODO: make sure we're not doing background threading */
+    dm->pdfDoc->displayPage(textOut, pageNo, dpi, dpi, rotation, useMediaBox, crop, doLinks);
+    xMin = region->x;
+    yMin = region->y;
+    xMax = xMin + region->dx;
+    yMax = yMin + region->dy;
+    txt = textOut->getText(xMin, yMin, xMax, yMax);
+    if (txt && (txt->getLength() > 0)) {
+        DBG_OUT("DisplayModel_GetTextInRegion() found text '%s' on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
+            txt->getCString(), pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
+    } else {
+        DBG_OUT("DisplayModel_GetTextInRegion() didn't find text on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
+            pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
+    }
+    delete textOut;
+Exit:
+    return txt;
+}
 
-    if (sx > ex)
-        SwapDouble(&sx, &ex);
-    if (sy > ey)
-        SwapDouble(&sy, &ey);
-    r->x = sx;
-    r->y = sy;
-    r->dx = ex - sx;
-    r->dy = ey - sy;
-    assert(r->dx >= 0.0);
-    assert(r->dy >= 0.0);
+static void DisplayModel_RecalcSearchHitCanvasPos(DisplayModel *dm)
+{
+    PdfPageInfo *   pageInfo;
+    int             pageNo;
+    RectD           rect;
+
+    assert(dm);
+    if (!dm) return;
+    pageNo = dm->searchHitPageNo;
+    if (INVALID_PAGE == pageNo) return;
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    rect = dm->searchHitRectPage;
+    DisplayModel_RectCvtUserToScreen(dm, pageNo, &rect);
+    dm->searchHitRectCanvas.x = (int)rect.x;
+    dm->searchHitRectCanvas.y = (int)rect.y;
+    dm->searchHitRectCanvas.dx = (int)rect.dx;
+    dm->searchHitRectCanvas.dy = (int)rect.dy;
 }
 
 /* Recalculates the position of each link on the canvas i.e. applies current
@@ -476,6 +541,9 @@ static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
 
     assert(dm);
     if (!dm) return;
+
+    // TODO: calling it here is a bit of a hack
+    DisplayModel_RecalcSearchHitCanvasPos(dm);
 
     if (0 == dm->linkCount)
         return;
@@ -498,14 +566,19 @@ static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
         }
 
         rect = pdfLink->rectPage;
-        DisplayModel_MapRectDPageToScreen(dm, pdfLink->pageNo, &rect);
+        DisplayModel_RectCvtUserToScreen(dm, pdfLink->pageNo, &rect);
         pdfLink->rectCanvas.x = (int)rect.x;
         pdfLink->rectCanvas.y = (int)rect.y;
         pdfLink->rectCanvas.dx = (int)rect.dx;
         pdfLink->rectCanvas.dy = (int)rect.dy;
-/*        DBG_OUT("  link on canvas (x=%d, y=%d, dx=%d, dy=%d)\n",
-                  rectCanvas.x, rectCanvas.y,
-                  rectCanvas.dx, rectCanvas.dy); */
+#if 0
+        DBG_OUT("  link on page (x=%d, y=%d, dx=%d, dy=%d),\n",
+            (int)pdfLink->rectPage.x, (int)pdfLink->rectPage.y,
+            (int)pdfLink->rectPage.dx, (int)pdfLink->rectPage.dy);
+        DBG_OUT("        screen (x=%d, y=%d, dx=%d, dy=%d)\n",
+                (int)rect.x, (int)rect.y,
+                (int)rect.dx, (int)rect.dy);
+#endif
     }
 }
 
@@ -532,7 +605,7 @@ void DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawArea
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
         DisplayModel_PageChanged(dm);
-    DisplayModel_RepaintDisplay(dm);
+    DisplayModel_RepaintDisplay(dm, true);
 }
 
 /* Create display info from a 'pdfDoc' etc. 'pdfDoc' will be owned by DisplayInfo
@@ -563,6 +636,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->appData = NULL;
     dm->pdfDoc = pdfDoc;
     dm->outputDevice = outputDev;
+    dm->textOutDevice = NULL;
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
@@ -573,6 +647,7 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->zoomVirtual = INVALID_ZOOM;
     dm->links = NULL;
     dm->linkCount = 0;
+    dm->searchHitPageNo = INVALID_PAGE;
 
     outputDev->startDoc(pdfDoc->getXRef());
 
@@ -768,7 +843,7 @@ void DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scroll
     DisplayModel_RenderVisibleParts(dm);
     DisplayModel_SetScrollbarsState(dm);
     DisplayModel_PageChanged(dm);
-    DisplayModel_RepaintDisplay(dm);
+    DisplayModel_RepaintDisplay(dm, true);
 }
 
 /* given 'columns' and an absolute 'pageNo', return the number of the first
@@ -897,7 +972,7 @@ void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
         DisplayModel_PageChanged(dm);
-    DisplayModel_RepaintDisplay(dm);
+    DisplayModel_RepaintDisplay(dm, false);
 }
 
 void DisplayModel_ScrollXTo(DisplayModel *dm, int xOff)
@@ -910,7 +985,7 @@ void DisplayModel_ScrollXTo(DisplayModel *dm, int xOff)
     DisplayModel_RecalcVisibleParts(dm);
     DisplayModel_RecalcLinksCanvasPos(dm);
     DisplayModel_SetScrollbarsState(dm);
-    DisplayModel_RepaintDisplay(dm);
+    DisplayModel_RepaintDisplay(dm, false);
 }
 
 void DisplayModel_ScrollXBy(DisplayModel *dm, int dx)
@@ -1001,7 +1076,7 @@ void DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage)
     newPageNo = DisplayModel_GetCurrentPageNo(dm);
     if (newPageNo != currPageNo)
         DisplayModel_PageChanged(dm);
-    DisplayModel_RepaintDisplay(dm);
+    DisplayModel_RepaintDisplay(dm, false);
 }
 
 void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage)
@@ -1015,6 +1090,54 @@ void DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePag
         DisplayModel_ScrollYBy(dm, toScroll, changePage);
     else
         DisplayModel_ScrollYBy(dm, -toScroll, changePage);
+}
+
+/* Make sure that search hit is visible on the screen */
+void DisplayModel_EnsureSearchHitVisible(DisplayModel *dm)
+{
+    PdfPageInfo *   pageInfo;
+    int             pageNo;
+    int             yStart, yEnd;
+    int             xStart, xEnd;
+    int             xNewPos, yNewPos;
+    BOOL            needScroll = FALSE;
+
+    assert(dm);
+    if (!dm) return;
+    
+    pageNo = dm->searchHitPageNo;
+    yStart = dm->searchHitRectCanvas.y;
+    yEnd = yStart + dm->searchHitRectCanvas.dy + 24; /* TODO: 24 to account for the find ui bar */
+
+    xStart = dm->searchHitRectCanvas.x;
+    xEnd = xStart + dm->searchHitRectCanvas.dx;
+
+    //DBG_OUT("DisplayModel_EnsureSearchHitVisible(), (yStart=%d, yEnd=%d)\n", yStart, yEnd);
+
+    yNewPos = (int)dm->areaOffset.y;
+
+    if (yStart < (int)dm->areaOffset.y) {
+        yNewPos -= ((int)dm->areaOffset.y - yStart);
+        needScroll = TRUE;
+    }
+    if (yEnd > (int)(dm->areaOffset.y + dm->drawAreaSize.dy)) {
+        yNewPos -= ((int)(dm->areaOffset.y + dm->drawAreaSize.dy) - yEnd);  
+        needScroll = TRUE;
+    }
+
+    xNewPos = (int)dm->areaOffset.x;
+    if (xStart < (int)dm->areaOffset.x) {
+        xNewPos -= ((int)dm->areaOffset.x - xStart);
+        needScroll = TRUE;
+    }
+    if (xEnd > (int)(dm->areaOffset.x + dm->drawAreaSize.dx)) {
+        xNewPos -= ((int)(dm->areaOffset.x + dm->drawAreaSize.dx) - xEnd);  
+        needScroll = TRUE;
+    }
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    if (!pageInfo->visible || needScroll)
+        DisplayModel_GoToPage(dm, pageNo, yNewPos, xNewPos);
 }
 
 void DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode)
@@ -1207,9 +1330,6 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
             currPdfLink = &(dm->links[currPdfLinkNo]);
             link = pageInfo->links->getLink(i);
             link->getRect(&xs, &ys, &xe, &ye);
-            TransformUpsideDown(dm, pageNo, &ys, &ye, NULL, NULL);
-            if (ys > ye)
-                SwapDouble(&ys, &ye);
             /* note: different param order than getRect() is intentional */
             RectD_FromXY(&currPdfLink->rectPage, xs, xe, ys, ye);
             assert(currPdfLink->rectPage.dx >= 0);
@@ -1675,6 +1795,25 @@ BOOL DisplayModel_CanGoToNextPage(DisplayModel *dm)
     return TRUE;
 }
 
+void DisplayModel_ClearSearchHit(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+    DBG_OUT("DisplayModel_ClearSearchHit()\n");
+    dm->searchHitPageNo = INVALID_PAGE;
+}
+
+void DisplayModel_SetSearchHit(DisplayModel *dm, int pageNo, RectD *hitRect)
+{
+    assert(dm);
+    if (!dm) return;
+
+    //DBG_OUT("DisplayModel_SetSearchHit() page=%d at pos (%.2f, %.2f)-(%.2f,%.2f)\n", pageNo, xs, ys, xe, ye);
+    dm->searchHitPageNo = pageNo;
+    dm->searchHitRectPage = *hitRect;
+    DisplayModel_RecalcSearchHitCanvasPos(dm);
+}
+
 BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
 {
     ds->filePath = Str_Escape(dm->pdfDoc->getFileName()->getCString());
@@ -1735,8 +1874,7 @@ static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     if (!entry) return;
     DBG_OUT("BitmapCacheEntry_Free() page=%d\n", entry->pageNo);
     assert(entry->bitmap);
-    if (entry->bitmap && (BITMAP_CANNOT_RENDER != entry->bitmap))
-        delete entry->bitmap;
+    delete entry->bitmap;
     free((void*)entry);
 }
 
@@ -1823,12 +1961,12 @@ BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
     return freedSomething;
 }
 
-void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, SplashBitmap *bmp)
+void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap)
 {
     BitmapCacheEntry *entry;
     assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
     assert(dm);
-    assert(bmp);
+    assert(bitmap);
     assert(ValidRotation(rotation));
     assert(ValidZoomReal(zoomLevel));
 
@@ -1838,18 +1976,19 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
         /* TODO: find entry that is not visible and remove it from cache to
            make room for new entry */
+        delete bitmap;
         goto UnlockAndExit;
     }
     entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
     if (!entry) {
-        delete bmp;
+        delete bitmap;
         goto UnlockAndExit;
     }
     entry->dm = dm;
     entry->pageNo = pageNo;
     entry->zoomLevel = zoomLevel;
     entry->rotation = rotation;
-    entry->bitmap = bmp;
+    entry->bitmap = bitmap;
     gBitmapCache[gBitmapCacheCount++] = entry;
 UnlockAndExit:
     UnlockCache();
@@ -1864,11 +2003,11 @@ BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLeve
         entry = gBitmapCache[i];
         if ( (dm == entry->dm) && (pageNo == entry->pageNo) && 
              (zoomLevel == entry->zoomLevel) && (rotation == entry->rotation)) {
-             DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) found\n", pageNo, zoomLevel, rotation);
+             //DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) found\n", pageNo, zoomLevel, rotation);
              goto Exit;
         }
     }
-    DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) didn't find\n", pageNo, zoomLevel, rotation);
+    //DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) didn't find\n", pageNo, zoomLevel, rotation);
     entry = NULL;
 Exit:
     UnlockCache();
