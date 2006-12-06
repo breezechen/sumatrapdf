@@ -41,8 +41,8 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="_WIN32;WIN32;_WINDOWS;_DEBUG;DEBUG;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
+				PreprocessorDefinitions="_WIN32;WIN32;_WINDOWS;_DEBUG;DEBUG;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -64,10 +64,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype2110MT_D.lib comctl32.lib"
+				AdditionalDependencies="freetype2110MT_D.lib comctl32.lib zlib_ds.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
-				IgnoreDefaultLibraryNames=""
+				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib;$(ProjectDir)ext\zlib"
+				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -124,8 +124,8 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
-				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir).\freetype-lib\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;"
+				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -144,10 +144,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype2110MT.lib comctl32.lib"
+				AdditionalDependencies="freetype2110MT.lib comctl32.lib zlib_s.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib"
-				IgnoreDefaultLibraryNames=""
+				AdditionalLibraryDirectories="$(ProjectDir)freetype-lib\lib;$(ProjectDir)ext\zlib"
+				IgnoreDefaultLibraryNames="msvcrt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -268,6 +268,10 @@
 			</File>
 			<File
 				RelativePath=".\poppler\goo\FixedPoint.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\poppler\poppler\FlateStream.cc"
 				>
 			</File>
 			<File
