@@ -6,10 +6,10 @@ extern "C"
 {
 #endif
 
-typedef struct SimpleRect {
+typedef struct RectI {
     int x, y;
     int dx, dy;
-} SimpleRect;
+} RectI;
 
 typedef struct RectDSize {
     double dx, dy;
@@ -32,12 +32,12 @@ typedef struct RectD {
     double dx,dy;
 } RectD;
 
-int    SimpleRect_Intersect(SimpleRect *r1, SimpleRect *r2, SimpleRect *rIntersectOut);
-void   SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye);
-int    SimpleRect_Inside(SimpleRect *r, int x, int y);
+int    RectI_Intersect(RectI *r1, RectI *r2, RectI *rIntersectOut);
+void   RectI_FromXY(RectI *rOut, int xs, int xe, int ys, int ye);
+int    RectI_Inside(RectI *r, int x, int y);
 void   RectD_FromXY(RectD *rOut, double xs, double xe,  double ys, double ye);
-void   RectD_FromSimpleRect(RectD *rOut, SimpleRect *rIn);
-void   u_SimpleRect_Intersect(void);
+void   RectD_FromRectI(RectD *rOut, RectI *rIn);
+void   u_RectI_Intersect(void);
 
 #ifdef __cplusplus
 }

@@ -62,6 +62,7 @@ class SplashOutputDev;
 class SplashBitmap;
 class TextOutputDev;
 class TextPage;
+class UGooString;
 
 /* Abstract class representing cached bitmap. Allows different implementations
    on different platforms. */
@@ -100,7 +101,7 @@ typedef struct PdfLink {
     int             pageNo;     /* on which Pdf page the link exists. 1..pageCount */
     Link *          link;       /* a reference to a link; we don't own it */
     RectD           rectPage;   /* position of the link on the page */
-    SimpleRect      rectCanvas; /* position of the link on canvas */
+    RectI           rectCanvas; /* position of the link on canvas */
 } PdfLink;
 
 /* Describes many attributes of one page in one, convenient place */
@@ -137,6 +138,51 @@ typedef struct PdfPageInfo {
     TextPage *      textPage;
 } PdfPageInfo;
 
+/* When searching, we can be in one of those states. The state determines what
+   will happen after searching for next or previous term.
+   */
+enum SearchState { 
+    /* Search hasn't started yet. 'Next' will start searching from the top
+       of current page, searching forward. 'Previous' will start searching from
+       the top of current page, searching backward. */
+    eSsNone,
+    /* We searched the whole document and didn't find the search term at all. 'Next'
+       and 'prev' do nothing. */
+    eSsNotFound,
+    /* Previous 'next' search found the term, without wrapping. 'Next' will
+       continue searching forward from the current position. 'Previous' will
+       search backward from the current position.*/
+    eSsFoundNext, 
+    /* Like eSsFoundNext but we wrapped past last page. In that case we show
+       a message about being wrapped and continuing from top. */
+    eSsFoundNextWrapped,
+    /* Previous 'prev' search found the term, without wrapping. 'Next' will
+       search forward from the current position. 'Prev' will continue searching
+       backward */
+    eSsFoundPrev,
+    /* Like eSsFoundPrev, but wrapped around first page. */
+    eSsFoundPrevWrapped,
+/*   TODO: add eSsFoundOnlyOne as optimization i.e. if the hit is the same
+   as previous hit, 'next' and 'previous' will do nothing, to avoid (possibly
+   long) no-op search.
+    eSsFoundOnlyOne */
+};
+
+/* The current state of searching */
+typedef struct SearchStateData {
+    /* String we search for, both regular and unicode versions */
+    GooString *     str;
+    UGooString *    strU;
+    /* The page on which we started the search */
+    int             startPage;
+    /* did we wrap (crossed last page when searching forward or first page
+       when searching backwards) */
+    BOOL            wrapped;
+    SearchState     searchState;
+    BOOL            caseSensitive;
+    int             currPage; /* page for the last hit */
+} SearchStateData;
+
 /* Information needed to drive the display of a given PDF document on a screen.
    You can think of it as a model in the MVC pardigm.
    All the display changes should be done through changing this model via
@@ -148,6 +194,8 @@ typedef struct DisplayModel {
 
     /* PDF document we're displaying. Owned by this structure */
     PDFDoc *        pdfDoc;
+
+    SearchStateData searchState;
 
     SplashOutputDev * outputDevice;
 
@@ -207,7 +255,7 @@ typedef struct DisplayModel {
 
     int             searchHitPageNo;
     RectD           searchHitRectPage;
-    SimpleRect      searchHitRectCanvas;
+    RectI           searchHitRectCanvas;
 } DisplayModel;
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
@@ -243,17 +291,18 @@ void          DisplayModel_Delete(DisplayModel *dm);
 PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
 TextPage *    DisplayModel_GetTextPage(DisplayModel *dm, int pageNo);
 
-bool          DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo);
+BOOL          DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo);
 int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
+int           DisplayModel_GetPageCount(DisplayModel *dm);
 double        DisplayModel_GetZoomReal(DisplayModel *dm);
 double        DisplayModel_GetZoomVirtual(DisplayModel *dm);
 int           DisplayModel_GetRotation(DisplayModel *dm);
 
 void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scrollX=-1);
-bool          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
-bool          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
-bool          DisplayModel_GoToFirstPage(DisplayModel *dm);
-bool          DisplayModel_GoToLastPage(DisplayModel *dm);
+BOOL          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
+BOOL          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
+BOOL          DisplayModel_GoToFirstPage(DisplayModel *dm);
+BOOL          DisplayModel_GoToLastPage(DisplayModel *dm);
 
 void          DisplayModel_ScrollXTo(DisplayModel *dm, int xOff);
 void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
@@ -287,6 +336,10 @@ void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkName
 BOOL          DisplayModel_CanGoToNextPage(DisplayModel *dm);
 BOOL          DisplayModel_CanGoToPrevPage(DisplayModel *dm);
 
+void          DisplayModel_FindInit(DisplayModel *dm, int startPageNo);
+BOOL          DisplayModel_FindNextForward(DisplayModel *dm);
+BOOL          DisplayModel_FindNextBackward(DisplayModel *dm);
+
 void          DisplayModel_ClearSearchHit(DisplayModel *dm);
 void          DisplayModel_SetSearchHit(DisplayModel *dm, int pageNo, RectD *hitRect);
 
@@ -303,6 +356,10 @@ extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
 extern void DisplayModel_PageChanged(DisplayModel *dm);
 /* called when we decide that the display needs to be redrawn */
 extern void DisplayModel_RepaintDisplay(DisplayModel *dm, bool delayed);
+
+extern void DisplayModel_ShowBusyCursor(DisplayModel *dm);
+extern void DisplayModel_ShowNormalCursor(DisplayModel *dm);
+extern void DisplayModel_CancelBackgroundRendering(DisplayModel *dm);
 
 /* Lock protecting both bitmap cache and page render queue */
 void LockCache();

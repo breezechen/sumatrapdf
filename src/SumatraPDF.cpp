@@ -1989,9 +1989,9 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     int                   bmpDx, bmpDy;
     int                   linkNo;
     PdfLink *             pdfLink;
-    SimpleRect            drawAreaRect;
-    SimpleRect            intersect;
-    SimpleRect            rectLink;
+    RectI                 drawAreaRect;
+    RectI                 intersect;
+    RectI                 rectLink;
     RECT                  rectScreen;
     HBITMAP               hbmp = NULL;
     BITMAPINFOHEADER      bmih;
@@ -2112,7 +2112,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         rectLink.dx = pdfLink->rectCanvas.dx;
         rectLink.dy = pdfLink->rectCanvas.dy;
 
-        if (SimpleRect_Intersect(&rectLink, &drawAreaRect, &intersect)) {
+        if (RectI_Intersect(&rectLink, &drawAreaRect, &intersect)) {
             rectScreen.left = (LONG) ((double)intersect.x - dm->areaOffset.x);
             rectScreen.top = (LONG) ((double)intersect.y - dm->areaOffset.y);
             rectScreen.right = rectScreen.left + rectLink.dx;
@@ -2485,6 +2485,31 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     } else if (WS_ABOUT_ANIM == win->state) {
         win->url = AboutGetLink(win, x, y);
     }
+}
+
+void DisplayModel_ShowNormalCursor(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+    SetCursor(LoadCursor(NULL, IDC_ARROW));
+}
+
+void DisplayModel_ShowBusyCursor(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+    // TODO: what is the right cursor?
+    // can I set it per-window only?
+    SetCursor(LoadCursor(NULL, IDC_ARROW));
+}
+
+void DisplayModel_CancelBackgroundRendering(DisplayModel *dm)
+{
+    assert(dm);
+    if (!dm) return;
+
+    // TODO: implement me!
+    return;
 }
 
 static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
@@ -4027,7 +4052,7 @@ static void u_DoAllTests(void)
 {
 #ifdef DEBUG
     printf("Running tests\n");
-    u_SimpleRect_Intersect();
+    u_RectI_Intersect();
 #else
     printf("Not running tests\n");
 #endif

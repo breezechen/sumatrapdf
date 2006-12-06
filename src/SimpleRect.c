@@ -5,7 +5,7 @@
 /* Return true if 'r1' and 'r2' intersect. Put the intersect area into
    'rIntersectOut'.
    Return false if there is no intersection. */
-int SimpleRect_Intersect(SimpleRect *r1, SimpleRect *r2, SimpleRect *rIntersectOut)
+int RectI_Intersect(RectI *r1, RectI *r2, RectI *rIntersectOut)
 {
     int     x1s, x1e, x2s, x2e;
     int     y1s, y1e, y2s, y2e;
@@ -72,7 +72,7 @@ int SimpleRect_Intersect(SimpleRect *r1, SimpleRect *r2, SimpleRect *rIntersectO
     return 1;
 }
 
-void SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye)
+void RectI_FromXY(RectI *rOut, int xs, int xe, int ys, int ye)
 {
     assert(rOut);
     if (!rOut)
@@ -85,7 +85,7 @@ void SimpleRect_FromXY(SimpleRect *rOut, int xs, int xe, int ys, int ye)
     rOut->dy = ye - ys;
 }
 
-void RectD_FromSimpleRect(RectD *rOut, SimpleRect *rIn)
+void RectD_FromRectI(RectD *rOut, RectI *rIn)
 {
     rOut->x = (double)rIn->x;
     rOut->y = (double)rIn->y;
@@ -112,7 +112,7 @@ void RectD_FromXY(RectD *rOut, double xs, double xe, double ys, double ye)
 }
 
 /* Return TRUE if point 'x'/'y' is inside rectangle 'r' */
-int SimpleRect_Inside(SimpleRect *r, int x, int y)
+int RectI_Inside(RectI *r, int x, int y)
 {
     if (x < r->x)
         return FALSE;
@@ -125,7 +125,7 @@ int SimpleRect_Inside(SimpleRect *r, int x, int y)
     return TRUE;
 }
 
-void SimpleRect_AssertEqual(SimpleRect *rIntersect, SimpleRect *rExpected)
+void RectI_AssertEqual(RectI *rIntersect, RectI *rExpected)
 {
     assert(rIntersect->x == rExpected->x);
     assert(rIntersect->y == rExpected->y);
@@ -133,11 +133,11 @@ void SimpleRect_AssertEqual(SimpleRect *rIntersect, SimpleRect *rExpected)
     assert(rIntersect->dy == rExpected->dy);
 }
 
-void u_SimpleRect_Intersect(void)
+void u_RectI_Intersect(void)
 {
 #ifdef DEBUG
     int         i, dataLen;
-    SimpleRect  r1, r2, rIntersect, rExpected, rExpectedSwaped;
+    RectI       r1, r2, rIntersect, rExpected, rExpectedSwaped;
     int         doIntersect, doIntersectExpected;
 
     struct SRIData {
@@ -158,41 +158,41 @@ void u_SimpleRect_Intersect(void)
     for (i = 0; i < dataLen; i++) {
         struct SRIData *curr;
         curr = &(testData[i]);
-        SimpleRect_FromXY(&rExpected, curr->i_xs, curr->i_xe, curr->i_ys, curr->i_ye);
-        SimpleRect_FromXY(&rExpectedSwaped, curr->i_ys, curr->i_ye, curr->i_xs, curr->i_xe);
+        RectI_FromXY(&rExpected, curr->i_xs, curr->i_xe, curr->i_ys, curr->i_ye);
+        RectI_FromXY(&rExpectedSwaped, curr->i_ys, curr->i_ye, curr->i_xs, curr->i_xe);
 
-        SimpleRect_FromXY(&r1, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
-        SimpleRect_FromXY(&r2, curr->x2s, curr->x2e, curr->y2s, curr->y2e);
+        RectI_FromXY(&r1, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
+        RectI_FromXY(&r2, curr->x2s, curr->x2e, curr->y2s, curr->y2e);
         doIntersectExpected = curr->intersect;
 
-        doIntersect = SimpleRect_Intersect(&r1, &r2, &rIntersect);
+        doIntersect = RectI_Intersect(&r1, &r2, &rIntersect);
         assert(doIntersect == doIntersectExpected);
         if (doIntersect)
-            SimpleRect_AssertEqual(&rIntersect, &rExpected);
+            RectI_AssertEqual(&rIntersect, &rExpected);
 
         /* if we swap rectangles, the results should be the same */
-        SimpleRect_FromXY(&r2, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
-        SimpleRect_FromXY(&r1, curr->x2s, curr->x2e, curr->y2s, curr->y2e);
-        doIntersect = SimpleRect_Intersect(&r1, &r2, &rIntersect);
+        RectI_FromXY(&r2, curr->x1s, curr->x1e, curr->y1s, curr->y1e);
+        RectI_FromXY(&r1, curr->x2s, curr->x2e, curr->y2s, curr->y2e);
+        doIntersect = RectI_Intersect(&r1, &r2, &rIntersect);
         assert(doIntersect == doIntersectExpected);
         if (doIntersect)
-            SimpleRect_AssertEqual(&rIntersect, &rExpected);
+            RectI_AssertEqual(&rIntersect, &rExpected);
 
         /* if we swap x with y coordinates in a rectangle, results should be the same */
-        SimpleRect_FromXY(&r1, curr->y1s, curr->y1e, curr->x1s, curr->x1e);
-        SimpleRect_FromXY(&r2, curr->y2s, curr->y2e, curr->x2s, curr->x2e);
-        doIntersect = SimpleRect_Intersect(&r1, &r2, &rIntersect);
+        RectI_FromXY(&r1, curr->y1s, curr->y1e, curr->x1s, curr->x1e);
+        RectI_FromXY(&r2, curr->y2s, curr->y2e, curr->x2s, curr->x2e);
+        doIntersect = RectI_Intersect(&r1, &r2, &rIntersect);
         assert(doIntersect == doIntersectExpected);
         if (doIntersect)
-            SimpleRect_AssertEqual(&rIntersect, &rExpectedSwaped);
+            RectI_AssertEqual(&rIntersect, &rExpectedSwaped);
 
         /* swap both rectangles and x with y, results should be the same */
-        SimpleRect_FromXY(&r2, curr->y1s, curr->y1e, curr->x1s, curr->x1e);
-        SimpleRect_FromXY(&r1, curr->y2s, curr->y2e, curr->x2s, curr->x2e);
-        doIntersect = SimpleRect_Intersect(&r1, &r2, &rIntersect);
+        RectI_FromXY(&r2, curr->y1s, curr->y1e, curr->x1s, curr->x1e);
+        RectI_FromXY(&r1, curr->y2s, curr->y2e, curr->x2s, curr->x2e);
+        doIntersect = RectI_Intersect(&r1, &r2, &rIntersect);
         assert(doIntersect == doIntersectExpected);
         if (doIntersect)
-            SimpleRect_AssertEqual(&rIntersect, &rExpectedSwaped);
+            RectI_AssertEqual(&rIntersect, &rExpectedSwaped);
     }
 #endif
 }

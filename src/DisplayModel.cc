@@ -244,13 +244,27 @@ static void PageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation,
         SwapDouble(pageDxOut, pageDyOut);
 }
 
-bool DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo)
+static void TransfromUpsideDown(DisplayModel *dm, int pageNo, double *y1, double *y2)
+{
+    PdfPageInfo *       pageInfo;
+    assert(dm);
+    if (!dm) return;
+
+    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+    double dy = pageInfo->pageDy;
+    assert(*y1 <= dy);
+    *y1 = dy - *y1;
+    assert(*y2 <= dy);
+    *y2 = dy - *y2;
+}
+
+BOOL DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo)
 {
     assert(dm);
-    if (!dm) return false;
+    if (!dm) return FALSE;
     if ((pageNo >= 1) && (pageNo <= dm->pageCount))
-        return true;
-    return false;
+        return TRUE;
+    return FALSE;
 }
 
 PdfPageInfo *DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo)
@@ -410,6 +424,8 @@ void DisplayModel_Delete(DisplayModel *dm)
 
     delete dm->outputDevice;
     delete dm->textOutDevice;
+    delete dm->searchState.str;
+    delete dm->searchState.strU;
     free((void*)dm->links);
     free((void*)dm->pagesInfo);
     delete dm->pdfDoc;
@@ -500,6 +516,10 @@ GooString *DisplayModel_GetTextInRegion(DisplayModel *dm, int pageNo, RectD *reg
     } else {
         DBG_OUT("DisplayModel_GetTextInRegion() didn't find text on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
             pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
+        if (txt) {
+            delete txt;
+            txt = NULL;
+        }
     }
     delete textOut;
 Exit:
@@ -544,6 +564,8 @@ static void DisplayModel_RecalcLinksCanvasPos(DisplayModel *dm)
 
     // TODO: calling it here is a bit of a hack
     DisplayModel_RecalcSearchHitCanvasPos(dm);
+
+    DBG_OUT("DisplayModel_RecalcLinksCanvasPos() linkCount=%d\n", dm->linkCount);
 
     if (0 == dm->linkCount)
         return;
@@ -645,8 +667,11 @@ DisplayModel *DisplayModel_CreateFromPdfDoc(
     dm->startPage = startPage;
     dm->rotation = INVALID_ROTATION;
     dm->zoomVirtual = INVALID_ZOOM;
-    dm->links = NULL;
     dm->linkCount = 0;
+    dm->links = NULL;
+    dm->searchState.searchState = eSsNone;
+    dm->searchState.str = new GooString();
+    dm->searchState.strU = new UGooString();
     dm->searchHitPageNo = INVALID_PAGE;
 
     outputDev->startDoc(pdfDoc->getXRef());
@@ -735,6 +760,20 @@ int DisplayModel_GetCurrentPageNo(DisplayModel *dm)
 Exit:
     //DBG_OUT("DisplayModel_GetCurrentPageNo() currPageNo=%d\n", currPageNo);
     return currPageNo;
+}
+
+int DisplayModel_GetPageCount(DisplayModel *dm)
+{
+    int     pageCount = INVALID_PAGE;
+
+    assert(dm);
+    if (!dm) goto Exit;
+
+    pageCount = dm->pageCount;
+
+Exit:
+    //DBG_OUT("DisplayModel_GetPageCount() pageCount=%d\n", pageCount);
+    return pageCount;
 }
 
 int DisplayModel_GetRotation(DisplayModel *dm)
@@ -865,7 +904,7 @@ static int FirstPageInARowNo(int pageNo, int columns)
    rebuilds the display model for the next page.
    Returns true if advanced to the next page or false if couldn't advance
    (e.g. because already was at the last page) */
-bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
+BOOL DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
 {
     int             currPageNo;
     int             newPageNo;
@@ -873,7 +912,7 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
     int             columns;
 
     assert(dm);
-    if (!dm) return false;
+    if (!dm) return FALSE;
 
     columns = ColumnsFromDisplayMode(dm->displayMode);
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
@@ -884,39 +923,39 @@ bool DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY)
 //    DBG_OUT("DisplayModel_GoToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
     if ((firstPageInNewRow > dm->pageCount) || (firstPageInCurrRow == firstPageInNewRow)) {
         /* we're on a last row or after it, can't go any further */
-        return false;
+        return FALSE;
     }
     DisplayModel_GoToPage(dm, firstPageInNewRow, scrollY);
-    return true;
+    return TRUE;
 }
 
-bool DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
+BOOL DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY)
 {
     int             currPageNo;
     int             columns;
 
     assert(dm);
-    if (!dm) return false;
+    if (!dm) return FALSE;
 
     columns = ColumnsFromDisplayMode(dm->displayMode);
     currPageNo = DisplayModel_GetCurrentPageNo(dm);
     DBG_OUT("DisplayModel_GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (currPageNo <= columns) {
         /* we're on a first page, can't go back */
-        return false;
+        return FALSE;
     }
     DisplayModel_GoToPage(dm, currPageNo - columns, scrollY);
-    return true;
+    return TRUE;
 }
 
-bool DisplayModel_GoToLastPage(DisplayModel *dm)
+BOOL DisplayModel_GoToLastPage(DisplayModel *dm)
 {
     int             currPageNo;
     int             firstPageInLastRow;
     int             columns;
 
     assert(dm);
-    if (!dm) return false;
+    if (!dm) return FALSE;
 
     DBG_OUT("DisplayModel_GoToLastPage()\n");
 
@@ -926,31 +965,31 @@ bool DisplayModel_GoToLastPage(DisplayModel *dm)
 
     if (currPageNo != firstPageInLastRow) { /* are we on the last page already ? */
         DisplayModel_GoToPage(dm, firstPageInLastRow, 0);
-        return true;
+        return TRUE;
     }
-    return false;
+    return FALSE;
 }
 
-bool DisplayModel_GoToFirstPage(DisplayModel *dm)
+BOOL DisplayModel_GoToFirstPage(DisplayModel *dm)
 {
     assert(dm);
-    if (!dm) return false;
+    if (!dm) return FALSE;
 
     DBG_OUT("DisplayModel_GoToFirstPage()\n");
 
     if (IsDisplayModeContinuous(dm->displayMode)) {
         if (0 == dm->areaOffset.y) {
-            return false;
+            return FALSE;
         }
     } else {
         assert(DisplayModel_IsPageShown(dm, dm->startPage));
         if (1 == dm->startPage) {
             /* we're on a first page already */
-            return false;
+            return FALSE;
         }
     }
     DisplayModel_GoToPage(dm, 1, 0);
-    return true;
+    return TRUE;
 }
 
 void DisplayModel_ScrollYTo(DisplayModel *dm, int yOff)
@@ -1303,6 +1342,8 @@ static void DisplayModel_RecalcLinks(DisplayModel *dm)
     assert(dm);
     if (!dm) return;
 
+    DBG_OUT("DisplayModel_RecalcLinks()\n");
+
     free((void*)dm->links);
     dm->linkCount = 0;
 
@@ -1529,9 +1570,9 @@ void DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation)
 void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
 {
     int             pageNo;
-    SimpleRect      drawAreaRect;
-    SimpleRect      pageRect;
-    SimpleRect      intersect;
+    RectI           drawAreaRect;
+    RectI           pageRect;
+    RectI           intersect;
     PdfPageInfo*    pageInfo;
     int             visibleCount;
 
@@ -1560,7 +1601,7 @@ void DisplayModel_RecalcVisibleParts(DisplayModel *dm)
         pageRect.dx = (int)pageInfo->currDx;
         pageRect.dy = (int)pageInfo->currDy;
         pageInfo->visible = false;
-        if (SimpleRect_Intersect(&pageRect, &drawAreaRect, &intersect)) {
+        if (RectI_Intersect(&pageRect, &drawAreaRect, &intersect)) {
             pageInfo->visible = true;
             visibleCount += 1;
             pageInfo->bitmapX = (int) ((double)intersect.x - pageInfo->currPosX);
@@ -1618,7 +1659,7 @@ PdfLink *DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y)
     for (i = 0; i < dm->linkCount; i++) {
         currLink = &(dm->links[i]);
 
-        if (SimpleRect_Inside(&(currLink->rectCanvas), canvasPosX, canvasPosY))
+        if (RectI_Inside(&(currLink->rectCanvas), canvasPosX, canvasPosY))
             return currLink;
     }
     return NULL;
@@ -1794,6 +1835,228 @@ BOOL DisplayModel_CanGoToNextPage(DisplayModel *dm)
     }
     return TRUE;
 }
+
+void DisplayModel_FindInit(DisplayModel *dm, int startPageNo)
+{
+    assert(dm);
+    if (!dm) return;
+    assert(DisplayModel_ValidPageNo(dm, startPageNo));
+    dm->searchState.searchState = eSsNone;
+    dm->searchState.wrapped = FALSE;
+    dm->searchState.startPage = startPageNo;
+}
+
+BOOL DisplayModel_FindNextBackward(DisplayModel *dm)
+{
+    GBool               startAtTop, stopAtBottom;
+    GBool               startAtLast, stopAtLast;
+    GBool               caseSensitive, backward;
+    GBool               found;
+    double              xs, ys, xe, ye;
+    UGooString *        strU;
+    TextPage *          textPage;
+    int                 pageNo;
+    RectD               hitRect;
+    SearchStateData *   searchState;
+
+    DBG_OUT("DisplayModel_FindNextBackward()\n");
+
+    assert(dm);
+    if (!dm) return FALSE;
+
+    searchState = &dm->searchState;
+
+    // previous search didn't find it, so there's no point looking again
+    if (eSsNotFound == searchState->searchState)
+        return FALSE;
+
+    // search string was not entered
+    if (0 == searchState->str->getLength())
+        return FALSE;
+
+    // searching uses the same code as rendering and that code is not
+    // thread safe, so we have to cancel all background rendering
+    DisplayModel_CancelBackgroundRendering(dm);
+
+    DisplayModel_ShowBusyCursor(dm);
+
+    backward = gTrue;
+    caseSensitive = searchState->caseSensitive;
+    strU = searchState->strU;
+
+    if (eSsNone == searchState->searchState) {
+        // starting a new search backward
+        searchState->currPage = searchState->startPage;
+        assert(FALSE == searchState->wrapped);
+        startAtLast = gFalse;
+        startAtTop = gFalse;
+    } else {
+        // continuing previous search backward or forward
+        startAtLast = gTrue;
+        startAtTop = gFalse;
+    }
+    stopAtBottom = gTrue;
+    stopAtLast = gFalse;
+
+    if ((eSsFoundNext == searchState->searchState) 
+        || (eSsFoundNextWrapped == searchState->searchState)) {
+        searchState->wrapped = FALSE;
+    }
+
+    for (;;) {
+        pageNo = searchState->currPage;
+        textPage = DisplayModel_GetTextPage(dm, pageNo);
+
+        DBG_OUT("  search backward for %s, case sensitive=%d, page=%d\n", searchState->str->getCString(), caseSensitive, pageNo);
+        found = textPage->findText(strU->unicode(), strU->getLength(), startAtTop, stopAtBottom,
+            startAtLast, stopAtLast, caseSensitive, backward,
+            &xs, &ys, &xe, &ye);
+
+        if (found) {
+            DBG_OUT(" found '%s' on page %d at pos (%.2f, %.2f)-(%.2f,%.2f)\n", 
+                searchState->str->getCString(), pageNo, xs, ys, xe, ye);
+
+            TransfromUpsideDown(dm, pageNo, &ys, &ye);
+            RectD_FromXY(&hitRect, xs, xe, ys, ye);
+            if (searchState->wrapped) {
+                searchState->wrapped = FALSE;
+                searchState->searchState = eSsFoundPrevWrapped;
+            } else {
+                searchState->searchState = eSsFoundPrev;
+            }
+            DisplayModel_SetSearchHit(dm, pageNo, &hitRect);
+            DisplayModel_EnsureSearchHitVisible(dm);
+            goto Exit;
+        }
+
+        if (1 == pageNo) {
+            DBG_OUT(" wrapped\n");
+            searchState->wrapped = TRUE;
+            searchState->currPage = dm->pageCount;
+        } else
+            searchState->currPage = pageNo - 1;
+
+        // moved to another page, so starting from the top
+        startAtTop = gTrue;
+        startAtLast = gFalse;
+
+        if (searchState->wrapped && 
+            (searchState->currPage == searchState->startPage) &&
+            (eSsNone == searchState->searchState) ) {
+            searchState->searchState = eSsNotFound;
+            DisplayModel_ClearSearchHit(dm);
+            goto Exit;
+        }
+    }
+Exit:
+    DisplayModel_ShowNormalCursor(dm);
+    return found;
+}
+
+BOOL DisplayModel_FindNextForward(DisplayModel *dm)
+{
+    GBool               startAtTop, stopAtBottom;
+    GBool               startAtLast, stopAtLast;
+    GBool               caseSensitive, backward;
+    GBool               found;
+    double              xs, ys, xe, ye;
+    UGooString *        strU;
+    TextPage *          textPage;
+    int                 pageNo;
+    RectD               hitRect;
+    SearchStateData *   searchState;
+
+    assert(dm);
+    if (!dm) return FALSE;
+
+    DBG_OUT("DisplayModel_FindNextForward()\n");
+
+    searchState = &dm->searchState;
+
+    // previous search didn't find it, so there's no point looking again
+    if (eSsNotFound == searchState->searchState)
+        return FALSE;
+
+    // search string was not entered
+    if (0 == searchState->str->getLength())
+        return FALSE;
+
+    // searching uses the same code as rendering and that code is not
+    // thread safe, so we have to cancel all background rendering
+    DisplayModel_CancelBackgroundRendering(dm);
+
+    backward = gFalse;
+    caseSensitive =searchState->caseSensitive;
+    strU = searchState->strU;
+    if (eSsNone == searchState->searchState) {
+        // starting a new search forward
+        DBG_OUT("  new search\n");
+        searchState->currPage = searchState->startPage;
+        assert(FALSE == searchState->wrapped);
+        startAtLast = gFalse;
+        startAtTop = gTrue;
+    } else {
+        // continuing previous search forward or backward
+        DBG_OUT("  continue search\n");
+        startAtLast = gTrue;
+        startAtTop = gFalse;
+    }
+    stopAtBottom = gTrue;
+    stopAtLast = gFalse;
+
+    if ((eSsFoundPrev == searchState->searchState) 
+        || (eSsFoundPrevWrapped == searchState->searchState)) {
+        searchState->wrapped = FALSE;
+    }
+
+    for (;;) {
+        pageNo = searchState->currPage;
+        textPage = DisplayModel_GetTextPage(dm, pageNo);
+        DBG_OUT("  search forward for '%s', case sensitive=%d, page=%d\n", searchState->str->getCString(), caseSensitive, pageNo);
+        found = textPage->findText(strU->unicode(), strU->getLength(), startAtTop, stopAtBottom,
+            startAtLast, stopAtLast, caseSensitive, backward,
+            &xs, &ys, &xe, &ye);
+
+        if (found) {
+            DBG_OUT(" found '%s' on page %d at pos (%.2f, %.2f)-(%.2f,%.2f)\n", 
+                searchState->str->getCString(), pageNo, xs, ys, xe, ye);
+
+            TransfromUpsideDown(dm, pageNo, &ys, &ye);
+            RectD_FromXY(&hitRect, xs, xe, ys, ye);
+            if (searchState->wrapped) {
+                searchState->wrapped = FALSE;
+                searchState->searchState = eSsFoundNextWrapped;
+            } else {
+                searchState->searchState = eSsFoundNext;
+            }
+            DisplayModel_SetSearchHit(dm, pageNo, &hitRect);
+            DisplayModel_EnsureSearchHitVisible(dm);
+            goto Exit;
+        }
+
+        if (dm->pageCount == pageNo) {
+            DBG_OUT(" wrapped\n");
+            searchState->wrapped = TRUE;
+            searchState->currPage = 1;
+        } else
+            searchState->currPage = pageNo + 1;
+
+        startAtTop = gTrue;
+        startAtLast = gFalse;
+
+        if (searchState->wrapped && 
+            (searchState->currPage == searchState->startPage) &&
+            (eSsNone == searchState->searchState) ) {
+            searchState->searchState = eSsNotFound;
+            DisplayModel_ClearSearchHit(dm);
+            goto Exit;
+        }
+    }
+Exit:
+    DisplayModel_ShowNormalCursor(dm);
+    return found;
+}
+
 
 void DisplayModel_ClearSearchHit(DisplayModel *dm)
 {
