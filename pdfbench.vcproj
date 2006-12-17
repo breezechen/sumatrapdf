@@ -207,7 +207,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\poppler\test\pdfbench.cc"
+				RelativePath=".\src\pdfbench.cc"
 				>
 			</File>
 			<File

@@ -22,7 +22,6 @@
 #include "SecurityHandler.h"
 
 #include "SumatraDialogs.h"
-#include "Win32FontList.h"
 #include "FileHistory.h"
 #include "AppPrefs.h"
 

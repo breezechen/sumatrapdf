@@ -237,10 +237,6 @@
 				RelativePath=".\src\SumatraPDF.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\src\Win32FontList.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -281,10 +277,6 @@
 			</File>
 			<File
 				RelativePath=".\src\SumatraPDF.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Win32FontList.h"
 				>
 			</File>
 		</Filter>
