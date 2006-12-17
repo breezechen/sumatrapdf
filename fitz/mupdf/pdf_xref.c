@@ -19,7 +19,7 @@ pdf_newxref(pdf_xref **xrefp)
 	pdf_logxref("newxref %p\n", xref);
 
 	xref->file = nil;
-	xref->version = 1.3;
+	xref->version = 1.3f;
 	xref->startxref = 0;
 	xref->crypt = nil;
 

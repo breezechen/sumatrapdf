@@ -375,7 +375,6 @@ parseTTF(fz_stream *file, int offset, int index, char *path)
 
 	char szTemp[4096];
 	int found;
-	int pos;
 	int i;
 
 	fz_seek(file,offset,0);
@@ -498,7 +497,7 @@ parseTTCs(char *path)
 	int byteread;
 	fz_stream *file = nil;
 	FONT_COLLECTION fontcollectioin;
-	int i;
+	ULONG i;
 
 	err = fz_openrfile(&file, path);
 	if(err)
@@ -693,10 +692,8 @@ pdf_loadbuiltinfont(pdf_font *font, char *basefont)
 	int fterr;
 
 	FT_Face face;
-	char *pattern;
 	char *file;
 	int index;
-	int i;
 
 	error = initfontlibs();
 	if (error)
@@ -721,8 +718,6 @@ pdf_loadsystemfont(pdf_font *font, char *basefont, char *collection)
 	fz_error *error;
 	int fterr;
 	FT_Face face;
-	char fontname[200];
-	char *style;
 	char *file;
 	int index;
 

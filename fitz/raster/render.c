@@ -2,10 +2,16 @@
 #include "fitz-world.h"
 #include "fitz-draw.h"
 
-//#define noDEBUG(args...) printf(args)
-#ifndef DEBUG
-//#define DEBUG(args...)
-#define DEBUG(...)
+#ifdef WIN32
+    #undef noDEBUG
+    #undef DEBUG
+    #define DEBUG(...)
+    #define noDEBUG(...)
+#else
+    #define noDEBUG(args...) printf(args)
+    #ifndef DEBUG
+    #define DEBUG(args...)
+    #endif
 #endif
 
 #define QUANT(x,a) (((int)((x) * (a))) / (a))
@@ -163,7 +169,7 @@ renderpath(fz_renderer *gc, fz_pathnode *path, fz_matrix ctm)
 
 	flatness = 0.3 / fz_matrixexpansion(ctm);
 	if (flatness < 0.1)
-		flatness = 0.1;
+		flatness = 0.1f;
 
 	fz_resetgel(gc->gel, HS, VS);
 
@@ -695,13 +701,13 @@ rendermask(fz_renderer *gc, fz_masknode *mask, fz_matrix ctm)
 
 DEBUG("mask [%d %d %d %d]\n{\n", clip.x0, clip.y0, clip.x1, clip.y1);
 
-{
-fz_irect sbox = fz_roundrect(fz_boundnode(shape, ctm));
-fz_irect cbox = fz_roundrect(fz_boundnode(color, ctm));
-if (cbox.x0 >= sbox.x0 && cbox.x1 <= sbox.x1)
-if (cbox.y0 >= sbox.y0 && cbox.y1 <= sbox.y1)
-DEBUG("potentially useless mask\n");
-}
+        {
+        fz_irect sbox = fz_roundrect(fz_boundnode(shape, ctm));
+        fz_irect cbox = fz_roundrect(fz_boundnode(color, ctm));
+        if (cbox.x0 >= sbox.x0 && cbox.x1 <= sbox.x1)
+        if (cbox.y0 >= sbox.y0 && cbox.y1 <= sbox.y1)
+        DEBUG("potentially useless mask\n");
+        }
 
 	gc->clip = clip;
 	gc->over = nil;

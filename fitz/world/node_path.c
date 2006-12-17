@@ -165,7 +165,7 @@ fz_endpath(fz_pathnode *path, fz_pathkind paint, fz_stroke *stroke, fz_dash *das
 	}
 
 	if (path->linewidth < 0.01)
-		path->linewidth = 0.01;
+		path->linewidth = 0.01f;
 
 	return nil;
 }
