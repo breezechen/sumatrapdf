@@ -3668,28 +3668,6 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             }
             break;
 
-        case WM_MOUSEWHEEL:
-            if (!win || !win->dm) /* TODO: check for pdfDoc as well ? */
-                break;
-
-            if (gDeltaPerLine == 0)
-               break;
-
-            gAccumDelta += (short) HIWORD (wParam);     // 120 or -120
-
-            while (gAccumDelta >= gDeltaPerLine)
-            {
-               SendMessage(hwnd, WM_VSCROLL, SB_LINEUP, 0);
-               gAccumDelta -= gDeltaPerLine;
-            }
-
-            while (gAccumDelta <= -gDeltaPerLine)
-            {
-               SendMessage (hwnd, WM_VSCROLL, SB_LINEDOWN, 0);
-               gAccumDelta += gDeltaPerLine;
-            }
-            return 0;
-
         case WM_ERASEBKGND:
             // do nothing, helps to avoid flicker
             return TRUE;
@@ -3876,6 +3854,29 @@ InitMouseWheelInfo:
                 gDeltaPerLine = WHEEL_DELTA / ulScrollLines;
             else
                 gDeltaPerLine = 0;
+            return 0;
+
+        // TODO: I don't understand why WndProcCanvas() doesn't receive this message
+        case WM_MOUSEWHEEL:
+            if (!win || !win->dm) /* TODO: check for pdfDoc as well ? */
+                break;
+
+            if (gDeltaPerLine == 0)
+               break;
+
+            gAccumDelta += (short) HIWORD (wParam);     // 120 or -120
+
+            while (gAccumDelta >= gDeltaPerLine)
+            {
+                SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
+                gAccumDelta -= gDeltaPerLine;
+            }
+
+            while (gAccumDelta <= -gDeltaPerLine)
+            {
+                SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEDOWN, 0);
+                gAccumDelta += gDeltaPerLine;
+            }
             return 0;
 
         case WM_DROPFILES:
