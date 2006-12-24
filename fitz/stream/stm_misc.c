@@ -103,7 +103,7 @@ int fz_linkedbuflen(fz_linkedbuf *buf)
 
 fz_error *fz_linearizelinkedbuf(fz_linkedbuf *buf, int len, unsigned char **datap)
 {
-	unsigned char *data, *bufdata, *bufdataend;
+	unsigned char *data, *bufdata;
 	int tocopy;
 	int buflen = fz_linkedbuflen(buf);
 	assert(len <= buflen);
@@ -114,10 +114,9 @@ fz_error *fz_linearizelinkedbuf(fz_linkedbuf *buf, int len, unsigned char **data
 	{
 		bufdata = (unsigned char*)buf + sizeof(fz_linkedbuf);
 		tocopy = MIN(len, buf->len);
-		bufdataend = bufdata + tocopy;
-		while (bufdata < bufdataend)
-			*data++ = *bufdata++;
+		memmove(data, bufdata, tocopy);
 		buf = buf->next;
+		data += tocopy;
 		len -= tocopy;
 	}
 	return nil;
