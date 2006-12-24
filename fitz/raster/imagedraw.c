@@ -50,11 +50,7 @@ static inline int samplemask(byte *s, int w, int h, int u, int v)
 	return lerp(ab, cd, vd);
 }
 
-#ifdef _MSC_VER
-static __forceinline void lerpargb(byte *dst, byte *a, byte *b, int t)
-#else
-static inline void lerpargb(byte *dst, byte *a, byte *b, int t)
-#endif
+static FORCEINLINE void lerpargb(byte *dst, byte *a, byte *b, int t)
 {
 	dst[0] = lerp(a[0], b[0], t);
 	dst[1] = lerp(a[1], b[1], t);

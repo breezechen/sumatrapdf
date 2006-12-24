@@ -31,8 +31,10 @@
 #	define restrict
 #ifdef _MSC_VER
 #   define inline __inline
+#   define FORCEINLINE __forceinline
 #else
 #	define inline __inline__
+#   define FORCEINLINE __inline__
 #endif
 #endif
 
