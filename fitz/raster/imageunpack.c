@@ -169,16 +169,73 @@ static void loadtile1(byte *src, int sw, byte *dst, int dw, int w, int h, int pa
 		} \
 }
 
+static inline void loadtile8_fast_pad3(byte * restrict src, byte * restrict dst, int w, int h)
+{
+	int tocopy = (h * w) / 3;
+	while (tocopy--)
+	{
+		*dst++ = 255;
+		*dst++ = *src++;
+		*dst++ = *src++;
+		*dst++ = *src++;
+	}
+	/* TODO: if there was a reminder, copy it */
+}
+
+static void loadtile8_fast(byte * restrict src, int sw, byte * restrict dst, int dw, int w, int h, int pad)
+{
+	int x;
+	int swdelta = sw - w;
+	int dwdelta = dw - w - (w / pad);
+
+	if (!pad)
+		while (h--)
+		{
+			memmove(dst, src, w);
+			src += sw;
+			dst += dw;
+		}
+	else
+		if ( (0 == swdelta) && (0 == dwdelta) )
+		{
+			if (3 == pad)
+				loadtile8_fast_pad3(src, dst, w, h);
+			else
+				while (h--)
+				{
+					for (x = 0; x < w; x++)
+					{
+						if ((x % pad) == 0)
+							*dst++ = 255;
+						*dst++ = *src++;
+					}
+				}
+		}
+		else
+			while (h--)
+			{
+				for (x = 0; x < w; x++)
+				{
+					if ((x % pad) == 0)
+						*dst++ = 255;
+					*dst++ = *src++;
+				}
+				src += swdelta;
+				dst += dwdelta;
+			}
+}
+
 static void loadtile2(byte * restrict src, int sw, byte * restrict dst, int dw, int w, int h, int pad)
 	TILE(ttwo)
 static void loadtile4(byte * restrict src, int sw, byte * restrict dst, int dw, int w, int h, int pad)
 	TILE(tnib)
-static void loadtile8(byte * restrict src, int sw, byte * restrict dst, int dw, int w, int h, int pad)
+static void loadtile8_orig(byte * restrict src, int sw, byte * restrict dst, int dw, int w, int h, int pad)
 	TILE(toct)
+
+#define loadtile8 loadtile8_fast
 
 void (*fz_decodetile)(fz_pixmap *pix, int skip, float *decode) = decodetile;
 void (*fz_loadtile1)(byte*, int sw, byte*, int dw, int w, int h, int pad) = loadtile1;
 void (*fz_loadtile2)(byte*, int sw, byte*, int dw, int w, int h, int pad) = loadtile2;
 void (*fz_loadtile4)(byte*, int sw, byte*, int dw, int w, int h, int pad) = loadtile4;
 void (*fz_loadtile8)(byte*, int sw, byte*, int dw, int w, int h, int pad) = loadtile8;
-
