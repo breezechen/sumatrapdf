@@ -212,9 +212,11 @@ removeredundancy(pdf_fontlistMS *fl)
 	}
 	qsort(fl->fontmap,fl->len,sizeof(pdf_fontmapMS),compare);
 	fl->len -= redundancy_count;
+#ifndef NDEBUG
 	for(i = 0; i < fl->len; ++i)
 		fprintf(stdout,"%s , %s , %d\n",fl->fontmap[i].fontface,
 			fl->fontmap[i].fontpath,fl->fontmap[i].index);
+#endif
 }
 
 static fz_error * 
