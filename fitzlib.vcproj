@@ -114,6 +114,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"
@@ -130,6 +132,7 @@
 				DebugInformationFormat="3"
 				CompileAs="1"
 				DisableSpecificWarnings="4996;4244;4267;4995"
+				EnablePREfast="false"
 				UseFullPaths="true"
 			/>
 			<Tool

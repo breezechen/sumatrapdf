@@ -62,7 +62,7 @@ fz_clearpixmap(fz_pixmap *pix)
 void
 fz_gammapixmap(fz_pixmap *pix, float gamma)
 {
-	unsigned char table[255];
+	unsigned char table[256];
 	int n = pix->w * pix->h * pix->n;
 	unsigned char *p = pix->samples;
 	int i;
@@ -95,8 +95,11 @@ fz_debugpixmap(fz_pixmap *pix)
 				putc(g, ppm);
 				putc(b, ppm);
 			}
-		fclose(ppm);
-		fclose(pgm);
+
+		if (ppm)
+			fclose(ppm);
+                if (pgm)
+			fclose(pgm);
 	}
 
 	else if (pix->n == 2)

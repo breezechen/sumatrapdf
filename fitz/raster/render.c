@@ -2,7 +2,7 @@
 #include "fitz-world.h"
 #include "fitz-draw.h"
 
-#ifdef WIN32
+#ifdef _WIN32
     #undef noDEBUG
     #undef DEBUG
     #define DEBUG(...)

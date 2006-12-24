@@ -908,11 +908,13 @@ Error:
     if (outline)
         pdf_dropoutline(outline);
 
-    if (xref->store)
-        pdf_dropstore(xref->store);
-
     if (xref)
+    {
+        if (xref->store)
+            pdf_dropstore(xref->store);
+        xref->store = 0;
         pdf_closexref(xref);
+    }
 
     if (rast)
         fz_droprenderer(rast);

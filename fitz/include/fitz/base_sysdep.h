@@ -17,7 +17,7 @@
 /* not supposed to be here, but printf debugging sorta needs it */
 #include <stdio.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #   define vsnprintf _vsnprintf
 #   include <io.h>
 #else
