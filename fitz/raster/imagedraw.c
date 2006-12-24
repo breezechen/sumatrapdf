@@ -58,7 +58,7 @@ static FORCEINLINE void lerpargb(byte *dst, byte *a, byte *b, int t)
 	dst[3] = lerp(a[3], b[3], t);
 }
 
-static inline byte *getargb(byte *s, int w, int h, int u, int v)
+static FORCEINLINE byte *getargb(byte *s, int w, int h, int u, int v)
 {
 	static byte zero[4] = { 0, 0, 0, 0 };
 	if (u < 0 || u >= w) return zero;
@@ -66,7 +66,7 @@ static inline byte *getargb(byte *s, int w, int h, int u, int v)
 	return s + ((w * v + u) << 2);
 }
 
-static inline void sampleargb(byte *s, int w, int h, int u, int v, byte *abcd)
+static FORCEINLINE void sampleargb(byte *s, int w, int h, int u, int v, byte *abcd)
 {
 	byte ab[4];
 	byte cd[4];

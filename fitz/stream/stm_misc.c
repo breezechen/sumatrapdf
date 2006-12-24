@@ -128,7 +128,8 @@ fz_error *fz_linearizelinkedbuf(fz_linkedbuf *buf, int len, unsigned char **data
  * a freshly allocated buffer; realloced and trimmed to size.
  */
 
-enum { CHUNKSIZE = 1024 * 4 };
+enum { MINCHUNKSIZE = 1024 * 8 };
+enum { MAXCHUNKSIZE = MINCHUNKSIZE * 10 };
 
 int fz_readall(fz_buffer **bufp, fz_stream *stm)
 {
@@ -138,17 +139,18 @@ int fz_readall(fz_buffer **bufp, fz_stream *stm)
 	unsigned char *data;
 	int totallen;
 	int n;
+    int chunksize = MINCHUNKSIZE;
 
 	*bufp = nil;
 
 	totallen = 0;
-	error = fz_newlinkedbuf(&buf, CHUNKSIZE, &data);
+	error = fz_newlinkedbuf(&buf, chunksize, &data);
 	if (error)
 		return -1;
 
 	while (1)
 	{
-		n = fz_read(stm, data, CHUNKSIZE);
+		n = fz_read(stm, data, chunksize);
 		if (n < 0)
 		{
 			fz_free(buf);
@@ -156,9 +158,11 @@ int fz_readall(fz_buffer **bufp, fz_stream *stm)
 		}
 
 		totallen += n;
-		if (n == CHUNKSIZE) 
+		if (n == chunksize) 
 		{
-			error = fz_growlinkedbuf(buf, CHUNKSIZE, &data);
+			if (chunksize < MAXCHUNKSIZE)
+				chunksize = chunksize + MINCHUNKSIZE;
+			error = fz_growlinkedbuf(buf, chunksize, &data);
 			if (error) { fz_droplinkedbuf(buf); return -1; }
 			continue;
 		}
