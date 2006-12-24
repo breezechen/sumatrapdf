@@ -31,6 +31,9 @@
 #define stricmp strcasecmp
 #endif
 
+#include <fitz.h>
+#include <mupdf.h>
+
 #include "ErrorCodes.h"
 #include "GooString.h"
 #include "GooList.h"
@@ -44,6 +47,7 @@
 #include "Link.h"
 
 #include "BaseUtils.h"
+
 
 extern void PreviewBitmap_Init(void);
 extern void PreviewBitmap(SplashBitmap *);
@@ -280,6 +284,7 @@ static StrList *gArgsListRoot = NULL;
 #define PAGE_ARG            "-page"
 #define DUMP_LINKS_ARG      "-dump-links"
 #define TEXT_ARG            "-text"
+#define FITZ_ARG            "-fitz"
 
 /* Should we record timings? True if -timings command-line argument was given. */
 static BOOL gfTimings = FALSE;
@@ -320,6 +325,9 @@ static int gfSlowPreview = FALSE;
 
 /* If true, we only dump the text, not render */
 static int gfTextOnly = FALSE;
+
+/* If true, using fitz (instead of poppler) for rendering */
+static int gfFitzRendering = FALSE;
 
 #define PAGE_NO_NOT_GIVEN -1
 
@@ -774,8 +782,145 @@ Exit:
     delete pdfDoc;
 }
 
+fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
+{
+    fz_matrix ctm;
+    ctm = fz_identity();
+    ctm = fz_concat(ctm, fz_translate(0, -page->mediabox.y1));
+    ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
+    ctm = fz_concat(ctm, fz_rotate(rotate + page->rotate));
+    return ctm;
+}
+
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfx(const char *fileName)
+static void RenderPdfFileAsGfxWithFitz(const char *fileName)
+{
+    MsTimer             msTimer;
+    double              timeInMs;
+    int                 pageCount;
+
+    pdf_xref *          xref = NULL;
+    pdf_outline *       outline = NULL;
+    pdf_pagetree *      pages = NULL;
+    fz_renderer *       rast = NULL;
+
+    fz_error *          error;
+    fz_obj *            obj;
+
+    assert(fileName);
+    if (!fileName)
+        return;
+
+    LogInfo("started fitz: %s\n", fileName);
+
+    error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
+    if (error)
+        goto Error;
+
+    MsTimer_Start(&msTimer);
+    error = pdf_newxref(&xref);
+    if (error)
+        goto Error;
+
+    error = pdf_loadxref(xref, (char*)fileName);
+    if (error) {
+        if (!strncmp(error->msg, "ioerror", 7))
+            goto Error;
+        error = pdf_repairxref(xref, (char*)fileName);
+        if (error)
+            goto Error;
+    }
+
+    error = pdf_decryptxref(xref);
+    if (error)
+        goto Error;
+
+    if (xref->crypt) {
+        /* TODO: handle passwords? */
+        goto Error;
+    }
+
+    error = pdf_loadpagetree(&pages, xref);
+    if (error)
+        goto Error;
+
+    MsTimer_End(&msTimer);
+    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    LogInfo("load: %.2f ms\n", timeInMs);
+
+    pageCount = pages->count;
+    LogInfo("page count: %d\n", pageCount);
+
+    if (gfLoadOnly)
+        goto Error;
+
+    for (int curPage = 1; curPage <= pageCount; curPage++) {
+        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
+            continue;
+
+        fz_matrix           ctm;
+        fz_rect             bbox;
+        fz_pixmap *         image = NULL;
+        pdf_page *          page = NULL;
+
+        MsTimer_Start(&msTimer);
+
+        obj = pdf_getpageobject(pages, curPage - 1);
+
+        error = pdf_loadpage(&page, xref, obj);
+        if (error)
+            goto NextPage;
+
+        ctm = pdfapp_viewctm(page, 1.f, 0);
+        bbox = fz_transformaabb(ctm, page->mediabox);
+
+        error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
+        if (error)
+            goto NextPage;
+
+        MsTimer_End(&msTimer);
+        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        if (gfTimings)
+            LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
+
+        if (ShowPreview()) {
+            //PreviewFitzBitmap(image);
+            if (gfSlowPreview && (int)timeInMs < SLOW_PREVIEW_TIME)
+                SleepMilliseconds(SLOW_PREVIEW_TIME - (int)timeInMs);
+        }
+
+NextPage:
+        if (page) {
+            pdf_droppage(page);
+            page = NULL;
+        }
+
+        if (image) {
+            fz_droppixmap(image);
+            image = NULL;
+        }
+    }
+Error:
+
+    if (pages)
+        pdf_droppagetree(pages);
+
+    if (outline)
+        pdf_dropoutline(outline);
+
+    if (xref->store)
+        pdf_dropstore(xref->store);
+
+    if (xref)
+        pdf_closexref(xref);
+
+    if (rast)
+        fz_droprenderer(rast);
+    LogInfo("finished fitz: %s\n", fileName);
+}
+
+/* Render one pdf file with a given 'fileName'. Log apropriate info. */
+static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
 {
     MsTimer             msTimer;
     double              timeInMs;
@@ -797,7 +942,7 @@ static void RenderPdfFileAsGfx(const char *fileName)
     if (!fileName)
         return;
 
-    LogInfo("started: %s\n", fileName);
+    LogInfo("started poppler: %s\n", fileName);
 
     outputDevice = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
     if (!outputDevice) {
@@ -871,7 +1016,7 @@ DumpLinks:
     if (gfDumpLinks)
         DumpLinks(pdfDoc);
 Error:
-    LogInfo("finished: %s\n", fileName);
+    LogInfo("finished poppler: %s\n", fileName);
     delete bitmap;
     delete outputDevice;
     delete pdfDoc;
@@ -879,10 +1024,15 @@ Error:
 
 static void RenderPdfFile(const char *fileName)
 {
-    if (gfTextOnly)
+    if (gfTextOnly) {
+        /* TODO: right not rendering as text is only supported with poppler, not fitz */
         RenderPdfFileAsText(fileName);
-    else
-        RenderPdfFileAsGfx(fileName);
+    } else {
+        if (gfFitzRendering)
+            RenderPdfFileAsGfxWithFitz(fileName);
+        else
+            RenderPdfFileAsGfxWithPoppler(fileName);
+    }
 }
 
 int ParseInteger(const char *start, const char *end, int *intOut)
@@ -1027,6 +1177,8 @@ void ParseCommandLine(int argc, char **argv)
                 gfSlowPreview = TRUE;
             } else if (Str_EqNoCase(arg, LOAD_ONLY_ARG)) {
                 gfLoadOnly = TRUE;
+            } else if (Str_EqNoCase(arg, FITZ_ARG)) {
+                gfFitzRendering = TRUE;
             } else if (Str_EqNoCase(arg, PAGE_ARG)) {
                 /* expect an integer after that */
                 ++i;

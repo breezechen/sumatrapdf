@@ -14,21 +14,26 @@
 #include <errno.h>
 #include <fcntl.h>	/* O_RDONLY & co */
 
+/* not supposed to be here, but printf debugging sorta needs it */
+#include <stdio.h>
+
+#ifdef WIN32
+#   define vsnprintf _vsnprintf
+#   include <io.h>
+#else
+#	include <unistd.h>
+#endif
+
 #ifdef HAVE_C99
 #	define FZ_FLEX
 #else
 #	define FZ_FLEX 1
 #	define restrict
+#ifdef _MSC_VER
+#   define inline __inline
+#else
 #	define inline __inline__
 #endif
-
-#ifdef WIN32
-#	define vsnprintf _vsnprintf
-#	include <io.h>
-#   undef inline
-#   define inline _inline
-#else
-#	include <unistd.h>
 #endif
 
 #ifndef va_copy
@@ -42,9 +47,6 @@
 /*
  * Extras! Extras! Get them while they're hot!
  */
-
-/* not supposed to be here, but printf debugging sorta needs it */
-#include <stdio.h>
 
 #ifdef NEED_MATH
 #define M_E 2.71828182845904523536
@@ -77,4 +79,3 @@ extern int getopt(int nargc, char * const * nargv, const char *ostr);
 extern int opterr, optind, optopt;
 extern char *optarg;
 #endif
-

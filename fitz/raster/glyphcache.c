@@ -302,7 +302,7 @@ evictlast(fz_glyphcache *arena)
 static void
 evictall(fz_glyphcache *arena)
 {
-printf("zap!\n");
+    //printf("zap!\n");
 	memset(arena->hash, 0, sizeof(fz_hash) * arena->slots);
 	memset(arena->lru, 0, sizeof(fz_val) * arena->slots);
 	memset(arena->buffer, 0, arena->size);

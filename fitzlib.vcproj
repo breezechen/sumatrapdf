@@ -53,7 +53,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
-				CompileAs="0"
+				CompileAs="1"
 				DisableSpecificWarnings="4996;4244;4267;4995"
 				EnablePREfast="false"
 				UseFullPaths="true"
@@ -128,7 +128,7 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
-				CompileAs="0"
+				CompileAs="1"
 				DisableSpecificWarnings="4996;4244;4267;4995"
 				UseFullPaths="true"
 			/>
