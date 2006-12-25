@@ -548,7 +548,7 @@ cleanup:
 	return err;
 }
 
-fz_error*
+static fz_error*
 pdf_createfontlistMS()
 {
 	char szFontDir[MAX_PATH*2];
@@ -685,6 +685,11 @@ static fz_error *initfontlibs(void)
 		return err;
 
 	return nil;
+}
+
+fz_error *initfontlibs_ms(void)
+{
+	return initfontlibs();
 }
 
 fz_error *

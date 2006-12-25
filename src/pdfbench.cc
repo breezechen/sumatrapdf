@@ -792,6 +792,8 @@ fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
     return ctm;
 }
 
+extern "C" fz_error *initfontlibs_ms(void);
+
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
 static void RenderPdfFileAsGfxWithFitz(const char *fileName)
 {
@@ -812,6 +814,10 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
         return;
 
     LogInfo("started fitz: %s\n", fileName);
+
+    error = initfontlibs_ms();
+    if (error)
+        goto Error;
 
     error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
     if (error)
