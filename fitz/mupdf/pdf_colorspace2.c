@@ -62,7 +62,7 @@ static void fastrgbtocmyk(fz_pixmap *src, fz_pixmap *dst)
 		unsigned char c = 255 - s[1];
 		unsigned char m = 255 - s[2];
 		unsigned char y = 255 - s[3];
-		unsigned char k = MIN(c, MIN(y, k));
+		unsigned char k = MIN(c, MIN(y, m));
 		d[0] = s[0];
 		d[1] = c - k;
 		d[2] = m - k;
@@ -166,7 +166,7 @@ void pdf_convcolor(fz_colorspace *ss, float *sv, fz_colorspace *ds, float *dv)
 			float c = 1.0 - sv[1];
 			float m = 1.0 - sv[2];
 			float y = 1.0 - sv[3];
-			float k = MIN(c, MIN(y, k));
+			float k = MIN(c, MIN(y, m));
 			dv[0] = c - k;
 			dv[1] = m - k;
 			dv[2] = y - k;
