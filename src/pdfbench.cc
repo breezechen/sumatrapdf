@@ -1106,6 +1106,7 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
     double              timeInMs;
     int                 pageCount;
     FitzRender *        render = NULL;
+    int                 fOk;
 
     LogInfo("started fitz: %s\n", fileName);
     initfontlibs_ms();
@@ -1113,7 +1114,11 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
     render = new FitzRender(fileName);
 
     MsTimer_Start(&msTimer);
-    render->Load();
+    fOk = render->Load();
+    if (!fOk) {
+        LogInfo("failed to load\n");
+        goto Error;
+    }
     MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load: %.2f ms\n", timeInMs);
