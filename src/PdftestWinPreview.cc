@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <windows.h>
 #include "SplashBitmap.h"
+#include <fitz.h>
+#include <mupdf.h>
 
 #define WIN_CLASS_NAME  "PDFTEST_PDF_WIN"
 #define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
@@ -8,7 +10,8 @@
 static HWND             gHwnd = NULL;
 static HBRUSH           gBrushBg;
 static BITMAPINFO *     gDibInfo = NULL;
-static SplashBitmap *   gCurrBitmap = NULL;
+static SplashBitmap *   gCurrBitmapSplash = NULL;
+static fz_pixmap *      gCurrBitmapFitz = NULL;
 static int              gBitmapDx = -1;
 static int              gBitmapDy = -1;
 
@@ -42,7 +45,7 @@ void WinResizeClientArea(HWND hwnd, int dx, int dy)
     SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
 }
 
-void OnPaint(HWND hwnd)
+void DrawSplash(HWND hwnd, SplashBitmap *bmp)
 {
     HDC             hdc;
     PAINTSTRUCT     ps;
@@ -54,8 +57,8 @@ void OnPaint(HWND hwnd)
     SetBkMode(hdc, TRANSPARENT);
     GetClientRect(hwnd, &rc);
 
-    bmpRowSize = gCurrBitmap->getRowSize();
-    bmpData = gCurrBitmap->getDataPtr();
+    bmpRowSize = bmp->getRowSize();
+    bmpData = bmp->getDataPtr();
 
     gDibInfo->bmiHeader.biWidth = gBitmapDx;
     gDibInfo->bmiHeader.biHeight = -gBitmapDy;
@@ -79,6 +82,86 @@ void OnPaint(HWND hwnd)
     );
 
     EndPaint(hwnd, &ps);
+}
+
+static int bmpstride = 0;
+static unsigned char *bmpdata = NULL;
+
+void winconvert(fz_pixmap *image)
+{
+    int y, x;
+
+    if (bmpdata)
+        fz_free(bmpdata);
+
+    bmpstride = ((image->w * 3 + 3) / 4) * 4;
+    bmpdata = (unsigned char*)fz_malloc(image->h * bmpstride);
+    if (!bmpdata)
+        return;
+
+    for (y = 0; y < image->h; y++)
+    {
+        unsigned char *p = bmpdata + y * bmpstride;
+        unsigned char *s = image->p + y * image->w * 4;
+        for (x = 0; x < image->w; x++)
+        {
+            p[x * 3 + 0] = s[x * 4 + 3];
+            p[x * 3 + 1] = s[x * 4 + 2];
+            p[x * 3 + 2] = s[x * 4 + 1];
+        }
+    }
+}
+
+void winblit(HDC hdc, fz_pixmap *image)
+{
+    if (!bmpdata)
+        return;
+
+    gDibInfo->bmiHeader.biWidth = image->w;
+    gDibInfo->bmiHeader.biHeight = -image->h;
+    gDibInfo->bmiHeader.biSizeImage = image->h * bmpstride;
+    SetDIBitsToDevice(hdc,
+        0, /* destx */
+        0, /* desty */
+        image->w, /* destw */
+        image->h, /* desth */
+        0, /* srcx */
+        0, /* srcy */
+        0, /* startscan */
+        image->h, /* numscans */
+        bmpdata, /* pBits */
+        gDibInfo, /* pInfo */
+        DIB_RGB_COLORS /* color use flag */
+    );
+}
+
+
+void DrawFitz(HWND hwnd, fz_pixmap *bmp)
+{
+    HDC             hdc;
+    PAINTSTRUCT     ps;
+    RECT            rc;
+
+    hdc = BeginPaint(hwnd, &ps);
+    SetBkMode(hdc, TRANSPARENT);
+    GetClientRect(hwnd, &rc);
+
+    winconvert(bmp);
+    winblit(hdc, bmp);
+
+    EndPaint(hwnd, &ps);
+}
+
+void OnPaint(HWND hwnd)
+{
+
+    if (gCurrBitmapSplash)
+        DrawSplash(hwnd, gCurrBitmapSplash);
+    else {
+        assert(gCurrBitmapFitz);
+        if (gCurrBitmapFitz)
+            DrawFitz(hwnd, gCurrBitmapFitz);
+    }
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -184,12 +267,12 @@ void PumpMessages(void)
     }
 }
 
-void PreviewBitmap_Init(void)
+void PreviewBitmapInit(void)
 {
     /* no need to do anything */
 }
 
-void PreviewBitmap_Destroy(void)
+void PreviewBitmapDestroy(void)
 {
     PostQuitMessage(0);
     PumpMessages();
@@ -198,7 +281,7 @@ void PreviewBitmap_Destroy(void)
     DeleteObject(gBrushBg);
 }
 
-void PreviewBitmap(SplashBitmap *bitmap)
+void PreviewBitmapFitz(fz_pixmap *bitmap)
 {
     assert(bitmap);
     if (!bitmap)
@@ -206,7 +289,32 @@ void PreviewBitmap(SplashBitmap *bitmap)
     if (!InitWinIfNecessary())
         return;
 
-    gCurrBitmap = bitmap;
+    gCurrBitmapFitz = bitmap;
+    gCurrBitmapSplash = NULL;
+    if ( (bitmap->w != gBitmapDx) ||
+        (bitmap->h != gBitmapDy) ) {
+        gBitmapDx = bitmap->w;
+        gBitmapDy = bitmap->h;
+        WinResizeClientArea(gHwnd, gBitmapDx, gBitmapDy);
+    }
+    assert(gHwnd);
+
+    InvalidateRect(gHwnd, NULL, FALSE);
+    UpdateWindow(gHwnd);
+
+    PumpMessages();
+}
+
+void PreviewBitmapSplash(SplashBitmap *bitmap)
+{
+    assert(bitmap);
+    if (!bitmap)
+        return;
+    if (!InitWinIfNecessary())
+        return;
+
+    gCurrBitmapSplash = bitmap;
+    gCurrBitmapFitz = NULL;
     if ( (bitmap->getWidth() != gBitmapDx) ||
         (bitmap->getHeight() != gBitmapDy) ) {
         gBitmapDx = bitmap->getWidth();
