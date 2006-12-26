@@ -612,7 +612,7 @@ pdf_createfontlistMS()
 	removeredundancy(&fontlistMS);
 
 cleanup:
-//	if(err)
+//	if (err)
 //		fz_abort(err);
 	return nil;
 }
@@ -620,7 +620,7 @@ cleanup:
 void
 pdf_destoryfontlistMS()
 {
-	if(fontlistMS.fontmap != nil)
+	if (fontlistMS.fontmap != nil)
 		fz_free(fontlistMS.fontmap);
 
 	fontlistMS.len = 0;
@@ -690,6 +690,13 @@ static fz_error *initfontlibs(void)
 fz_error *initfontlibs_ms(void)
 {
 	return initfontlibs();
+}
+
+void deinitfontlibs_ms(void)
+{
+    pdf_destoryfontlistMS();
+    FT_Done_FreeType(ftlib);
+    ftlib = nil;
 }
 
 fz_error *

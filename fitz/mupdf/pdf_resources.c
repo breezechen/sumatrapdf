@@ -124,6 +124,8 @@ preloadshading(pdf_xref *xref, fz_obj *ref)
 	return error;
 }
 
+extern void pdf_dropimage(fz_image *fzimg);
+
 static fz_error *
 preloadxobject(pdf_xref *xref, fz_obj *ref)
 {
@@ -145,14 +147,13 @@ preloadxobject(pdf_xref *xref, fz_obj *ref)
 		fz_dropobj(obj);
 		return error;
 	}
-
 	else if (!strcmp(fz_toname(subtype), "Image"))
 	{
 		error = pdf_loadimage(&image, xref, obj, ref);
 		fz_dropobj(obj);
+		fz_dropimage((fz_image*)image);
 		return error;
 	}
-
 	else
 	{
 		fz_dropobj(obj);
@@ -354,9 +355,9 @@ pdf_loadresources(fz_obj **rdbp, pdf_xref *xref, fz_obj *orig)
 		for (i = 0; i < fz_dictlen(dict); i++)
 		{
 			obj = fz_dictgetval(dict, i);
-				error = preloadxobject(xref, obj);
-				if (error)
-					return error;
+			error = preloadxobject(xref, obj);
+			if (error)
+				return error;
 		}
 	}
 

@@ -1532,7 +1532,7 @@ void RenderCmdLineArg(char *cmdLineArg)
     }
 }
 
-extern "C" void pdf_destoryfontlistMS();
+extern "C" void deinitfontlibs_ms(void);
 
 int main(int argc, char **argv)
 {
@@ -1578,7 +1578,7 @@ int main(int argc, char **argv)
     if (outFile)
         fclose(outFile);
     PreviewBitmapDestroy();
-    pdf_destoryfontlistMS();
+    deinitfontlibs_ms();
     StrList_Destroy(&gArgsListRoot);
     delete globalParams;
     return 0;
