@@ -1004,6 +1004,7 @@ void SplashRender::RenderPage(int pageNo)
     hDPI = (double)PDF_FILE_DPI * scaleX;
     vDPI = (double)PDF_FILE_DPI * scaleY;
     pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
+    FreePage();
 }
 
 void SplashRender::FreePage(void)
@@ -1016,6 +1017,8 @@ void SplashRender::FreePage(void)
 
 SplashBitmap* SplashRender::Bitmap(void)
 {
+    FreePage();
+
     bitmap = outputDevice->takeBitmap();
     return bitmap;
 }
