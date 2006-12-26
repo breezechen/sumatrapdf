@@ -330,21 +330,15 @@ static void UpdateWindows(void)
     int dx = 0;
 
     if (gCurrBitmapFitz) {
-        ShowWindow(gHwndFitz, SW_SHOW);
         WinResizeClientArea(gHwndFitz, 0, gBitmapFitzDx, gBitmapFitzDy, &dx);
-    }
-
-    if (gCurrBitmapSplash) {
-        ShowWindow(gHwndSplash, SW_SHOW);
-        WinResizeClientArea(gHwndSplash, dx, gBitmapSplashDx, gBitmapSplashDy, &dx);
-    }
-
-    if (gCurrBitmapFitz) {
+        ShowWindow(gHwndFitz, SW_SHOW);
         InvalidateRect(gHwndFitz, NULL, FALSE);
         UpdateWindow(gHwndFitz);
     }
 
     if (gCurrBitmapSplash) {
+        WinResizeClientArea(gHwndSplash, dx, gBitmapSplashDx, gBitmapSplashDy, &dx);
+        ShowWindow(gHwndSplash, SW_SHOW);
         InvalidateRect(gHwndSplash, NULL, FALSE);
         UpdateWindow(gHwndSplash);
     }

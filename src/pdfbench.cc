@@ -1056,7 +1056,7 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
         goto Error;
     }
 
-MsTimer_End(&msTimer);
+    MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load splash: %.2f ms\n", timeInMs);
 
