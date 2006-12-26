@@ -48,10 +48,11 @@
 
 #include "BaseUtils.h"
 
-
-extern void PreviewBitmap_Init(void);
+extern void PreviewBitmapInit(void);
 extern void PreviewBitmap(SplashBitmap *);
-extern void PreviewBitmap_Destroy(void);
+extern void PreviewBitmapSplash(SplashBitmap *);
+extern void PreviewBitmapFitz(fz_pixmap *);
+extern void PreviewBitmapDestroy(void);
 
 #define PDF_FILE_DPI 72
 
@@ -890,9 +891,9 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
 
         if (ShowPreview()) {
-            //PreviewFitzBitmap(image);
-            if (gfSlowPreview && (int)timeInMs < SLOW_PREVIEW_TIME)
-                SleepMilliseconds(SLOW_PREVIEW_TIME - (int)timeInMs);
+            PreviewBitmapFitz(image);
+            if (gfSlowPreview)
+                SleepMilliseconds(SLOW_PREVIEW_TIME);
         }
 
 NextPage:
@@ -1015,9 +1016,9 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
         if (ShowPreview()) {
             delete bitmap;
             bitmap = outputDevice->takeBitmap();
-            PreviewBitmap(bitmap);
-            if (gfSlowPreview && (int)timeInMs < SLOW_PREVIEW_TIME)
-                SleepMilliseconds(SLOW_PREVIEW_TIME - (int)timeInMs);
+            PreviewBitmapSplash(bitmap);
+            if (gfSlowPreview)
+                SleepMilliseconds(SLOW_PREVIEW_TIME);
         }
     }
 DumpLinks:
@@ -1388,7 +1389,7 @@ int main(int argc, char **argv)
     else
         gErrFile = stderr;
 
-    PreviewBitmap_Init();
+    PreviewBitmapInit();
 
     curr = gArgsListRoot;
     while (curr) {
@@ -1397,7 +1398,7 @@ int main(int argc, char **argv)
     }
     if (outFile)
         fclose(outFile);
-    PreviewBitmap_Destroy();
+    PreviewBitmapDestroy();
     StrList_Destroy(&gArgsListRoot);
     delete globalParams;
     return 0;
