@@ -1527,6 +1527,8 @@ void RenderCmdLineArg(char *cmdLineArg)
     }
 }
 
+extern "C" void pdf_destoryfontlistMS();
+
 int main(int argc, char **argv)
 {
     StrList *       curr;
@@ -1571,6 +1573,7 @@ int main(int argc, char **argv)
     if (outFile)
         fclose(outFile);
     PreviewBitmapDestroy();
+    pdf_destoryfontlistMS();
     StrList_Destroy(&gArgsListRoot);
     delete globalParams;
     return 0;

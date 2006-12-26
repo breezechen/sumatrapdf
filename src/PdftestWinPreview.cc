@@ -94,8 +94,10 @@ void winconvert(fz_pixmap *image)
 {
     int y, x;
 
-    if (bmpdata)
+    if (bmpdata) {
         fz_free(bmpdata);
+        bmpdata = NULL;
+    }
 
     bmpstride = ((image->w * 3 + 3) / 4) * 4;
     bmpdata = (unsigned char*)fz_malloc(image->h * bmpstride);
@@ -136,8 +138,12 @@ void winblit(HDC hdc, fz_pixmap *image)
         gDibInfo, /* pInfo */
         DIB_RGB_COLORS /* color use flag */
     );
-}
 
+    if (bmpdata) {
+        fz_free(bmpdata);
+        bmpdata = NULL;
+    }
+}
 
 void DrawFitz(HWND hwnd, fz_pixmap *bmp)
 {
