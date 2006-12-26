@@ -7,13 +7,16 @@
 #define WIN_CLASS_NAME  "PDFTEST_PDF_WIN"
 #define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 
-static HWND             gHwnd = NULL;
+static HWND             gHwndSplash = NULL;
+static HWND             gHwndFitz = NULL;
 static HBRUSH           gBrushBg;
 static BITMAPINFO *     gDibInfo = NULL;
 static SplashBitmap *   gCurrBitmapSplash = NULL;
 static fz_pixmap *      gCurrBitmapFitz = NULL;
-static int              gBitmapDx = -1;
-static int              gBitmapDy = -1;
+static int              gBitmapSplashDx = -1;
+static int              gBitmapSplashDy = -1;
+static int              gBitmapFitzDx = -1;
+static int              gBitmapFitzDy = -1;
 
 int RectDx(RECT *r)
 {
@@ -30,7 +33,7 @@ int RectDy(RECT *r)
 }
 
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
-void WinResizeClientArea(HWND hwnd, int dx, int dy)
+void WinResizeClientArea(HWND hwnd, int x, int dx, int dy, int *dx_out)
 {
     RECT rc;
     RECT rw;
@@ -42,7 +45,8 @@ void WinResizeClientArea(HWND hwnd, int dx, int dy)
     GetWindowRect(hwnd, &rw);
     win_dx = RectDx(&rw) + (dx - RectDx(&rc));
     win_dy = RectDy(&rw) + (dy - RectDy(&rc));
-    SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
+    SetWindowPos(hwnd, NULL, x, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
+    *dx_out = win_dx;
 }
 
 void DrawSplash(HWND hwnd, SplashBitmap *bmp)
@@ -60,22 +64,21 @@ void DrawSplash(HWND hwnd, SplashBitmap *bmp)
     bmpRowSize = bmp->getRowSize();
     bmpData = bmp->getDataPtr();
 
-    gDibInfo->bmiHeader.biWidth = gBitmapDx;
-    gDibInfo->bmiHeader.biHeight = -gBitmapDy;
-    gDibInfo->bmiHeader.biSizeImage = gBitmapDy * bmpRowSize;
+    gDibInfo->bmiHeader.biWidth = gBitmapSplashDx;
+    gDibInfo->bmiHeader.biHeight = -gBitmapSplashDy;
+    gDibInfo->bmiHeader.biSizeImage = gBitmapSplashDy * bmpRowSize;
 
     FillRect(hdc, &ps.rcPaint, gBrushBg);
-    DrawText (hdc, "Hello world", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
 
     SetDIBitsToDevice(hdc,
         0, /* destx */
         0, /* desty */
-        gBitmapDx, /* destw */
-        gBitmapDy, /* desth */
+        gBitmapSplashDx, /* destw */
+        gBitmapSplashDy, /* desth */
         0, /* srcx */
         0, /* srcy */
         0, /* startscan */
-        gBitmapDy, /* numscans */
+        gBitmapSplashDy, /* numscans */
         bmpData, /* pBits */
         gDibInfo, /* pInfo */
         DIB_RGB_COLORS /* color use flag */
@@ -157,11 +160,8 @@ void OnPaint(HWND hwnd)
 
     if (gCurrBitmapSplash)
         DrawSplash(hwnd, gCurrBitmapSplash);
-    else {
-        assert(gCurrBitmapFitz);
-        if (gCurrBitmapFitz)
-            DrawFitz(hwnd, gCurrBitmapFitz);
-    }
+    if (gCurrBitmapFitz)
+        DrawFitz(hwnd, gCurrBitmapFitz);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -217,7 +217,7 @@ BOOL RegisterWinClass(void)
 
 int InitWinIfNecessary(void)
 {
-    if (gHwnd)
+    if (gHwndSplash)
         return TRUE;
 
     if (!RegisterWinClass())
@@ -225,15 +225,26 @@ int InitWinIfNecessary(void)
 
     gBrushBg = CreateSolidBrush(COL_WINDOW_BG);
 
-    gHwnd = CreateWindow(
-        WIN_CLASS_NAME, "",
+    gHwndSplash = CreateWindow(
+        WIN_CLASS_NAME, "Splash",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, 0,
         CW_USEDEFAULT, 0,
         NULL, NULL,
         NULL, NULL);
 
-    if (!gHwnd)
+    if (!gHwndSplash)
+        return FALSE;
+
+    gHwndFitz = CreateWindow(
+        WIN_CLASS_NAME, "Fitz",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0,
+        CW_USEDEFAULT, 0,
+        NULL, NULL,
+        NULL, NULL);
+
+    if (!gHwndFitz)
         return FALSE;
 
     assert(!gDibInfo);
@@ -249,7 +260,8 @@ int InitWinIfNecessary(void)
     gDibInfo->bmiHeader.biClrUsed = 0;
     gDibInfo->bmiHeader.biClrImportant = 0;
 
-    ShowWindow(gHwnd, SW_SHOW);
+    ShowWindow(gHwndSplash, SW_HIDE);
+    ShowWindow(gHwndFitz, SW_HIDE);
     return TRUE;
 }
 
@@ -281,52 +293,77 @@ void PreviewBitmapDestroy(void)
     DeleteObject(gBrushBg);
 }
 
-void PreviewBitmapFitz(fz_pixmap *bitmap)
+static void SetSplash(SplashBitmap *bitmap)
 {
-    assert(bitmap);
-    if (!bitmap)
-        return;
-    if (!InitWinIfNecessary())
-        return;
-
-    gCurrBitmapFitz = bitmap;
-    gCurrBitmapSplash = NULL;
-    if ( (bitmap->w != gBitmapDx) ||
-        (bitmap->h != gBitmapDy) ) {
-        gBitmapDx = bitmap->w;
-        gBitmapDy = bitmap->h;
-        WinResizeClientArea(gHwnd, gBitmapDx, gBitmapDy);
-    }
-    assert(gHwnd);
-
-    InvalidateRect(gHwnd, NULL, FALSE);
-    UpdateWindow(gHwnd);
-
-    PumpMessages();
-}
-
-void PreviewBitmapSplash(SplashBitmap *bitmap)
-{
-    assert(bitmap);
-    if (!bitmap)
-        return;
     if (!InitWinIfNecessary())
         return;
 
     gCurrBitmapSplash = bitmap;
-    gCurrBitmapFitz = NULL;
-    if ( (bitmap->getWidth() != gBitmapDx) ||
-        (bitmap->getHeight() != gBitmapDy) ) {
-        gBitmapDx = bitmap->getWidth();
-        gBitmapDy = bitmap->getHeight();
-        WinResizeClientArea(gHwnd, gBitmapDx, gBitmapDy);
+    if ( (bitmap->getWidth() != gBitmapSplashDx) ||
+        (bitmap->getHeight() != gBitmapSplashDy) ) {
+        gBitmapSplashDx = bitmap->getWidth();
+        gBitmapSplashDy = bitmap->getHeight();
     }
-    assert(gHwnd);
+}
 
-    InvalidateRect(gHwnd, NULL, FALSE);
-    UpdateWindow(gHwnd);
+static void SetFitz(fz_pixmap *bitmap)
+{
+    if (!InitWinIfNecessary())
+        return;
+
+    gCurrBitmapFitz = bitmap;
+    if ( (bitmap->w != gBitmapFitzDx) ||
+        (bitmap->h != gBitmapFitzDy) ) {
+        gBitmapFitzDx = bitmap->w;
+        gBitmapFitzDy = bitmap->h;
+    }
+}
+
+static void UpdateWindows(void)
+{
+    int dx = 0;
+
+    if (gCurrBitmapFitz) {
+        ShowWindow(gHwndFitz, SW_SHOW);
+        WinResizeClientArea(gHwndFitz, 0, gBitmapFitzDx, gBitmapFitzDy, &dx);
+    }
+
+    if (gCurrBitmapSplash) {
+        ShowWindow(gHwndSplash, SW_SHOW);
+        WinResizeClientArea(gHwndSplash, dx, gBitmapSplashDx, gBitmapSplashDy, &dx);
+    }
+
+    if (gCurrBitmapFitz) {
+        InvalidateRect(gHwndFitz, NULL, FALSE);
+        UpdateWindow(gHwndFitz);
+    }
+
+    if (gCurrBitmapSplash) {
+        InvalidateRect(gHwndSplash, NULL, FALSE);
+        UpdateWindow(gHwndSplash);
+    }
 
     PumpMessages();
 }
 
+void PreviewBitmapSplashFitz(SplashBitmap *splash, fz_pixmap *fitz)
+{
+    SetSplash(splash);
+    SetFitz(fitz);
+    UpdateWindows();
+}
+
+void PreviewBitmapFitz(fz_pixmap *bitmap)
+{
+    gCurrBitmapSplash = NULL;
+    SetFitz(bitmap);
+    UpdateWindows();
+}
+
+void PreviewBitmapSplash(SplashBitmap *bitmap)
+{
+    gCurrBitmapFitz = NULL;
+    SetSplash(bitmap);
+    UpdateWindows();
+}
 

@@ -52,6 +52,7 @@ extern void PreviewBitmapInit(void);
 extern void PreviewBitmap(SplashBitmap *);
 extern void PreviewBitmapSplash(SplashBitmap *);
 extern void PreviewBitmapFitz(fz_pixmap *);
+extern void PreviewBitmapSplashFitz(SplashBitmap *, fz_pixmap *);
 extern void PreviewBitmapDestroy(void);
 
 #define PDF_FILE_DPI 72
@@ -286,6 +287,7 @@ static StrList *gArgsListRoot = NULL;
 #define DUMP_LINKS_ARG      "-dump-links"
 #define TEXT_ARG            "-text"
 #define FITZ_ARG            "-fitz"
+#define BOTH_ARG            "-both"
 
 /* Should we record timings? True if -timings command-line argument was given. */
 static BOOL gfTimings = FALSE;
@@ -341,6 +343,9 @@ static BOOL gfLoadOnly = FALSE;
 
 /* if TRUE, will dump information about links */
 static BOOL gfDumpLinks = FALSE;
+
+/* if TRUE, will timer, render and preview both fitz and poppler backends */
+static BOOL gfBoth = FALSE;
 
 static SplashColor splashColRed;
 static SplashColor splashColGreen;
@@ -795,36 +800,71 @@ fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
 
 extern "C" fz_error *initfontlibs_ms(void);
 
-/* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfxWithFitz(const char *fileName)
+#define FITZ_TMP_NAME "c:\\fitz_tmp.pdf"
+#define POPPLER_TMP_NAME "c:\\poppler_tmp.pdf"
+
+class FitzRender
 {
-    MsTimer             msTimer;
-    double              timeInMs;
-    int                 pageCount;
+public:
+    FitzRender(const char *_fileName);
+    ~FitzRender();
+    int Load();
+    void RenderPage(int pageNo);
+    void FreePage(void);
 
-    pdf_xref *          xref = NULL;
-    pdf_outline *       outline = NULL;
-    pdf_pagetree *      pages = NULL;
-    fz_renderer *       rast = NULL;
-
+    const char *        fileName;
+    pdf_xref *          xref;
+    pdf_outline *       outline;
+    pdf_pagetree *      pages;
+    fz_renderer *       rast;
     fz_error *          error;
     fz_obj *            obj;
+    fz_pixmap *         image;
+    pdf_page *          page;
+};
 
-    assert(fileName);
-    if (!fileName)
-        return;
-
-    LogInfo("started fitz: %s\n", fileName);
-
-    error = initfontlibs_ms();
-    if (error)
-        goto Error;
-
+FitzRender::FitzRender(const char *_fileName)
+{
+    fileName = _fileName;
+    xref = NULL;
+    outline = NULL;
+    pages = NULL;
+    rast = NULL;
+    image = NULL;
+    page = NULL;
     error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
-    if (error)
-        goto Error;
+}
 
-    MsTimer_Start(&msTimer);
+void FitzRender::FreePage(void)
+{
+    if (page) {
+        pdf_droppage(page);
+        page = NULL;
+    }
+
+    if (image) {
+        fz_droppixmap(image);
+        image = NULL;
+    }
+}
+
+void FitzRender::RenderPage(int pageNo)
+{
+    fz_matrix           ctm;
+    fz_rect             bbox;
+
+    FreePage();
+    obj = pdf_getpageobject(pages, pageNo - 1);
+    error = pdf_loadpage(&page, xref, obj);
+    if (error)
+        return;
+    ctm = pdfapp_viewctm(page, 1.f, 0);
+    bbox = fz_transformaabb(ctm, page->mediabox);
+    error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
+}
+
+int FitzRender::Load()
+{
     error = pdf_newxref(&xref);
     if (error)
         goto Error;
@@ -850,64 +890,14 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
     error = pdf_loadpagetree(&pages, xref);
     if (error)
         goto Error;
-
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
-    LogInfo("load: %.2f ms\n", timeInMs);
-
-    pageCount = pages->count;
-    LogInfo("page count: %d\n", pageCount);
-
-    if (gfLoadOnly)
-        goto Error;
-
-    for (int curPage = 1; curPage <= pageCount; curPage++) {
-        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
-            continue;
-
-        fz_matrix           ctm;
-        fz_rect             bbox;
-        fz_pixmap *         image = NULL;
-        pdf_page *          page = NULL;
-
-        MsTimer_Start(&msTimer);
-
-        obj = pdf_getpageobject(pages, curPage - 1);
-
-        error = pdf_loadpage(&page, xref, obj);
-        if (error)
-            goto NextPage;
-
-        ctm = pdfapp_viewctm(page, 1.f, 0);
-        bbox = fz_transformaabb(ctm, page->mediabox);
-
-        error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
-        if (error)
-            goto NextPage;
-
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
-        if (gfTimings)
-            LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
-
-        if (ShowPreview()) {
-            PreviewBitmapFitz(image);
-            if (gfSlowPreview)
-                SleepMilliseconds(SLOW_PREVIEW_TIME);
-        }
-
-NextPage:
-        if (page) {
-            pdf_droppage(page);
-            page = NULL;
-        }
-
-        if (image) {
-            fz_droppixmap(image);
-            image = NULL;
-        }
-    }
+    return TRUE;
 Error:
+    return FALSE;
+}
+
+FitzRender::~FitzRender()
+{
+    FreePage();
 
     if (pages)
         pdf_droppagetree(pages);
@@ -915,8 +905,7 @@ Error:
     if (outline)
         pdf_dropoutline(outline);
 
-    if (xref)
-    {
+    if (xref) {
         if (xref->store)
             pdf_dropstore(xref->store);
         xref->store = 0;
@@ -925,15 +914,19 @@ Error:
 
     if (rast)
         fz_droprenderer(rast);
-    LogInfo("finished fitz: %s\n", fileName);
 }
 
-/* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
+class SplashRender
 {
-    MsTimer             msTimer;
-    double              timeInMs;
-    int                 pageCount;
+public:
+    SplashRender(const char *_fileName);
+    ~SplashRender();
+    int Load();
+    void RenderPage(int pageNo);
+    void FreePage(void);
+    SplashBitmap* Bitmap(void);
+
+    const char *        fileName;
     int                 pageDx, pageDy;
     int                 renderDx, renderDy;
     double              scaleX, scaleY;
@@ -942,24 +935,35 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
     GBool               useMediaBox;
     GBool               crop;
     GBool               doLinks;
-    GooString *         fileNameStr = NULL;
-    PDFDoc *            pdfDoc = NULL;
-    SplashOutputDev *   outputDevice = NULL;
-    SplashBitmap *      bitmap = NULL;
+    GooString *         fileNameStr;
+    PDFDoc *            pdfDoc;
+    SplashOutputDev *   outputDevice;
+    SplashBitmap *      bitmap;
+};
 
-    assert(fileName);
-    if (!fileName)
-        return;
-
-    LogInfo("started poppler: %s\n", fileName);
+SplashRender::SplashRender(const char *_fileName)
+{
+    fileName = _fileName;
+    fileNameStr = NULL;
+    pdfDoc = NULL;
+    outputDevice = NULL;
+    bitmap = NULL;
 
     outputDevice = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
     if (!outputDevice) {
         error(-1, "renderPdfFile(): failed to create outputDev\n");
-        goto Error;
     }
+}
 
-    MsTimer_Start(&msTimer);
+SplashRender::~SplashRender()
+{
+    FreePage();
+    delete outputDevice;
+    delete pdfDoc;
+}
+
+int SplashRender::Load()
+{
     /* note: don't delete fileNameStr since PDFDoc takes ownership and deletes them itself */
     fileNameStr = new GooString(fileName);
     if (!fileNameStr)
@@ -971,12 +975,188 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
         goto Error;
     }
     outputDevice->startDoc(pdfDoc->getXRef());
+    return TRUE;
+Error:
+    return FALSE;
+}
 
+void SplashRender::RenderPage(int pageNo)
+{
+    pageDx = (int)pdfDoc->getPageCropWidth(pageNo);
+    pageDy = (int)pdfDoc->getPageCropHeight(pageNo);
+
+    renderDx = pageDx;
+    renderDy = pageDy;
+    if (gfForceResolution) {
+        renderDx = gResolutionX;
+        renderDy = gResolutionY;
+    }
+    rotate = 0;
+    useMediaBox = gFalse;
+    crop = gTrue;
+    doLinks = gTrue;
+    scaleX = 1.0;
+    scaleY = 1.0;
+    if (pageDx != renderDx)
+        scaleX = (double)renderDx / (double)pageDx;
+    if (pageDy != renderDy)
+        scaleY = (double)renderDy / (double)pageDy;
+    hDPI = (double)PDF_FILE_DPI * scaleX;
+    vDPI = (double)PDF_FILE_DPI * scaleY;
+    pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
+}
+
+void SplashRender::FreePage(void)
+{
+    if (bitmap) {
+        delete bitmap;
+        bitmap = NULL;
+    }
+}
+
+SplashBitmap* SplashRender::Bitmap(void)
+{
+    bitmap = outputDevice->takeBitmap();
+    return bitmap;
+}
+
+/* Render one pdf file with a given 'fileName'. Log apropriate info. */
+static void RenderPdfFileAsGfxWithBoth(const char *fileName)
+{
+    MsTimer             msTimer;
+    double              timeInMs;
+    int                 pageCountFitz, pageCountSplash, pageCount;
+    FitzRender *        renderFitz = NULL;
+    SplashRender *      renderSplash = NULL;
+
+    CopyFile(fileName, FITZ_TMP_NAME, FALSE);
+    CopyFile(fileName, POPPLER_TMP_NAME, FALSE);
+
+    LogInfo("started both: %s\n", fileName);
+    initfontlibs_ms();
+
+    renderFitz = new FitzRender(FITZ_TMP_NAME);
+    renderSplash = new SplashRender(POPPLER_TMP_NAME);
+
+    MsTimer_Start(&msTimer);
+    renderFitz->Load();
+    MsTimer_End(&msTimer);
+    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    LogInfo("load fitz  : %.2f ms\n", timeInMs);
+
+    MsTimer_Start(&msTimer);
+    renderSplash->Load();
+    MsTimer_End(&msTimer);
+    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    LogInfo("load splash: %.2f ms\n", timeInMs);
+
+    pageCountFitz = renderFitz->pages->count;
+    pageCountSplash = renderSplash->pdfDoc->getNumPages();
+    pageCount = pageCountFitz;
+    if (pageCountSplash < pageCount)
+        pageCount = pageCountSplash;
+    LogInfo("page count: %d\n", pageCount);
+
+    for (int curPage = 1; curPage <= pageCount; curPage++) {
+        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
+            continue;
+        MsTimer_Start(&msTimer);
+        renderFitz->RenderPage(curPage);
+        MsTimer_End(&msTimer);
+        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+
+        if (gfTimings)
+            LogInfo("page fitz   %d: %.2f ms\n", curPage, timeInMs);
+
+        MsTimer_Start(&msTimer);
+        renderSplash->RenderPage(curPage);
+        MsTimer_End(&msTimer);
+        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+
+        if (gfTimings)
+            LogInfo("page splash %d: %.2f ms\n", curPage, timeInMs);
+
+        if (ShowPreview()) {
+            PreviewBitmapSplashFitz(renderSplash->Bitmap(), renderFitz->image);
+            if (gfSlowPreview)
+                SleepMilliseconds(SLOW_PREVIEW_TIME);
+        }
+    }
+
+    delete renderFitz;
+    delete renderSplash;
+    LogInfo("finished both: %s\n", fileName);
+}
+
+/* Render one pdf file with a given 'fileName'. Log apropriate info. */
+static void RenderPdfFileAsGfxWithFitz(const char *fileName)
+{
+    MsTimer             msTimer;
+    double              timeInMs;
+    int                 pageCount;
+    FitzRender *        render = NULL;
+
+    LogInfo("started fitz: %s\n", fileName);
+    initfontlibs_ms();
+
+    render = new FitzRender(fileName);
+
+    MsTimer_Start(&msTimer);
+    render->Load();
     MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = pdfDoc->getNumPages();
+    pageCount = render->pages->count;
+    LogInfo("page count: %d\n", pageCount);
+
+    if (gfLoadOnly)
+        goto Error;
+
+    for (int curPage = 1; curPage <= pageCount; curPage++) {
+        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
+            continue;
+
+        MsTimer_Start(&msTimer);
+        render->RenderPage(curPage);
+        MsTimer_End(&msTimer);
+        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+
+        if (gfTimings)
+            LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
+
+        if (ShowPreview()) {
+            PreviewBitmapFitz(render->image);
+            if (gfSlowPreview)
+                SleepMilliseconds(SLOW_PREVIEW_TIME);
+        }
+
+    }
+
+Error:
+    delete render;
+    LogInfo("finished fitz: %s\n", fileName);
+}
+
+/* Render one pdf file with a given 'fileName'. Log apropriate info. */
+static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
+{
+    MsTimer             msTimer;
+    double              timeInMs;
+    int                 pageCount;
+    SplashRender *      render;
+
+    render = new SplashRender(fileName);
+
+    LogInfo("started poppler: %s\n", fileName);
+
+    MsTimer_Start(&msTimer);
+    render->Load();
+    MsTimer_End(&msTimer);
+    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    LogInfo("load: %.2f ms\n", timeInMs);
+
+    pageCount = render->pdfDoc->getNumPages();
     LogInfo("page count: %d\n", pageCount);
 
     if (gfLoadOnly)
@@ -986,49 +1166,24 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
 
-        pageDx = (int)pdfDoc->getPageCropWidth(curPage);
-        pageDy = (int)pdfDoc->getPageCropHeight(curPage);
-
-        renderDx = pageDx;
-        renderDy = pageDy;
-        if (gfForceResolution) {
-            renderDx = gResolutionX;
-            renderDy = gResolutionY;
-        }
         MsTimer_Start(&msTimer);
-        rotate = 0;
-        useMediaBox = gFalse;
-        crop = gTrue;
-        doLinks = gTrue;
-        scaleX = 1.0;
-        scaleY = 1.0;
-        if (pageDx != renderDx)
-            scaleX = (double)renderDx / (double)pageDx;
-        if (pageDy != renderDy)
-            scaleY = (double)renderDy / (double)pageDy;
-        hDPI = (double)PDF_FILE_DPI * scaleX;
-        vDPI = (double)PDF_FILE_DPI * scaleY;
-        pdfDoc->displayPage(outputDevice, curPage, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
+        render->RenderPage(curPage);
         MsTimer_End(&msTimer);
         timeInMs = MsTimer_GetTimeInMs(&msTimer);
         if (gfTimings)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
+
         if (ShowPreview()) {
-            delete bitmap;
-            bitmap = outputDevice->takeBitmap();
-            PreviewBitmapSplash(bitmap);
+            PreviewBitmapSplash(render->Bitmap());
             if (gfSlowPreview)
                 SleepMilliseconds(SLOW_PREVIEW_TIME);
         }
     }
 DumpLinks:
     if (gfDumpLinks)
-        DumpLinks(pdfDoc);
-Error:
+        DumpLinks(render->pdfDoc);
     LogInfo("finished poppler: %s\n", fileName);
-    delete bitmap;
-    delete outputDevice;
-    delete pdfDoc;
+    delete render;
 }
 
 static void RenderPdfFile(const char *fileName)
@@ -1037,10 +1192,14 @@ static void RenderPdfFile(const char *fileName)
         /* TODO: right not rendering as text is only supported with poppler, not fitz */
         RenderPdfFileAsText(fileName);
     } else {
-        if (gfFitzRendering)
-            RenderPdfFileAsGfxWithFitz(fileName);
-        else
-            RenderPdfFileAsGfxWithPoppler(fileName);
+        if (gfBoth) {
+                RenderPdfFileAsGfxWithBoth(fileName);
+        } else {
+            if (gfFitzRendering)
+                RenderPdfFileAsGfxWithFitz(fileName);
+            else
+                RenderPdfFileAsGfxWithPoppler(fileName);
+        }
     }
 }
 
@@ -1188,6 +1347,8 @@ void ParseCommandLine(int argc, char **argv)
                 gfLoadOnly = TRUE;
             } else if (Str_EqNoCase(arg, FITZ_ARG)) {
                 gfFitzRendering = TRUE;
+            } else if (Str_EqNoCase(arg, BOTH_ARG)) {
+                gfBoth = TRUE;
             } else if (Str_EqNoCase(arg, PAGE_ARG)) {
                 /* expect an integer after that */
                 ++i;
