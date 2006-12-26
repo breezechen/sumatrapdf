@@ -151,7 +151,8 @@ preloadxobject(pdf_xref *xref, fz_obj *ref)
 	{
 		error = pdf_loadimage(&image, xref, obj, ref);
 		fz_dropobj(obj);
-		fz_dropimage((fz_image*)image);
+        if (image)
+		    fz_dropimage((fz_image*)image);
 		return error;
 	}
 	else
@@ -171,6 +172,9 @@ preloadfont(pdf_xref *xref, fz_obj *ref)
 	if (error)
 		return error;
 	error = pdf_loadfont(&font, xref, obj, ref);
+	fz_dropobj(obj);
+	if (!error)
+		fz_dropfont((fz_font*)font);
 	return error;
 }
 

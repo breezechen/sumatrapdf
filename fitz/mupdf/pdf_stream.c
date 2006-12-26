@@ -286,6 +286,7 @@ pdf_buildfilter(fz_filter **filterp, pdf_xref *xref, fz_obj *stmobj, int oid, in
 				goto cleanup2;
 
 			error = fz_newpipeline(&pipe, base, tmp);
+			fz_dropfilter(base);
 			fz_dropfilter(tmp);
 			if (error)
 				goto cleanup2;

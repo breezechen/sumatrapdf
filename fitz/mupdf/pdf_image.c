@@ -295,7 +295,8 @@ pdf_loadimage(pdf_image **imgp, pdf_xref *xref, fz_obj *dict, fz_obj *ref)
 			return error;
 
 		error = pdf_loadimage(&mask, xref, sub, obj);
-		if (error)
+		fz_dropobj(sub);
+		if (error) 
 			return error;
 
 		if (mask->super.cs != pdf_devicegray)
@@ -304,8 +305,6 @@ pdf_loadimage(pdf_image **imgp, pdf_xref *xref, fz_obj *dict, fz_obj *ref)
 		mask->super.cs = 0;
 		mask->super.n = 0;
 		mask->super.a = 1;
-
-		fz_dropobj(sub);
 	}
 
 	obj = fz_dictgets(dict, "Mask");

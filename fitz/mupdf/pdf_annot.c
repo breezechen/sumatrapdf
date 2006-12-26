@@ -198,7 +198,8 @@ pdf_loadannots(pdf_comment **cp, pdf_link **lp, pdf_xref *xref, fz_obj *annots)
 	return nil;
 
 cleanup:
-	pdf_droplink(link);
+    if (link)
+        pdf_droplink(link);
 	return error;
 }
 

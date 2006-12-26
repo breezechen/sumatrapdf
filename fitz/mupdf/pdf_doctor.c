@@ -61,14 +61,8 @@ sweepref(pdf_xref *xref, fz_obj *ref)
 		return error;
 
 	error = sweepobj(xref, obj);
-	if (error)
-	{
-		fz_dropobj(obj);
-		return error;
-	}
-
 	fz_dropobj(obj);
-	return nil;
+    return error;
 }
 
 /*
