@@ -1039,14 +1039,21 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     renderSplash = new SplashRender(POPPLER_TMP_NAME);
 
     MsTimer_Start(&msTimer);
-    renderFitz->Load();
+    if (!renderFitz->Load()) {
+        LogInfo("failed to load fitz\n");
+        goto Error;
+    }
     MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load fitz  : %.2f ms\n", timeInMs);
 
     MsTimer_Start(&msTimer);
-    renderSplash->Load();
-    MsTimer_End(&msTimer);
+    if (!renderSplash->Load()) {
+        LogInfo("failed to load splash\n");
+        goto Error;
+    }
+
+MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load splash: %.2f ms\n", timeInMs);
 
@@ -1083,6 +1090,7 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
         }
     }
 
+Error:
     delete renderFitz;
     delete renderSplash;
     LogInfo("finished both: %s\n", fileName);

@@ -299,6 +299,9 @@ static void SetSplash(SplashBitmap *bitmap)
         return;
 
     gCurrBitmapSplash = bitmap;
+    if (!bitmap)
+        return;
+
     if ( (bitmap->getWidth() != gBitmapSplashDx) ||
         (bitmap->getHeight() != gBitmapSplashDy) ) {
         gBitmapSplashDx = bitmap->getWidth();
@@ -312,6 +315,9 @@ static void SetFitz(fz_pixmap *bitmap)
         return;
 
     gCurrBitmapFitz = bitmap;
+    if (!bitmap)
+        return;
+
     if ( (bitmap->w != gBitmapFitzDx) ||
         (bitmap->h != gBitmapFitzDy) ) {
         gBitmapFitzDx = bitmap->w;
@@ -355,14 +361,14 @@ void PreviewBitmapSplashFitz(SplashBitmap *splash, fz_pixmap *fitz)
 
 void PreviewBitmapFitz(fz_pixmap *bitmap)
 {
-    gCurrBitmapSplash = NULL;
+    SetSplash(NULL);
     SetFitz(bitmap);
     UpdateWindows();
 }
 
 void PreviewBitmapSplash(SplashBitmap *bitmap)
 {
-    gCurrBitmapFitz = NULL;
+    SetFitz(NULL);
     SetSplash(bitmap);
     UpdateWindows();
 }
