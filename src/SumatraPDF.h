@@ -29,7 +29,7 @@
 #include <tchar.h>
 #include "resource.h"
 
-#include "DisplayModel.h"
+#include "DisplayModelSplash.h"
 
 /* TODO: Currently not used. The idea is to be able to switch between different
    visual styles. Because I can. */

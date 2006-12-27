@@ -1,5 +1,5 @@
-#ifndef _DISPLAY_MODEL_H_
-#define _DISPLAY_MODEL_H_
+#ifndef _DISPLAY_MODEL_SPLASH_H_
+#define _DISPLAY_MODEL_SPLASH_H_
 /* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
    License: GPLv2 */
 
@@ -48,6 +48,7 @@
 #include "BaseUtils.h"
 #include "DisplayState.h"
 #include "SimpleRect.h"
+#include "DisplayModel.h"
 
 class GooString;
 class Link;
@@ -188,11 +189,11 @@ typedef struct SearchStateData {
    You can think of it as a model in the MVC pardigm.
    All the display changes should be done through changing this model via
    API and re-displaying things based on new display information */
-class DisplayModelSplash 
+class DisplayModelSplash : public DisplayModel
 {
 public:
     DisplayModelSplash();
-    ~DisplayModelSplash();
+    virtual ~DisplayModelSplash();
 
     PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);

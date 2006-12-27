@@ -4,7 +4,7 @@
 
 #include "BaseUtils.h"
 #include "dstring.h"
-#include "DisplayModel.h"
+#include "DisplayModelSplash.h"
 
 #include "Resource.h"
 

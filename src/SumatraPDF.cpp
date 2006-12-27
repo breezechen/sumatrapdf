@@ -26,7 +26,7 @@
 #include "AppPrefs.h"
 
 #include "SimpleRect.h"
-#include "DisplayModel.h"
+#include "DisplayModelSplash.h"
 #include "BaseUtils.h"
 #include <windowsx.h>
 

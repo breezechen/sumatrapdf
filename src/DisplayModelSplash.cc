@@ -1,7 +1,7 @@
 /* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
    License: GPLv2 */
 
-#include "DisplayModel.h"
+#include "DisplayModelSplash.h"
 #include <assert.h>
 #include "BaseUtils.h"
 #include "GooMutex.h"
