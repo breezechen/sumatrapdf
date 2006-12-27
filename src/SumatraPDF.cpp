@@ -3519,25 +3519,38 @@ static TBBUTTON TbButtonFromButtonInfo(int i)
     return tbButton;
 }
 
+static void SeeLastError(void)
+{
+    char *msgBuf = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR) &msgBuf, 0, NULL);
+    if (!msgBuf) return;
+	printf("SeeLastError(): %s\n", msgBuf);
+	OutputDebugStringA(msgBuf);
+	LocalFree(msgBuf);
+}
+
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 {
     TBBUTTON        tbButtons[TOOLBAR_BUTTONS_COUNT];
     HWND            hwndToolbar;
     DWORD           dwToolbarStyle = WS_TOOLBAR;
-    DWORD           dwReBarStyle = WS_REBAR;
     HIMAGELIST      himl = 0;
     HBITMAP         hbmp;
     BITMAP          bmp;
     RECT            rc;
     REBARINFO       rbi;
     REBARBANDINFO   rbBand;
-    HWND            hwndParent = win->hwndFrame;
     BOOL            bIsAppThemed = PrivateIsAppThemed();
+	LRESULT			lres;
+	LRESULT			exstyle;
 
+    HWND            hwndOwner = win->hwndFrame;
     hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, dwToolbarStyle,
-                                 0,0,0,0, hwndParent,(HMENU)IDC_TOOLBAR, hInst,NULL);
+                                 0,0,0,0, hwndOwner,(HMENU)IDC_TOOLBAR, hInst,NULL);
     win->hwndToolbar = hwndToolbar;
-    SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+    lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
     for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
         if (IDB_SEPARATOR != gToolbarButtons[i].bitmapResourceId) {
@@ -3554,26 +3567,31 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
         }
         tbButtons[i] = TbButtonFromButtonInfo(i);
     }
-    SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
+    lres = SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
 
     // TODO: construct disabled image list as well?
     //SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
 
-    SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0,
-          SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0) | TBSTYLE_EX_MIXEDBUTTONS);
+	exstyle = SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0);
+	exstyle |= TBSTYLE_EX_MIXEDBUTTONS;
+    lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, lres);
 
-    SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
+    lres = SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
 
-    SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
+    lres = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
-    dwReBarStyle |= WS_VISIBLE;
-    win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, dwReBarStyle,
-                             0,0,0,0, hwndParent, (HMENU)IDC_REBAR, hInst, NULL);
+    DWORD  reBarStyle = WS_REBAR | WS_VISIBLE;
+	/* TODO: this fails on win2k */
+	win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, reBarStyle,
+                             0,0,0,0, hwndOwner, (HMENU)IDC_REBAR, hInst, NULL);
+	if (!win->hwndReBar) {
+		SeeLastError();
+	}
 
-    rbi.cbSize = sizeof(REBARINFO);
+	rbi.cbSize = sizeof(REBARINFO);
     rbi.fMask  = 0;
     rbi.himl   = (HIMAGELIST)NULL;
-    SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
+    lres = SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
 
     rbBand.cbSize  = sizeof(REBARBANDINFO);
     rbBand.fMask   = /*RBBIM_COLORS | RBBIM_TEXT | RBBIM_BACKGROUND | */
@@ -3587,7 +3605,7 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     rbBand.cxMinChild = (rc.right - rc.left) * TOOLBAR_BUTTONS_COUNT;
     rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
     rbBand.cx         = 0;
-    SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+    lres = SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
 
     SetWindowPos(win->hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
     GetWindowRect(win->hwndReBar, &rc);
@@ -4122,7 +4140,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     u_DoAllTests();
 
-    argListRoot = StrList_FromCmdLine(lpCmdLine);
+	INITCOMMONCONTROLSEX cex;
+	cex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	cex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES | ICC_USEREX_CLASSES | ICC_COOL_CLASSES;
+	InitCommonControlsEx(&cex);
+
+	argListRoot = StrList_FromCmdLine(lpCmdLine);
     assert(argListRoot);
     if (!argListRoot)
         return 0;
