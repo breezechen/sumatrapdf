@@ -214,6 +214,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DisplayModelFitz.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\DisplayModelSplash.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DisplayState.cc"
 				>
 			</File>
@@ -253,6 +261,14 @@
 			</File>
 			<File
 				RelativePath=".\src\DisplayModel.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\DisplayModelFitz.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\DisplayModelSplash.h"
 				>
 			</File>
 			<File
