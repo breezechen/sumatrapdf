@@ -51,6 +51,7 @@
 
 class GooString;
 class Link;
+class LinkDest;
 class LinkGoTo;
 class LinkGoToR;
 class LinkLaunch;
@@ -187,7 +188,102 @@ typedef struct SearchStateData {
    You can think of it as a model in the MVC pardigm.
    All the display changes should be done through changing this model via
    API and re-displaying things based on new display information */
-typedef struct DisplayModel {
+class DisplayModelSplash 
+{
+public:
+    DisplayModelSplash();
+    ~DisplayModelSplash();
+
+    PdfPageInfo * GetPageInfo(int pageNo) const;
+    TextPage *    GetTextPage(int pageNo);
+
+    int           rotation(void) const {
+        return _rotation; 
+    }
+    BOOL          ValidPageNo(int pageNo) const;
+    int           GetCurrentPageNo() const;
+    int           GetPageCount();
+    double        GetZoomReal();
+    double        GetZoomVirtual();
+
+    void          GoToPage(int pageNo, int scrollY, int scrollX=-1);
+    BOOL          GoToPrevPage(int scrollY);
+    BOOL          GoToNextPage(int scrollY);
+    BOOL          GoToFirstPage();
+    BOOL          GoToLastPage();
+
+    void          ScrollXTo(int xOff);
+    void          ScrollXBy(int dx);
+
+    void          ScrollYTo(int yOff);
+    void          ScrollYBy(int dy, bool changePage);
+    void          ScrollYByAreaDy(bool forward, bool changePage);
+
+    void          EnsureSearchHitVisible();
+
+    void          SetDisplayMode(DisplayMode displayMode);
+
+    void          SetZoomVirtual(double zoomVirtual);
+    void          ZoomTo(double zoomVirtual);
+    void          ZoomBy(double zoomFactor);
+
+    void          RotateBy(int rotation);
+
+    void          RenderVisibleParts();
+    void          Relayout(double zoomVirtual, int rotation);
+    void          RecalcVisibleParts();
+
+    void          SetTotalDrawAreaSize(RectDSize totalDrawAreaSize);
+
+    PdfLink *     GetLinkAtPosition(int x, int y);
+    void          HandleLinkGoTo(LinkGoTo *linkGoTo);
+    void          HandleLinkGoToR(LinkGoToR *linkGoToR);
+    void          HandleLinkURI(LinkURI *linkURI);
+    void          HandleLinkLaunch(LinkLaunch* linkLaunch);
+    void          HandleLinkNamed(LinkNamed *linkNamed);
+    BOOL          CanGoToNextPage();
+    BOOL          CanGoToPrevPage();
+
+    void          FindInit(int startPageNo);
+    BOOL          FindNextForward();
+    BOOL          FindNextBackward();
+
+    void          ClearSearchHit();
+    void          SetSearchHit(int pageNo, RectD *hitRect);
+
+    GooString *   GetTextInRegion(int pageNo, RectD *region);
+
+    SplashBitmap* GetBitmapForPage(int pageNo, 
+        BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
+
+    /* Those need to be implemented somewhere else by the GUI */
+    void        SetScrollbarsState();
+    /* called when a page number changes */
+    void        PageChanged();
+    /* called when we decide that the display needs to be redrawn */
+    void        RepaintDisplay(bool delayed);
+
+    void        ShowBusyCursor();
+    void        ShowNormalCursor();
+    void        CancelBackgroundRendering();
+
+    void        FreeTextPages(void);
+    void        RecalcSearchHitCanvasPos(void);
+    void        RecalcLinksCanvasPos(void);
+    void        SetStartPage(int startPage);
+    double      ZoomRealFromFirtualForPage(double _zoomVirtual, int pageNo);
+    void        RecalcLinks(void);
+    void        GoToDest(LinkDest *linkDest);
+    void        GoToNamedDest(UGooString *dest);
+    void        StartRenderingPage(int pageNo);
+    void        FreeLinks(void);
+    void        CvtUserToScreen(int pageNo, double *x, double *y);
+    void        RectCvtUserToScreen(int pageNo, RectD *r);
+    BOOL        IsPageShown(int pageNo);
+    int         FindFirstVisiblePageNo(void) const;
+    PdfPageInfo* FindFirstVisiblePage(void);
+
+public:
     /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
        could link this to a data describing window displaying  this document */
     void *          appData;
@@ -216,7 +312,7 @@ typedef struct DisplayModel {
     int             startPage;
 
     /* current rotation selected by user */
-    int             rotation;
+    int             _rotation;
 
     /* a "virtual" zoom level. Can be either a real zoom level in percent
        (i.e. 100.0 is original size) or one of virtual values ZOOM_FIT_PAGE
@@ -256,14 +352,14 @@ typedef struct DisplayModel {
     int             searchHitPageNo;
     RectD           searchHitRectPage;
     RectI           searchHitRectCanvas;
-} DisplayModel;
+};
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
    and corresponding rendered bitmap.
 */
 typedef struct {
-  DisplayModel * dm;
+  DisplayModelSplash * dm;
   int            pageNo;
   int            rotation;
   double         zoomLevel;
@@ -271,110 +367,40 @@ typedef struct {
 } BitmapCacheEntry;
 
 typedef struct {
-    DisplayModel *  dm;
+    DisplayModelSplash *  dm;
     int             pageNo;
     double          zoomLevel;
     int             rotation;
     int             abort;
 } PageRenderRequest;
 
-DisplaySettings *DisplayModel_GetGlobalDisplaySettings(void);
+BOOL              ValidDisplayMode(DisplayMode dm);
 
-BOOL          ValidDisplayMode(DisplayMode dm);
-
-DisplayModel *DisplayModel_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
+DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
-void          DisplayModel_Delete(DisplayModel *dm);
 
-PdfPageInfo * DisplayModel_GetPageInfo(DisplayModel *dm, int pageNo);
-TextPage *    DisplayModel_GetTextPage(DisplayModel *dm, int pageNo);
+BOOL              DisplayState_FromDisplayModel(DisplayState *ds, DisplayModelSplash *dm);
 
-BOOL          DisplayModel_ValidPageNo(DisplayModel *dm, int pageNo);
-int           DisplayModel_GetCurrentPageNo(DisplayModel *dm);
-int           DisplayModel_GetPageCount(DisplayModel *dm);
-double        DisplayModel_GetZoomReal(DisplayModel *dm);
-double        DisplayModel_GetZoomVirtual(DisplayModel *dm);
-int           DisplayModel_GetRotation(DisplayModel *dm);
-
-void          DisplayModel_GoToPage(DisplayModel *dm, int pageNo, int scrollY, int scrollX=-1);
-BOOL          DisplayModel_GoToPrevPage(DisplayModel *dm, int scrollY);
-BOOL          DisplayModel_GoToNextPage(DisplayModel *dm, int scrollY);
-BOOL          DisplayModel_GoToFirstPage(DisplayModel *dm);
-BOOL          DisplayModel_GoToLastPage(DisplayModel *dm);
-
-void          DisplayModel_ScrollXTo(DisplayModel *dm, int xOff);
-void          DisplayModel_ScrollXBy(DisplayModel *dm, int dx);
-
-void          DisplayModel_ScrollYTo(DisplayModel *dm, int yOff);
-void          DisplayModel_ScrollYBy(DisplayModel *dm, int dy, bool changePage);
-void          DisplayModel_ScrollYByAreaDy(DisplayModel *dm, bool forward, bool changePage);
-
-void          DisplayModel_EnsureSearchHitVisible(DisplayModel *dm);
-
-void          DisplayModel_SetDisplayMode(DisplayModel *dm, DisplayMode displayMode);
-
-void          DisplayModel_SetZoomVirtual(DisplayModel *dm, double zoomVirtual);
-void          DisplayModel_ZoomTo(DisplayModel *dm, double zoomVirtual);
-void          DisplayModel_ZoomBy(DisplayModel *dm, double zoomFactor);
-
-void          DisplayModel_RotateBy(DisplayModel *dm, int rotation);
-
-void          DisplayModel_RenderVisibleParts(DisplayModel *dm);
-void          DisplayModel_Relayout(DisplayModel *dm, double zoomVirtual, int rotation);
-void          DisplayModel_RecalcVisibleParts(DisplayModel *dm);
-
-void          DisplayModel_SetTotalDrawAreaSize(DisplayModel *dm, RectDSize totalDrawAreaSize);
-
-PdfLink *     DisplayModel_GetLinkAtPosition(DisplayModel *dm, int x, int y);
-void          DisplayModel_HandleLinkGoTo(DisplayModel *dm, LinkGoTo *linkGoTo);
-void          DisplayModel_HandleLinkGoToR(DisplayModel *dm, LinkGoToR *linkGoToR);
-void          DisplayModel_HandleLinkURI(DisplayModel *dm, LinkURI *linkURI);
-void          DisplayModel_HandleLinkLaunch(DisplayModel *dm, LinkLaunch* linkLaunch);
-void          DisplayModel_HandleLinkNamed(DisplayModel *dm, LinkNamed *linkNamed);
-BOOL          DisplayModel_CanGoToNextPage(DisplayModel *dm);
-BOOL          DisplayModel_CanGoToPrevPage(DisplayModel *dm);
-
-void          DisplayModel_FindInit(DisplayModel *dm, int startPageNo);
-BOOL          DisplayModel_FindNextForward(DisplayModel *dm);
-BOOL          DisplayModel_FindNextBackward(DisplayModel *dm);
-
-void          DisplayModel_ClearSearchHit(DisplayModel *dm);
-void          DisplayModel_SetSearchHit(DisplayModel *dm, int pageNo, RectD *hitRect);
-
-BOOL          DisplayState_FromDisplayModel(DisplayState *ds, struct DisplayModel *dm);
-
-GooString *  DisplayModel_GetTextInRegion(DisplayModel *dm, int pageNo, RectD *region);
-
-SplashBitmap* DisplayModel_GetBitmapForPage(DisplayModel *dm, int pageNo, 
-    BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
-
-/* Those need to be implemented somewhere else by the GUI */
-extern void DisplayModel_SetScrollbarsState(DisplayModel *dm);
-/* called when a page number changes */
-extern void DisplayModel_PageChanged(DisplayModel *dm);
-/* called when we decide that the display needs to be redrawn */
-extern void DisplayModel_RepaintDisplay(DisplayModel *dm, bool delayed);
-
-extern void DisplayModel_ShowBusyCursor(DisplayModel *dm);
-extern void DisplayModel_ShowNormalCursor(DisplayModel *dm);
-extern void DisplayModel_CancelBackgroundRendering(DisplayModel *dm);
+DisplaySettings * GetGlobalDisplaySettings(void);
 
 /* Lock protecting both bitmap cache and page render queue */
-void LockCache();
-void UnlockCache();
+void              LockCache();
+void              UnlockCache();
 
-SplashBitmap* RenderBitmap(DisplayModel *dm,
+SplashBitmap*     RenderBitmap(DisplayModelSplash *dm,
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA);
 
-BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap);
+void              RenderQueue_Add(DisplayModelSplash *dm, int pageNo);
+
+BitmapCacheEntry *BitmapCache_Find(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
+BOOL              BitmapCache_Exists(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
+void              BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap);
 void              BitmapCache_FreeAll(void);
-BOOL              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
+BOOL              BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm);
 BOOL              BitmapCache_FreeNotVisible(void);
 
 #endif

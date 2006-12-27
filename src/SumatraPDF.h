@@ -67,7 +67,7 @@ typedef struct WindowInfo {
     WindowInfo *    next;
     WinState        state;
     WinState        prevState;
-    DisplayModel *  dm;
+    DisplayModelSplash *  dm;
     HWND            hwndFrame;
     HWND            hwndCanvas;
     HWND            hwndToolbar;

@@ -147,7 +147,7 @@ int Dialog_GoToPage(WindowInfo *win)
     data.pageCount = win->dm->pageCount;
     dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwndFrame, Dialog_GoToPage_Proc, (LPARAM)&data);
     if (DIALOG_OK_PRESSED == dialogResult) {
-        if (DisplayModel_ValidPageNo(win->dm, data.pageEnteredOut)) {
+        if (win->dm->ValidPageNo(data.pageEnteredOut)) {
             return data.pageEnteredOut;
         }
     }

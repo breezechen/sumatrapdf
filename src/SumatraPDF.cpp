@@ -288,7 +288,7 @@ static BOOL pageRenderAbortCb(void *data)
         return FALSE;
 }
 
-void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
+void RenderQueue_RemoveForDisplayModel(DisplayModelSplash *dm) {
     int                 i = 0;
     int                 curPos = 0;
     int                 reqCount;
@@ -314,7 +314,7 @@ void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
 /* Wait until rendering of a page beloging to <dm> has finished. */
 /* TODO: this might take some time, would be good to show a dialog to let the
    user know he has to wait until we finish */
-void CancelRenderingForDisplayModel(DisplayModel *dm)
+void CancelRenderingForDisplayModel(DisplayModelSplash *dm)
 {
     BOOL renderingFinished = FALSE;
 
@@ -334,7 +334,7 @@ void CancelRenderingForDisplayModel(DisplayModel *dm)
 }
 
 /* Render a bitmap for page <pageNo> in <dm>. */
-void RenderQueue_Add(DisplayModel *dm, int pageNo) {
+void RenderQueue_Add(DisplayModelSplash *dm, int pageNo) {
     PageRenderRequest *   newRequest = NULL;
     PageRenderRequest *   req = NULL;
     PdfPageInfo *         pageInfo;
@@ -347,8 +347,8 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     if (!dm) goto Exit;
 
     LockCache();
-    pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
-    rotation = dm->rotation;
+    pageInfo = dm->GetPageInfo(pageNo);
+    rotation = dm->rotation();
     NormalizeRotation(&rotation);
     zoomLevel = dm->zoomReal;
 
@@ -484,7 +484,7 @@ static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
 
-    DisplayModel_SetDisplayMode(win->dm, displayMode);
+    win->dm->SetDisplayMode(displayMode);
     if (DM_SINGLE_PAGE == displayMode) {
         id = IDM_VIEW_SINGLE_PAGE;
     } else if (DM_FACING == displayMode) {
@@ -995,7 +995,7 @@ static void WindowInfo_Delete(WindowInfo *win)
         gCurPageRenderReq->abort = TRUE;
     }
     UnlockCache();
-    DisplayModel_Delete(win->dm);
+    delete win->dm;
     WindowInfo_Dib_Deinit(win);
     WindowInfo_DoubleBuffer_Delete(win);
     free((void*)win);
@@ -1344,8 +1344,8 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
 
     /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
        but scrollbars are not part of the client area on windows so it's better
-       not to have them taken into account by DisplayModel code.
-       TODO: I think it's broken anyway and DisplayModel needs to know if
+       not to have them taken into account by DisplayModelSplash code.
+       TODO: I think it's broken anyway and DisplayModelSplash needs to know if
              scrollbars are part of client area in order to accomodate windows
              UI properly */
     scrollbarYDx = 0;
@@ -1356,7 +1356,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         offsetX = fileHistory->state.scrollX;
         offsetY = fileHistory->state.scrollY;
     }
-    win->dm = DisplayModel_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
+    win->dm = DisplayModelSplash_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
         scrollbarYDx, scrollbarXDy, displayMode, startPage);
     if (!win->dm) {
         delete outputDev;
@@ -1394,15 +1394,15 @@ Error:
             zoomVirtual = fileHistory->state.zoomVirtual;
             rotation = fileHistory->state.rotation;
         }
-        DisplayModel_Relayout(win->dm, zoomVirtual, rotation);
-        if (!DisplayModel_ValidPageNo(win->dm, startPage))
+        win->dm->Relayout(zoomVirtual, rotation);
+        if (!win->dm->ValidPageNo(startPage))
             startPage = 1;
         /* TODO: need to calculate proper offsetY, currently giving large offsetY
            remembered for continuous mode breaks things (makes all pages invisible) */
         offsetY = 0;
         /* TODO: make sure offsetX isn't bogus */
-        DisplayModel_GoToPage(win->dm, startPage, offsetY);
-        DisplayModel_ScrollXTo(win->dm, offsetX);
+        win->dm->GoToPage(startPage, offsetY);
+        win->dm->ScrollXTo(offsetX);
         /* only resize the window if it's a newly opened window */
         if (!reuseExistingWindow && !fromHistory)
             WindowInfo_ResizeToPage(win, startPage);
@@ -1484,7 +1484,7 @@ static void Win32_Font_Delete(HFONT font)
     DeleteObject(font);
 }
 
-void DisplayModel_PageChanged(DisplayModel *dm)
+void DisplayModelSplash::PageChanged(void)
 {
     char            titleBuf[256];
     const char *    baseName;
@@ -1492,18 +1492,14 @@ void DisplayModel_PageChanged(DisplayModel *dm)
     HRESULT         hr;
     WindowInfo *    win;
 
-    assert(dm);
-    if (!dm) return;
-
-
-    win = (WindowInfo*)dm->appData;
+    win = (WindowInfo*)appData;
     assert(win);
     if (!win) return;
 
     if (!win->dm->pdfDoc)
         return;
 
-    int currPageNo = DisplayModel_GetCurrentPageNo(dm);
+    int currPageNo = GetCurrentPageNo();
     pageCount = win->dm->pdfDoc->getNumPages();
     baseName = Path_GetBaseName(win->dm->pdfDoc->getFileName()->getCString());
     if (pageCount <= 0)
@@ -1514,21 +1510,18 @@ void DisplayModel_PageChanged(DisplayModel *dm)
     }
 }
 
-void DisplayModel_RepaintDisplay(DisplayModel *dm, bool delayed)
+void DisplayModelSplash::RepaintDisplay(bool delayed)
 {
     WindowInfo *win;
 
-    assert(dm);
-    if (!dm) return;
-
-    win = (WindowInfo*)dm->appData;
+    win = (WindowInfo*)appData;
     assert(win);
     if (!win) return;
 
     WindowInfo_RedrawAll(win);
 }
 
-void DisplayModel_SetScrollbarsState(DisplayModel *dm)
+void DisplayModelSplash::SetScrollbarsState(void)
 {
     WindowInfo *    win;
     SCROLLINFO      si = {0};
@@ -1536,22 +1529,19 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
     int             drawAreaDx, drawAreaDy;
     int             offsetX, offsetY;
 
-    assert(dm);
-    if (!dm) return;
-
-    win = (WindowInfo*)dm->appData;
+    win = (WindowInfo*)this->appData;
     assert(win);
     if (!win) return;
 
     si.cbSize = sizeof(si);
     si.fMask = SIF_ALL;
 
-    canvasDx = (int)dm->canvasSize.dx;
-    canvasDy = (int)dm->canvasSize.dy;
-    drawAreaDx = (int)dm->drawAreaSize.dx;
-    drawAreaDy = (int)dm->drawAreaSize.dy;
-    offsetX = (int)dm->areaOffset.x;
-    offsetY = (int)dm->areaOffset.y;
+    canvasDx = (int)canvasSize.dx;
+    canvasDy = (int)canvasSize.dy;
+    drawAreaDx = (int)drawAreaSize.dx;
+    drawAreaDy = (int)drawAreaSize.dy;
+    offsetX = (int)areaOffset.x;
+    offsetY = (int)areaOffset.y;
 
     if (drawAreaDx >= canvasDx) {
         si.nPos = 0;
@@ -1582,7 +1572,7 @@ void DisplayModel_SetScrollbarsState(DisplayModel *dm)
 
 static void WindowInfo_ResizeToWindow(WindowInfo *win)
 {
-    DisplayModel *dm;
+    DisplayModelSplash *dm;
     RectDSize     totalDrawAreaSize;
 
     assert(win);
@@ -1596,7 +1586,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
-    DisplayModel_SetTotalDrawAreaSize(dm, totalDrawAreaSize);
+    dm->SetTotalDrawAreaSize(totalDrawAreaSize);
 }
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
@@ -1605,7 +1595,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
     int                 displayDx, displayDy;
     BOOL                fullScreen = FALSE;
     DisplaySettings *   displaySettings;
-    DisplayModel *      dm;
+    DisplayModelSplash *dm;
     PdfPageInfo *       pageInfo;
     HDC                 hdc;
 
@@ -1627,14 +1617,14 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
         dx = displayDx;
         dy = displayDy;
     } else {
-        assert(DisplayModel_ValidPageNo(dm, pageNo));
-        if (!DisplayModel_ValidPageNo(dm, pageNo))
+        assert(dm->ValidPageNo(pageNo));
+        if (!dm->ValidPageNo(pageNo))
             return;
-        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        pageInfo = dm->GetPageInfo(pageNo);
         assert(pageInfo);
         if (!pageInfo)
             return;
-        displaySettings = DisplayModel_GetGlobalDisplaySettings();
+        displaySettings = GetGlobalDisplaySettings();
         dx = pageInfo->currDx + displaySettings->paddingPageBorderLeft + displaySettings->paddingPageBorderRight;
         dy = pageInfo->currDy + displaySettings->paddingPageBorderTop + displaySettings->paddingPageBorderBottom;
         if (dx > displayDx - 10)
@@ -1648,7 +1638,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 
 static void WindowInfo_ToggleZoom(WindowInfo *win)
 {
-    DisplayModel *  dm;
+    DisplayModelSplash *  dm;
 
     assert(win);
     if (!win) return;
@@ -1658,9 +1648,9 @@ static void WindowInfo_ToggleZoom(WindowInfo *win)
     if (!dm) return;
 
     if (ZOOM_FIT_PAGE == dm->zoomVirtual)
-        DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_WIDTH);
+        dm->SetZoomVirtual(ZOOM_FIT_WIDTH);
     else if (ZOOM_FIT_WIDTH == dm->zoomVirtual)
-        DisplayModel_SetZoomVirtual(dm, ZOOM_FIT_PAGE);
+        dm->SetZoomVirtual(ZOOM_FIT_PAGE);
 }
 
 static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
@@ -1964,7 +1954,7 @@ static void OnBenchNextAction(WindowInfo *win)
     if (!win->dm)
         return;
 
-    if (DisplayModel_GoToNextPage(win->dm, 0))
+    if (win->dm->GoToNextPage(0))
         PostBenchNextAction(win->hwndFrame);
 }
 
@@ -1978,7 +1968,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
     int                   pageNo;
     PdfPageInfo*          pageInfo;
-    DisplayModel *        dm;
+    DisplayModelSplash *  dm;
     SplashBitmap *        splashBmp;
     int                   splashBmpDx, splashBmpDy;
     SplashColorMode       splashBmpColorMode;
@@ -2014,7 +2004,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
     DBG_OUT("WindowInfo_Paint() start\n");
     for (pageNo = 1; pageNo <= dm->pageCount; ++pageNo) {
-        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        pageInfo = dm->GetPageInfo(pageNo);
         if (!pageInfo->visible)
             continue;
         assert(pageInfo->shown);
@@ -2022,7 +2012,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
 
         splashBmp = NULL;
-        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, dm->rotation);
+        entry = BitmapCache_Find(dm, pageNo, dm->zoomReal, dm->rotation());
         if (entry) {
             WinRenderedBitmap *renderedBmp = (WinRenderedBitmap*)entry->bitmap;
             splashBmp = renderedBmp->bitmap();
@@ -2118,7 +2108,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             rectScreen.bottom = rectScreen.top + rectLink.dy;
             FillRect(hdc, &rectScreen, gBrushLinkDebug);
             DBG_OUT("  link on screen rotate=%d, (x=%d, y=%d, dx=%d, dy=%d)\n",
-                dm->rotation + dm->pagesInfo[pdfLink->pageNo-1].rotation,
+                dm->rotation() + dm->pagesInfo[pdfLink->pageNo-1].rotation,
                 rectScreen.left, rectScreen.top, RectDx(&rectScreen), RectDy(&rectScreen));
         }
     }
@@ -2407,7 +2397,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     DeleteObject(penRectBorder);
 }
 
-static void HandleLink(DisplayModel *dm, PdfLink *pdfLink)
+static void HandleLink(DisplayModelSplash *dm, PdfLink *pdfLink)
 {
     Link *          link;
     LinkAction *    action;
@@ -2428,19 +2418,19 @@ static void HandleLink(DisplayModel *dm, PdfLink *pdfLink)
 
     switch (actionKind) {
         case actionGoTo:
-            DisplayModel_HandleLinkGoTo(dm, (LinkGoTo*)action);
+            dm->HandleLinkGoTo((LinkGoTo*)action);
             break;
         case actionGoToR:
-            DisplayModel_HandleLinkGoToR(dm, (LinkGoToR*)action);
+            dm->HandleLinkGoToR((LinkGoToR*)action);
             break;
         case actionLaunch:
-            DisplayModel_HandleLinkLaunch(dm, (LinkLaunch*)action);
+            dm->HandleLinkLaunch((LinkLaunch*)action);
             break;
         case actionURI:
-            DisplayModel_HandleLinkURI(dm, (LinkURI*)action);
+            dm->HandleLinkURI((LinkURI*)action);
             break;
         case actionNamed:
-            DisplayModel_HandleLinkNamed(dm, (LinkNamed *)action);
+            dm->HandleLinkNamed((LinkNamed *)action);
             break;
         default:
             /* other kinds are not supported */
@@ -2459,9 +2449,9 @@ static void WinMoveDocBy(WindowInfo *win, int dx, int dy)
     assert(!win->linkOnLastButtonDown);
     if (win->linkOnLastButtonDown) return;
     if (0 != dx)
-        DisplayModel_ScrollXBy(win->dm, dx);
+        win->dm->ScrollXBy(dx);
     if (0 != dy)
-        DisplayModel_ScrollYBy(win->dm, dy, FALSE);
+        win->dm->ScrollYBy(dy, FALSE);
 }
 
 static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
@@ -2471,7 +2461,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     if (WS_SHOWING_PDF == win->state) {
         assert(win->dm);
         if (!win->dm) return;
-        win->linkOnLastButtonDown = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+        win->linkOnLastButtonDown = win->dm->GetLinkAtPosition(x, y);
         /* dragging mode only starts when we're not on a link */
         if (!win->linkOnLastButtonDown) {
             SetCapture(win->hwndCanvas);
@@ -2486,27 +2476,20 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     }
 }
 
-void DisplayModel_ShowNormalCursor(DisplayModel *dm)
+void DisplayModelSplash::ShowNormalCursor(void)
 {
-    assert(dm);
-    if (!dm) return;
     SetCursor(LoadCursor(NULL, IDC_ARROW));
 }
 
-void DisplayModel_ShowBusyCursor(DisplayModel *dm)
+void DisplayModelSplash::ShowBusyCursor(void)
 {
-    assert(dm);
-    if (!dm) return;
     // TODO: what is the right cursor?
     // can I set it per-window only?
     SetCursor(LoadCursor(NULL, IDC_ARROW));
 }
 
-void DisplayModel_CancelBackgroundRendering(DisplayModel *dm)
+void DisplayModelSplash::CancelBackgroundRendering(void)
 {
-    assert(dm);
-    if (!dm) return;
-
     // TODO: implement me!
     return;
 }
@@ -2541,7 +2524,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
         if (!win->linkOnLastButtonDown)
             return;
 
-        link = DisplayModel_GetLinkAtPosition(win->dm, x, y);
+        link = win->dm->GetLinkAtPosition(x, y);
         if (link && (link == win->linkOnLastButtonDown))
             HandleLink(win->dm, link);
         win->linkOnLastButtonDown = NULL;
@@ -2555,7 +2538,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
 
 static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
 {
-    DisplayModel *  dm;
+    DisplayModelSplash *  dm;
     PdfLink *       link;
     const char *    url;
     int             dragDx, dragDy;
@@ -2577,7 +2560,7 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
             win->dragPrevPosY = y;
             return;
         }
-        link = DisplayModel_GetLinkAtPosition(dm, x, y);
+        link = dm->GetLinkAtPosition(x, y);
         if (link) {
             SetCursor(LoadCursor(NULL, IDC_HAND));
         } else {
@@ -2770,11 +2753,8 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
-        DisplayModel *dm = win->dm;
-        if (dm) {
-            DisplayModel_Delete(dm);
-            win->dm = NULL;
-        }
+        delete win->dm;
+        win->dm = NULL;
         WindowInfo_RedrawAll(win);
     } else {
         hwndToDestroy = win->hwndFrame;
@@ -2854,7 +2834,7 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
         return;
 
     zoom = ZoomMenuItemToZoom(menuId);
-    DisplayModel_ZoomTo(win->dm, zoom);
+    win->dm->ZoomTo(zoom);
     ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
@@ -2878,7 +2858,7 @@ static void OnMenuPrint(WindowInfo *win)
 {
     int                 pageNo;
     PdfPageInfo*        pageInfo;
-    DisplayModel *      dm;
+    DisplayModelSplash *      dm;
     SplashBitmap *      splashBmp;
     int                 splashBmpDx, splashBmpDy;
     SplashColorMode     splashBmpColorMode;
@@ -2942,7 +2922,7 @@ static void OnMenuPrint(WindowInfo *win)
 
     //to increase the resolution of the bitmap created for
     //the printed page, zoom in by say 300, seems to work ok.
-    DisplayModel_ZoomTo(win->dm, 300);
+    dm->ZoomTo(300);
 
     //start the printing
     if (StartDoc(pd.hDC, &di) <= 0)
@@ -2957,15 +2937,15 @@ static void OnMenuPrint(WindowInfo *win)
         pageNo++)
     {
 
-        pageInfo = DisplayModel_GetPageInfo(dm, pageNo);
+        pageInfo = dm->GetPageInfo(pageNo);
 
-        int rotation = dm->rotation + pageInfo->rotation;
+        int rotation = dm->rotation() + pageInfo->rotation;
         double zoomLevel = dm->zoomReal;
 
         splashBmp = NULL;
 
         // initiate the creation of the bitmap for the page.
-        DisplayModel_GoToPage(dm, pageNo, 0);
+        dm->GoToPage(pageNo, 0);
 
         // because we're multithreaded the bitmap may not be
         // ready yet so keep checking until it is available
@@ -3061,8 +3041,8 @@ Exit:
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
 
     // reset the page and zoom that the user had before starting to print.
-    DisplayModel_GoToPage(dm,pageNoInitial,0);
-    DisplayModel_ZoomTo(win->dm, zoomInitial);
+    dm->GoToPage(pageNoInitial,0);
+    dm->ZoomTo(zoomInitial);
 }
 
 static void OnMenuOpen(WindowInfo *win)
@@ -3101,7 +3081,7 @@ static void RotateLeft(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_RotateBy(win->dm, -90);
+    win->dm->RotateBy(-90);
 }
 
 static void RotateRight(WindowInfo *win)
@@ -3110,7 +3090,7 @@ static void RotateRight(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_RotateBy(win->dm, 90);
+    win->dm->RotateBy(90);
 }
 
 static void OnVScroll(WindowInfo *win, WPARAM wParam)
@@ -3166,7 +3146,7 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
-        DisplayModel_ScrollYTo(win->dm, si.nPos);
+        win->dm->ScrollYTo(si.nPos);
 }
 
 static void OnHScroll(WindowInfo *win, WPARAM wParam)
@@ -3222,7 +3202,7 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
-        DisplayModel_ScrollXTo(win->dm, si.nPos);
+        win->dm->ScrollXTo(si.nPos);
 }
 
 static void ViewWithAcrobat(WindowInfo *win)
@@ -3312,7 +3292,7 @@ static void OnMenuGoToNextPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_GoToNextPage(win->dm, 0);
+    win->dm->GoToNextPage(0);
 }
 
 static void OnMenuGoToPrevPage(WindowInfo *win)
@@ -3321,7 +3301,7 @@ static void OnMenuGoToPrevPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_GoToPrevPage(win->dm, 0);
+    win->dm->GoToPrevPage(0);
 }
 
 static void OnMenuGoToLastPage(WindowInfo *win)
@@ -3330,7 +3310,7 @@ static void OnMenuGoToLastPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_GoToLastPage(win->dm);
+    win->dm->GoToLastPage();
 }
 
 static void OnMenuGoToFirstPage(WindowInfo *win)
@@ -3339,7 +3319,7 @@ static void OnMenuGoToFirstPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    DisplayModel_GoToFirstPage(win->dm);
+    win->dm->GoToFirstPage();
 }
 
 static void OnMenuGoToPage(WindowInfo *win)
@@ -3352,8 +3332,8 @@ static void OnMenuGoToPage(WindowInfo *win)
         return;
 
     newPageNo = Dialog_GoToPage(win);
-    if (DisplayModel_ValidPageNo(win->dm, newPageNo)) {
-        DisplayModel_GoToPage(win->dm, newPageNo, 0);
+    if (win->dm->ValidPageNo(newPageNo)) {
+        win->dm->GoToPage(newPageNo, 0);
     }
 }
 
@@ -3396,13 +3376,13 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         /* TODO: more intelligence (see VK_NEXT comment). Also, probably
            it's exactly the same as 'n' so the code should be factored out */
         if (win->dm)
-            DisplayModel_GoToPrevPage(win->dm, 0);
+            win->dm->GoToPrevPage(0);
        /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEUP, 0); */
     } else if (VK_NEXT == key) {
         /* TODO: this probably should be more intelligent (scroll if not yet at the bottom,
            go to next page if at the bottom, and something entirely different in continuous mode */
         if (win->dm)
-            DisplayModel_GoToNextPage(win->dm, 0);
+            win->dm->GoToNextPage(0);
         /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
     } else if (VK_UP == key) {
         if (win->dm)
@@ -3423,9 +3403,9 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 static void OnChar(WindowInfo *win, int key)
 {
     if (VK_SPACE == key) {
-        DisplayModel_ScrollYByAreaDy(win->dm, true, true);
+        win->dm->ScrollYByAreaDy(true, true);
     } else if (VK_BACK == key) {
-        DisplayModel_ScrollYByAreaDy(win->dm, false, true);
+        win->dm->ScrollYByAreaDy(false, true);
     } else if ('g' == key) {
         OnMenuGoToPage(win);
     } else if ('k' == key) {
@@ -3434,22 +3414,22 @@ static void OnChar(WindowInfo *win, int key)
         SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
     } else if ('n' == key) {
         if (win->dm)
-            DisplayModel_GoToNextPage(win->dm, 0);
+            win->dm->GoToNextPage(0);
     } else if ('c' == key) {
         // TODO: probably should preserve facing vs. non-facing
         if (win->dm)
-            DisplayModel_SetDisplayMode(win->dm, DM_CONTINUOUS);
+            win->dm->SetDisplayMode(DM_CONTINUOUS);
     } else if ('p' == key) {
         if (win->dm)
-            DisplayModel_GoToPrevPage(win->dm, 0);
+            win->dm->GoToPrevPage(0);
     } else if ('z' == key) {
         WindowInfo_ToggleZoom(win);
     } else if ('q' == key) {
         DestroyWindow(win->hwndFrame);
     } else if ('+' == key) {
-        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+        win->dm->ZoomBy(ZOOM_IN_FACTOR);
     } else if ('-' == key) {
-        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
+        win->dm->ZoomBy(ZOOM_OUT_FACTOR);
     } else if ('l' == key) {
         RotateLeft(win);
     } else if ('r' == key) {
@@ -3744,12 +3724,12 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDT_VIEW_ZOOMIN:
                     if (win->dm)
-                        DisplayModel_ZoomBy(win->dm, ZOOM_IN_FACTOR);
+                        win->dm->ZoomBy(ZOOM_IN_FACTOR);
                     break;
 
                 case IDT_VIEW_ZOOMOUT:
                     if (win->dm)
-                        DisplayModel_ZoomBy(win->dm, ZOOM_OUT_FACTOR);
+                        win->dm->ZoomBy(ZOOM_OUT_FACTOR);
                     break;
 
                 case IDM_ZOOM_6400:
