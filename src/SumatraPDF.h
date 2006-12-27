@@ -30,6 +30,7 @@
 #include "resource.h"
 
 #include "DisplayModelSplash.h"
+#include "DisplayModelFitz.h"
 
 /* TODO: Currently not used. The idea is to be able to switch between different
    visual styles. Because I can. */
@@ -67,7 +68,11 @@ typedef struct WindowInfo {
     WindowInfo *    next;
     WinState        state;
     WinState        prevState;
-    DisplayModelSplash *  dm;
+
+    /* TODO: ultimately it should be just one DisplayModel *dm */
+    DisplayModel *        dm;
+    DisplayModelSplash *  dmSplash;
+    DisplayModelFitz *    dmFitz;
     HWND            hwndFrame;
     HWND            hwndCanvas;
     HWND            hwndToolbar;

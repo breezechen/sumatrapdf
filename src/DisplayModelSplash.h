@@ -195,15 +195,14 @@ public:
     DisplayModelSplash();
     virtual ~DisplayModelSplash();
 
-    PdfPageInfo * GetPageInfo(int pageNo) const;
-    TextPage *    GetTextPage(int pageNo);
-
     int           rotation(void) const {
         return _rotation; 
     }
-    BOOL          ValidPageNo(int pageNo) const;
+
+    PdfPageInfo * GetPageInfo(int pageNo) const;
+    TextPage *    GetTextPage(int pageNo);
+
     int           GetCurrentPageNo() const;
-    int           GetPageCount();
     double        GetZoomReal();
     double        GetZoomVirtual();
 
@@ -298,8 +297,6 @@ public:
 
     TextOutputDev * textOutDevice;
 
-    /* number of pages in PDF document. A cache of pdfDoc->getNumPages() */
-    int             pageCount;
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
 

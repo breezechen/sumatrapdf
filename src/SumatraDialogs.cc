@@ -143,11 +143,11 @@ int Dialog_GoToPage(WindowInfo *win)
     assert(win);
     if (!win) return INVALID_PAGE_NUM;
 
-    data.currPageNo = win->dm->startPage;
-    data.pageCount = win->dm->pageCount;
+    data.currPageNo = win->dmSplash->startPage;
+    data.pageCount = win->dm->pageCount();
     dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwndFrame, Dialog_GoToPage_Proc, (LPARAM)&data);
     if (DIALOG_OK_PRESSED == dialogResult) {
-        if (win->dm->ValidPageNo(data.pageEnteredOut)) {
+        if (win->dm->validPageNo(data.pageEnteredOut)) {
             return data.pageEnteredOut;
         }
     }

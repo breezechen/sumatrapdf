@@ -262,16 +262,9 @@ DisplayModelSplash::DisplayModelSplash()
 {
 }
 
-BOOL DisplayModelSplash::ValidPageNo(int pageNo) const
-{
-    if ((pageNo >= 1) && (pageNo <= pageCount))
-        return TRUE;
-    return FALSE;
-}
-
 PdfPageInfo *DisplayModelSplash::GetPageInfo(int pageNo) const
 {
-    assert(ValidPageNo(pageNo));
+    assert(validPageNo(pageNo));
     assert(pagesInfo);
     if (!pagesInfo) return NULL;
     return &(pagesInfo[pageNo-1]);
@@ -295,7 +288,7 @@ TextPage *DisplayModelSplash::GetTextPage(int pageNo)
 
     assert(pdfDoc);
     if (!pdfDoc) return NULL;
-    assert(ValidPageNo(pageNo));
+    assert(validPageNo(pageNo));
     assert(pagesInfo);
     if (!pagesInfo) return NULL;
 
@@ -365,7 +358,7 @@ void DisplayModelSplash::RenderVisibleParts()
     int             lastVisible = 0;
 
 //    DBG_OUT("DisplayModelSplash::RenderVisibleParts()\n");
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
         if (pageInfo->visible) {
             assert(pageInfo->shown);
@@ -375,14 +368,14 @@ void DisplayModelSplash::RenderVisibleParts()
     }
     assert(0 != lastVisible);
 #ifdef PREDICTIVE_RENDER
-    if (lastVisible != pageCount)
+    if (lastVisible != pageCount())
         StartRenderingPage(lastVisible+1);
 #endif
 }
 
 void DisplayModelSplash::FreeLinks(void)
 {
-    for (int pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (int pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         delete pagesInfo[pageNo-1].links;
         pagesInfo[pageNo-1].links = NULL;
     }
@@ -390,7 +383,7 @@ void DisplayModelSplash::FreeLinks(void)
 
 void DisplayModelSplash::FreeTextPages()
 {
-    for (int pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (int pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         delete pagesInfo[pageNo-1].textPage;
         pagesInfo[pageNo-1].textPage = NULL;
     }
@@ -649,14 +642,14 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
-    dm->pageCount = pdfDoc->getNumPages();
+    dm->setPageCount(pdfDoc->getNumPages());
     DBG_OUT("DisplayModelSplash::CreateFromPdfDoc() pageCount = %d, startPage=%d, displayMode=%d\n",
-        dm->pageCount, (int)dm->startPage, (int)displayMode);
-    dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount * sizeof(PdfPageInfo));
+        dm->pageCount(), (int)dm->startPage, (int)displayMode);
+    dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount() * sizeof(PdfPageInfo));
     if (!dm->pagesInfo)
         goto Error;
 
-    for (int pageNo = 1; pageNo <= dm->pageCount; pageNo++) {
+    for (int pageNo = 1; pageNo <= dm->pageCount(); pageNo++) {
         pageInfo = &(dm->pagesInfo[pageNo-1]);
         pageInfo->pageDx = pdfDoc->getPageCropWidth(pageNo);
         pageInfo->pageDy = pdfDoc->getPageCropHeight(pageNo);
@@ -699,7 +692,7 @@ int DisplayModelSplash::FindFirstVisiblePageNo(void) const
     assert(pagesInfo);
     if (!pagesInfo) return INVALID_PAGE;
 
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
         if (pageInfo->visible)
             return pageNo;
@@ -714,11 +707,6 @@ int DisplayModelSplash::GetCurrentPageNo(void) const
         return FindFirstVisiblePageNo();
     else
         return startPage;
-}
-
-int DisplayModelSplash::GetPageCount(void)
-{
-    return pageCount;
 }
 
 double DisplayModelSplash::GetZoomVirtual(void)
@@ -748,12 +736,12 @@ void DisplayModelSplash::SetStartPage(int startPage)
     PdfPageInfo     *pageInfo;
     int              columns;
 
-    assert(ValidPageNo(startPage));
+    assert(validPageNo(startPage));
     assert(!IsDisplayModeContinuous(displayMode));
 
     columns = ColumnsFromDisplayMode(displayMode);
     startPage = startPage;
-    for (int pageNo = 1; pageNo <= pageCount; pageNo++) {
+    for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
         pageInfo = GetPageInfo(pageNo);
         if (IsDisplayModeContinuous(displayMode))
             pageInfo->shown = true;
@@ -772,8 +760,8 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
 {
     PdfPageInfo *   pageInfo;
 
-    assert(ValidPageNo(pageNo));
-    if (!ValidPageNo(pageNo))
+    assert(validPageNo(pageNo));
+    if (!validPageNo(pageNo))
         return;
 
     /* in facing mode only start at odd pages (odd because page
@@ -844,7 +832,7 @@ BOOL DisplayModelSplash::GoToNextPage(int scrollY)
     firstPageInNewRow = FirstPageInARowNo(newPageNo, columns);
 
 //    DBG_OUT("DisplayModelSplash::GoToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
-    if ((firstPageInNewRow > pageCount) || (firstPageInCurrRow == firstPageInNewRow)) {
+    if ((firstPageInNewRow > pageCount()) || (firstPageInCurrRow == firstPageInNewRow)) {
         /* we're on a last row or after it, can't go any further */
         return FALSE;
     }
@@ -878,7 +866,7 @@ BOOL DisplayModelSplash::GoToLastPage(void)
 
     columns = ColumnsFromDisplayMode(displayMode);
     currPageNo = GetCurrentPageNo();
-    firstPageInLastRow = FirstPageInARowNo(pageCount, columns);
+    firstPageInLastRow = FirstPageInARowNo(pageCount(), columns);
 
     if (currPageNo != firstPageInLastRow) { /* are we on the last page already ? */
         GoToPage(firstPageInLastRow, 0);
@@ -979,7 +967,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
         if ((dy < 0) && (0 == currYOff)) {
             if (startPage > 1) {
                 newPageNo = startPage-1;
-                assert(ValidPageNo(newPageNo));
+                assert(validPageNo(newPageNo));
                 pageInfo = GetPageInfo(newPageNo);
                 newYOff = (int)pageInfo->currDy - (int)drawAreaSize.dy;
                 if (newYOff < 0)
@@ -990,7 +978,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
         }
 
         /* see if we have to change page when scrolling forward */
-        if ((dy > 0) && (startPage < pageCount)) {
+        if ((dy > 0) && (startPage < pageCount())) {
             if ((int)areaOffset.y + (int)drawAreaSize.dy >= (int)canvasSize.dy) {
                 GoToNextPage(0);
                 return;
@@ -1090,7 +1078,7 @@ void DisplayModelSplash::SetDisplayMode(DisplayMode displayMode)
         /* mark all pages as shown but not yet visible. The equivalent code
            for non-continuous mode is in DisplayModelSplash::SetStartPage() called
            from DisplayModelSplash::GoToPage() */
-        for (int pageNo = 1; pageNo <= pageCount; pageNo++) {
+        for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
             pageInfo = &(pagesInfo[pageNo-1]);
             pageInfo->shown = true;
             pageInfo->visible = false;
@@ -1199,7 +1187,7 @@ void DisplayModelSplash::SetZoomVirtual(double _zoomVirtual)
         /* we want the same zoom for all pages, so use the smallest zoom
            across the pages so that the largest page fits. In most PDFs all
            pages are the same size anyway */
-        for (pageNo = 1; pageNo <= pageCount; pageNo++) {
+        for (pageNo = 1; pageNo <= pageCount(); pageNo++) {
             if (IsPageShown(pageNo)) {
                 thisPageZoom = ZoomRealFromFirtualForPage(zoomVirtual, pageNo);
                 assert(0 != thisPageZoom);
@@ -1234,7 +1222,7 @@ void DisplayModelSplash::RecalcLinks(void)
 
     /* calculate number of links */
     linkCount = 0;
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
         if (!pageInfo->links)
             continue;
@@ -1248,7 +1236,7 @@ void DisplayModelSplash::RecalcLinks(void)
 
     /* build links info */
     currPdfLinkNo = 0;
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
         if (!pageInfo->links)
             continue;
@@ -1329,7 +1317,7 @@ void DisplayModelSplash::Relayout(double zoomVirtual, int rotation)
     columnsLeft = columns;
     currPosX = PADDING_PAGE_BORDER_LEFT;
     rowMaxPageDy = 0;
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
 
         pageInfo = GetPageInfo(pageNo);
         if (!pageInfo->shown) {
@@ -1389,7 +1377,7 @@ void DisplayModelSplash::Relayout(double zoomVirtual, int rotation)
         areaPerPageDx = (double)areaPerPageDxInt;
         totalAreaDx = drawAreaSize.dx;
         pageInARow = 0;
-        for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+        for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
             pageInfo = GetPageInfo(pageNo);
             if (!pageInfo->shown) {
                 assert(!pageInfo->visible);
@@ -1419,7 +1407,7 @@ void DisplayModelSplash::Relayout(double zoomVirtual, int rotation)
         DBG_OUT("  offY = %.2f\n", offY);
         assert(offY >= 0.0);
         totalAreaDy = drawAreaSize.dy;
-        for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+        for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
             pageInfo = GetPageInfo(pageNo);
             if (!pageInfo->shown) {
                 assert(!pageInfo->visible);
@@ -1468,7 +1456,7 @@ void DisplayModelSplash::RecalcVisibleParts(void)
 //    DBG_OUT("DisplayModelSplash::RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
 //        drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
     visibleCount = 0;
-    for (pageNo = 1; pageNo <= pageCount; ++pageNo) {
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
         if (!pageInfo->shown) {
             assert(!pageInfo->visible);
@@ -1685,10 +1673,10 @@ BOOL DisplayModelSplash::CanGoToPrevPage(void)
 BOOL DisplayModelSplash::CanGoToNextPage(void)
 {
     if (IsDisplayModeFacing(displayMode)) {
-        if (GetCurrentPageNo()+1 >= pageCount)
+        if (GetCurrentPageNo()+1 >= pageCount())
             return FALSE;
     } else {
-        if (pageCount == GetCurrentPageNo())
+        if (pageCount() == GetCurrentPageNo())
             return FALSE;
     }
     return TRUE;
@@ -1696,7 +1684,7 @@ BOOL DisplayModelSplash::CanGoToNextPage(void)
 
 void DisplayModelSplash::FindInit(int startPageNo)
 {
-    assert(ValidPageNo(startPageNo));
+    assert(validPageNo(startPageNo));
     searchState.searchState = eSsNone;
     searchState.wrapped = FALSE;
     searchState.startPage = startPageNo;
@@ -1782,7 +1770,7 @@ BOOL DisplayModelSplash::FindNextBackward(void)
         if (1 == pageNo) {
             DBG_OUT(" wrapped\n");
             searchState.wrapped = TRUE;
-            searchState.currPage = pageCount;
+            searchState.currPage = pageCount();
         } else
             searchState.currPage = pageNo - 1;
 
@@ -1878,7 +1866,7 @@ BOOL DisplayModelSplash::FindNextForward(void)
             goto Exit;
         }
 
-        if (pageCount == pageNo) {
+        if (pageCount() == pageNo) {
             DBG_OUT(" wrapped\n");
             searchState.wrapped = TRUE;
             searchState.currPage = 1;
