@@ -119,11 +119,6 @@ static BOOL             gDebugShowLinks = FALSE;
    but couldn't (e.g. due to lack of memory) */
 #define BITMAP_CANNOT_RENDER (SplashBitmap*)NULL
 
-#define WS_TOOLBAR (WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | \
-                    TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | TBSTYLE_ALTDRAG | \
-                    TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN | \
-                    CCS_ADJUSTABLE)
-
 #define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
                   RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
 
@@ -3531,11 +3526,14 @@ static void SeeLastError(void)
 	LocalFree(msgBuf);
 }
 
+#define WS_TOOLBAR (WS_CHILD | WS_CLIPSIBLINGS | \
+                    TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | \
+                    TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN )
+
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
 {
     TBBUTTON        tbButtons[TOOLBAR_BUTTONS_COUNT];
     HWND            hwndToolbar;
-    DWORD           dwToolbarStyle = WS_TOOLBAR;
     HIMAGELIST      himl = 0;
     HBITMAP         hbmp;
     BITMAP          bmp;
@@ -3543,15 +3541,16 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     REBARINFO       rbi;
     REBARBANDINFO   rbBand;
     BOOL            bIsAppThemed = PrivateIsAppThemed();
-	LRESULT			lres;
-	LRESULT			exstyle;
+    LRESULT         lres;
 
     HWND            hwndOwner = win->hwndFrame;
-    hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, dwToolbarStyle,
+
+    hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, WS_TOOLBAR,
                                  0,0,0,0, hwndOwner,(HMENU)IDC_TOOLBAR, hInst,NULL);
     win->hwndToolbar = hwndToolbar;
     lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
+    ShowWindow(hwndToolbar, SW_SHOW);
     for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
         if (IDB_SEPARATOR != gToolbarButtons[i].bitmapResourceId) {
             hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarButtons[i].bitmapResourceId));
@@ -3572,23 +3571,20 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     // TODO: construct disabled image list as well?
     //SendMessage(hwndToolbar, TB_SETDISABLEDIMAGELIST, 0, (LPARAM)himl);
 
-	exstyle = SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0);
-	exstyle |= TBSTYLE_EX_MIXEDBUTTONS;
-    lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, lres);
+    LRESULT exstyle = SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0);
+    exstyle |= TBSTYLE_EX_MIXEDBUTTONS;
+    lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, exstyle);
 
     lres = SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
-
     lres = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
     DWORD  reBarStyle = WS_REBAR | WS_VISIBLE;
-	/* TODO: this fails on win2k */
-	win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, reBarStyle,
+    win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, reBarStyle,
                              0,0,0,0, hwndOwner, (HMENU)IDC_REBAR, hInst, NULL);
-	if (!win->hwndReBar) {
-		SeeLastError();
-	}
+    if (!win->hwndReBar)
+        SeeLastError();
 
-	rbi.cbSize = sizeof(REBARINFO);
+    rbi.cbSize = sizeof(REBARINFO);
     rbi.fMask  = 0;
     rbi.himl   = (HIMAGELIST)NULL;
     lres = SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
