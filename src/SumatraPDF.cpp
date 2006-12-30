@@ -152,6 +152,7 @@ static HBRUSH                       gBrushLinkDebug;
 static HPEN                         ghpenWhite = NULL;
 static HPEN                         ghpenBlue = NULL;
 
+/* TODO: those should go away */
 #define SPLASH_COL_RED_PTR          (SplashColorPtr)&(splashColRed[0])
 #define SPLASH_COL_GREEN_PTR        (SplashColorPtr)&(splashColGreen[0])
 #define SPLASH_COL_BLUE_PTR         (SplashColorPtr)&(splashColBlue[0])
@@ -209,35 +210,6 @@ ToolbarButtonInfo gToolbarButtons[] = {
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
-
-void CDECL error(int pos, char *msg, ...) {
-    va_list args;
-    char        buf[4096], *p = buf;
-
-    // NB: this can be called before the globalParams object is created
-    if (globalParams && globalParams->getErrQuiet()) {
-        return;
-    }
-
-    if (pos >= 0) {
-        p += _snprintf(p, sizeof(buf)-1, "Error (%d): ", pos);
-        *p   = '\0';
-        OutputDebugString(p);
-    } else {
-        OutputDebugString("Error: ");
-    }
-
-    p = buf;
-    va_start(args, msg);
-    p += _vsnprintf(p, sizeof(buf) - 1, msg, args);
-    while ( p > buf  &&  isspace(p[-1]) )
-            *--p = '\0';
-    *p++ = '\r';
-    *p++ = '\n';
-    *p   = '\0';
-    OutputDebugString(buf);
-    va_end(args);
-}
 
 int RectDx(RECT *r)
 {
@@ -1256,13 +1228,10 @@ static bool gUseFitz = true;
 
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
-    int                 err;
     WindowInfo *        win;
     int                 reuseExistingWindow = FALSE;
-    PDFDoc *            pdfDoc;
     RectDSize           totalDrawAreaSize;
     int                 scrollbarYDx, scrollbarXDy;
-    SplashOutputDev *   outputDev = NULL;
     GBool               bitmapTopDown = gTrue;
     BOOL                fromHistory;
     FileHistoryList *   fileHistory = NULL;
@@ -1271,7 +1240,6 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     int                 rotation;
     DisplayMode         displayMode;
     int                 offsetX, offsetY;
-    GooString *         fileNameStr = NULL;
 
     startPage = 1;
     displayMode = DEFAULT_DISPLAY_MODE;
@@ -1301,30 +1269,11 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         }
     }
 
-    if (closeInvalidFiles && (errNone != err) && !reuseExistingWindow)
+    if (closeInvalidFiles && !reuseExistingWindow)
     {
         WindowInfo_Delete(win);
         return NULL;
     }
-
-    if (errNone != err)
-        goto Error;
-
-    fileNameStr = new GooString(fileName);
-    if (!fileNameStr)
-        return win;
-
-    err = errNone;
-    pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, (void*)win);
-    if (!pdfDoc->isOk())
-    {
-        err = errOpenFile;
-        error(-1, "LoadPdf(): failed to open PDF file %s\n", fileName);
-    }
-
-    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
-    if (!outputDev)
-        return NULL; /* TODO: probably should WindowInfo_Delete() using the same logic as above */
 
     WindowInfo_GetWindowSize(win);
 
@@ -1354,13 +1303,12 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         offsetY = fileHistory->state.scrollY;
     }
 
-    win->dmSplash = DisplayModelSplash_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarYDx, scrollbarXDy, displayMode, startPage);
+    win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
+        totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
 
     if (!win->dmSplash) {
-        delete outputDev;
         WindowInfo_Delete(win);
-        return NULL;
+        goto Error;
     }
 
     win->dm = win->dmSplash;
@@ -1373,7 +1321,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
 
 Error:
     if (!reuseExistingWindow) {
-        if (errNone != err) {
+        if (!win->dm) {
             if (WindowInfoList_ExistsWithError()) {
                 /* don't create more than one window with errors */
                 WindowInfo_Delete(win);
@@ -1385,9 +1333,9 @@ Error:
 
     /* TODO: if fromHistory, set the state based on gFileHistoryList node for
        this entry */
-    if (errNone != err) {
+    if (!win->dm) {
         win->state = WS_ERROR_LOADING_PDF;
-        DBG_OUT("failed to load file %s, error=%d\n", fileName, (int)err);
+        DBG_OUT("failed to load file %s\n", fileName);
     } else {
         win->state = WS_SHOWING_PDF;
         zoomVirtual = DEFAULT_ZOOM;

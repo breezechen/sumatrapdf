@@ -374,6 +374,11 @@ typedef struct {
 
 BOOL              ValidDisplayMode(DisplayMode dm);
 
+DisplayModelSplash *DisplayModelSplash_CreateFromFileName(const char *fileName, void *data,
+                                            RectDSize totalDrawAreaSize,
+                                            int scrollbarXDy, int scrollbarYDx,
+                                            DisplayMode displayMode, int startPage);
+
 DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
                                             RectDSize totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,

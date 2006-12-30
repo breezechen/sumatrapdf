@@ -4,6 +4,7 @@
 #include "DisplayModelSplash.h"
 #include <assert.h>
 #include "BaseUtils.h"
+#include "GlobalParams.h"
 #include "GooMutex.h"
 #include "GooString.h"
 #include "Link.h"
@@ -53,6 +54,80 @@ static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};
 static int                  gBitmapCacheCount = 0;
 
 static MutexAutoInitDestroy gAutoCacheMutex(&cacheMutex);
+
+static SplashColorMode              gSplashColorMode = splashModeBGR8;
+
+static SplashColor splashColRed;
+static SplashColor splashColGreen;
+static SplashColor splashColBlue;
+static SplashColor splashColWhite;
+static SplashColor splashColBlack;
+
+#define SPLASH_COL_RED_PTR (SplashColorPtr)&(splashColRed[0])
+#define SPLASH_COL_GREEN_PTR (SplashColorPtr)&(splashColGreen[0])
+#define SPLASH_COL_BLUE_PTR (SplashColorPtr)&(splashColBlue[0])
+#define SPLASH_COL_WHITE_PTR (SplashColorPtr)&(splashColWhite[0])
+#define SPLASH_COL_BLACK_PTR (SplashColorPtr)&(splashColBlack[0])
+
+static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
+
+static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
+{
+    switch (gSplashColorMode)
+    {
+        case splashModeBGR8:
+            col[0] = blue;
+            col[1] = green;
+            col[2] = red;
+            break;
+        case splashModeRGB8:
+            col[0] = red;
+            col[1] = green;
+            col[2] = blue;
+            break;
+        default:
+            assert(0);
+            break;
+    }
+}
+
+static void ColorsInit(void)
+{
+    SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
+    SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
+    SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
+    SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
+    SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
+}
+
+void CDECL error(int pos, char *msg, ...) {
+    va_list args;
+    char        buf[4096], *p = buf;
+
+    // NB: this can be called before the globalParams object is created
+    if (globalParams && globalParams->getErrQuiet()) {
+        return;
+    }
+
+    if (pos >= 0) {
+        p += _snprintf(p, sizeof(buf)-1, "Error (%d): ", pos);
+        *p   = '\0';
+        OutputDebugString(p);
+    } else {
+        OutputDebugString("Error: ");
+    }
+
+    p = buf;
+    va_start(args, msg);
+    p += _vsnprintf(p, sizeof(buf) - 1, msg, args);
+    while ( p > buf  &&  isspace(p[-1]) )
+            *--p = '\0';
+    *p++ = '\r';
+    *p++ = '\n';
+    *p   = '\0';
+    OutputDebugString(buf);
+    va_end(args);
+}
 
 void LockCache(void) {
     gLockMutex(&cacheMutex);
@@ -272,7 +347,7 @@ PdfPageInfo *DisplayModelSplash::GetPageInfo(int pageNo) const
 
 /* TODO: caches dm->textOutDevice, but new TextOutputDev() is cheap so
    we can probably get rid of this function */
-static TextOutputDev *DisplayModel_GetTextOutDevice(DisplayModelSplash *dm)
+static TextOutputDev *GetTextOutDevice(DisplayModelSplash *dm)
 {
     assert(dm);
     if (!dm) return NULL;
@@ -294,7 +369,7 @@ TextPage *DisplayModelSplash::GetTextPage(int pageNo)
 
     pdfPageInfo = &(pagesInfo[pageNo-1]);
     if (!pdfPageInfo->textPage) {
-        textOut = DisplayModel_GetTextOutDevice(this);
+        textOut = GetTextOutDevice(this);
         if (!textOut || !textOut->isOk())
             return NULL;
         pdfDoc->displayPage(textOut, pageNo, 72, 72, 0, gFalse, gTrue, gFalse);
@@ -590,6 +665,42 @@ void DisplayModelSplash::SetTotalDrawAreaSize(RectDSize totalDrawAreaSize)
     if (newPageNo != currPageNo)
         PageChanged();
     RepaintDisplay(true);
+}
+
+/* Create display info from a 'fileName' etc. 'pdfDoc' will be owned by DisplayInfo
+   from now on, so the caller should not delete it itself. Not very good but
+   alternative is worse.
+   */
+DisplayModelSplash *DisplayModelSplash_CreateFromFileName(
+  const char *fileName, void *data,
+  RectDSize totalDrawAreaSize,
+  int scrollbarXDy, int scrollbarYDx,
+  DisplayMode displayMode, int startPage)
+{
+    GBool               bitmapTopDown = gTrue;
+    PDFDoc *            pdfDoc;
+    SplashOutputDev *   outputDev;
+    GooString *         fileNameStr = NULL;
+
+    fileNameStr = new GooString(fileName);
+    if (!fileNameStr)
+        return NULL;
+
+    pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, (void*)data);
+    if (!pdfDoc->isOk()) {
+        error(-1, "LoadPdf(): failed to open PDF file %s\n", fileName);
+        delete fileNameStr;
+        return NULL;
+    }
+
+    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
+    if (!outputDev) {
+        delete pdfDoc;
+        return NULL;
+    }
+
+    return DisplayModelSplash_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
+        scrollbarXDy, scrollbarYDx, displayMode, startPage);
 }
 
 /* Create display info from a 'pdfDoc' etc. 'pdfDoc' will be owned by DisplayInfo
