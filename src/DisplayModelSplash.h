@@ -47,7 +47,6 @@
 
 #include "BaseUtils.h"
 #include "DisplayState.h"
-#include "SimpleRect.h"
 #include "DisplayModel.h"
 
 class GooString;
@@ -187,13 +186,14 @@ typedef struct SearchStateData {
 class DisplayModelSplash : public DisplayModel
 {
 public:
-    DisplayModelSplash();
+    DisplayModelSplash(DisplayMode displayMode);
     virtual ~DisplayModelSplash();
+
+    virtual void  SetDisplayMode(DisplayMode displayMode);
+    virtual int   currentPageNo(void) const;
 
     PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);
-
-    int           currentPageNo(void) const;
 
     double        GetZoomReal();
 
@@ -211,8 +211,6 @@ public:
     void          ScrollYByAreaDy(bool forward, bool changePage);
 
     void          EnsureSearchHitVisible();
-
-    void          SetDisplayMode(DisplayMode displayMode);
 
     void          SetZoomVirtual(double zoomVirtual);
     void          ZoomTo(double zoomVirtual);
@@ -275,10 +273,6 @@ public:
     PdfPageInfo* FindFirstVisiblePage(void);
 
 public:
-    /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
-       could link this to a data describing window displaying  this document */
-    void *          appData;
-
     /* PDF document we're displaying. Owned by this structure */
     PDFDoc *        pdfDoc;
 
@@ -307,19 +301,9 @@ public:
     /* size of total draw area (i.e. window size) */
     RectDSize       totalDrawAreaSize;
 
-    /* size of draw area i.e. totalDrawAreaSize minus scrollbarsSize (if
-       they're shown) */
-    RectDSize       drawAreaSize;
-
     /* size of virtual canvas containing all rendered pages.
        TODO: re-consider, 32 signed number should be large enough for everything. */
     RectDSize       canvasSize;
-
-    /* areaOffset is "polymorphic". If drawAreaSize.dx > totalAreSize.dx then
-       areaOffset.x is offset of total area rect inside draw area, otherwise
-       an offset of draw area inside total area.
-       The same for areaOff.y, except it's for dy */
-    RectDPos        areaOffset;
 
     /* total number of links */
     int             linkCount;
@@ -364,7 +348,7 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOu
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
 
-BOOL              DisplayState_FromDisplayModel(DisplayState *ds, DisplayModelSplash *dm);
+BOOL              DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm);
 
 DisplaySettings * GetGlobalDisplaySettings(void);
 

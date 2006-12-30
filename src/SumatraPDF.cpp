@@ -451,7 +451,7 @@ static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
 
-    win->dmSplash->SetDisplayMode(displayMode);
+    win->dm->SetDisplayMode(displayMode);
     if (DM_SINGLE_PAGE == displayMode) {
         id = IDM_VIEW_SINGLE_PAGE;
     } else if (DM_FACING == displayMode) {
@@ -781,12 +781,10 @@ static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
         return;
     if (WS_SHOWING_PDF != win->state)
         return;
-    if (!win->dmSplash)
-        return;
-    if (!win->dmSplash->pdfDoc)
+    if (!win->dm)
         return;
 
-    fileName = win->dmSplash->pdfDoc->getFileName()->getCString();
+    fileName = win->dm->fileName();
     assert(fileName);
     if (!fileName)
         return;
@@ -797,7 +795,7 @@ static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
         return;
 
     DisplayState_Init(&ds);
-    if (!DisplayState_FromDisplayModel(&ds, win->dmSplash))
+    if (!DisplayState_FromDisplayModel(&ds, win->dm))
         return;
 
     UpdateDisplayStateWindowPos(win, &ds);
@@ -957,7 +955,7 @@ static void WindowInfo_DoubleBuffer_Show(WindowInfo *win, HDC hdc)
 static void WindowInfo_Delete(WindowInfo *win)
 {
     LockCache();
-    if (gCurPageRenderReq && (gCurPageRenderReq->dm == win->dmSplash)) {
+    if (gCurPageRenderReq && (gCurPageRenderReq->dm == win->dm)) {
         /* TODO: should somehow wait for for the page to finish rendering */
         gCurPageRenderReq->abort = TRUE;
     }
@@ -1304,7 +1302,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         goto Error;
     }
 
-    win->dmSplash->appData = (void*)win;
+    win->dm->setAppData((void*)win);
 
     if (!fromHistory)
         AddFileToHistory(fileName);
@@ -1433,7 +1431,7 @@ void DisplayModelSplash::PageChanged(void)
     HRESULT         hr;
     WindowInfo *    win;
 
-    win = (WindowInfo*)appData;
+    win = (WindowInfo*)appData();
     assert(win);
     if (!win) return;
 
@@ -1455,7 +1453,7 @@ void DisplayModelSplash::RepaintDisplay(bool delayed)
 {
     WindowInfo *win;
 
-    win = (WindowInfo*)appData;
+    win = (WindowInfo*)appData();
     assert(win);
     if (!win) return;
 
@@ -1470,7 +1468,7 @@ void DisplayModelSplash::SetScrollbarsState(void)
     int             drawAreaDx, drawAreaDy;
     int             offsetX, offsetY;
 
-    win = (WindowInfo*)this->appData;
+    win = (WindowInfo*)this->appData();
     assert(win);
     if (!win) return;
 
@@ -4045,7 +4043,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         BitmapCache_FreeNotVisible();
 #endif
         WindowInfo * win = NULL;
-        win = (WindowInfo*)req.dm->appData;
+        win = (WindowInfo*)req.dm->appData();
         fOk = PostMessage(win->hwndCanvas, WM_APP_MSG_REFRESH, 0, 0);
     }
     DBG_OUT("PageRenderThread() finished\n");

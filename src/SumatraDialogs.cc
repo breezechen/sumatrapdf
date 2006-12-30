@@ -1,11 +1,8 @@
-#include <assert.h>
-
 #include "SumatraDialogs.h"
-
+#include <assert.h>
 #include "BaseUtils.h"
+#include "DisplayModel.h"
 #include "dstring.h"
-#include "DisplayModelSplash.h"
-
 #include "Resource.h"
 
 static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -143,7 +140,7 @@ int Dialog_GoToPage(WindowInfo *win)
     assert(win);
     if (!win) return INVALID_PAGE_NUM;
 
-    data.currPageNo = win->dmSplash->startPage;
+    data.currPageNo = win->dm->startPage();
     data.pageCount = win->dm->pageCount();
     dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_GOTO_PAGE), win->hwndFrame, Dialog_GoToPage_Proc, (LPARAM)&data);
     if (DIALOG_OK_PRESSED == dialogResult) {

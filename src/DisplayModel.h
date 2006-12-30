@@ -2,6 +2,7 @@
 #define _DISPLAY_MODEL_H_
 
 #include "BaseUtils.h"
+#include "SimpleRect.h"
 
 #define INVALID_PAGE        -1
 #define INVALID_ROTATION    -1
@@ -53,9 +54,8 @@ public:
         return _displayMode;
     }
 
-    void setDisplayMode(DisplayMode displayMode) {
-        _displayMode = displayMode;
-    }
+    /* TODO: make non-virtual */
+    virtual void SetDisplayMode(DisplayMode displayMode) = 0;
 
     const char *fileName(void) const {
         return _fileName;
@@ -80,8 +80,32 @@ public:
         return _zoomVirtual;
     }
 
+    int startPage(void) const {
+        return _startPage;
+    }
+
     /* TODO: should become non-virtual */
     virtual int currentPageNo(void) const = 0;
+
+    /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
+       could link this to a data describing window displaying  this document */
+    void * appData() const {
+        return _appData;
+    }
+
+    void setAppData(void *appData) {
+        _appData = appData;
+    }
+
+    /* areaOffset is "polymorphic". If drawAreaSize.dx > totalAreSize.dx then
+       areaOffset.x is offset of total area rect inside draw area, otherwise
+       an offset of draw area inside total area.
+       The same for areaOff.y, except it's for dy */
+    RectDPos        areaOffset;
+
+    /* size of draw area i.e. totalDrawAreaSize minus scrollbarsSize (if
+       they're shown) */
+    RectDSize       drawAreaSize;
 
 protected:
     const char *    _fileName;
@@ -90,6 +114,8 @@ protected:
     int             _rotation;
     double          _zoomVirtual;
     bool            _fullScreen;
+    int             _startPage;
+    void *          _appData;
 };
 
 #endif

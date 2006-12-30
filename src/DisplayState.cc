@@ -1,7 +1,7 @@
 #include "DisplayState.h"
 #include <assert.h>
 #include "BaseUtils.h"
-#include "DisplayModelSplash.h"
+#include "DisplayModel.h"
 #include "dstring.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,7 +82,7 @@ void DisplayState_Free(DisplayState *ds)
     DisplayState_Init(ds);
 }
 
-BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModelSplash *dm)
+BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
 {
     ds->filePath = Str_Escape(dm->fileName());
     if (!ds->filePath)

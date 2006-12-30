@@ -14,9 +14,13 @@ bool IsDisplayModeContinuous(DisplayMode displayMode)
 
 DisplayModel::DisplayModel()
 {
+    _fileName = NULL;
+    _pageCount = 0;
     _rotation = INVALID_ROTATION;
     _zoomVirtual = INVALID_ZOOM;
-    _fileName = NULL;
+    _fullScreen = false;
+    _startPage = INVALID_PAGE;
+    _appData = NULL;
 }
 
 DisplayModel::~DisplayModel()

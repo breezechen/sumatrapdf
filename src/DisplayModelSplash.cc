@@ -323,8 +323,9 @@ static void TransfromUpsideDown(DisplayModelSplash *dm, int pageNo, double *y1, 
     *y2 = dy - *y2;
 }
 
-DisplayModelSplash::DisplayModelSplash()
+DisplayModelSplash::DisplayModelSplash(DisplayMode displayMode)
 {
+    _displayMode = displayMode;
     linkCount = 0;
     links = NULL;
 }
@@ -716,11 +717,10 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
     if (!outputDev)
         goto Error;
 
-    dm = new DisplayModelSplash();
+    dm = new DisplayModelSplash(displayMode);
     if (!dm)
         goto Error;
 
-    dm->appData = NULL;
     dm->setFileName(pdfDoc->getFileName()->getCString());
     dm->pdfDoc = pdfDoc;
     dm->outputDevice = outputDev;
@@ -728,7 +728,6 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
-    dm->setDisplayMode(displayMode);
     dm->setFullScreen(false);
     dm->startPage = startPage;
     dm->searchState.searchState = eSsNone;
@@ -1164,10 +1163,10 @@ void DisplayModelSplash::SetDisplayMode(DisplayMode displayMode)
     int             currPageNo;
     PdfPageInfo *   pageInfo;
 
-    if (this->displayMode() == displayMode)
+    if (_displayMode == displayMode)
         return;
 
-    setDisplayMode(displayMode);
+    _displayMode = displayMode;
     currPageNo = currentPageNo();
     if (IsDisplayModeContinuous(displayMode)) {
         /* mark all pages as shown but not yet visible. The equivalent code
