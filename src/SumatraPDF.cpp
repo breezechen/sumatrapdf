@@ -1252,11 +1252,12 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
+static bool gUseFitz = true;
+
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
     int                 err;
     WindowInfo *        win;
-    GooString *         fileNameStr = NULL;
     int                 reuseExistingWindow = FALSE;
     PDFDoc *            pdfDoc;
     RectDSize           totalDrawAreaSize;
@@ -1270,6 +1271,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     int                 rotation;
     DisplayMode         displayMode;
     int                 offsetX, offsetY;
+    GooString *         fileNameStr = NULL;
 
     startPage = 1;
     displayMode = DEFAULT_DISPLAY_MODE;
@@ -1299,6 +1301,15 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         }
     }
 
+    if (closeInvalidFiles && (errNone != err) && !reuseExistingWindow)
+    {
+        WindowInfo_Delete(win);
+        return NULL;
+    }
+
+    if (errNone != err)
+        goto Error;
+
     fileNameStr = new GooString(fileName);
     if (!fileNameStr)
         return win;
@@ -1310,15 +1321,6 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         err = errOpenFile;
         error(-1, "LoadPdf(): failed to open PDF file %s\n", fileName);
     }
-
-    if (closeInvalidFiles && (errNone != err) && !reuseExistingWindow)
-    {
-        WindowInfo_Delete(win);
-        return NULL;
-    }
-
-    if (errNone != err)
-        goto Error;
 
     outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
     if (!outputDev)
@@ -1351,16 +1353,18 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         offsetX = fileHistory->state.scrollX;
         offsetY = fileHistory->state.scrollY;
     }
+
     win->dmSplash = DisplayModelSplash_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
         scrollbarYDx, scrollbarXDy, displayMode, startPage);
-    win->dm = win->dmSplash;
-    win->dmFitz = NULL;
 
     if (!win->dmSplash) {
         delete outputDev;
         WindowInfo_Delete(win);
         return NULL;
     }
+
+    win->dm = win->dmSplash;
+    win->dmFitz = NULL;
 
     win->dmSplash->appData = (void*)win;
 
@@ -4136,12 +4140,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     u_DoAllTests();
 
-	INITCOMMONCONTROLSEX cex;
-	cex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-	cex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES | ICC_USEREX_CLASSES | ICC_COOL_CLASSES;
-	InitCommonControlsEx(&cex);
+    INITCOMMONCONTROLSEX cex;
+    cex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    cex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES | ICC_USEREX_CLASSES | ICC_COOL_CLASSES;
+    InitCommonControlsEx(&cex);
 
-	argListRoot = StrList_FromCmdLine(lpCmdLine);
+    argListRoot = StrList_FromCmdLine(lpCmdLine);
     assert(argListRoot);
     if (!argListRoot)
         return 0;

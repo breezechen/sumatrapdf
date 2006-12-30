@@ -16,6 +16,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pdfbench", "pdfbench.vcproj
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fitzlib", "fitzlib.vcproj", "{07E5FC14-E74E-4734-9E73-4BB282C2B473}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fitzlheadib", "fitzheadlib.vcproj", "{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -38,6 +40,10 @@ Global
 		{07E5FC14-E74E-4734-9E73-4BB282C2B473}.Debug|Win32.Build.0 = Debug|Win32
 		{07E5FC14-E74E-4734-9E73-4BB282C2B473}.Release|Win32.ActiveCfg = Release|Win32
 		{07E5FC14-E74E-4734-9E73-4BB282C2B473}.Release|Win32.Build.0 = Release|Win32
+		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Debug|Win32.ActiveCfg = Debug|Win32
+		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Debug|Win32.Build.0 = Debug|Win32
+		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Release|Win32.ActiveCfg = Release|Win32
+		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
