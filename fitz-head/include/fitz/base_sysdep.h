@@ -14,19 +14,25 @@
 #include <errno.h>
 #include <fcntl.h>	/* O_RDONLY & co */
 
+#ifdef _WIN32
+#	define vsnprintf _vsnprintf
+#	include <io.h>
+#else
+#	include <unistd.h>
+#endif
+
 #ifdef HAVE_C99
 #	define FZ_FLEX
 #else
 #	define FZ_FLEX 1
 #	define restrict
-#	define inline __inline__
-#endif
-
-#ifdef WIN32
-#	define vsnprintf _vsnprintf
-#	include <io.h>
+#ifdef _MSC_VER
+#       define inline __inline
+#       define FORCEINLINE __forceinline
 #else
-#	include <unistd.h>
+#	define inline __inline__
+#       define FORCEINLINE __inline__
+#endif
 #endif
 
 #ifndef va_copy
@@ -50,7 +56,7 @@
 #define M_LOG10E 0.434294481903251827651
 #define M_LN2 0.693147180559945309417
 #define M_LN10 2.30258509299404568402
-#define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846f
 #define M_PI_2 1.57079632679489661923
 #define M_PI_4 0.785398163397448309616
 #define M_1_PI 0.318309886183790671538

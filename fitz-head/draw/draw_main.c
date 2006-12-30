@@ -2,9 +2,14 @@
 #include "fitz-world.h"
 #include "fitz-draw.h"
 
+#ifdef _MSC_VER
+#undef DEBUG
+#define DEBUG printf
+#else
 #define DEBUG(args...) printf(args)
 #ifndef DEBUG
 #define DEBUG(args...)
+#endif
 #endif
 
 #define QUANT(x,a) (((int)((x) * (a))) / (a))

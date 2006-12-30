@@ -4,9 +4,14 @@
 
 int gpixcnt = 1;
 
+#ifdef _MSC_VER
+#undef DEBUG
+#define DEBUG printf
+#else
 #define DEBUG(args...) printf(args)
 #ifndef DEBUG
 #define DEBUG(args...)
+#endif
 #endif
 
 #define QUANT(x,a) (((int)((x) * (a))) / (a))
@@ -343,7 +348,7 @@ fz_drawpath(fz_graphics *gc, fz_pathnode *node)
 
 	flatness = 0.3 / fz_matrixexpansion(gc->state.ctm);
 	if (flatness < 0.1)
-		flatness = 0.1;
+		flatness = 0.1f;
 
 printf("flatness = %g\n", flatness);
 

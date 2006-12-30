@@ -15,8 +15,10 @@
 #undef nil
 #define nil ((void*)0)
 
+#ifndef _MSC_VER
 #undef offsetof
 #define offsetof(s, m) (unsigned long)(&(((s*)0)->m))
+#endif
 
 #undef nelem
 #define nelem(x) (sizeof(x)/sizeof((x)[0]))
@@ -65,6 +67,10 @@ void fz_printerror(fz_error *eo);
 fz_error *fz_keeperror(fz_error *eo);
 void fz_droperror(fz_error *eo);
 void fz_warn(char *fmt, ...) __printflike(1,2);
+
+#ifdef _MSC_VER
+#define __func__ __FUNCTION__
+#endif
 
 #define fz_throw(...) fz_throwimp(nil, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #define fz_rethrow(cause, ...) fz_throwimp(cause, __func__, __FILE__, __LINE__, __VA_ARGS__)
