@@ -191,6 +191,7 @@ public:
 
     virtual void  SetDisplayMode(DisplayMode displayMode);
     virtual int   currentPageNo(void) const;
+    virtual void  SetZoomVirtual(double zoomVirtual);
 
     PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);
@@ -212,7 +213,6 @@ public:
 
     void          EnsureSearchHitVisible();
 
-    void          SetZoomVirtual(double zoomVirtual);
     void          ZoomTo(double zoomVirtual);
     void          ZoomBy(double zoomFactor);
 

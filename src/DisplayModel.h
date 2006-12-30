@@ -80,6 +80,8 @@ public:
         return _zoomVirtual;
     }
 
+    virtual void SetZoomVirtual(double zoomVirtual) = 0;
+
     int startPage(void) const {
         return _startPage;
     }
