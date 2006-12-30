@@ -81,13 +81,8 @@ extern void LaunchBrowser(const char *uri);
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
-#define INVALID_ZOOM        -99
 /* arbitrary but big */
 #define INVALID_BIG_ZOOM    999999.0
-
-#define INVALID_PAGE        -1
-
-#define INVALID_ROTATION    -1
 
 typedef struct DisplaySettings {
     int     paddingPageBorderTop;
@@ -195,16 +190,12 @@ public:
     DisplayModelSplash();
     virtual ~DisplayModelSplash();
 
-    int           rotation(void) const {
-        return _rotation; 
-    }
-
     PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);
 
-    int           GetCurrentPageNo() const;
+    int           currentPageNo(void) const;
+
     double        GetZoomReal();
-    double        GetZoomVirtual();
 
     void          GoToPage(int pageNo, int scrollY, int scrollX=-1);
     BOOL          GoToPrevPage(int scrollY);
@@ -271,7 +262,7 @@ public:
     void        RecalcSearchHitCanvasPos(void);
     void        RecalcLinksCanvasPos(void);
     void        SetStartPage(int startPage);
-    double      ZoomRealFromFirtualForPage(double _zoomVirtual, int pageNo);
+    double      ZoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
     void        RecalcLinks(void);
     void        GoToDest(LinkDest *linkDest);
     void        GoToNamedDest(UGooString *dest);
@@ -300,22 +291,11 @@ public:
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
 
-    DisplayMode     displayMode;
-
-    BOOL            fullScreen;
-
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.
        No meaning in continous mode. */
     int             startPage;
 
-    /* current rotation selected by user */
-    int             _rotation;
-
-    /* a "virtual" zoom level. Can be either a real zoom level in percent
-       (i.e. 100.0 is original size) or one of virtual values ZOOM_FIT_PAGE
-       or ZOOM_FIT_WIDTH, whose real value depends on draw area size */
-    double          zoomVirtual;
     /* real zoom value calculated from zoomVirtual. Same as zoomVirtual except
        for ZOOM_FIT_PAGE and ZOOM_FIT_WIDTH */
     double          zoomReal;

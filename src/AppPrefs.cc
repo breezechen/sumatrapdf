@@ -1,6 +1,7 @@
 #include "AppPrefs.h"
-#include "dstring.h"
+#include "DisplayModel.h"
 #include "DisplayState.h"
+#include "dstring.h"
 #include "FileHistory.h"
 #include <stdlib.h>
 #include <stdio.h>

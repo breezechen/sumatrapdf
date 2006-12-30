@@ -175,16 +175,6 @@ static int ColumnsFromDisplayMode(DisplayMode displayMode)
     return 1;
 }
 
-static BOOL IsDisplayModeContinuous(DisplayMode displayMode)
-{
-    if ((DM_SINGLE_PAGE == displayMode) || (DM_FACING == displayMode))
-        return FALSE;
-    else if ((DM_CONTINUOUS == displayMode) || (DM_CONTINUOUS_FACING == displayMode))
-        return TRUE;
-    assert(0);
-    return FALSE;
-}
-
 static BOOL IsDisplayModeFacing(DisplayMode displayMode)
 {
     if ((DM_SINGLE_PAGE == displayMode) || (DM_CONTINUOUS == displayMode))
@@ -335,6 +325,8 @@ static void TransfromUpsideDown(DisplayModelSplash *dm, int pageNo, double *y1, 
 
 DisplayModelSplash::DisplayModelSplash()
 {
+    linkCount = 0;
+    links = NULL;
 }
 
 PdfPageInfo *DisplayModelSplash::GetPageInfo(int pageNo) const
@@ -650,18 +642,18 @@ void DisplayModelSplash::SetTotalDrawAreaSize(RectDSize totalDrawAreaSize)
     int     newPageNo;
     int     currPageNo;
 
-    currPageNo = GetCurrentPageNo();
+    currPageNo = currentPageNo();
     totalDrawAreaSize = totalDrawAreaSize;
     /* TODO: drawAreaSize not always is minus scrollbars */
     drawAreaSize.dx = totalDrawAreaSize.dx - scrollbarYDx;
     drawAreaSize.dy = totalDrawAreaSize.dy - scrollbarXDy;
 
-    Relayout(zoomVirtual, rotation());
+    Relayout(zoomVirtual(), rotation());
     RecalcVisibleParts();
     RecalcLinksCanvasPos();
     RenderVisibleParts();
     SetScrollbarsState();
-    newPageNo = GetCurrentPageNo();
+    newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         PageChanged();
     RepaintDisplay(true);
@@ -729,19 +721,16 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
         goto Error;
 
     dm->appData = NULL;
+    dm->setFileName(pdfDoc->getFileName()->getCString());
     dm->pdfDoc = pdfDoc;
     dm->outputDevice = outputDev;
     dm->textOutDevice = NULL;
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
     dm->scrollbarYDx = scrollbarYDx;
-    dm->displayMode = displayMode;
-    dm->fullScreen = FALSE;
+    dm->setDisplayMode(displayMode);
+    dm->setFullScreen(false);
     dm->startPage = startPage;
-    dm->_rotation = INVALID_ROTATION;
-    dm->zoomVirtual = INVALID_ZOOM;
-    dm->linkCount = 0;
-    dm->links = NULL;
     dm->searchState.searchState = eSsNone;
     dm->searchState.str = new GooString();
     dm->searchState.strU = new UGooString();
@@ -769,10 +758,10 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
         pageInfo->textPage = NULL;
         pageInfo->visible = false;
         pageInfo->shown = false;
-        if (IsDisplayModeContinuous(dm->displayMode)) {
+        if (IsDisplayModeContinuous(dm->displayMode())) {
             pageInfo->shown = true;
         } else {
-            if ((pageNo >= startPage) && (pageNo < startPage + ColumnsFromDisplayMode(dm->displayMode))) {
+            if ((pageNo >= startPage) && (pageNo < startPage + ColumnsFromDisplayMode(dm->displayMode()))) {
                 DBG_OUT("DisplayModelSplash::CreateFromPdfDoc() set page %d as shown\n", pageNo);
                 pageInfo->shown = true;
             }
@@ -812,17 +801,12 @@ int DisplayModelSplash::FindFirstVisiblePageNo(void) const
     return INVALID_PAGE;
 }
 
-int DisplayModelSplash::GetCurrentPageNo(void) const
+int DisplayModelSplash::currentPageNo(void) const
 {
-    if (IsDisplayModeContinuous(displayMode))
+    if (IsDisplayModeContinuous(displayMode()))
         return FindFirstVisiblePageNo();
     else
         return startPage;
-}
-
-double DisplayModelSplash::GetZoomVirtual(void)
-{
-    return zoomVirtual;
 }
 
 double DisplayModelSplash::GetZoomReal(void)
@@ -848,13 +832,13 @@ void DisplayModelSplash::SetStartPage(int startPage)
     int              columns;
 
     assert(validPageNo(startPage));
-    assert(!IsDisplayModeContinuous(displayMode));
+    assert(!IsDisplayModeContinuous(displayMode()));
 
-    columns = ColumnsFromDisplayMode(displayMode);
+    columns = ColumnsFromDisplayMode(displayMode());
     startPage = startPage;
     for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
         pageInfo = GetPageInfo(pageNo);
-        if (IsDisplayModeContinuous(displayMode))
+        if (IsDisplayModeContinuous(displayMode()))
             pageInfo->shown = true;
         else
             pageInfo->shown = false;
@@ -864,7 +848,7 @@ void DisplayModelSplash::SetStartPage(int startPage)
         }
         pageInfo->visible = false;
     }
-    Relayout(zoomVirtual, rotation());
+    Relayout(zoomVirtual(), rotation());
 }
 
 void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
@@ -877,10 +861,10 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
 
     /* in facing mode only start at odd pages (odd because page
        numbering starts with 1, so odd is really an even page) */
-    if (IsDisplayModeFacing(displayMode))
+    if (IsDisplayModeFacing(displayMode()))
       pageNo = ((pageNo-1) & ~1) + 1;
 
-    if (!IsDisplayModeContinuous(displayMode)) {
+    if (!IsDisplayModeContinuous(displayMode())) {
         /* in single page mode going to another page involves recalculating
            the size of canvas */
         SetStartPage(pageNo);
@@ -896,7 +880,7 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
        TODO: is there a better way of y-centering?
        TODO: it probably doesn't work in continuous mode (but that's a corner
              case, I hope) */
-    if (!IsDisplayModeContinuous(displayMode))
+    if (!IsDisplayModeContinuous(displayMode()))
         areaOffset.y = (double)scrollY;
     else
         areaOffset.y = pageInfo->currPosY - PADDING_PAGE_BORDER_TOP + (double)scrollY;
@@ -936,8 +920,8 @@ BOOL DisplayModelSplash::GoToNextPage(int scrollY)
     int             firstPageInCurrRow, firstPageInNewRow;
     int             columns;
 
-    columns = ColumnsFromDisplayMode(displayMode);
-    currPageNo = GetCurrentPageNo();
+    columns = ColumnsFromDisplayMode(displayMode());
+    currPageNo = currentPageNo();
     firstPageInCurrRow = FirstPageInARowNo(currPageNo, columns);
     newPageNo = currPageNo + columns;
     firstPageInNewRow = FirstPageInARowNo(newPageNo, columns);
@@ -956,8 +940,8 @@ BOOL DisplayModelSplash::GoToPrevPage(int scrollY)
     int             currPageNo;
     int             columns;
 
-    columns = ColumnsFromDisplayMode(displayMode);
-    currPageNo = GetCurrentPageNo();
+    columns = ColumnsFromDisplayMode(displayMode());
+    currPageNo = currentPageNo();
     DBG_OUT("DisplayModelSplash::GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (currPageNo <= columns) {
         /* we're on a first page, can't go back */
@@ -975,8 +959,8 @@ BOOL DisplayModelSplash::GoToLastPage(void)
 
     DBG_OUT("DisplayModelSplash::GoToLastPage()\n");
 
-    columns = ColumnsFromDisplayMode(displayMode);
-    currPageNo = GetCurrentPageNo();
+    columns = ColumnsFromDisplayMode(displayMode());
+    currPageNo = currentPageNo();
     firstPageInLastRow = FirstPageInARowNo(pageCount(), columns);
 
     if (currPageNo != firstPageInLastRow) { /* are we on the last page already ? */
@@ -990,7 +974,7 @@ BOOL DisplayModelSplash::GoToFirstPage(void)
 {
     DBG_OUT("DisplayModelSplash::GoToFirstPage()\n");
 
-    if (IsDisplayModeContinuous(displayMode)) {
+    if (IsDisplayModeContinuous(displayMode())) {
         if (0 == areaOffset.y) {
             return FALSE;
         }
@@ -1012,13 +996,13 @@ void DisplayModelSplash::ScrollYTo(int yOff)
 
     DBG_OUT("DisplayModelSplash::ScrollYTo(yOff=%d)\n", yOff);
 
-    currPageNo = GetCurrentPageNo();
+    currPageNo = currentPageNo();
     areaOffset.y = (double)yOff;
     RecalcVisibleParts();
     RecalcLinksCanvasPos();
     RenderVisibleParts();
 
-    newPageNo = GetCurrentPageNo();
+    newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         PageChanged();
     RepaintDisplay(false);
@@ -1074,7 +1058,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
 
     newYOff = currYOff;
 
-    if (!IsDisplayModeContinuous(displayMode) && changePage) {
+    if (!IsDisplayModeContinuous(displayMode()) && changePage) {
         if ((dy < 0) && (0 == currYOff)) {
             if (startPage > 1) {
                 newPageNo = startPage-1;
@@ -1107,13 +1091,13 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
     if (newYOff == currYOff)
         return;
 
-    currPageNo = GetCurrentPageNo();
+    currPageNo = currentPageNo();
     areaOffset.y = (double)newYOff;
     RecalcVisibleParts();
     RecalcLinksCanvasPos();
     RenderVisibleParts();
     SetScrollbarsState();
-    newPageNo = GetCurrentPageNo();
+    newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         PageChanged();
     RepaintDisplay(false);
@@ -1180,11 +1164,11 @@ void DisplayModelSplash::SetDisplayMode(DisplayMode displayMode)
     int             currPageNo;
     PdfPageInfo *   pageInfo;
 
-    if (this->displayMode == displayMode)
+    if (this->displayMode() == displayMode)
         return;
 
-    this->displayMode = displayMode;
-    currPageNo = GetCurrentPageNo();
+    setDisplayMode(displayMode);
+    currPageNo = currentPageNo();
     if (IsDisplayModeContinuous(displayMode)) {
         /* mark all pages as shown but not yet visible. The equivalent code
            for non-continuous mode is in DisplayModelSplash::SetStartPage() called
@@ -1194,7 +1178,7 @@ void DisplayModelSplash::SetDisplayMode(DisplayMode displayMode)
             pageInfo->shown = true;
             pageInfo->visible = false;
         }
-        Relayout(zoomVirtual, rotation());
+        Relayout(zoomVirtual(), rotation());
     }
     GoToPage(currPageNo, 0);
 }
@@ -1204,7 +1188,7 @@ void DisplayModelSplash::ZoomTo(double _zoomVirtual)
     int     currPageNo;
 
     //DBG_OUT("DisplayModelSplash::ZoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
-    currPageNo = GetCurrentPageNo();
+    currPageNo = currentPageNo();
     Relayout(_zoomVirtual, rotation());
     GoToPage(currPageNo, 0);
 }
@@ -1237,15 +1221,15 @@ void DisplayModelSplash::RotateBy(int newRotation)
     if (!ValidRotation(newRotation))
         return;
 
-    currPageNo = GetCurrentPageNo();
-    Relayout(zoomVirtual, newRotation);
+    currPageNo = currentPageNo();
+    Relayout(zoomVirtual(), newRotation);
     GoToPage(currPageNo, 0);
 
 }
 
 /* Given a zoom level that can include a "virtual" zoom levels like ZOOM_FIT_WIDTH
    and ZOOM_FIT_PAGE, calculate an absolute zoom level */
-double DisplayModelSplash::ZoomRealFromFirtualForPage(double _zoomVirtual, int pageNo)
+double DisplayModelSplash::ZoomRealFromFirtualForPage(double zoomVirtual, int pageNo)
 {
     double          _zoomReal, zoomX, zoomY, pageDx, pageDy;
     double          areaForPageDx, areaForPageDy;
@@ -1262,16 +1246,16 @@ double DisplayModelSplash::ZoomRealFromFirtualForPage(double _zoomVirtual, int p
     assert(0 != (int)pageDx);
     assert(0 != (int)pageDy);
 
-    columns = ColumnsFromDisplayMode(displayMode);
+    columns = ColumnsFromDisplayMode(displayMode());
     areaForPageDx = (drawAreaSize.dx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT);
     areaForPageDx -= (PADDING_BETWEEN_PAGES_X * (columns - 1));
     areaForPageDxInt = (int)(areaForPageDx / columns);
     areaForPageDx = (double)areaForPageDxInt;
     areaForPageDy = (double)drawAreaSize.dy - PADDING_PAGE_BORDER_TOP - PADDING_PAGE_BORDER_BOTTOM;
-    if (ZOOM_FIT_WIDTH == _zoomVirtual) {
+    if (ZOOM_FIT_WIDTH == zoomVirtual) {
         /* TODO: should use gWinDx if we don't show scrollbarY */
         _zoomReal = (areaForPageDx * 100.0) / (double)pageDx;
-    } else if (ZOOM_FIT_PAGE == _zoomVirtual) {
+    } else if (ZOOM_FIT_PAGE == zoomVirtual) {
         zoomX = (areaForPageDx * 100.0) / (double)pageDx;
         zoomY = (areaForPageDy * 100.0) / (double)pageDy;
         if (zoomX < zoomY)
@@ -1279,28 +1263,28 @@ double DisplayModelSplash::ZoomRealFromFirtualForPage(double _zoomVirtual, int p
         else
             _zoomReal= zoomY;
     } else
-        _zoomReal = _zoomVirtual;
+        _zoomReal = zoomVirtual;
 
     assert(ValidZoomReal(_zoomReal));
     return _zoomReal;
 }
 
-void DisplayModelSplash::SetZoomVirtual(double _zoomVirtual)
+void DisplayModelSplash::SetZoomVirtual(double zoomVirtual)
 {
     int     pageNo;
     double  minZoom = INVALID_BIG_ZOOM;
     double  thisPageZoom;
 
-    assert(ValidZoomVirtual(_zoomVirtual));
-    this->zoomVirtual = _zoomVirtual;
+    assert(ValidZoomVirtual(zoomVirtual));
+    _zoomVirtual = zoomVirtual;
 
-    if ((ZOOM_FIT_WIDTH == _zoomVirtual) || (ZOOM_FIT_PAGE == _zoomVirtual)) {
+    if ((ZOOM_FIT_WIDTH == zoomVirtual) || (ZOOM_FIT_PAGE == zoomVirtual)) {
         /* we want the same zoom for all pages, so use the smallest zoom
            across the pages so that the largest page fits. In most PDFs all
            pages are the same size anyway */
         for (pageNo = 1; pageNo <= pageCount(); pageNo++) {
             if (IsPageShown(pageNo)) {
-                thisPageZoom = ZoomRealFromFirtualForPage(zoomVirtual, pageNo);
+                thisPageZoom = ZoomRealFromFirtualForPage(this->zoomVirtual(), pageNo);
                 assert(0 != thisPageZoom);
                 if (minZoom > thisPageZoom)
                     minZoom = thisPageZoom;
@@ -1309,7 +1293,7 @@ void DisplayModelSplash::SetZoomVirtual(double _zoomVirtual)
         assert(minZoom != INVALID_BIG_ZOOM);
         this->zoomReal = minZoom;
     } else
-        this->zoomReal = _zoomVirtual;
+        this->zoomReal = zoomVirtual;
 }
 
 /* Recalcualte 'linkCount' and 'links' out of 'pagesInfo' data.
@@ -1424,7 +1408,7 @@ void DisplayModelSplash::Relayout(double zoomVirtual, int rotation)
     /* calculate the position of each page on the canvas, given current zoom,
        rotation, columns parameters. You can think of it as a simple
        table layout i.e. rows with a fixed number of columns. */
-    columns = ColumnsFromDisplayMode(displayMode);
+    columns = ColumnsFromDisplayMode(displayMode());
     columnsLeft = columns;
     currPosX = PADDING_PAGE_BORDER_LEFT;
     rowMaxPageDy = 0;
@@ -1775,7 +1759,7 @@ void DisplayModelSplash::HandleLinkNamed(LinkNamed *linkNamed)
 /* Return TRUE if can go to previous page (i.e. is not on the first page) */
 BOOL DisplayModelSplash::CanGoToPrevPage(void)
 {
-    if (1 == GetCurrentPageNo())
+    if (1 == currentPageNo())
         return FALSE;
     return TRUE;
 }
@@ -1783,11 +1767,11 @@ BOOL DisplayModelSplash::CanGoToPrevPage(void)
 /* Return TRUE if can go to next page (i.e. doesn't already show last page) */
 BOOL DisplayModelSplash::CanGoToNextPage(void)
 {
-    if (IsDisplayModeFacing(displayMode)) {
-        if (GetCurrentPageNo()+1 >= pageCount())
+    if (IsDisplayModeFacing(displayMode())) {
+        if (currentPageNo()+1 >= pageCount())
             return FALSE;
     } else {
-        if (pageCount() == GetCurrentPageNo())
+        if (pageCount() == currentPageNo())
             return FALSE;
     }
     return TRUE;
@@ -2013,30 +1997,6 @@ void DisplayModelSplash::SetSearchHit(int pageNo, RectD *hitRect)
     searchHitPageNo = pageNo;
     searchHitRectPage = *hitRect;
     RecalcSearchHitCanvasPos();
-}
-
-BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModelSplash *dm)
-{
-    ds->filePath = Str_Escape(dm->pdfDoc->getFileName()->getCString());
-    if (!ds->filePath)
-        return FALSE;
-    ds->displayMode = dm->displayMode;
-    ds->fullScreen = dm->fullScreen;
-    ds->pageNo = dm->GetCurrentPageNo();
-    ds->rotation = dm->rotation();
-    ds->zoomVirtual = dm->GetZoomVirtual();
-    ds->scrollX = (int)dm->areaOffset.x;
-    if (IsDisplayModeContinuous(dm->displayMode)) {
-        /* TODO: should be offset of top page */
-        ds->scrollY = 0;
-    } else {
-        ds->scrollY = (int)dm->areaOffset.y;
-    }
-    ds->windowDx = (int)dm->drawAreaSize.dx;
-    ds->windowDy = (int)dm->drawAreaSize.dy;
-    ds->windowX = 0;
-    ds->windowY = 0;
-    return TRUE;
 }
 
 SplashBitmap* RenderBitmap(DisplayModelSplash *dm,

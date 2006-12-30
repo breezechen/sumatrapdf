@@ -962,7 +962,8 @@ static void WindowInfo_Delete(WindowInfo *win)
         gCurPageRenderReq->abort = TRUE;
     }
     UnlockCache();
-    delete win->dmSplash;
+    delete win->dm;
+    win->dm = NULL;
     WindowInfo_Dib_Deinit(win);
     WindowInfo_DoubleBuffer_Delete(win);
     free((void*)win);
@@ -1231,28 +1232,14 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     WindowInfo *        win;
     int                 reuseExistingWindow = FALSE;
     RectDSize           totalDrawAreaSize;
-    int                 scrollbarYDx, scrollbarXDy;
-    GBool               bitmapTopDown = gTrue;
-    BOOL                fromHistory;
     FileHistoryList *   fileHistory = NULL;
-    int                 startPage;
-    double              zoomVirtual;
-    int                 rotation;
-    DisplayMode         displayMode;
-    int                 offsetX, offsetY;
-
-    startPage = 1;
-    displayMode = DEFAULT_DISPLAY_MODE;
-    offsetX = 0;
-    offsetY = 0;
 
     if (!ignoreHistory)
         fileHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
 
+    BOOL fromHistory = FALSE;
     if (fileHistory)
         fromHistory = TRUE;
-    else
-        fromHistory = FALSE;
 
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -1294,8 +1281,12 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
        TODO: I think it's broken anyway and DisplayModelSplash needs to know if
              scrollbars are part of client area in order to accomodate windows
              UI properly */
-    scrollbarYDx = 0;
-    scrollbarXDy = 0;
+    DisplayMode displayMode = DEFAULT_DISPLAY_MODE;
+    int offsetX = 0;
+    int offsetY = 0;
+    int startPage = 1;
+    int scrollbarYDx = 0;
+    int scrollbarXDy = 0;
     if (fromHistory) {
         startPage = fileHistory->state.pageNo;
         displayMode = fileHistory->state.displayMode;
@@ -1305,14 +1296,13 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
 
     win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
         totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
+    win->dm = win->dmSplash;
+    win->dmFitz = NULL;
 
-    if (!win->dmSplash) {
+    if (!win->dm) {
         WindowInfo_Delete(win);
         goto Error;
     }
-
-    win->dm = win->dmSplash;
-    win->dmFitz = NULL;
 
     win->dmSplash->appData = (void*)win;
 
@@ -1338,8 +1328,8 @@ Error:
         DBG_OUT("failed to load file %s\n", fileName);
     } else {
         win->state = WS_SHOWING_PDF;
-        zoomVirtual = DEFAULT_ZOOM;
-        rotation = DEFAULT_ROTATION;
+        double zoomVirtual = DEFAULT_ZOOM;
+        int rotation = DEFAULT_ROTATION;
         if (fromHistory) {
             zoomVirtual = fileHistory->state.zoomVirtual;
             rotation = fileHistory->state.rotation;
@@ -1357,6 +1347,7 @@ Error:
         if (!reuseExistingWindow && !fromHistory)
             WindowInfo_ResizeToPage(win, startPage);
     }
+
     if (reuseExistingWindow)
         WindowInfo_RedrawAll(win);
 
@@ -1449,7 +1440,7 @@ void DisplayModelSplash::PageChanged(void)
     if (!win->dmSplash->pdfDoc)
         return;
 
-    int currPageNo = GetCurrentPageNo();
+    int currPageNo = currentPageNo();
     pageCount = win->dmSplash->pageCount();
     baseName = Path_GetBaseName(win->dmSplash->pdfDoc->getFileName()->getCString());
     if (pageCount <= 0)
@@ -1597,9 +1588,9 @@ static void WindowInfo_ToggleZoom(WindowInfo *win)
     assert(dm);
     if (!dm) return;
 
-    if (ZOOM_FIT_PAGE == dm->zoomVirtual)
+    if (ZOOM_FIT_PAGE == dm->zoomVirtual())
         dm->SetZoomVirtual(ZOOM_FIT_WIDTH);
-    else if (ZOOM_FIT_WIDTH == dm->zoomVirtual)
+    else if (ZOOM_FIT_WIDTH == dm->zoomVirtual())
         dm->SetZoomVirtual(ZOOM_FIT_PAGE);
 }
 
@@ -2703,8 +2694,8 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
-        delete win->dmSplash;
-        win->dmSplash = NULL;
+        delete win->dm;
+        win->dm = NULL;
         WindowInfo_RedrawAll(win);
     } else {
         hwndToDestroy = win->hwndFrame;

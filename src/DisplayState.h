@@ -14,15 +14,6 @@
 #define DM_CONTINUOUS_STR           "continuous"
 #define DM_CONTINUOUS_FACING_STR    "continuous facing"
 
-enum DisplayMode {
-    DM_FIRST = 1,
-    DM_SINGLE_PAGE = DM_FIRST,
-    DM_FACING,
-    DM_CONTINUOUS,
-    DM_CONTINUOUS_FACING,
-    DM_LAST = DM_CONTINUOUS_FACING
-};
-
 #define FILE_HISTORY_STR            "File History"
 
 #define FILE_STR                    "File"
