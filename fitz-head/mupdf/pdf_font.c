@@ -44,6 +44,9 @@ enum { UNKNOWN, TYPE1, TRUETYPE, CID };
 
 static int ftkind(FT_Face face)
 {
+#ifdef _WIN32
+    return TRUETYPE;
+#else
     const char *kind = FT_Get_X11_Font_Format(face);
     pdf_logfont("ft font format %s\n", kind);
     if (!strcmp(kind, "TrueType"))
@@ -55,6 +58,7 @@ static int ftkind(FT_Face face)
     if (!strcmp(kind, "CID Type 1"))
 	return TYPE1;
     return UNKNOWN;
+#endif
 }
 
 static inline int ftcidtogid(pdf_font *font, int cid)
@@ -87,7 +91,9 @@ static int ftwidth(pdf_font *font, int cid)
 static fz_error *
 ftrender(fz_glyph *glyph, fz_font *fzfont, int cid, fz_matrix trm)
 {
+#ifdef HINT
     fz_error *error;
+#endif
     pdf_font *font = (pdf_font*)fzfont;
     FT_Face face = font->ftface;
     FT_Matrix m;

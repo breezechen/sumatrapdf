@@ -46,7 +46,7 @@ struct fz_error_s
 #define fz_outofmem (&fz_koutofmem)
 extern fz_error fz_koutofmem;
 
-#ifdef WIN32
+#ifdef _WIN32
 #define fz_throw(...) fz_throw0(__FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 #elif HAVE_C99
 #define fz_throw(...) fz_throw0(__func__, __FILE__, __LINE__, __VA_ARGS__)

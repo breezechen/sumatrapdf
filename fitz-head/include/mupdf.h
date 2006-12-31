@@ -15,6 +15,10 @@
 #error "fitz-world.h must be included before mupdf.h"
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 void pdf_logxref(char *fmt, ...);
 void pdf_logrsrc(char *fmt, ...);
 void pdf_logfont(char *fmt, ...);
@@ -29,3 +33,6 @@ void pdf_logpage(char *fmt, ...);
 #include "mupdf/annot.h"
 #include "mupdf/page.h"
 
+#ifdef  __cplusplus
+}
+#endif

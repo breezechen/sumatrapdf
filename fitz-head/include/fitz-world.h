@@ -11,6 +11,10 @@
 #error "fitz-base.h must be included before fitz-world.h"
 #endif
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "fitz/wld_font.h"
 #include "fitz/wld_color.h"
 #include "fitz/wld_image.h"
@@ -19,3 +23,6 @@
 #include "fitz/wld_path.h"
 #include "fitz/wld_text.h"
 
+#ifdef  __cplusplus
+}
+#endif

@@ -238,7 +238,7 @@ buildrawfilter(fz_filter **filterp, pdf_xref *xref, fz_obj *stmobj, int oid, int
 fz_error *
 pdf_buildinlinefilter(fz_filter **filterp, fz_obj *stmobj)
 {
-    fz_error *error;
+//    fz_error *error;
     fz_obj *filters;
     fz_obj *params;
 
@@ -256,8 +256,8 @@ pdf_buildinlinefilter(fz_filter **filterp, fz_obj *stmobj)
     /* uh oh, no filter */
     *filterp = nil;
 
-    if (error)
-        return fz_rethrow(error, "cannot create inline filter chain");
+//    if (error)
+//        return fz_rethrow(error, "cannot create inline filter chain");
     return fz_okay;
 }
 

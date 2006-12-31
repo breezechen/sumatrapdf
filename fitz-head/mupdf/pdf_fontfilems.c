@@ -7,10 +7,8 @@
 #include FT_FREETYPE_H
 
 #define SAFE_FZ_READ(file, buf, size)\
-	byteread = fz_read((file), (char*)(buf), (size));\
-	if(byteread<0) err = fz_ferror(file);\
-	if(byteread != (size)) err = fz_throw("ioerror");\
-	if(err) goto cleanup;
+	err = fz_read(&byteread, (file), (char*)(buf), (size));\
+	if (err) goto cleanup;
 
 #define ARRAY_SIZE(a) sizeof(a) / sizeof(a[0])
 
@@ -141,9 +139,9 @@ static char *basepatterns[13] =
 
 static pdf_fontlistMS fontlistMS =
 {
-	.fontmap = nil,
-	.cap = 0,
-	.len = 0,
+	NULL,
+    0,
+    0,
 };
 
 static int
@@ -212,9 +210,11 @@ removeredundancy(pdf_fontlistMS *fl)
 	}
 	qsort(fl->fontmap,fl->len,sizeof(pdf_fontmapMS),compare);
 	fl->len -= redundancy_count;
+#ifndef NDEBUG
 	for(i = 0; i < fl->len; ++i)
 		fprintf(stdout,"%s , %s , %d\n",fl->fontmap[i].fontface,
 			fl->fontmap[i].fontpath,fl->fontmap[i].index);
+#endif
 }
 
 static fz_error * 
@@ -363,7 +363,7 @@ insertmapping(pdf_fontlistMS *fl, char *facename, char *path, int index)
 }
 
 static fz_error *
-parseTTF(fz_file *file, int offset, int index, char *path)
+parseTTF(fz_stream *file, int offset, int index, char *path)
 {
 	fz_error *err = nil;
 	int byteread;
@@ -375,7 +375,6 @@ parseTTF(fz_file *file, int offset, int index, char *path)
 
 	char szTemp[4096];
 	int found;
-	int pos;
 	int i;
 
 	fz_seek(file,offset,0);
@@ -474,9 +473,9 @@ static fz_error *
 parseTTFs(char *path)
 {
 	fz_error *err = nil;
-	fz_file *file = nil;
+	fz_stream *file = nil;
 
-	err = fz_openfile(&file, path, FZ_READ);
+	err = fz_openrfile(&file, path);
 	if(err)
 		goto cleanup;
 
@@ -486,7 +485,7 @@ parseTTFs(char *path)
 		
 cleanup:
 	if(file)
-		fz_closefile(file);
+		fz_dropstream(file);
 
 	return err;
 }
@@ -496,11 +495,11 @@ parseTTCs(char *path)
 {
 	fz_error *err = nil;
 	int byteread;
-	fz_file *file = nil;
+	fz_stream *file = nil;
 	FONT_COLLECTION fontcollectioin;
-	int i;
+	ULONG i;
 
-	err = fz_openfile(&file, path, FZ_READ);
+	err = fz_openrfile(&file, path);
 	if(err)
 		goto cleanup;
 
@@ -542,12 +541,12 @@ parseTTCs(char *path)
 		
 cleanup:
 	if(file)
-		fz_closefile(file);
+		fz_dropstream(file);
 
 	return err;
 }
 
-fz_error*
+static fz_error*
 pdf_createfontlistMS()
 {
 	char szFontDir[MAX_PATH*2];
@@ -611,8 +610,8 @@ pdf_createfontlistMS()
 	removeredundancy(&fontlistMS);
 
 cleanup:
-	if(err)
-		fz_abort(err);
+//	if (err)
+//		fz_abort(err);
 	return nil;
 }
 
@@ -686,6 +685,18 @@ static fz_error *initfontlibs(void)
 	return nil;
 }
 
+fz_error *initfontlibs_ms(void)
+{
+	return initfontlibs();
+}
+
+void deinitfontlibs_ms(void)
+{
+    pdf_destoryfontlistMS();
+    FT_Done_FreeType(ftlib);
+    ftlib = nil;
+}
+
 fz_error *
 pdf_loadbuiltinfont(pdf_font *font, char *basefont)
 {
@@ -693,10 +704,8 @@ pdf_loadbuiltinfont(pdf_font *font, char *basefont)
 	int fterr;
 
 	FT_Face face;
-	char *pattern;
 	char *file;
 	int index;
-	int i;
 
 	error = initfontlibs();
 	if (error)
@@ -721,8 +730,6 @@ pdf_loadsystemfont(pdf_font *font, char *basefont, char *collection)
 	fz_error *error;
 	int fterr;
 	FT_Face face;
-	char fontname[200];
-	char *style;
 	char *file;
 	int index;
 

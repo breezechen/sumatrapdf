@@ -470,16 +470,14 @@ pdf_loadtile(fz_image *img, fz_pixmap *tile)
 	assert(tile->x + tile->w <= img->w);
 	assert(tile->y + tile->h <= img->h);
 
-#if 0
-
 	switch (src->bpc)
 	{
-	case 1: tilefunc = fz_loadtile1; break;
-	case 2: tilefunc = fz_loadtile2; break;
-	case 4: tilefunc = fz_loadtile4; break;
-	case 8: tilefunc = fz_loadtile8; break;
-	default:
-		return fz_throw("rangecheck: unsupported bit depth: %d", src->bpc);
+	    case 1: tilefunc = fz_loadtile1; break;
+	    case 2: tilefunc = fz_loadtile2; break;
+	    case 4: tilefunc = fz_loadtile4; break;
+	    case 8: tilefunc = fz_loadtile8; break;
+	    default:
+		    return fz_throw("rangecheck: unsupported bit depth: %d", src->bpc);
 	}
 
 	if (src->indexed)
@@ -494,10 +492,10 @@ pdf_loadtile(fz_image *img, fz_pixmap *tile)
 
 		switch (src->bpc)
 		{
-		case 1: bpcfact = 255; break;
-		case 2: bpcfact = 85; break;
-		case 4: bpcfact = 17; break;
-		case 8: bpcfact = 1; break;
+		    case 1: bpcfact = 255; break;
+		    case 2: bpcfact = 85; break;
+		    case 4: bpcfact = 17; break;
+		    case 8: bpcfact = 1; break;
 		}
 
 		tilefunc(src->samples->rp, src->stride,
@@ -534,8 +532,6 @@ pdf_loadtile(fz_image *img, fz_pixmap *tile)
 			maskcolorkey(tile, src->colorkey);
 		fz_decodetile(tile, !img->a, src->decode);
 	}
-
-#endif
 
 	return nil;
 }

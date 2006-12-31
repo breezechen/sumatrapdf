@@ -107,7 +107,12 @@ void winconvert(fz_pixmap *image)
     for (y = 0; y < image->h; y++)
     {
         unsigned char *p = bmpdata + y * bmpstride;
+#ifdef FITZ_HEAD
+        unsigned char *s = image->p + y * image->w * 4;
+#else
         unsigned char *s = image->samples + y * image->w * 4;
+#endif
+
         for (x = 0; x < image->w; x++)
         {
             p[x * 3 + 0] = s[x * 4 + 3];

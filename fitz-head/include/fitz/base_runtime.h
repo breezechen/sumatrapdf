@@ -76,7 +76,9 @@ void fz_warn(char *fmt, ...) __printflike(1,2);
 #define fz_rethrow(cause, ...) fz_throwimp(cause, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #define fz_okay ((fz_error*)0)
 
-fz_error *fz_throwimp(fz_error *cause, const char *func, const char *file, int line, char *fmt, ...) __printflike(5, 6);
+fz_error *fz_throwimp(fz_error *cause, const char *func, const char *file, int line, char *fmt, ...);
+
+//fz_error *fz_throwimp(fz_error *cause, const char *func, const char *file, int line, char *fmt, ...) __printflike(5, 6);
 
 typedef struct fz_memorycontext_s fz_memorycontext;
 

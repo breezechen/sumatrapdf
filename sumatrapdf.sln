@@ -18,6 +18,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fitzlib", "fitzlib.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fitzlheadib", "fitzheadlib.vcproj", "{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pdfbenchbase", "pdfbenchbase.vcproj", "{C37F94D9-7548-48EB-A2E6-4BED260B9BEC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06} = {189EAA5B-0930-4B6D-AA7E-B57B22EABA06}
+		{F78B1C7E-135A-4178-BED4-A4CCCA9389D6} = {F78B1C7E-135A-4178-BED4-A4CCCA9389D6}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -44,6 +50,10 @@ Global
 		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Debug|Win32.Build.0 = Debug|Win32
 		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Release|Win32.ActiveCfg = Release|Win32
 		{189EAA5B-0930-4B6D-AA7E-B57B22EABA06}.Release|Win32.Build.0 = Release|Win32
+		{C37F94D9-7548-48EB-A2E6-4BED260B9BEC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C37F94D9-7548-48EB-A2E6-4BED260B9BEC}.Debug|Win32.Build.0 = Debug|Win32
+		{C37F94D9-7548-48EB-A2E6-4BED260B9BEC}.Release|Win32.ActiveCfg = Release|Win32
+		{C37F94D9-7548-48EB-A2E6-4BED260B9BEC}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

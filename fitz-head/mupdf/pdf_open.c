@@ -81,7 +81,7 @@ readoldtrailer(pdf_xref *xref, char *buf, int cap)
     fz_error *error;
     int ofs, len;
     char *s;
-    int n;
+    int n = 0;
     int t;
     int c;
 

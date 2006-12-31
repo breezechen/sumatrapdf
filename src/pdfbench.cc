@@ -816,7 +816,11 @@ public:
     pdf_xref *          xref;
     pdf_outline *       outline;
     pdf_pagetree *      pages;
+#ifdef FITZ_HEAD
+    fz_graphics *       rast;
+#else
     fz_renderer *       rast;
+#endif
     fz_error *          error;
     fz_obj *            obj;
     fz_pixmap *         image;
@@ -832,7 +836,11 @@ FitzRender::FitzRender(const char *_fileName)
     rast = NULL;
     image = NULL;
     page = NULL;
+#ifdef FITZ_HEAD
+    error = fz_newgraphics(&rast, 1024 * 512);
+#else
     error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
+#endif
 }
 
 void FitzRender::FreePage(void)
@@ -860,7 +868,11 @@ void FitzRender::RenderPage(int pageNo)
         return;
     ctm = pdfapp_viewctm(page, 1.f, 0);
     bbox = fz_transformaabb(ctm, page->mediabox);
+#ifdef FITZ_HEAD
+    error = fz_drawtree(&image, rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);
+#else
     error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
+#endif
 }
 
 int FitzRender::Load()
@@ -913,7 +925,11 @@ FitzRender::~FitzRender()
     }
 
     if (rast)
+#ifdef FITZ_HEAD
+        fz_dropgraphics(rast);
+#else
         fz_droprenderer(rast);
+#endif
 }
 
 class SplashRender

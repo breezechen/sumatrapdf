@@ -18,6 +18,14 @@ struct fz_pixfuns_s
 	void (*shadeover)(fz_scanargs*, unsigned char*, int, int, int, int, int);
 };
 
+typedef unsigned char FZ_BYTE;
+
+extern void (*fz_decodetile)(fz_pixmap *pix, int skip, float *decode);
+extern void (*fz_loadtile1)(FZ_BYTE*, int sw, FZ_BYTE*, int dw, int w, int h, int pad);
+extern void (*fz_loadtile2)(FZ_BYTE*, int sw, FZ_BYTE*, int dw, int w, int h, int pad);
+extern void (*fz_loadtile4)(FZ_BYTE*, int sw, FZ_BYTE*, int dw, int w, int h, int pad);
+extern void (*fz_loadtile8)(FZ_BYTE*, int sw, FZ_BYTE*, int dw, int w, int h, int pad);
+
 struct fz_gstate_s
 {
 	fz_matrix ctm;
