@@ -106,7 +106,9 @@ static BOOL             gDebugShowLinks = FALSE;
 #define PREFS_FILE_NAME _T("prefs.txt")
 #define APP_SUB_DIR     _T("SumatraPDF")
 
-#define BENCH_ARG_TXT   "-bench"
+#define BENCH_ARG_TXT             "-bench"
+#define PRINT_TO_ARG_TXT          "-print-to"
+#define NO_REGISTER_EXT_ARG_TXT   "-no-register-ext"
 
 /* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_WIN_DX 612
@@ -138,7 +140,7 @@ static SplashColor                  splashColWhite;
 static SplashColor                  splashColBlack;
 
 static HINSTANCE                    ghinst = NULL;
-TCHAR                               szTitle[MAX_LOADSTRING];
+TCHAR                               windowTitle[MAX_LOADSTRING];
 
 static WindowInfo*                  gWindowList = NULL;
 
@@ -670,7 +672,7 @@ static void AppGetAppDir(DString* pDs)
 {
     char        dir[MAX_PATH];
 
-    SHGetFolderPath(NULL, CSIDL_APPDATA|CSIDL_FLAG_CREATE, NULL, 0, dir);
+    SHGetSpecialFolderPath(NULL, dir, CSIDL_APPDATA, TRUE);
     DStringSprintf(pDs, "%s/%s", dir, APP_SUB_DIR);
     _mkdir(pDs->pString);
 }
@@ -1188,7 +1190,7 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
 //            WS_OVERLAPPEDWINDOW,
 //            WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE,
         //WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_HSCROLL | WS_VSCROLL,
-        FRAME_CLASS_NAME, szTitle,
+        FRAME_CLASS_NAME, windowTitle,
         WS_POPUP,
         CW_USEDEFAULT, CW_USEDEFAULT,
         DEF_WIN_DX, DEF_WIN_DY,
@@ -1196,7 +1198,7 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
         ghinst, NULL);
 #else
     hwndFrame = CreateWindow(
-            FRAME_CLASS_NAME, szTitle,
+            FRAME_CLASS_NAME, windowTitle,
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT,
             DEF_WIN_DX, DEF_WIN_DY,
@@ -1684,15 +1686,15 @@ static void RefreshIcons(void)
     DString ds;
     BYTE    buff[256];
     HKEY    hKey;
-    DWORD   sz;
+    DWORD   keySize;
     DWORD   typ = REG_SZ;
     LONG    result;
     int     origIconSize;
 
     result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_READ, &hKey);
 
-    sz = sizeof(buff);
-    RegQueryValueEx(hKey, "Shell Icon Size", 0, &typ, buff, &sz);
+    keySize = sizeof(buff);
+    RegQueryValueEx(hKey, "Shell Icon Size", 0, &typ, buff, &keySize);
     RegCloseKey(hKey);
 
     origIconSize = atoi((const char*)buff);
@@ -1714,8 +1716,8 @@ static void RefreshIcons(void)
     ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
 }
 
-/* Make my app the default app for PDF files. */
-static void AssociatePdfWithExe(TCHAR *exePath)
+/* Make me the default app for PDF files. */
+static void RegisterForPdfExtentions(TCHAR *exePath)
 {
     char        tmp[256];
     HKEY        key = NULL, kicon = NULL, kshell = NULL, kopen = NULL, kcmd = NULL;
@@ -2994,7 +2996,7 @@ static void OnMenuOpen(WindowInfo *win)
 {
     OPENFILENAME ofn = {0};
     char         fileName[260];
-    GooString      fileNameStr;
+    GooString    fileNameStr;
 
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = win->hwndFrame;
@@ -3378,6 +3380,20 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('r' == key) {
         RotateRight(win);
     }
+}
+
+static inline BOOL IsDontRegisterExtArg(char *txt)
+{
+    if (Str_EqNoCase(txt, NO_REGISTER_EXT_ARG_TXT))
+        return TRUE;
+    return FALSE;
+}
+
+static inline BOOL IsPrintToArg(char *txt)
+{
+    if (Str_EqNoCase(txt, PRINT_TO_ARG_TXT))
+        return TRUE;
+    return FALSE;
 }
 
 static inline BOOL IsBenchArg(char *txt)
@@ -4066,6 +4082,12 @@ static void CreatePageRenderThread(void)
     assert(NULL != gPageRenderThreadHandle);
 }
 
+static void PrintFile(const char *fileName, const char *printerName)
+{
+    // TODO: implement name
+
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *           argListRoot;
@@ -4098,8 +4120,13 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     we assume that all arguments are PDF file names.
     BENCH_ARG_TXT can be followed by file or directory name. If file, it can additionally be followed by
     a number which we interpret as page number */
+    bool registerForPdfExtentions = true;
     currArg = argListRoot->next;
+    char *printerName = NULL;
     while (currArg) {
+        if (IsDontRegisterExtArg(currArg->str))
+            registerForPdfExtentions = false;
+
         if (IsBenchArg(currArg->str)) {
             currArg = currArg->next;
             if (currArg) {
@@ -4108,6 +4135,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
                     benchPageNumStr = currArg->next->str;
             }
             break;
+        }
+
+        if (IsPrintToArg(currArg->str)) {
+            currArg = currArg->next;
+            if (currArg)
+                printerName = currArg->str;
         }
         currArg = currArg->next;
     }
@@ -4118,14 +4151,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             gBenchPageNum = INVALID_PAGE_NUM;
     }
 
-    LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadString(hInstance, IDS_APP_TITLE, windowTitle, MAX_LOADSTRING);
     if (!RegisterWinClass(hInstance))
         goto Exit;
-
-#if 0
-    WinFontList_Create();
-    FontMappingList_Dump(&gFontMapMSList);
-#endif
 
     CaptionPens_Create();
     if (!InstanceInit(hInstance, nCmdShow))
@@ -4135,8 +4163,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     CreatePageRenderThread();
     /* TODO: detect it's not me and show a dialog box ? */
-    AssociatePdfWithExe(exeName);
+    if (registerForPdfExtentions)
+        RegisterForPdfExtentions(exeName);
 
+    /* All other arguments are names of PDF files */
     if (NULL != gBenchFileName) {
             win = LoadPdf(gBenchFileName, FALSE);
             if (win)
@@ -4144,6 +4174,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     } else {
         currArg = argListRoot->next;
         while (currArg) {
+            if (printerName) {
+                PrintFile(currArg->str, printerName);
+                /* TODO: We only print first of the files. Should we print them all?
+                   Should we exit after printing or stay? */
+                goto Exit;
+            }
             win = LoadPdf(currArg->str, FALSE);
             if (!win)
                 goto Exit;
