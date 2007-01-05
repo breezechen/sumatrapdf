@@ -1716,16 +1716,53 @@ static void RefreshIcons(void)
     ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
 }
 
+static bool AlreadyRegisteredForPdfExtentions(void)
+{
+    bool    registered = false;
+    HKEY    key = NULL;
+    char    nameBuf[sizeof(APP_NAME)+8];
+    DWORD   cbNameBuf = sizeof(nameBuf);
+    DWORD   keyType;
+
+    /* HKEY_CLASSES_ROOT\.pdf */
+    if (ERROR_SUCCESS != RegOpenKeyEx(HKEY_CLASSES_ROOT, ".pdf", 0, KEY_QUERY_VALUE, &key))
+        return false;
+
+    if (ERROR_SUCCESS != RegQueryValueEx(key, NULL, NULL, &keyType, (LPBYTE)nameBuf, &cbNameBuf))
+        goto Exit;
+
+    if (REG_SZ != keyType)
+        goto Exit;
+
+    if (cbNameBuf != sizeof(APP_NAME))
+        goto Exit;
+
+    if (0 == memcmp(APP_NAME, nameBuf, sizeof(APP_NAME)))
+        registered = true;
+
+Exit:
+    RegCloseKey(key);
+    return registered;
+}
+
 /* Make me the default app for PDF files. */
-static void RegisterForPdfExtentions(TCHAR *exePath)
+static void RegisterForPdfExtentions(char *exePath, bool askIfNotRegistered = true)
 {
     char        tmp[256];
     HKEY        key = NULL, kicon = NULL, kshell = NULL, kopen = NULL, kcmd = NULL;
     DWORD       disp;
     HRESULT     hr;
-    if (!exePath)
-        return;
 
+    assert(exePath);
+
+    if (askIfNotRegistered) {
+        if (!AlreadyRegisteredForPdfExtentions()) {
+            // TODO: add "don't ask me again" persited option
+            int res = MessageBox(NULL, "SumatraPDF is not a default handler for PDF files? Make it a default handler?", "Information", MB_YESNO);
+            if (IDNO == res)
+                return;
+        }
+    }
     /* HKEY_CLASSES_ROOT\.pdf */
     if (RegCreateKeyEx(HKEY_CLASSES_ROOT,
                 ".pdf", 0, NULL, REG_OPTION_NON_VOLATILE,
@@ -1791,8 +1828,6 @@ Exit:
         RegCloseKey(kshell);
     if (key)
         RegCloseKey(key);
-
-    //RefreshIcons();
 }
 
 static void OnDropFiles(WindowInfo *win, HDROP hDrop)
