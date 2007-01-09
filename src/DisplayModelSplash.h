@@ -370,4 +370,6 @@ void              BitmapCache_FreeAll(void);
 BOOL              BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm);
 BOOL              BitmapCache_FreeNotVisible(void);
 
+void SplashColorsInit(void);
+
 #endif

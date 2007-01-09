@@ -1363,36 +1363,6 @@ Exit:
     return win;
 }
 
-static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
-{
-    switch (gSplashColorMode)
-    {
-        case splashModeBGR8:
-            col[0] = blue;
-            col[1] = green;
-            col[2] = red;
-            break;
-        case splashModeRGB8:
-            col[0] = red;
-            col[1] = green;
-            col[2] = blue;
-            break;
-        default:
-            assert(0);
-            break;
-    }
-}
-
-static void ColorsInit(void)
-{
-    /* Colors for poppler's splash rendering backend */
-    SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
-    SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
-    SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
-}
-
 static HFONT Win32_Font_GetSimple(HDC hdc, char *fontName, int fontSize)
 {
     HFONT       font_dc;
@@ -3948,7 +3918,7 @@ static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
     if (!globalParams)
         return FALSE;
 
-    ColorsInit();
+    SplashColorsInit();
     gCursorArrow = LoadCursor(NULL, IDC_ARROW);
     gCursorWait  = LoadCursor(NULL, IDC_WAIT);
 
@@ -4205,11 +4175,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
     CreatePageRenderThread();
-    /* TODO: detect it's not me and show a dialog box ? */
     if (registerForPdfExtentions)
         RegisterForPdfExtentions(exeName);
 
-    /* All other arguments are names of PDF files */
+    /* remaining arguments are names of PDF files */
     if (NULL != gBenchFileName) {
             win = LoadPdf(gBenchFileName, FALSE);
             if (win)
