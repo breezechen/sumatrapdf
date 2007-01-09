@@ -1300,7 +1300,6 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     win->dmFitz = NULL;
 
     if (!win->dm) {
-        WindowInfo_Delete(win);
         goto Error;
     }
 
@@ -4216,7 +4215,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             if (win)
                 ++pdfOpened;
     } else {
-        currArg = argListRoot->next;
         while (currArg) {
             win = LoadPdf(currArg->str, FALSE);
             if (!win)
