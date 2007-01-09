@@ -675,6 +675,8 @@ DisplayModelSplash *DisplayModelSplash_CreateFromFileName(
     SplashOutputDev *   outputDev;
     GooString *         fileNameStr = NULL;
 
+    // TODO: technically, this only needs to be done once
+    ColorsInit();
     fileNameStr = new GooString(fileName);
     if (!fileNameStr)
         return NULL;
@@ -708,6 +710,9 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
 {
     PdfPageInfo *           pageInfo;
     DisplayModelSplash *    dm = NULL;
+
+    // TODO: technically, this only needs to be done once
+    ColorsInit();
 
     assert(pdfDoc);
     if (!pdfDoc)
