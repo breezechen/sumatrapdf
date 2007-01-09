@@ -4159,8 +4159,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     currArg = argListRoot->next;
     char *printerName = NULL;
     while (currArg) {
-        if (IsDontRegisterExtArg(currArg->str))
+        if (IsDontRegisterExtArg(currArg->str)) {
             registerForPdfExtentions = false;
+            currArg = currArg->next;
+            continue;
+        }
 
         if (IsBenchArg(currArg->str)) {
             currArg = currArg->next;
@@ -4176,8 +4179,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             currArg = currArg->next;
             if (currArg)
                 printerName = currArg->str;
+            continue;
         }
-        currArg = currArg->next;
+
+        // we assume that switches come first and file names to open later
+        // TODO: it would probably be better to collect all non-switches
+        // in a separate list so that file names can be interspersed with
+        // switches
+        break;
     }
 
     if (benchPageNumStr) {
@@ -4209,15 +4218,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     } else {
         currArg = argListRoot->next;
         while (currArg) {
-            if (printerName) {
-                PrintFile(currArg->str, printerName);
-                /* TODO: We only print first of the files. Should we print them all?
-                   Should we exit after printing or stay? */
-                goto Exit;
-            }
             win = LoadPdf(currArg->str, FALSE);
             if (!win)
                 goto Exit;
+            if (printerName) {
+                // note: this prints all of PDF files. Another option would be to
+                // print only the first one
+                PrintFile(currArg->str, printerName);
+            }
            ++pdfOpened;
             currArg = currArg->next;
         }

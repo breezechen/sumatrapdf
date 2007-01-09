@@ -895,9 +895,15 @@ int FitzRender::Load()
         goto Error;
 
     if (xref->crypt) {
+#ifdef FITZ_HEAD
+        int okay = pdf_setpassword(xref->crypt, "");
+        if (!okay)
+            goto Error;
+#else
         error = pdf_setpassword(xref->crypt, "");
         if (error)
             goto Error;
+#endif
     }
 
     error = pdf_loadpagetree(&pages, xref);

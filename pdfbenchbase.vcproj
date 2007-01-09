@@ -54,6 +54,7 @@
 				DebugInformationFormat="4"
 				CompileAs="0"
 				DisableSpecificWarnings="4996;4244;4267;4995"
+				ShowIncludes="false"
 				UseFullPaths="true"
 			/>
 			<Tool
