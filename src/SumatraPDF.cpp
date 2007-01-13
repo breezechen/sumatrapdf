@@ -116,6 +116,8 @@ static BOOL             gDebugShowLinks = FALSE;
 
 #define REPAINT_TIMER_ID    1
 #define REPAINT_DELAY_IN_MS 400
+#define RESIZE_TIMER_ID     2
+#define RESIZE_DELAY_IN_MS  200
 
 /* A special "pointer" vlaue indicating that we tried to render this bitmap
    but couldn't (e.g. due to lack of memory) */
@@ -3187,6 +3189,7 @@ static void OnSize(WindowInfo *win, int dx, int dy)
         rebBarDy = gReBarDy + gReBarDyFrame;
     }
     SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy-rebBarDy, SWP_NOZORDER);
+    //SetTimer(win->hwndCanvas, RESIZE_TIMER_ID, RESIZE_DELAY_IN_MS, NULL);
 }
 
 static void OnMenuViewShowHideToolbar(WindowInfo *win)
@@ -3625,6 +3628,8 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             if (win) {
                 if (REPAINT_TIMER_ID == wParam)
                     WindowInfo_RedrawAll(win);
+                else if (RESIZE_TIMER_ID == wParam)
+                    WindowInfo_RedrawAll(win);
                 else
                     AnimState_NextFrame(&win->animState);
             }
@@ -4020,6 +4025,23 @@ static void u_DoAllTests(void)
 #endif
 }
 
+// TODO: move to a common file
+class HiResTimer {
+public:
+    HiResTimer() { Start(); }
+    void Start(void) { QueryPerformanceCounter(&_start); }
+    void Stop(void) { QueryPerformanceCounter(&_end); }
+    double GetTimeInMs(void) {
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        double durationInSecs = (double)(_end.QuadPart-_start.QuadPart)/(double)freq.QuadPart;
+        return durationInSecs * 1000.0;
+    }    
+private:
+    LARGE_INTEGER   _start;
+    LARGE_INTEGER   _end;
+};
+
 static DWORD WINAPI PageRenderThread(PVOID data)
 {
     PageRenderRequest       req;
@@ -4051,7 +4073,9 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         UnlockCache();
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
         assert(!req.abort);
+        HiResTimer renderTimer;
         bmp = RenderBitmap(req.dm, req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        renderTimer.Stop();
         LockCache();
         gCurPageRenderReq = NULL;
         UnlockCache();
@@ -4063,7 +4087,8 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         assert(bmp);
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
         WinRenderedBitmap *renderedBmp = new WinRenderedBitmap(bmp);
-        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, renderedBmp);
+        double renderTime = renderTimer.GetTimeInMs();
+        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, renderedBmp, renderTime);
 #ifdef CONSERVE_MEMORY
         BitmapCache_FreeNotVisible();
 #endif

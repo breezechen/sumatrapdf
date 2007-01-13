@@ -2121,7 +2121,8 @@ BOOL BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm)
     return freedSomething;
 }
 
-void BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap)
+void BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, 
+    PlatformCachedBitmap *bitmap, double renderTime)
 {
     BitmapCacheEntry *entry;
     assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
@@ -2149,6 +2150,7 @@ void BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int r
     entry->zoomLevel = zoomLevel;
     entry->rotation = rotation;
     entry->bitmap = bitmap;
+    entry->renderTime = renderTime;
     gBitmapCache[gBitmapCacheCount++] = entry;
 UnlockAndExit:
     UnlockCache();

@@ -326,6 +326,7 @@ typedef struct {
   int            rotation;
   double         zoomLevel;
   PlatformCachedBitmap *bitmap;
+  double         renderTime;
 } BitmapCacheEntry;
 
 typedef struct {
@@ -365,7 +366,8 @@ void              RenderQueue_Add(DisplayModelSplash *dm, int pageNo);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
 BOOL              BitmapCache_Exists(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
-void              BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, PlatformCachedBitmap *bitmap);
+void              BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, 
+                                  PlatformCachedBitmap *bitmap, double renderTime);
 void              BitmapCache_FreeAll(void);
 BOOL              BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm);
 BOOL              BitmapCache_FreeNotVisible(void);
