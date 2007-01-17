@@ -2788,6 +2788,148 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
     ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
+/*
+TODO:
+ * a better, synchronous way of generating a bitmap to print
+*/
+static void PrintToDevice(WindowInfo *win, HDC hDC, int fromPage, int toPage)
+{
+    int                 pageNo;
+    DisplayModelSplash* dmSplash;
+    PdfPageInfo*        pageInfo;
+    SplashBitmap *      splashBmp;
+    int                 splashBmpDx, splashBmpDy;
+    SplashColorMode     splashBmpColorMode;
+    SplashColorPtr      splashBmpData;
+    int                 splashBmpRowSize;
+    BITMAPINFOHEADER    bmih;
+    BitmapCacheEntry *  entry;
+
+    DOCINFO             di = {0};
+    di.cbSize = sizeof (DOCINFO);
+
+    assert(toPage >= fromPage);
+
+    if (!win) return;
+
+    dmSplash = win->dmSplash;
+    /* store current page number and zoom state to reset
+       when finished printing */
+    int pageNoInitial = win->dm->currentPageNo();
+    int zoomInitial = dmSplash->zoomReal;
+
+    // set the print job name from the file name
+    di.lpszDocName = (LPCSTR)win->dm->fileName();
+
+    // to increase the resolution of the bitmap created for
+    // the printed page, zoom in by say 250, seems to work ok.
+    dmSplash->ZoomTo(250);
+
+    // most printers can support stretchdibits,
+    // whereas a lot of printers do not support bitblt
+    // quit if printer doesn't support StretchDIBits
+    int rasterCaps = GetDeviceCaps(hDC, RASTERCAPS);
+    int supportsStretchDib = rasterCaps & RC_STRETCHDIB;
+    if (!supportsStretchDib) {
+        MessageBox(win->hwndFrame, "This printer doesn't support StretchDIBits function", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        goto Exit;
+    }
+
+    if (StartDoc(hDC, &di) <= 0)
+        goto Exit;
+
+    // print all the pages the user requested unless
+    // bContinue flags there is a problem.
+    for (pageNo = fromPage; pageNo <= toPage; pageNo++) {
+        pageInfo = dmSplash->GetPageInfo(pageNo);
+
+        int rotation = win->dm->rotation() + pageInfo->rotation;
+        double zoomLevel = dmSplash->zoomReal;
+
+        splashBmp = NULL;
+
+        // initiate the creation of the bitmap for the page.
+        dmSplash->GoToPage(pageNo, 0);
+
+        // because we're multithreaded the bitmap may not be
+        // ready yet so keep checking until it is available
+        do {
+            entry = BitmapCache_Find(dmSplash, pageNo, zoomLevel, rotation);
+            if (entry)
+                splashBmp = ((WinRenderedBitmap*)entry->bitmap)->bitmap();
+            Sleep(10);
+        } while (!splashBmp);
+
+        DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
+        splashBmpDx = splashBmp->getWidth();
+        splashBmpDy = splashBmp->getHeight();
+        splashBmpRowSize = splashBmp->getRowSize();
+        splashBmpData = splashBmp->getDataPtr();
+        splashBmpColorMode = splashBmp->getMode();
+
+        bmih.biSize = sizeof(bmih);
+        bmih.biHeight = -splashBmpDy;
+        bmih.biWidth = splashBmpDx;
+        bmih.biPlanes = 1;
+        // we could create this dibsection in monochrome
+        // if the printer is monochrome, to reduce memory consumption
+        // but splash is currently setup to return a full colour bitmap
+        bmih.biBitCount = 24;
+        bmih.biCompression = BI_RGB;
+        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
+        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+        bmih.biClrUsed = bmih.biClrImportant = 0;
+
+        // initiate the printed page
+        StartPage(hDC);
+
+        // initialise device context
+        SetMapMode(hDC, MM_TEXT);
+        // MM_TEXT: Each logical unit is mapped to one device pixel.
+        // Positive x is to the right; positive y is down.
+
+        int pageHeight = GetDeviceCaps(hDC, PHYSICALHEIGHT);
+        int pageWidth = GetDeviceCaps(hDC, PHYSICALWIDTH);
+
+        // Get physical printer margins
+        int topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
+        int leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+
+        StretchDIBits(hDC,
+            // destination rectangle
+            -leftMargin, -topMargin, pageWidth, pageHeight,
+            // source rectangle
+            0, 0, splashBmpDx, splashBmpDy,
+            splashBmpData,
+            (BITMAPINFO *)&bmih ,
+            DIB_RGB_COLORS,
+            SRCCOPY);
+
+        // we're creating about 30MB per page so clear the
+        // bitmap now to avoid running out of RAM on old machines.
+        // ideally call BitmapCacheEntry_Free(entry) but that's
+        // not available to us here, so clear all instead!
+        BitmapCache_FreeAll();
+
+        // end the page, and check no error occurred
+        if (EndPage(hDC) <= 0) {
+            AbortDoc(hDC);
+            goto Exit;
+        }
+    }
+
+    EndDoc(hDC);
+
+Exit:
+    DeleteDC(hDC);
+
+    // reset the page and zoom that the user had before starting to print.
+    if (pageNoInitial > -1) {
+        dmSplash->GoToPage(pageNoInitial, 0);
+        dmSplash->ZoomTo(zoomInitial);
+    }
+}
+
 /* Show Print Dialog box to allow user to select the printer
 and the pages to print.
 
@@ -2798,41 +2940,19 @@ So far have tested printing from XP to
  - Acrobat Professional 6 (note that acrobat is usually set to
    downgrade the resolution of its bitmaps to 150dpi)
  - HP Laserjet 2300d
+ - HP Deskjet D4160
  - Lexmark Z515 inkjet, which should cover most bases.
-
-TODO:
- * test on my printer
- * a better, synchronous way of generating a bitmap to print
 */
 static void OnMenuPrint(WindowInfo *win)
 {
-    int                 pageNo;
-    PdfPageInfo*        pageInfo;
-    DisplayModelSplash *      dmSplash;
-    SplashBitmap *      splashBmp;
-    int                 splashBmpDx, splashBmpDy;
-    SplashColorMode     splashBmpColorMode;
-    SplashColorPtr      splashBmpData;
-    int                 splashBmpRowSize;
-    BITMAPINFOHEADER    bmih;
-    BitmapCacheEntry *  entry;
+    DisplayModel *      dm;
     PRINTDLG            pd;
 
     assert(win);
     if (!win) return;
-    assert(win->dm);
-    if (!win->dm) return;
-
-#if 0
-    assert(dm->pdfDoc);
-    if (!dm->pdfDoc) return;
-#endif
-
-    dmSplash = win->dmSplash;
-    /* store current page number and zoom state to reset
-       when finished printing */
-    int pageNoInitial = win->dm->startPage();
-    int zoomInitial = dmSplash->zoomReal;
+    dm = win->dm;
+    assert(dm);
+    if (!dm) return;
 
     /* printing uses the WindowInfo win that is created for the
        screen, it may be possible to create a new WindowInfo
@@ -2855,7 +2975,8 @@ static void OnMenuPrint(WindowInfo *win)
     pd.nMinPage    = 1;
     pd.nMaxPage    = win->dm->pageCount();
 
-    if (FALSE == PrintDlg(&pd)) {
+    BOOL pressedOk = PrintDlg(&pd);
+    if (!pressedOk) {
         if (CommDlgExtendedError()) {
             /* if PrintDlg was cancelled then
                CommDlgExtendedError is zero, otherwise it returns the
@@ -2864,138 +2985,13 @@ static void OnMenuPrint(WindowInfo *win)
                becasue of an error */
             MessageBox(win->hwndFrame, "Cannot initialise printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
         }
+        return;
     }
 
-    DOCINFO di;
-    ZeroMemory(&di,sizeof(DOCINFO));
-    di.cbSize = sizeof (DOCINFO);
-
-    //set the print job name from the file name
-    di.lpszDocName = (LPCSTR) win->dm->fileName();
-
-    //to increase the resolution of the bitmap created for
-    //the printed page, zoom in by say 300, seems to work ok.
-    dmSplash->ZoomTo(300);
-
-    //start the printing
-    if (StartDoc(pd.hDC, &di) <= 0)
-        goto Exit;
-
-    BOOL printingOk = TRUE;
-
-    // print all the pages the user requested unless
-    // bContinue flags there is a problem.
-    for (pageNo = pd.nFromPage;
-        pageNo <= pd.nToPage && printingOk;
-        pageNo++)
-    {
-
-        pageInfo = dmSplash->GetPageInfo(pageNo);
-
-        int rotation = win->dm->rotation() + pageInfo->rotation;
-        double zoomLevel = dmSplash->zoomReal;
-
-        splashBmp = NULL;
-
-        // initiate the creation of the bitmap for the page.
-        dmSplash->GoToPage(pageNo, 0);
-
-        // because we're multithreaded the bitmap may not be
-        // ready yet so keep checking until it is available
-        do
-        {
-            entry = BitmapCache_Find(dmSplash, pageNo, zoomLevel, rotation);
-            if (entry)
-                splashBmp = ((WinRenderedBitmap*)entry->bitmap)->bitmap();
-            Sleep(10);
-        } while (!splashBmp);
-
-        DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
-        splashBmpDx = splashBmp->getWidth();
-        splashBmpDy = splashBmp->getHeight();
-        splashBmpRowSize = splashBmp->getRowSize();
-        splashBmpData = splashBmp->getDataPtr();
-        splashBmpColorMode = splashBmp->getMode();
-
-        bmih.biSize = sizeof(bmih);
-        bmih.biHeight = -splashBmpDy;
-        bmih.biWidth = splashBmpDx;
-        bmih.biPlanes = 1;
-        //we could create this dibsection in monochrome
-        //if the printer is monochrome, to reduce memory consumption
-        //but splash is currently setup to return a full colour bitmap
-        bmih.biBitCount = 24;
-        bmih.biCompression = BI_RGB;
-        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
-        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-        bmih.biClrUsed = bmih.biClrImportant = 0;
-
-        //initiate the printed page
-        StartPage(pd.hDC);
-
-        //initialise device context
-        SetMapMode(pd.hDC, MM_TEXT);
-        //MM_TEXT: Each logical unit is mapped to one device pixel.
-        //Positive x is to the right; positive y is down.
-
-        //most printers can support stretchdibits,
-        //whereas a lot of printers do not support bitblt
-
-        //we check here that the printer does support
-        //StretchDIBits and if it does then we StretchDIBits
-        //the dibsection bmih to the printer dc.
-
-        if (GetDeviceCaps(pd.hDC, RASTERCAPS) & RC_STRETCHDIB) {
-            //printer is capabable of performing StretchDIBits
-            //get the full printable area in pixels of the paper,
-            //note, this is not the full paper size, so we're in
-            //effect resizing the page to fit printable area.
-            int nPageHeight = GetDeviceCaps (pd.hDC, VERTRES);
-            int nPageWidth = GetDeviceCaps (pd.hDC, HORZRES);
-
-            StretchDIBits(pd.hDC,
-                //destination rectanngle
-                0, 0, nPageWidth, nPageHeight,
-                //source rectangle
-                0, 0, splashBmpDx, splashBmpDy,
-                splashBmpData,
-                (BITMAPINFO *)&bmih ,
-                DIB_RGB_COLORS,
-                SRCCOPY);
-
-            // we're creating about 30MB per page so clear the
-            // bitmap now to avoid running out of RAM on old machines.
-            // ideally call BitmapCacheEntry_Free(entry) but that's
-            // not available to us here, so clear all instead!
-            BitmapCache_FreeAll();
-
-            // end the page, and check no error occurred
-            if (EndPage(pd.hDC) <= 0)
-                printingOk = FALSE;
-        }
-        else
-        {
-            // printer is not capabable of preforming StretchDIBits
-            // so stop printing
-            EndPage(pd.hDC);
-            printingOk = FALSE;
-        }
-    }
-
-    if (printingOk)
-        EndDoc(pd.hDC);
-    else
-        AbortDoc(pd.hDC);
-
-Exit:
-    DeleteDC(pd.hDC);
+    PrintToDevice(win, pd.hDC, pd.nFromPage, pd.nToPage);
 
     if (pd.hDevNames != NULL) GlobalFree(pd.hDevNames);
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
-
-    // reset the page and zoom that the user had before starting to print.
-    dmSplash->GoToPage(pageNoInitial,0);
-    dmSplash->ZoomTo(zoomInitial);
 }
 
 static void OnMenuOpen(WindowInfo *win)
@@ -3697,7 +3693,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDT_FILE_PRINT:
                 case IDM_PRINT:
-                    //OnMenuPrint(win);
+                    OnMenuPrint(win);
                     break;
 
                 case IDT_FILE_EXIT:
@@ -4111,10 +4107,36 @@ static void CreatePageRenderThread(void)
     assert(NULL != gPageRenderThreadHandle);
 }
 
-static void PrintFile(const char *fileName, const char *printerName)
+static void PrintFile(WindowInfo *win, const char *fileName, const char *printerName)
 {
-    // TODO: implement name
+    char*       driver;
 
+    char        devstring[256];      // array for WIN.INI data 
+    char *      port;                // port name 
+
+    // Retrieve the printer, printer driver, and 
+    // output-port names from WIN.INI. 
+    GetProfileString("Devices", printerName, "", devstring, sizeof(devstring));
+
+    // Parse the string of names, setting ptrs as required 
+    // If the string contains the required names, use them to 
+    // create a device context. 
+    driver = strtok (devstring, (const char *) ",");
+    port = strtok((char *) NULL, (const char *) ",");
+
+    HDC  hdcPrint = NULL;
+    if (driver && port) {
+        hdcPrint = CreateDC(driver, printerName, port, NULL); 
+        if (!hdcPrint) {
+            MessageBox(win->hwndFrame, "Couldn't initialize printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        }
+    } else {
+        MessageBox(win->hwndFrame, "Printer with given name doesn't exist", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        return;
+    }
+
+    PrintToDevice(win, hdcPrint, 1, win->dm->pageCount());
+    DeleteDC(hdcPrint);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
@@ -4123,7 +4145,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     StrList *           currArg;
     char *              exeName;
     char *              benchPageNumStr = NULL;
-    MSG                 msg;
+    MSG                 msg = {0};
     HACCEL              hAccelTable;
     WindowInfo*         win;
     FileHistoryList *   currFile;
@@ -4171,8 +4193,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
         if (IsPrintToArg(currArg->str)) {
             currArg = currArg->next;
-            if (currArg)
+            if (currArg) {
                 printerName = currArg->str;
+                currArg = currArg->next;
+            }
             continue;
         }
 
@@ -4211,12 +4235,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     } else {
         while (currArg) {
             win = LoadPdf(currArg->str, FALSE);
-            if (!win)
+            if (!win || !win->dm)
                 goto Exit;
             if (printerName) {
                 // note: this prints all of PDF files. Another option would be to
                 // print only the first one
-                PrintFile(currArg->str, printerName);
+                PrintFile(win, currArg->str, printerName);
             }
            ++pdfOpened;
             currArg = currArg->next;
