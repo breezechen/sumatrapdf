@@ -109,6 +109,7 @@ static BOOL             gDebugShowLinks = FALSE;
 #define BENCH_ARG_TXT             "-bench"
 #define PRINT_TO_ARG_TXT          "-print-to"
 #define NO_REGISTER_EXT_ARG_TXT   "-no-register-ext"
+#define EXIT_ON_PRINT_ARG_TXT     "-exit-on-print"
 
 /* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_WIN_DX 612
@@ -3399,6 +3400,13 @@ static inline BOOL IsPrintToArg(char *txt)
     return FALSE;
 }
 
+static inline BOOL IsExitOnPrintArg(char *txt)
+{
+    if (Str_EqNoCase(txt, EXIT_ON_PRINT_ARG_TXT))
+        return TRUE;
+    return FALSE;
+}
+
 static inline BOOL IsBenchArg(char *txt)
 {
     if (Str_EqNoCase(txt, BENCH_ARG_TXT))
@@ -4150,6 +4158,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     WindowInfo*         win;
     FileHistoryList *   currFile;
     int                 pdfOpened = 0;
+    bool                exitOnPrint = false;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
 
@@ -4189,6 +4198,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
                     benchPageNumStr = currArg->next->str;
             }
             break;
+        }
+
+        if (IsExitOnPrintArg(currArg->str)) {
+            currArg = currArg->next;
+            exitOnPrint = true;
+            continue;
         }
 
         if (IsPrintToArg(currArg->str)) {
@@ -4237,10 +4252,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             win = LoadPdf(currArg->str, FALSE);
             if (!win || !win->dm)
                 goto Exit;
+            if (exitOnPrint) {
+                ShowWindow(win->hwndFrame, SW_HIDE);
+            }
             if (printerName) {
                 // note: this prints all of PDF files. Another option would be to
                 // print only the first one
                 PrintFile(win, currArg->str, printerName);
+                if (exitOnPrint) {
+                    goto Exit;
+                }
             }
            ++pdfOpened;
             currArg = currArg->next;
