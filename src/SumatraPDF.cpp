@@ -1233,49 +1233,36 @@ static bool gUseFitz = true;
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
     WindowInfo *        win;
-    int                 reuseExistingWindow = FALSE;
     RectDSize           totalDrawAreaSize;
-    FileHistoryList *   fileHistory = NULL;
 
+    assert(fileName);
+    if (!fileName) return NULL;
+
+    FileHistoryList *   fileFromHistory = NULL;
     if (!ignoreHistory)
-        fileHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
+        fileFromHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
 
-    BOOL fromHistory = FALSE;
-    if (fileHistory)
-        fromHistory = TRUE;
-
+    bool reuseExistingWindow = false;
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
-        reuseExistingWindow = TRUE;
-    }
-
-    if (!reuseExistingWindow) {
+        reuseExistingWindow = true;
+    } else {
         win = WindowInfo_CreateEmpty();
         if (!win)
             return NULL;
-        if (!fileName) {
-            WindowInfoList_Add(win);
-            goto Exit;
-        }
-    }
-
-    if (closeInvalidFiles && !reuseExistingWindow)
-    {
-        WindowInfo_Delete(win);
-        return NULL;
-    }
+     }
 
     WindowInfo_GetWindowSize(win);
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
-    if (fromHistory && !ignoreHistorySizePos) {
-        WinResizeClientArea(win->hwndCanvas, fileHistory->state.windowDx, fileHistory->state.windowDy);
-        totalDrawAreaSize.dx = (double)fileHistory->state.windowDx;
-        totalDrawAreaSize.dy = (double)fileHistory->state.windowDy;
+    if (fileFromHistory && !ignoreHistorySizePos) {
+        WinResizeClientArea(win->hwndCanvas, fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
+        totalDrawAreaSize.dx = (double)fileFromHistory->state.windowDx;
+        totalDrawAreaSize.dy = (double)fileFromHistory->state.windowDy;
         /* TODO: make sure it doesn't have a stupid position like 
            outside of the screen etc. */
-        Win32_Win_SetPos(win->hwndFrame, fileHistory->state.windowX, fileHistory->state.windowY);
+        Win32_Win_SetPos(win->hwndFrame, fileFromHistory->state.windowX, fileFromHistory->state.windowY);
     }
 
     /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
@@ -1290,11 +1277,11 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     int startPage = 1;
     int scrollbarYDx = 0;
     int scrollbarXDy = 0;
-    if (fromHistory) {
-        startPage = fileHistory->state.pageNo;
-        displayMode = fileHistory->state.displayMode;
-        offsetX = fileHistory->state.scrollX;
-        offsetY = fileHistory->state.scrollY;
+    if (fileFromHistory) {
+        startPage = fileFromHistory->state.pageNo;
+        displayMode = fileFromHistory->state.displayMode;
+        offsetX = fileFromHistory->state.scrollX;
+        offsetY = fileFromHistory->state.scrollY;
     }
 
     win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
@@ -1303,66 +1290,58 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     win->dmFitz = NULL;
 
     if (!win->dm) {
-        goto Error;
+        if (!reuseExistingWindow && WindowInfoList_ExistsWithError()) {
+                /* don't create more than one window with errors */
+                WindowInfo_Delete(win);
+                return NULL;
+        }
+        win->state = WS_ERROR_LOADING_PDF;
+        DBG_OUT("failed to load file %s\n", fileName);
+        goto Exit;
     }
 
     win->dm->setAppData((void*)win);
 
-    if (!fromHistory)
+    if (!fileFromHistory)
         AddFileToHistory(fileName);
 
-Error:
-    if (!reuseExistingWindow) {
-        if (!win->dm) {
-            if (WindowInfoList_ExistsWithError()) {
-                /* don't create more than one window with errors */
-                WindowInfo_Delete(win);
-                return NULL;
-            }
-        }
+    if (!reuseExistingWindow)
         WindowInfoList_Add(win);
-    }
 
-    /* TODO: if fromHistory, set the state based on gFileHistoryList node for
+    /* TODO: if fileFromHistory, set the state based on gFileHistoryList node for
        this entry */
-    if (!win->dm) {
-        win->state = WS_ERROR_LOADING_PDF;
-        DBG_OUT("failed to load file %s\n", fileName);
-    } else {
-        win->state = WS_SHOWING_PDF;
-        double zoomVirtual = DEFAULT_ZOOM;
-        int rotation = DEFAULT_ROTATION;
-        if (fromHistory) {
-            zoomVirtual = fileHistory->state.zoomVirtual;
-            rotation = fileHistory->state.rotation;
-        }
-        win->dmSplash->Relayout(zoomVirtual, rotation);
-        if (!win->dm->validPageNo(startPage))
-            startPage = 1;
-        /* TODO: need to calculate proper offsetY, currently giving large offsetY
-           remembered for continuous mode breaks things (makes all pages invisible) */
-        offsetY = 0;
-        /* TODO: make sure offsetX isn't bogus */
-        win->dmSplash->GoToPage(startPage, offsetY);
-        win->dmSplash->ScrollXTo(offsetX);
-        /* only resize the window if it's a newly opened window */
-        if (!reuseExistingWindow && !fromHistory)
-            WindowInfo_ResizeToPage(win, startPage);
+    win->state = WS_SHOWING_PDF;
+    double zoomVirtual = DEFAULT_ZOOM;
+    int rotation = DEFAULT_ROTATION;
+    if (fileFromHistory) {
+        zoomVirtual = fileFromHistory->state.zoomVirtual;
+        rotation = fileFromHistory->state.rotation;
     }
+    win->dmSplash->Relayout(zoomVirtual, rotation);
+    if (!win->dm->validPageNo(startPage))
+        startPage = 1;
+    /* TODO: need to calculate proper offsetY, currently giving large offsetY
+       remembered for continuous mode breaks things (makes all pages invisible) */
+    offsetY = 0;
+    /* TODO: make sure offsetX isn't bogus */
+    win->dmSplash->GoToPage(startPage, offsetY);
+    win->dmSplash->ScrollXTo(offsetX);
+    /* only resize the window if it's a newly opened window */
+    if (!reuseExistingWindow && !fileFromHistory)
+        WindowInfo_ResizeToPage(win, startPage);
 
     if (reuseExistingWindow)
         WindowInfo_RedrawAll(win);
 
 Exit:
     MenuToolbarUpdateStateForAllWindows();
-    if (win) {
-        DragAcceptFiles(win->hwndFrame, TRUE);
-        DragAcceptFiles(win->hwndCanvas, TRUE);
-        ShowWindow(win->hwndCanvas, SW_SHOW);
-        UpdateWindow(win->hwndCanvas);
-        ShowWindow(win->hwndFrame, SW_SHOW);
-        UpdateWindow(win->hwndFrame);
-    }
+    assert(win);
+    DragAcceptFiles(win->hwndFrame, TRUE);
+    DragAcceptFiles(win->hwndCanvas, TRUE);
+    ShowWindow(win->hwndFrame, SW_SHOW);
+    ShowWindow(win->hwndCanvas, SW_SHOW);
+    UpdateWindow(win->hwndFrame);
+    UpdateWindow(win->hwndCanvas);
     return win;
 }
 
@@ -4252,22 +4231,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             win = LoadPdf(currArg->str, FALSE);
             if (!win || !win->dm)
                 goto Exit;
-            if (exitOnPrint) {
+
+            if (exitOnPrint)
                 ShowWindow(win->hwndFrame, SW_HIDE);
-            }
-            if (printerName) {
+
+             if (printerName) {
                 // note: this prints all of PDF files. Another option would be to
                 // print only the first one
                 PrintFile(win, currArg->str, printerName);
-                if (exitOnPrint) {
-                    goto Exit;
-                }
             }
            ++pdfOpened;
             currArg = currArg->next;
         }
     }
 
+    if (printerName && exitOnPrint)
+        goto Exit;
+ 
     if (0 == pdfOpened) {
         /* disable benchmark mode if we couldn't open file to benchmark */
         gBenchFileName = 0;
