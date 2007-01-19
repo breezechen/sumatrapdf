@@ -215,6 +215,7 @@ ToolbarButtonInfo gToolbarButtons[] = {
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
+static void WindowInfo_ResizeToWindow(WindowInfo *win);
 
 int RectDx(RECT *r)
 {
@@ -596,6 +597,20 @@ static void WinResizeClientArea(HWND hwnd, int dx, int dy)
     SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
 }
 
+static void SetCanvasSizeToDxDy(WindowInfo *win, int w, int h)
+{
+    RECT canvasRect;
+    GetWindowRect(win->hwndCanvas, &canvasRect);
+    RECT frameRect;
+    GetWindowRect(win->hwndFrame, &frameRect);
+    int dx = RectDx(&frameRect) - RectDx(&canvasRect);
+    assert(dx >= 0);
+    int dy = RectDy(&frameRect) - RectDy(&canvasRect);
+    assert(dy >= 0);
+    SetWindowPos(win->hwndFrame, NULL, 0, 0, w+dx, h+dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
+    //SetWindowPos(win->hwndCanvas, NULL, 0, 0, w, h, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
+}
+
 static void CaptionPens_Create(void)
 {
     LOGPEN  pen;
@@ -873,13 +888,12 @@ Exit:
         fclose(pFile);
 }
 
-static void WindowInfo_GetWindowSize(WindowInfo *win)
+static void WindowInfo_GetCanvasSize(WindowInfo *win)
 {
     RECT  rc;
     GetClientRect(win->hwndCanvas, &rc);
     win->winDx = RectDx(&rc);
     win->winDy = RectDy(&rc);
-    // DBG_OUT("WindowInfo_GetWindowSize() win_dx=%d, win_dy=%d\n", win->win_dx, win->win_dy);
 }
 
 static BOOL WindowInfo_Dib_Init(WindowInfo *win)
@@ -926,7 +940,7 @@ static BOOL WindowInfo_DoubleBuffer_New(WindowInfo *win)
 
     win->hdc = GetDC(win->hwndCanvas);
     win->hdcToDraw = win->hdc;
-    WindowInfo_GetWindowSize(win);
+    WindowInfo_GetCanvasSize(win);
     if (!gUseDoubleBuffer || (0 == win->winDx) || (0 == win->winDy))
         return TRUE;
 
@@ -1228,13 +1242,62 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
-static bool gUseFitz = true;
+static bool gUseFitz = false;
+
+BOOL GetDesktopWindowClientRect(RECT *r)
+{
+    HWND hwnd = GetDesktopWindow();
+    if (!hwnd) return FALSE;
+    return GetClientRect(hwnd, r);
+}
+
+void GetTaskBarSize(int *dxOut, int *dyOut)
+{
+    APPBARDATA abd = { sizeof(abd) };
+    *dxOut = *dyOut = 0;
+    if (SHAppBarMessage(ABM_GETTASKBARPOS, &abd)) {
+        *dxOut = RectDx(&abd.rc);
+        *dyOut = RectDy(&abd.rc);
+    }
+}
+
+void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
+{
+    RECT canvasRect;
+    GetWindowRect(win->hwndCanvas, &canvasRect);
+    RECT totalRect;
+    GetWindowRect(win->hwndFrame, &totalRect);
+    *dxOut = RectDx(&totalRect) - RectDx(&canvasRect);
+    assert(*dxOut >= 0);
+    *dyOut = RectDy(&totalRect) - RectDy(&canvasRect);
+    assert(*dyOut >= 0);
+}
+
+void IntelligentWindowResize(WindowInfo *win)
+{
+    RECT r;
+    GetDesktopWindowClientRect(&r);
+
+    int dx, dy;
+    GetCanvasDxDyDiff(win, &dx, &dy);
+    int maxCanvasDx = RectDx(&r) - dx;
+    int maxCanvasDy = RectDy(&r) - dy;
+    GetTaskBarSize(&dx, &dy);
+    if (dx < maxCanvasDx)
+        maxCanvasDx -= dx;
+    if (dy < maxCanvasDy)
+       maxCanvasDy -= dy;
+    // TODO: resize proportionally to the smaller dimention using
+    // first page ratio
+    SetCanvasSizeToDxDy(win, maxCanvasDx, maxCanvasDy);
+    WindowInfo_ResizeToWindow(win);
+}
 
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
     WindowInfo *        win;
     RectDSize           totalDrawAreaSize;
-
+    
     assert(fileName);
     if (!fileName) return NULL;
 
@@ -1252,7 +1315,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
             return NULL;
      }
 
-    WindowInfo_GetWindowSize(win);
+    WindowInfo_GetCanvasSize(win);
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
@@ -1326,6 +1389,12 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     /* TODO: make sure offsetX isn't bogus */
     win->dmSplash->GoToPage(startPage, offsetY);
     win->dmSplash->ScrollXTo(offsetX);
+
+#if 0  // TODO: not good enough yet
+    if (!fileFromHistory || ignoreHistorySizePos)
+        IntelligentWindowResize(win);
+#endif
+
     /* only resize the window if it's a newly opened window */
     if (!reuseExistingWindow && !fileFromHistory)
         WindowInfo_ResizeToPage(win, startPage);
@@ -1474,7 +1543,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
     assert(win->dm);
     if (!win->dm) return;
 
-    WindowInfo_GetWindowSize(win);
+    WindowInfo_GetCanvasSize(win);
 
     totalDrawAreaSize.dx = (double)win->winDx;
     totalDrawAreaSize.dy = (double)win->winDy;
@@ -3616,6 +3685,11 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
                 else
                     AnimState_NextFrame(&win->animState);
             }
+            break;
+
+        case WM_DROPFILES:
+            if (win)
+                OnDropFiles(win, (HDROP)wParam);
             break;
 
         case WM_ERASEBKGND:
