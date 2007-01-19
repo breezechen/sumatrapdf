@@ -59,35 +59,81 @@ extern void PreviewBitmapDestroy(void);
 class RGBAImageFitz : public RGBAImage
 {
 public:
-    RGBAImageFitz(fz_pixmap *bmp) { m_bmp = bmp; }
+    RGBAImageFitz(fz_pixmap *bmp) { 
+        m_bmp = bmp; 
+#ifdef FITZ_HEAD
+        samples = bmp->p;
+#else
+        samples = bmp->samples;
+#endif
+        w = bmp->w;
+        h = bmp->h;
+    }
     virtual ~RGBAImageFitz() {}
     virtual int Get_Width(void) const { return m_bmp->w; }
     virtual int Get_Height(void) const  { return m_bmp->h; }
-    virtual unsigned char Get_Red(unsigned int i) { return 0; }  // TODO: write me
-    virtual unsigned char Get_Green(unsigned int i) { return 0; } // TODO: write me
-    virtual unsigned char Get_Blue(unsigned int i) { return 0; } // TODO: write me
-    virtual unsigned char Get_Alpha(unsigned int i) { return 0; } // TODO: write me
+    virtual unsigned char Get_Red(unsigned int i) { return samples[i*4]; }
+    virtual unsigned char Get_Green(unsigned int i) { return samples[i*4+1]; }
+    virtual unsigned char Get_Blue(unsigned int i) { return samples[i*4+2]; }
+//    virtual unsigned char Get_Alpha(unsigned int i) { return samples[i*4+3]; }
+    virtual unsigned char Get_Alpha(unsigned int i) { return 0; }
     virtual void Set(unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned int i) { /* no-op */ }
-    virtual unsigned int Get(int i) const { return 0; } // TODO: write me
+    virtual unsigned int Get(int i) const { 
+        unsigned int *data = (unsigned int *)samples;
+        return samples[i];
+    }
 private:
-    fz_pixmap *m_bmp;
+    fz_pixmap * m_bmp;
+    fz_sample * samples;
+    int         w;
+    int         h;
 };
 
 class RGBAImageSplash : public RGBAImage
 {
 public:
-    RGBAImageSplash(SplashBitmap *bmp) { m_bmp = bmp; }
+    RGBAImageSplash(SplashBitmap *bmp) { 
+        m_bmp = bmp; 
+        assert(splashModeBGR8 == m_bmp->getMode());
+        rowSize = m_bmp->getRowSize();
+        assert(rowSize > 0);
+    }
     virtual ~RGBAImageSplash() {}
     virtual int Get_Width(void) const { return m_bmp->getWidth(); }
     virtual int Get_Height(void) const { return m_bmp->getHeight(); }
-    virtual unsigned char Get_Red(unsigned int i) { return 0; }  // TODO: write me
-    virtual unsigned char Get_Green(unsigned int i) { return 0; }  // TODO: write me
-    virtual unsigned char Get_Blue(unsigned int i) { return 0; }  // TODO: write me
-    virtual unsigned char Get_Alpha(unsigned int i) { return 0; }  // TODO: write me
+    virtual unsigned char Get_Red(unsigned int i) { 
+        SplashColor p;
+        int x = i % rowSize;
+        int y = i / rowSize;
+        m_bmp->getPixel(x, y, p);
+        return splashBGR8R(p);
+    }
+    virtual unsigned char Get_Green(unsigned int i) { 
+        SplashColor p;
+        int x = i % rowSize;
+        int y = i / rowSize;
+        m_bmp->getPixel(x, y, p);
+        return splashBGR8G(p);
+    }
+    virtual unsigned char Get_Blue(unsigned int i) {
+        SplashColor p;
+        int x = i % rowSize;
+        int y = i / rowSize;
+        m_bmp->getPixel(x, y, p);
+        return splashBGR8B(p);
+    }
+    virtual unsigned char Get_Alpha(unsigned int i) { return 0; }
     virtual void Set(unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned int i) { /* no-op */ }
-    virtual unsigned int Get(int i) const { return 0; }  // TODO: write me
+    virtual unsigned int Get(int i) const { 
+        SplashColor p;
+        int x = i % rowSize;
+        int y = i / rowSize;
+        m_bmp->getPixel(x, y, p);
+        return p[0] + ((unsigned int)p[1] >> 8) + ((unsigned int)p[2] >> 16);
+    }
 private:
-    SplashBitmap *m_bmp;    
+    SplashBitmap *  m_bmp; 
+    int             rowSize;
 };
 
 
@@ -1144,7 +1190,10 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
         timeInMs = MsTimer_GetTimeInMs(&msTimer);
 
         if (gfTimings)
-            LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, renderFitz->image->w, renderFitz->image->h, timeInMs);
+            if (!renderFitz || !renderFitz->image)
+                LogInfo("page fitz   %d: failed to render\n", curPage);
+            else
+                LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, renderFitz->image->w, renderFitz->image->h, timeInMs);
 
         MsTimer_Start(&msTimer);
         renderSplash->RenderPage(curPage);
