@@ -21,13 +21,26 @@ Code from http://pdiff.svn.sourceforge.net
 class RGBAImage
 {
 public:
-    RGBAImage(int w, int h)
+    virtual int Get_Width(void) const  = 0;
+    virtual int Get_Height(void) const = 0;
+    virtual unsigned char Get_Red(unsigned int i) = 0;
+    virtual unsigned char Get_Green(unsigned int i) = 0;
+    virtual unsigned char Get_Blue(unsigned int i) = 0;
+    virtual unsigned char Get_Alpha(unsigned int i) = 0;
+    virtual void Set(unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned int i) = 0;
+    virtual unsigned int Get(int i) const = 0;
+};
+
+class RGBAImageData : RGBAImage
+{
+public:
+    RGBAImageData(int w, int h)
     {
         Width = w;
         Height = h;
         Data = new unsigned int[w * h];
     };
-    ~RGBAImage() { if (Data) delete[] Data; }
+    ~RGBAImageData() { if (Data) delete[] Data; }
     unsigned char Get_Red(unsigned int i) { return (Data[i] & 0xFF); }
     unsigned char Get_Green(unsigned int i) { return ((Data[i]>>8) & 0xFF); }
     unsigned char Get_Blue(unsigned int i) { return ((Data[i]>>16) & 0xFF); }

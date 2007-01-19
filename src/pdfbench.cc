@@ -56,6 +56,41 @@ extern void PreviewBitmapFitz(fz_pixmap *);
 extern void PreviewBitmapSplashFitz(SplashBitmap *, fz_pixmap *);
 extern void PreviewBitmapDestroy(void);
 
+class RGBAImageFitz : public RGBAImage
+{
+public:
+    RGBAImageFitz(fz_pixmap *bmp) { m_bmp = bmp; }
+    virtual ~RGBAImageFitz() {}
+    virtual int Get_Width(void) const { return m_bmp->w; }
+    virtual int Get_Height(void) const  { return m_bmp->h; }
+    virtual unsigned char Get_Red(unsigned int i) { return 0; }  // TODO: write me
+    virtual unsigned char Get_Green(unsigned int i) { return 0; } // TODO: write me
+    virtual unsigned char Get_Blue(unsigned int i) { return 0; } // TODO: write me
+    virtual unsigned char Get_Alpha(unsigned int i) { return 0; } // TODO: write me
+    virtual void Set(unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned int i) { /* no-op */ }
+    virtual unsigned int Get(int i) const { return 0; } // TODO: write me
+private:
+    fz_pixmap *m_bmp;
+};
+
+class RGBAImageSplash : public RGBAImage
+{
+public:
+    RGBAImageSplash(SplashBitmap *bmp) { m_bmp = bmp; }
+    virtual ~RGBAImageSplash() {}
+    virtual int Get_Width(void) const { return m_bmp->getWidth(); }
+    virtual int Get_Height(void) const { return m_bmp->getHeight(); }
+    virtual unsigned char Get_Red(unsigned int i) { return 0; }  // TODO: write me
+    virtual unsigned char Get_Green(unsigned int i) { return 0; }  // TODO: write me
+    virtual unsigned char Get_Blue(unsigned int i) { return 0; }  // TODO: write me
+    virtual unsigned char Get_Alpha(unsigned int i) { return 0; }  // TODO: write me
+    virtual void Set(unsigned char r, unsigned char g, unsigned char b, unsigned char a, unsigned int i) { /* no-op */ }
+    virtual unsigned int Get(int i) const { return 0; }  // TODO: write me
+private:
+    SplashBitmap *m_bmp;    
+};
+
+
 #define PDF_FILE_DPI 72
 
 #define MAX_FILENAME_SIZE 1024
@@ -289,6 +324,7 @@ static StrList *gArgsListRoot = NULL;
 #define TEXT_ARG            "-text"
 #define FITZ_ARG            "-fitz"
 #define BOTH_ARG            "-both"
+#define PDIFF_ARG           "-pdiff"
 
 /* Should we record timings? True if -timings command-line argument was given. */
 static BOOL gfTimings = FALSE;
@@ -319,7 +355,7 @@ static BOOL gfRecursive = FALSE;
 static BOOL gfPreview = FALSE;
 
 /* If true and rendering both, checks images for visual differences */
-static BOOL gfCheckDiff = FALSE;
+static BOOL gfPDiff = FALSE;
 
 /* 1 second (1000 milliseconds) */
 #define SLOW_PREVIEW_TIME 1000
@@ -657,9 +693,9 @@ int ShowPreview(void)
     return FALSE;
 }
 
-int CheckDiff(void)
+int DoPDiff(void)
 {
-    return gfCheckDiff;
+    return gfPDiff;
 }
 
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
@@ -1108,24 +1144,29 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
         timeInMs = MsTimer_GetTimeInMs(&msTimer);
 
         if (gfTimings)
-            LogInfo("page fitz   %d: %.2f ms\n", curPage, timeInMs);
+            LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, renderFitz->image->w, renderFitz->image->h, timeInMs);
 
         MsTimer_Start(&msTimer);
         renderSplash->RenderPage(curPage);
         MsTimer_End(&msTimer);
         timeInMs = MsTimer_GetTimeInMs(&msTimer);
-
+        SplashBitmap *splashBmp = renderSplash->Bitmap();
         if (gfTimings)
-            LogInfo("page splash %d: %.2f ms\n", curPage, timeInMs);
+            LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, splashBmp->getWidth(), splashBmp->getHeight(), timeInMs);
 
         if (ShowPreview()) {
-            PreviewBitmapSplashFitz(renderSplash->Bitmap(), renderFitz->image);
+            PreviewBitmapSplashFitz(splashBmp, renderFitz->image);
             if (gfSlowPreview)
                 SleepMilliseconds(SLOW_PREVIEW_TIME);
         }
 
-        if (CheckDiff()) {
-
+        if (DoPDiff()) {
+            CompareArgs compareArgs;
+            compareArgs.ImgA = new RGBAImageFitz(renderFitz->image);
+            compareArgs.ImgB = new RGBAImageSplash(splashBmp);
+            compareArgs.ImgDiff = NULL;
+            unsigned long pixelDiffCount = Yee_Compare(compareArgs);
+            LogInfo("pixels different: %d\n", (int)pixelDiffCount);
         }
     }
 
@@ -1401,6 +1442,8 @@ void ParseCommandLine(int argc, char **argv)
                 gfFitzRendering = TRUE;
             } else if (Str_EqNoCase(arg, BOTH_ARG)) {
                 gfBoth = TRUE;
+            } else if (Str_EqNoCase(arg, PDIFF_ARG)) {
+                gfPDiff = TRUE;
             } else if (Str_EqNoCase(arg, PAGE_ARG)) {
                 /* expect an integer after that */
                 ++i;
