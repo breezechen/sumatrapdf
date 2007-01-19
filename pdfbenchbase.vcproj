@@ -215,6 +215,10 @@
 				RelativePath=".\src\PdftestWinPreview.cc"
 				>
 			</File>
+			<File
+				RelativePath=".\src\pdiff.cc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -227,6 +231,10 @@
 			</File>
 			<File
 				RelativePath=".\baseutils\file_util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\pdiff.h"
 				>
 			</File>
 			<File

@@ -47,6 +47,7 @@
 #include "Link.h"
 
 #include "BaseUtils.h"
+#include "pdiff.h"
 
 extern void PreviewBitmapInit(void);
 extern void PreviewBitmap(SplashBitmap *);
@@ -316,6 +317,9 @@ static BOOL gfRecursive = FALSE;
 
 /* If true, preview rendered image. To make sure that they're being rendered correctly. */
 static BOOL gfPreview = FALSE;
+
+/* If true and rendering both, checks images for visual differences */
+static BOOL gfCheckDiff = FALSE;
 
 /* 1 second (1000 milliseconds) */
 #define SLOW_PREVIEW_TIME 1000
@@ -651,6 +655,11 @@ int ShowPreview(void)
     if (gfPreview || gfSlowPreview)
         return TRUE;
     return FALSE;
+}
+
+int CheckDiff(void)
+{
+    return gfCheckDiff;
 }
 
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
@@ -1113,6 +1122,10 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
             PreviewBitmapSplashFitz(renderSplash->Bitmap(), renderFitz->image);
             if (gfSlowPreview)
                 SleepMilliseconds(SLOW_PREVIEW_TIME);
+        }
+
+        if (CheckDiff()) {
+
         }
     }
 
