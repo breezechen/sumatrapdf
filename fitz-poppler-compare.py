@@ -1,4 +1,4 @@
-import sys, os, os.path, string
+import math, sys, os, os.path, string
 
 #files = ["timings-100scifi.txt", "timings-100scifi-2.txt", "timings-100scifi-3.txt", "timings-100scifi-4.txt", "timings-100scifi-5.txt"]
 files = ["t-scifi-1.txt", "t-scifi-2.txt", "t-scifi-3.txt", "t-scifi-4.txt", "t-scifi-5.txt"]
@@ -174,6 +174,7 @@ def calc_stats(maps):
     all_stats.append(stats)
   print "fitz    failed: %d" % fitz_failed
   print "poppler failed: %d" % poppler_failed
+  render_speedups = []
   for stat in all_stats:
     print "file: %s" % stat.file_name
     pt = stat.poppler_load_time
@@ -182,7 +183,20 @@ def calc_stats(maps):
     pt = stat.poppler_total_render_time()
     ft = stat.fitz_total_render_time()
     print "total render time: %.2f, %.2f, %.2f%%" % (pt, ft, percent(pt, ft))
+    render_speedups.append(percent(pt,ft))
     print
+#  render_speedups.sort()
+#  for rs in render_speedups:
+#    print "%.2f%%" % rs
+  rounded_speedups = {}
+  for rs in render_speedups:
+    rounded = int(math.floor(rs / 100.0))
+    if rounded_speedups.has_key(rounded):
+      rounded_speedups[rounded] = rounded_speedups[rounded] + 1
+    else:
+      rounded_speedups[rounded] = 1
+  for k,v in rounded_speedups.items():
+    print "%d, %d" % (k,v)
 
 def main():
   maps = []
