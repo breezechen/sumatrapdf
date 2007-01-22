@@ -30,6 +30,8 @@
 #define WINDOW_DX_STR               "Window DX"
 #define WINDOW_DY_STR               "Window DY"
 #define SHOW_TOOLBAR_STR            "ShowToolbar"
+#define PDF_ASSOCIATE_DONT_ASK_STR  "PdfAssociateDontAskAgain"
+#define PDF_ASSOCIATE_ASSOCIATE     "PdfAssociateShouldAssociate"
 
 typedef struct DisplayState {
     const char *        filePath;

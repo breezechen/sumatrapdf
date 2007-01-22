@@ -172,6 +172,11 @@ static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 static char *                       gBenchFileName = NULL;
 static int                          gBenchPageNum = INVALID_PAGE_NUM;
 BOOL                                gShowToolbar = TRUE;
+/* If false, we won't ask the user if he wants Sumatra to handle PDF files */
+BOOL                                gPdfAssociateDontAskAgain = FALSE;
+/* If gPdfAssociateDontAskAgain is TRUE, says whether we should silently associate
+   or not */
+BOOL                                gPdfAssociateShouldAssociate = TRUE;
 #ifdef DOUBLE_BUFFER
 static BOOL                         gUseDoubleBuffer = TRUE;
 #else
@@ -1765,24 +1770,16 @@ Exit:
     return registered;
 }
 
-/* Make me the default app for PDF files. */
-static void RegisterForPdfExtentions(char *exePath, bool askIfNotRegistered = true)
+static void AssociateExeWithPdfExtentions()
 {
     char        tmp[256];
     HKEY        key = NULL, kicon = NULL, kshell = NULL, kopen = NULL, kcmd = NULL;
     DWORD       disp;
     HRESULT     hr;
 
+    char *      exePath = ExePathGet();
     assert(exePath);
 
-    if (askIfNotRegistered) {
-        if (!AlreadyRegisteredForPdfExtentions()) {
-            // TODO: add "don't ask me again" persited option
-            int res = MessageBox(NULL, "SumatraPDF is not a default handler for PDF files? Make it a default handler?", "Information", MB_YESNO);
-            if (IDNO == res)
-                return;
-        }
-    }
     /* HKEY_CLASSES_ROOT\.pdf */
     if (RegCreateKeyEx(HKEY_CLASSES_ROOT,
                 ".pdf", 0, NULL, REG_OPTION_NON_VOLATILE,
@@ -1848,6 +1845,27 @@ Exit:
         RegCloseKey(kshell);
     if (key)
         RegCloseKey(key);
+}
+
+static void RegisterForPdfExtentions(HWND hwnd)
+{
+    if (AlreadyRegisteredForPdfExtentions())
+        return;
+
+    /* Ask user for permission, unless he previously said he doesn't want to
+       see this dialog */
+    if (!gPdfAssociateDontAskAgain) {
+        int result = Dialog_PdfAssociate(hwnd, &gPdfAssociateDontAskAgain);
+        if (DIALOG_NO_PRESSED == result) {
+            gPdfAssociateShouldAssociate = FALSE;
+        } else {
+            assert(DIALOG_OK_PRESSED == result);
+            gPdfAssociateShouldAssociate = TRUE;
+        }
+    }
+
+    if (gPdfAssociateShouldAssociate)
+        AssociateExeWithPdfExtentions();
 }
 
 static void OnDropFiles(WindowInfo *win, HDROP hDrop)
@@ -3226,6 +3244,12 @@ static void OnMenuViewFacing(WindowInfo *win)
     SwitchToDisplayMode(win, DM_FACING);
 }
 
+static void OneMenuMakeDefaultReader(void)
+{
+    AssociateExeWithPdfExtentions();
+    MessageBox(NULL, "SumatraPDF is now a default reader for PDF files.", "Information", MB_OK);
+}
+
 static void OnSize(WindowInfo *win, int dx, int dy)
 {
     int rebBarDy = 0;
@@ -3757,6 +3781,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     OnMenuPrint(win);
                     break;
 
+                case IDM_MAKE_DEFAULT_READER:
+                    OneMenuMakeDefaultReader();
+                    break;
+
                 case IDT_FILE_EXIT:
                 case IDM_CLOSE:
                     CloseWindow(win, FALSE);
@@ -4204,7 +4232,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 {
     StrList *           argListRoot;
     StrList *           currArg;
-    char *              exeName;
     char *              benchPageNumStr = NULL;
     MSG                 msg = {0};
     HACCEL              hAccelTable;
@@ -4226,7 +4253,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     assert(argListRoot);
     if (!argListRoot)
         return 0;
-    exeName = argListRoot->str;
 
     Prefs_Load();
     /* parse argument list. If BENCH_ARG_TXT was given, then we're in benchmarking mode. Otherwise
@@ -4292,9 +4318,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
     CreatePageRenderThread();
-    if (registerForPdfExtentions)
-        RegisterForPdfExtentions(exeName);
-
     /* remaining arguments are names of PDF files */
     if (NULL != gBenchFileName) {
             win = LoadPdf(gBenchFileName, FALSE);
@@ -4358,6 +4381,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     if (0 == pdfOpened)
         MenuToolbarUpdateStateForAllWindows();
+
+    if (registerForPdfExtentions)
+        RegisterForPdfExtentions(win ? win->hwndFrame : NULL);
 
     while (GetMessage(&msg, NULL, 0, 0)) {
         if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {

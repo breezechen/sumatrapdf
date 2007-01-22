@@ -151,3 +151,61 @@ int Dialog_GoToPage(WindowInfo *win)
     return INVALID_PAGE_NUM;
 }
 
+static BOOL CALLBACK Dialog_PdfAssociate_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    Dialog_PdfAssociate_Data *  data;
+
+    switch (message)
+    {
+        case WM_INITDIALOG:
+            /* TODO: intelligently center the dialog within the parent window? */
+            data = (Dialog_PdfAssociate_Data*)lParam;
+            assert(NULL != data);
+            SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
+            CheckDlgButton(hDlg, IDC_DONT_ASK_ME_AGAIN, BST_UNCHECKED);
+            SetFocus(GetDlgItem(hDlg, IDOK));
+            return FALSE;
+
+        case WM_COMMAND:
+            data = (Dialog_PdfAssociate_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
+            assert(data);
+            data->dontAskAgain = FALSE;
+            switch (LOWORD(wParam))
+            {
+                case IDOK:
+                    data = (Dialog_PdfAssociate_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
+                    assert(data);
+                    if (BST_CHECKED == IsDlgButtonChecked(hDlg, IDC_DONT_ASK_ME_AGAIN))
+                        data->dontAskAgain = TRUE;
+                    EndDialog(hDlg, DIALOG_OK_PRESSED);
+                    return TRUE;
+
+                case IDCANCEL:
+                    if (BST_CHECKED == IsDlgButtonChecked(hDlg, IDC_DONT_ASK_ME_AGAIN))
+                        data->dontAskAgain = TRUE;
+                    EndDialog(hDlg, DIALOG_NO_PRESSED);
+                    return TRUE;
+
+                case IDC_DONT_ASK_ME_AGAIN:
+                    data = NULL;
+                    return TRUE;
+            }
+            break;
+    }
+    return FALSE;
+}
+
+/* Show "associate this application with PDF files" dialog.
+   Returns DIALOG_YES_PRESSED if "Yes" button was pressed or
+   DIALOG_NO_PRESSED if "No" button was pressed.
+   Returns the state of "don't ask me again" checkbox" in <dontAskAgain> */
+int Dialog_PdfAssociate(HWND hwnd, BOOL *dontAskAgainOut)
+{
+    assert(dontAskAgainOut);
+
+    Dialog_PdfAssociate_Data data;
+    int dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_PDF_ASSOCIATE), hwnd, Dialog_PdfAssociate_Proc, (LPARAM)&data);
+    *dontAskAgainOut = data.dontAskAgain;
+    return dialogResult;
+}
+

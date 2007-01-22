@@ -4,7 +4,9 @@
 #include "SumatraPDF.h"
 
 #define DIALOG_OK_PRESSED 1
+#define DIALOG_YES_PRESSED 1
 #define DIALOG_CANCEL_PRESSED 2
+#define DIALOG_NO_PRESSED 3
 
 /* For passing data to/from GetPassword dialog */
 typedef struct {
@@ -19,7 +21,13 @@ typedef struct {
     int     pageEnteredOut;  /* page number entered by user */
 } Dialog_GoToPage_Data;
 
+/* For passing data to/from AssociateWithPdf dialog */
+typedef struct {
+    BOOL    dontAskAgain;
+} Dialog_PdfAssociate_Data;
+
 int     Dialog_GoToPage(WindowInfo *win);
 char *  Dialog_GetPassword(WindowInfo *win, const char *fileName);
+int     Dialog_PdfAssociate(HWND hwnd, BOOL *dontAskAgainOut);
 
 #endif

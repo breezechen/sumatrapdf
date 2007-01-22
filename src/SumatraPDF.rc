@@ -44,6 +44,9 @@ BEGIN
         MENUITEM "&Open\tCtrl-O",               IDM_OPEN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
         MENUITEM "&Print",						IDM_PRINT
+        MENUITEM SEPARATOR
+        MENUITEM "Make SumatraPDf a default PDF reader"      IDM_MAKE_DEFAULT_READER
+        MENUITEM SEPARATOR
         MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
     END
     POPUP "&View"
@@ -142,6 +145,17 @@ BEGIN
     DEFPUSHBUTTON   "Go to page",IDOK,7,36,64,14
     PUSHBUTTON      "Cancel",IDCANCEL,79,36,64,14
     LTEXT           "(of 99999)",IDC_GOTO_PAGE_LABEL_OF,107,17,36,8
+END
+
+IDD_DIALOG_PDF_ASSOCIATE DIALOGEX 100, 100, 200, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Associate with PDF files?"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Make SumatraPDF default application for PDF files?", IDC_STATIC, 8, 10, 200-16,8
+    AUTOCHECKBOX    "Don't ask me again", IDC_DONT_ASK_ME_AGAIN, 8, 24, 200-16, 8
+    DEFPUSHBUTTON   "Yes",IDOK,           7, 40, 32, 14
+    PUSHBUTTON      "No",IDCANCEL, 200-8-32, 40, 32, 14
 END
 
 IDD_DIALOG_GET_PASSWORD DIALOGEX 0, 0, 176, 70

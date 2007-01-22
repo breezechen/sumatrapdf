@@ -6,6 +6,7 @@
 #define IDD_DIALOG1                     129
 #define IDD_DIALOG_GOTO_PAGE            129
 #define IDD_DIALOG_GET_PASSWORD         130
+#define IDD_DIALOG_PDF_ASSOCIATE        131
 #define IDR_MAINFRAME                   200
 #define IDD_XPDFWIN_DIALOG              300
 #define IDD_ABOUTBOX                    301
@@ -44,6 +45,7 @@
 #define IDM_GOTO_PAGE                   432
 #define IDM_PRINT                       433
 #define IDM_VIEW_SHOW_HIDE_TOOLBAR      434
+#define IDM_MAKE_DEFAULT_READER         435
 #define IDI_SUMATRAPDF                  1
 #define IDI_SMALL                       601
 #define IDC_SUMATRAPDF                  600
@@ -58,6 +60,7 @@
 #define IDC_GET_PASSWORD_LABEL          1005
 #define IDC_TOOLBAR                     1006
 #define IDC_REBAR                       1007
+#define IDC_DONT_ASK_ME_AGAIN           1008
 #define IDB_TOOLBAR                     2000
 #define IDB_TOOLBAR_DISABLED            2001
 #define IDB_SILK_OPEN                   2002
