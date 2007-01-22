@@ -421,6 +421,16 @@ static const char *Path_GetBaseName(const char *path)
     return fileBaseName;
 }
 
+static char *Path_GetDir(const char *path)
+{
+    char *dir = Str_Dup(path);
+    if (!dir) return NULL;
+    char *lastSep = (char*)strrchr(path, DIR_SEP_CHAR);
+    if (NULL != lastSep)
+        *lastSep = 0;
+    return dir;
+}
+
 static HMENU FindMenuItem(WindowInfo *win, UINT id)
 {
     HMENU   menuMain;
@@ -540,6 +550,81 @@ static void AddRecentFilesToMenu(WindowInfo *win)
         }
         curr = curr->next;
     }
+}
+
+
+/* 'txt' is path that can be:
+  - escaped, in which case it starts with '"', ends with '"' and each '"' that is part of the name is escaped
+    with '\'
+  - unescaped, in which case it start with != '"' and ends with ' ' or eol (0)
+  This function extracts escaped or unescaped path from 'txt'. Returns NULL in case of error.
+  Caller needs to free() the result. */
+static char *PossiblyUnescapePath(char *txt)
+{
+    char   *exePathStart, *exePathEnd;
+    char   *exePath, *src, *dst;
+    char   c;
+    int     exePathLen;
+    BOOL    escaped;
+
+    if (!txt)
+        return NULL;
+
+    /* exe path is the first string in command line. It's an escaped string */
+    exePathStart = txt;
+    escaped = FALSE;
+    if ('"' == *exePathStart) {
+        ++exePathStart;
+        escaped = TRUE;
+    }
+    exePathEnd = exePathStart;
+    for (;;) {
+        c = *exePathEnd;
+        if (!escaped && ((0 == c) || (' ' == c)))
+            break;
+        assert(0 != c);
+        if (0 == c)
+            return NULL;
+        if (escaped && ('"' == c))
+            break;
+        if (escaped && ('\\' == c) && ('"' == exePathEnd[1]))
+            ++exePathEnd;
+        ++exePathEnd;
+    }
+    /* might be a bit bigger due to un-escaping, but that's ok */
+    exePathLen = (exePathEnd - exePathStart);
+    exePath = (TCHAR*)malloc(sizeof(TCHAR)*exePathLen+1);
+    if (!exePath)
+        return NULL;
+    src = exePathStart;
+    dst = exePath;
+    while (src < exePathEnd) {
+        c = *src;
+        if (!escaped && ((0 == *src) || (' ' == *src)))
+            break;
+        assert(0 != *src);
+        if (('\\' == c) && ('"' == src[1])) {
+            /* unescaping */
+            ++src;
+            c = *src;
+            assert(0 != *src);
+        }
+        *dst++ = c;
+        ++src;
+    }
+    if (escaped)
+        assert('"' == *src);
+    else
+        assert((' ' == *src) || (0 == *src));
+    *dst = 0;
+    return exePath;
+}
+
+/* Return the full exe path of my own executable.
+   Caller needs to free() the result. */
+static char *ExePathGet(void)
+{
+    return PossiblyUnescapePath(GetCommandLine());
 }
 
 static void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
@@ -691,6 +776,27 @@ void *StandardSecurityHandler::getAuthData()
     return (void*)authData;
 }
 
+/* Return true if this program has been started from "Program Files" directory
+   (which is an indicator that it has been installed */
+static bool IsRunningFromProgramFiles(void)
+{
+    char dir[MAX_PATH];
+    BOOL fOk = SHGetSpecialFolderPath(NULL, dir, CSIDL_PROGRAM_FILES, FALSE);
+    if (!fOk) return true; // assume it is
+    char *exePath = ExePathGet();
+    if (!exePath) return true; // again, assume it is
+    bool fromProgramFiles = false;
+    if (Str_StartsWithNoCase(dir, exePath))
+        fromProgramFiles = true;
+    free((void*)exePath);
+    return fromProgramFiles;
+}
+
+static bool IsRunningInPortableMode(void)
+{
+    return !IsRunningFromProgramFiles();
+}
+
 static void AppGetAppDir(DString* pDs)
 {
     char        dir[MAX_PATH];
@@ -709,9 +815,21 @@ static void AppGenDataFilename(char* pFilename, DString* pDs)
     assert(pDs);
     if (!pDs) return;
 
-    AppGetAppDir(pDs);
+    bool portable = IsRunningInPortableMode();
+    if (portable) {
+        /* Use the same path as the binary */
+        char *exePath = ExePathGet();
+        if (!exePath) return;
+        char *dir = Path_GetDir(exePath);
+        if (dir)
+            DStringSprintf(pDs, "%s", dir);
+        free((void*)exePath);
+        free((void*)dir);
+    } else {
+        AppGetAppDir(pDs);
+    }
     if (!Str_EndsWithNoCase(pDs->pString, DIR_SEP_STR) && !(DIR_SEP_CHAR == pFilename[0])) {
-        DStringAppend(pDs, "/", 1);
+        DStringAppend(pDs, DIR_SEP_STR, -1);
     }
     DStringAppend(pDs, pFilename, -1);
 }
@@ -1632,80 +1750,6 @@ static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
     return TRUE;
 }
 
-/* 'txt' is path that can be:
-  - escaped, in which case it starts with '"', ends with '"' and each '"' that is part of the name is escaped
-    with '\'
-  - unescaped, in which case it start with != '"' and ends with ' ' or eol (0)
-  This function extracts escaped or unescaped path from 'txt'. Returns NULL in case of error.
-  Caller needs to free() the result. */
-static char *PossiblyUnescapePath(char *txt)
-{
-    char   *exePathStart, *exePathEnd;
-    char   *exePath, *src, *dst;
-    char   c;
-    int     exePathLen;
-    BOOL    escaped;
-
-    if (!txt)
-        return NULL;
-
-    /* exe path is the first string in command line. It's an escaped string */
-    exePathStart = txt;
-    escaped = FALSE;
-    if ('"' == *exePathStart) {
-        ++exePathStart;
-        escaped = TRUE;
-    }
-    exePathEnd = exePathStart;
-    for (;;) {
-        c = *exePathEnd;
-        if (!escaped && ((0 == c) || (' ' == c)))
-            break;
-        assert(0 != c);
-        if (0 == c)
-            return NULL;
-        if (escaped && ('"' == c))
-            break;
-        if (escaped && ('\\' == c) && ('"' == exePathEnd[1]))
-            ++exePathEnd;
-        ++exePathEnd;
-    }
-    /* might be a bit bigger due to un-escaping, but that's ok */
-    exePathLen = (exePathEnd - exePathStart);
-    exePath = (TCHAR*)malloc(sizeof(TCHAR)*exePathLen+1);
-    if (!exePath)
-        return NULL;
-    src = exePathStart;
-    dst = exePath;
-    while (src < exePathEnd) {
-        c = *src;
-        if (!escaped && ((0 == *src) || (' ' == *src)))
-            break;
-        assert(0 != *src);
-        if (('\\' == c) && ('"' == src[1])) {
-            /* unescaping */
-            ++src;
-            c = *src;
-            assert(0 != *src);
-        }
-        *dst++ = c;
-        ++src;
-    }
-    if (escaped)
-        assert('"' == *src);
-    else
-        assert((' ' == *src) || (0 == *src));
-    *dst = 0;
-    return exePath;
-}
-
-/* Return the full exe path of my own executable.
-   Caller needs to free() the result. */
-static char *ExePathGet(void)
-{
-    return PossiblyUnescapePath(GetCommandLine());
-}
-
 static void RefreshIcons(void)
 {
     DString ds;
@@ -1777,8 +1821,9 @@ static void AssociateExeWithPdfExtentions()
     DWORD       disp;
     HRESULT     hr;
 
-    char *      exePath = ExePathGet();
+    char * exePath = ExePathGet();
     assert(exePath);
+    if (!exePath) return;
 
     /* HKEY_CLASSES_ROOT\.pdf */
     if (RegCreateKeyEx(HKEY_CLASSES_ROOT,
@@ -1845,6 +1890,7 @@ Exit:
         RegCloseKey(kshell);
     if (key)
         RegCloseKey(key);
+    free((void*)exePath);
 }
 
 static void RegisterForPdfExtentions(HWND hwnd)
@@ -3258,7 +3304,7 @@ static void OnSize(WindowInfo *win, int dx, int dy)
         rebBarDy = gReBarDy + gReBarDyFrame;
     }
     SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy-rebBarDy, SWP_NOZORDER);
-    //SetTimer(win->hwndCanvas, RESIZE_TIMER_ID, RESIZE_DELAY_IN_MS, NULL);
+    //SetTimer(win->hwndCanvas, RESIZE_TIMER_ID, RESIZE_DELAY_IN_MS, sNULL);
 }
 
 static void OnMenuViewShowHideToolbar(WindowInfo *win)
@@ -3566,9 +3612,9 @@ static void SeeLastError(void)
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPSTR) &msgBuf, 0, NULL);
     if (!msgBuf) return;
-	printf("SeeLastError(): %s\n", msgBuf);
-	OutputDebugStringA(msgBuf);
-	LocalFree(msgBuf);
+    printf("SeeLastError(): %s\n", msgBuf);
+    OutputDebugStringA(msgBuf);
+    LocalFree(msgBuf);
 }
 
 #define WS_TOOLBAR (WS_CHILD | WS_CLIPSIBLINGS | \
