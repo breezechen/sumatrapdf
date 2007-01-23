@@ -1333,16 +1333,18 @@ static void RenderPdfFile(const char *fileName)
     if (gfTextOnly) {
         /* TODO: right not rendering as text is only supported with poppler, not fitz */
         RenderPdfFileAsText(fileName);
-    } else {
-        if (gfBoth) {
-                RenderPdfFileAsGfxWithBoth(fileName);
-        } else {
-            if (gfFitzRendering)
-                RenderPdfFileAsGfxWithFitz(fileName);
-            else
-                RenderPdfFileAsGfxWithPoppler(fileName);
-        }
+        return;
     }
+
+    if (gfBoth) {
+        RenderPdfFileAsGfxWithBoth(fileName);
+        return;
+    }
+
+    if (gfFitzRendering)
+        RenderPdfFileAsGfxWithFitz(fileName);
+    else
+        RenderPdfFileAsGfxWithPoppler(fileName);
 }
 
 int ParseInteger(const char *start, const char *end, int *intOut)
