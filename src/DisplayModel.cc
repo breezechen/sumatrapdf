@@ -2,6 +2,15 @@
 #include <assert.h>
 #include <stdlib.h>
 
+DisplaySettings gDisplaySettings = {
+  PADDING_PAGE_BORDER_TOP_DEF,
+  PADDING_PAGE_BORDER_BOTTOM_DEF,
+  PADDING_PAGE_BORDER_LEFT_DEF,
+  PADDING_PAGE_BORDER_RIGHT_DEF,
+  PADDING_BETWEEN_PAGES_X_DEF,
+  PADDING_BETWEEN_PAGES_Y_DEF
+};
+
 bool IsDisplayModeContinuous(DisplayMode displayMode)
 {
     if ((DM_SINGLE_PAGE == displayMode) || (DM_FACING == displayMode))
@@ -10,6 +19,11 @@ bool IsDisplayModeContinuous(DisplayMode displayMode)
         return true;
     assert(0);
     return false;
+}
+
+DisplaySettings *GetGlobalDisplaySettings(void)
+{
+    return &gDisplaySettings;
 }
 
 DisplayModel::DisplayModel()

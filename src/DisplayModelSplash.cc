@@ -26,29 +26,6 @@
 #define ACTION_FIRST_PAGE   "FirstPage"
 #define ACTION_LAST_PAGE    "LastPage"
 
-/* the default distance between a page and window border edges, in pixels */
-#ifdef _WIN32
-  #define PADDING_PAGE_BORDER_TOP_DEF      6
-#else
-  #define PADDING_PAGE_BORDER_TOP_DEF      4
-#endif
-#define PADDING_PAGE_BORDER_BOTTOM_DEF   PADDING_PAGE_BORDER_TOP_DEF
-#define PADDING_PAGE_BORDER_LEFT_DEF     2
-#define PADDING_PAGE_BORDER_RIGHT_DEF    2
-/* the distance between pages in x axis, in pixels. Only applicable if
-   columns > 1 */
-#define PADDING_BETWEEN_PAGES_X_DEF      4
-/* the distance between pages in y axis, in pixels. Only applicable if
-   more than one page in y axis (continuous mode) */
-#define PADDING_BETWEEN_PAGES_Y_DEF      PADDING_PAGE_BORDER_TOP_DEF * 2
-
-#define PADDING_PAGE_BORDER_TOP      gDisplaySettings.paddingPageBorderTop
-#define PADDING_PAGE_BORDER_BOTTOM   gDisplaySettings.paddingPageBorderBottom
-#define PADDING_PAGE_BORDER_LEFT     gDisplaySettings.paddingPageBorderLeft
-#define PADDING_PAGE_BORDER_RIGHT    gDisplaySettings.paddingPageBorderRight
-#define PADDING_BETWEEN_PAGES_X      gDisplaySettings.paddingBetweenPagesX
-#define PADDING_BETWEEN_PAGES_Y      gDisplaySettings.paddingBetweenPagesY
-
 static GooMutex             cacheMutex;
 static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};
 static int                  gBitmapCacheCount = 0;
@@ -137,15 +114,6 @@ void UnlockCache(void) {
     gUnlockMutex(&cacheMutex);
 }
 
-static DisplaySettings gDisplaySettings = {
-  PADDING_PAGE_BORDER_TOP_DEF,
-  PADDING_PAGE_BORDER_BOTTOM_DEF,
-  PADDING_PAGE_BORDER_LEFT_DEF,
-  PADDING_PAGE_BORDER_RIGHT_DEF,
-  PADDING_BETWEEN_PAGES_X_DEF,
-  PADDING_BETWEEN_PAGES_Y_DEF
-};
-
 BOOL ValidDisplayMode(DisplayMode dm)
 {
     if ((int)dm < (int)DM_FIRST)
@@ -153,11 +121,6 @@ BOOL ValidDisplayMode(DisplayMode dm)
     if ((int)dm > (int)DM_LAST)
         return FALSE;
     return TRUE;
-}
-
-DisplaySettings *GetGlobalDisplaySettings(void)
-{
-    return &gDisplaySettings;
 }
 
 static int ColumnsFromDisplayMode(DisplayMode displayMode)

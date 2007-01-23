@@ -74,110 +74,11 @@ protected:
   PlatformCachedBitmap() {}; /* disallow creating objects of this class */
 };
 
-/* must be implemented somewhere else */
-extern void LaunchBrowser(const char *uri);
-
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
 /* arbitrary but big */
 #define INVALID_BIG_ZOOM    999999.0
-
-typedef struct DisplaySettings {
-    int     paddingPageBorderTop;
-    int     paddingPageBorderBottom;
-    int     paddingPageBorderLeft;
-    int     paddingPageBorderRight;
-    int     paddingBetweenPagesX;
-    int     paddingBetweenPagesY;
-} DisplaySettings;
-
-/* Describes a link on PDF page. */
-typedef struct PdfLink {
-    int             pageNo;     /* on which Pdf page the link exists. 1..pageCount */
-    Link *          link;       /* a reference to a link; we don't own it */
-    RectD           rectPage;   /* position of the link on the page */
-    RectI           rectCanvas; /* position of the link on canvas */
-} PdfLink;
-
-/* Describes many attributes of one page in one, convenient place */
-typedef struct PdfPageInfo {
-    /* data that is constant for a given page. page size and rotation
-       recorded in PDF file */
-    double          pageDx;
-    double          pageDy;
-    int             rotation;
-
-    /* data that needs to be set before DisplayModel_Relayout().
-       Determines whether a given page should be shown on the screen. */
-    bool            shown;
-
-    /* data that changes when zoom and rotation changes */
-    /* position and size within total area after applying zoom and rotation.
-       Represents display rectangle for a given page.
-       Calculated in DisplayModel_Relayout() */
-
-    /* TODO: change it to RectD ?*/
-    double          currDx;
-    double          currDy;
-    double          currPosX;
-    double          currPosY;
-
-    /* data that changes due to scrolling. Calculated in DisplayModel_RecalcVisibleParts() */
-    bool            visible; /* is currently visible on the page ? */
-    /* part of the image that should be shown */
-    int             bitmapX, bitmapY, bitmapDx, bitmapDy;
-    /* where it should be blitted on the screen */
-    int             screenX, screenY;
-
-    Links *         links;
-    TextPage *      textPage;
-} PdfPageInfo;
-
-/* When searching, we can be in one of those states. The state determines what
-   will happen after searching for next or previous term.
-   */
-enum SearchState { 
-    /* Search hasn't started yet. 'Next' will start searching from the top
-       of current page, searching forward. 'Previous' will start searching from
-       the top of current page, searching backward. */
-    eSsNone,
-    /* We searched the whole document and didn't find the search term at all. 'Next'
-       and 'prev' do nothing. */
-    eSsNotFound,
-    /* Previous 'next' search found the term, without wrapping. 'Next' will
-       continue searching forward from the current position. 'Previous' will
-       search backward from the current position.*/
-    eSsFoundNext, 
-    /* Like eSsFoundNext but we wrapped past last page. In that case we show
-       a message about being wrapped and continuing from top. */
-    eSsFoundNextWrapped,
-    /* Previous 'prev' search found the term, without wrapping. 'Next' will
-       search forward from the current position. 'Prev' will continue searching
-       backward */
-    eSsFoundPrev,
-    /* Like eSsFoundPrev, but wrapped around first page. */
-    eSsFoundPrevWrapped,
-/*   TODO: add eSsFoundOnlyOne as optimization i.e. if the hit is the same
-   as previous hit, 'next' and 'previous' will do nothing, to avoid (possibly
-   long) no-op search.
-    eSsFoundOnlyOne */
-};
-
-/* The current state of searching */
-typedef struct SearchStateData {
-    /* String we search for, both regular and unicode versions */
-    GooString *     str;
-    UGooString *    strU;
-    /* The page on which we started the search */
-    int             startPage;
-    /* did we wrap (crossed last page when searching forward or first page
-       when searching backwards) */
-    BOOL            wrapped;
-    SearchState     searchState;
-    BOOL            caseSensitive;
-    int             currPage; /* page for the last hit */
-} SearchStateData;
 
 /* Information needed to drive the display of a given PDF document on a screen.
    You can think of it as a model in the MVC pardigm.
@@ -276,14 +177,9 @@ public:
     /* PDF document we're displaying. Owned by this structure */
     PDFDoc *        pdfDoc;
 
-    SearchStateData searchState;
-
     SplashOutputDev * outputDevice;
 
     TextOutputDev * textOutDevice;
-
-    /* an array of PdfPageInfo, len of array is pageCount */
-    PdfPageInfo *   pagesInfo;
 
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.
@@ -294,13 +190,6 @@ public:
        for ZOOM_FIT_PAGE and ZOOM_FIT_WIDTH */
     double          zoomReal;
 
-    /* size of scrollbars */
-    int             scrollbarXDy;
-    int             scrollbarYDx;
-
-    /* size of total draw area (i.e. window size) */
-    RectDSize       totalDrawAreaSize;
-
     /* size of virtual canvas containing all rendered pages.
        TODO: re-consider, 32 signed number should be large enough for everything. */
     RectDSize       canvasSize;
@@ -310,10 +199,6 @@ public:
 
     /* an array of 'totalLinksCount' size, each entry describing a link */
     PdfLink *       links;
-
-    int             searchHitPageNo;
-    RectD           searchHitRectPage;
-    RectI           searchHitRectCanvas;
 };
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
@@ -350,8 +235,6 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOu
                                             DisplayMode displayMode, int startPage);
 
 BOOL              DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm);
-
-DisplaySettings * GetGlobalDisplaySettings(void);
 
 /* Lock protecting both bitmap cache and page render queue */
 void              LockCache();
