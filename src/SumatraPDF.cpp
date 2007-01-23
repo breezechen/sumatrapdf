@@ -2905,7 +2905,7 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
 TODO:
  * a better, synchronous way of generating a bitmap to print
 */
-static void PrintToDevice(WindowInfo *win, HDC hDC, int fromPage, int toPage)
+static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromPage, int toPage)
 {
     int                 pageNo;
     DisplayModelSplash* dmSplash;
@@ -3005,8 +3005,15 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, int fromPage, int toPage)
         int pageWidth = GetDeviceCaps(hDC, PHYSICALWIDTH);
 
         // Get physical printer margins
-        int topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
-        int leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+        int topMargin;
+        int leftMargin;
+        if (DMORIENT_LANDSCAPE == devMode->dmOrientation) {
+            topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+            leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
+        } else {
+            topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
+            leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+        }
 
         StretchDIBits(hDC,
             // destination rectangle
@@ -3101,7 +3108,7 @@ static void OnMenuPrint(WindowInfo *win)
         return;
     }
 
-    PrintToDevice(win, pd.hDC, pd.nFromPage, pd.nToPage);
+    PrintToDevice(win, pd.hDC, (LPDEVMODE)pd.hDevMode, pd.nFromPage, pd.nToPage);
 
     if (pd.hDevNames != NULL) GlobalFree(pd.hDevNames);
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
@@ -4245,9 +4252,11 @@ static void CreatePageRenderThread(void)
 static void PrintFile(WindowInfo *win, const char *fileName, const char *printerName)
 {
     char*       driver;
-
     char        devstring[256];      // array for WIN.INI data 
     char *      port;                // port name 
+    HANDLE      printer;
+    LPDEVMODE   devMode = NULL;
+    DWORD       structSize, returnCode;
 
     // Retrieve the printer, printer driver, and 
     // output-port names from WIN.INI. 
@@ -4260,18 +4269,74 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
     port = strtok((char *) NULL, (const char *) ",");
 
     HDC  hdcPrint = NULL;
-    if (driver && port) {
-        hdcPrint = CreateDC(driver, printerName, port, NULL); 
-        if (!hdcPrint) {
-            MessageBox(win->hwndFrame, "Couldn't initialize printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
-        }
-    } else {
+    if (!driver || !port) {
         MessageBox(win->hwndFrame, "Printer with given name doesn't exist", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
         return;
     }
+    
+    BOOL fOk = OpenPrinter((LPSTR)printerName, &printer, NULL);
+    if (!fOk) {
+        MessageBox(win->hwndFrame, "Could not open Printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        return;
+    }
 
-    PrintToDevice(win, hdcPrint, 1, win->dm->pageCount());
-    DeleteDC(hdcPrint);
+    structSize = DocumentProperties(NULL,
+        printer,                /* Handle to our printer. */ 
+        (LPSTR) printerName,    /* Name of the printer. */ 
+        NULL,                   /* Asking for size, so */ 
+        NULL,                   /* these are not used. */ 
+        0);                     /* Zero returns buffer size. */ 
+    devMode = (LPDEVMODE)malloc(structSize);
+    if (!devMode) goto Exit;
+
+    // Get the default DevMode for the printer and modify it for your needs.
+    returnCode = DocumentProperties(NULL,
+        printer,
+        (LPSTR) printerName,
+        devMode,        /* The address of the buffer to fill. */ 
+        NULL,           /* Not using the input buffer. */ 
+        DM_OUT_BUFFER); /* Have the output buffer filled. */ 
+
+    if (IDOK != returnCode) {
+        // If failure, inform the user, cleanup and return failure.
+        MessageBox(win->hwndFrame, "Could not obtain Printer properties", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        goto Exit;
+    }
+
+    PdfPageInfo * pageInfo = pageInfo = win->dmSplash->GetPageInfo(1);
+
+    if (pageInfo->bitmapDx > pageInfo->bitmapDy) {
+        devMode->dmOrientation = DMORIENT_LANDSCAPE;
+    } else {
+        devMode->dmOrientation = DMORIENT_PORTRAIT;
+    }
+
+    /*
+     * Merge the new settings with the old.
+     * This gives the driver an opportunity to update any private
+     * portions of the DevMode structure.
+     */ 
+     DocumentProperties(NULL,
+        printer,
+        (LPSTR) printerName,
+        devMode,        /* Reuse our buffer for output. */ 
+        devMode,        /* Pass the driver our changes. */ 
+        DM_IN_BUFFER |  /* Commands to Merge our changes and */ 
+        DM_OUT_BUFFER); /* write the result. */ 
+
+    ClosePrinter(printer);
+
+    hdcPrint = CreateDC(driver, printerName, port, devMode); 
+    if (!hdcPrint) {
+        MessageBox(win->hwndFrame, "Couldn't initialize printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        goto Exit;
+    }
+
+    PrintToDevice(win, hdcPrint, devMode, 1, win->dm->pageCount());
+Exit:
+    free(devMode);
+    if (hdcPrint)
+        DeleteDC(hdcPrint);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
