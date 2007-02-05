@@ -89,7 +89,7 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
             data = (Dialog_GoToPage_Data*)lParam;
             assert(NULL != data);
             SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
-            assert(INVALID_PAGE_NUM != data->currPageNo);
+            assert(INVALID_PAGE_NO != data->currPageNo);
             assert(data->pageCount >= 1);
             DStringInit(&ds);
             DStringSprintf(&ds, "%d", data->currPageNo);
@@ -110,7 +110,7 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
                 case IDOK:
                     data = (Dialog_GoToPage_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
                     assert(data);
-                    data->pageEnteredOut = INVALID_PAGE_NUM;
+                    data->pageEnteredOut = INVALID_PAGE_NO;
                     editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
                     newPageNoTxt = WinGetText(editPageNo);
                     if (newPageNoTxt) {
@@ -130,7 +130,7 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
 }
 
 /* Shows a 'go to page' dialog and returns a page number entered by the user
-   or INVALID_PAGE_NUM if user clicked "cancel" button, entered invalid
+   or INVALID_PAGE_NO if user clicked "cancel" button, entered invalid
    page number or there was an error. */
 int Dialog_GoToPage(WindowInfo *win)
 {
@@ -138,7 +138,7 @@ int Dialog_GoToPage(WindowInfo *win)
     Dialog_GoToPage_Data    data;
     
     assert(win);
-    if (!win) return INVALID_PAGE_NUM;
+    if (!win) return INVALID_PAGE_NO;
 
     data.currPageNo = win->dm->startPage();
     data.pageCount = win->dm->pageCount();
@@ -148,7 +148,7 @@ int Dialog_GoToPage(WindowInfo *win)
             return data.pageEnteredOut;
         }
     }
-    return INVALID_PAGE_NUM;
+    return INVALID_PAGE_NO;
 }
 
 static BOOL CALLBACK Dialog_PdfAssociate_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

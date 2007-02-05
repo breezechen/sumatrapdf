@@ -83,7 +83,7 @@ static DisplayModelFitz *DisplayModelFitz_CreateFromPageTree(
     dm->searchState.searchState = eSsNone;
     dm->searchState.str = new GooString();
     dm->searchState.strU = new UGooString();
-    dm->searchHitPageNo = INVALID_PAGE;
+    dm->searchHitPageNo = INVALID_PAGE_NO;
 
 //    outputDev->startDoc(pdfDoc->getXRef());
 

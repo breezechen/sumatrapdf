@@ -43,4 +43,21 @@ void   u_RectI_Intersect(void);
 }
 #endif
 
+/* allow using from both C and C++ code */
+#ifdef __cplusplus
+class PointD {
+public:
+    PointD(double _x, double _y) { x = _x; y = _y; }
+    double x;
+    double y;
+};
+
+class SizeD {
+public:
+    SizeD(double _dx, double _dy) { dx = _dx; dy = _dy; }
+    double dx;
+    double dy;
+};
+#endif
+
 #endif

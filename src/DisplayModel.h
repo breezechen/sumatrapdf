@@ -2,6 +2,7 @@
 #define _DISPLAY_MODEL_H_
 
 #include "BaseUtils.h"
+#include "PdfEngine.h"
 #include "SimpleRect.h"
 
 class GooString;
@@ -14,8 +15,6 @@ class UGooString;
 //#include "Link.h"
 //#include "TextOutputDev.h"
 
-#define INVALID_PAGE        -1
-#define INVALID_ROTATION    -1
 #define INVALID_ZOOM        -99
 
 enum DisplayMode {

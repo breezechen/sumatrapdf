@@ -51,8 +51,6 @@ enum WinState {
     WS_ABOUT_ANIM = WS_EMPTY
 };
 
-#define INVALID_PAGE_NUM -1
-
 /* When doing "about" animation, remembers the current animation state */
 typedef struct {
     HWND        hwnd;

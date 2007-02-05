@@ -535,7 +535,7 @@ void DisplayModelSplash::RecalcSearchHitCanvasPos(void)
     RectD           rect;
 
     pageNo = searchHitPageNo;
-    if (INVALID_PAGE == pageNo) return;
+    if (INVALID_PAGE_NO == pageNo) return;
     pageInfo = GetPageInfo(pageNo);
     rect = searchHitRectPage;
     RectCvtUserToScreen(pageNo, &rect);
@@ -696,7 +696,7 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
     dm->searchState.searchState = eSsNone;
     dm->searchState.str = new GooString();
     dm->searchState.strU = new UGooString();
-    dm->searchHitPageNo = INVALID_PAGE;
+    dm->searchHitPageNo = INVALID_PAGE_NO;
 
     outputDev->startDoc(pdfDoc->getXRef());
 
@@ -752,7 +752,7 @@ int DisplayModelSplash::FindFirstVisiblePageNo(void) const
     int             pageNo;
 
     assert(pagesInfo);
-    if (!pagesInfo) return INVALID_PAGE;
+    if (!pagesInfo) return INVALID_PAGE_NO;
 
     for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = GetPageInfo(pageNo);
@@ -760,7 +760,7 @@ int DisplayModelSplash::FindFirstVisiblePageNo(void) const
             return pageNo;
     }
     assert(0);
-    return INVALID_PAGE;
+    return INVALID_PAGE_NO;
 }
 
 int DisplayModelSplash::currentPageNo(void) const
@@ -782,7 +782,7 @@ PdfPageInfo* DisplayModelSplash::FindFirstVisiblePage(void)
     int             pageNo;
 
     pageNo = FindFirstVisiblePageNo();
-    if (INVALID_PAGE == pageNo)
+    if (INVALID_PAGE_NO == pageNo)
         return NULL;
     pageInfo = GetPageInfo(pageNo);
     return pageInfo;
@@ -1588,7 +1588,7 @@ PdfLink *DisplayModelSplash::GetLinkAtPosition(int x, int y)
 void DisplayModelSplash::GoToDest(LinkDest *linkDest)
 {
     Ref             pageRef;
-    int             newPage = INVALID_PAGE;
+    int             newPage = INVALID_PAGE_NO;
     int             left, top;
     int             scrollY = 0;
 
@@ -1950,7 +1950,7 @@ Exit:
 void DisplayModelSplash::ClearSearchHit()
 {
     DBG_OUT("DisplayModelSplash::ClearSearchHit()\n");
-    searchHitPageNo = INVALID_PAGE;
+    searchHitPageNo = INVALID_PAGE_NO;
 }
 
 void DisplayModelSplash::SetSearchHit(int pageNo, RectD *hitRect)

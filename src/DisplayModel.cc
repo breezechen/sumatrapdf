@@ -33,7 +33,7 @@ DisplayModel::DisplayModel()
     _rotation = INVALID_ROTATION;
     _zoomVirtual = INVALID_ZOOM;
     _fullScreen = false;
-    _startPage = INVALID_PAGE;
+    _startPage = INVALID_PAGE_NO;
     _appData = NULL;
 }
 

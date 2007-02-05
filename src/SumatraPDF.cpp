@@ -170,7 +170,7 @@ static SplashColorMode              gSplashColorMode = splashModeBGR8;
 static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName = NULL;
-static int                          gBenchPageNum = INVALID_PAGE_NUM;
+static int                          gBenchPageNum = INVALID_PAGE_NO;
 BOOL                                gShowToolbar = TRUE;
 /* If false, we won't ask the user if he wants Sumatra to handle PDF files */
 BOOL                                gPdfAssociateDontAskAgain = FALSE;
@@ -4415,7 +4415,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     if (benchPageNumStr) {
         gBenchPageNum = atoi(benchPageNumStr);
         if (gBenchPageNum < 1)
-            gBenchPageNum = INVALID_PAGE_NUM;
+            gBenchPageNum = INVALID_PAGE_NO;
     }
 
     LoadString(hInstance, IDS_APP_TITLE, windowTitle, MAX_LOADSTRING);
