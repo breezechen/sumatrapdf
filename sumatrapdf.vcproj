@@ -234,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\PdfEngine.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\SimpleRect.c"
 				>
 			</File>
@@ -281,6 +285,10 @@
 			</File>
 			<File
 				RelativePath=".\src\FileHistory.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfEngine.h"
 				>
 			</File>
 			<File
