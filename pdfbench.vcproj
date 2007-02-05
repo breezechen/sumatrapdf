@@ -211,6 +211,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\PdfEngine.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\PdftestWinPreview.cc"
 				>
 			</File>
@@ -230,6 +234,10 @@
 			</File>
 			<File
 				RelativePath=".\baseutils\file_util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfEngine.h"
 				>
 			</File>
 			<File

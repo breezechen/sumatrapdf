@@ -31,8 +31,7 @@
 #define stricmp strcasecmp
 #endif
 
-#include <fitz.h>
-#include <mupdf.h>
+#include "PdfEngine.h"
 
 #include "ErrorCodes.h"
 #include "GooString.h"
@@ -899,31 +898,26 @@ class FitzRender
 public:
     FitzRender(const char *_fileName);
     ~FitzRender();
-    int Load();
+    bool load();
     void RenderPage(int pageNo);
     void FreePage(void);
 
+    PdfEngineFitz *     pdfEngine;
     const char *        fileName;
-    pdf_xref *          xref;
-    pdf_outline *       outline;
-    pdf_pagetree *      pages;
 #ifdef FITZ_HEAD
     fz_graphics *       rast;
 #else
     fz_renderer *       rast;
 #endif
-    fz_error *          error;
-    fz_obj *            obj;
     fz_pixmap *         image;
     pdf_page *          page;
 };
 
 FitzRender::FitzRender(const char *_fileName)
 {
+    fz_error *error;
     fileName = _fileName;
-    xref = NULL;
-    outline = NULL;
-    pages = NULL;
+    pdfEngine = NULL;
     rast = NULL;
     image = NULL;
     page = NULL;
@@ -951,10 +945,12 @@ void FitzRender::RenderPage(int pageNo)
 {
     fz_matrix           ctm;
     fz_rect             bbox;
+    fz_obj *            obj;
+    fz_error *          error;
 
     FreePage();
-    obj = pdf_getpageobject(pages, pageNo - 1);
-    error = pdf_loadpage(&page, xref, obj);
+    obj = pdf_getpageobject(pdfEngine->pages(), pageNo - 1);
+    error = pdf_loadpage(&page, pdfEngine->xref(), obj);
     if (error)
         return;
     ctm = pdfapp_viewctm(page, 1.f, 0);
@@ -966,61 +962,17 @@ void FitzRender::RenderPage(int pageNo)
 #endif
 }
 
-int FitzRender::Load()
+bool FitzRender::load()
 {
-    error = pdf_newxref(&xref);
-    if (error)
-        goto Error;
-
-    error = pdf_loadxref(xref, (char*)fileName);
-    if (error) {
-        if (!strncmp(error->msg, "ioerror", 7))
-            goto Error;
-        error = pdf_repairxref(xref, (char*)fileName);
-        if (error)
-            goto Error;
-    }
-
-    error = pdf_decryptxref(xref);
-    if (error)
-        goto Error;
-
-    if (xref->crypt) {
-#ifdef FITZ_HEAD
-        int okay = pdf_setpassword(xref->crypt, "");
-        if (!okay)
-            goto Error;
-#else
-        error = pdf_setpassword(xref->crypt, "");
-        if (error)
-            goto Error;
-#endif
-    }
-
-    error = pdf_loadpagetree(&pages, xref);
-    if (error)
-        goto Error;
-    return TRUE;
-Error:
-    return FALSE;
+    pdfEngine = new PdfEngineFitz();
+    if (!pdfEngine) return false;
+    return pdfEngine->load(fileName);
 }
 
 FitzRender::~FitzRender()
 {
     FreePage();
-
-    if (pages)
-        pdf_droppagetree(pages);
-
-    if (outline)
-        pdf_dropoutline(outline);
-
-    if (xref) {
-        if (xref->store)
-            pdf_dropstore(xref->store);
-        xref->store = 0;
-        pdf_closexref(xref);
-    }
+    delete pdfEngine;
 
     if (rast)
 #ifdef FITZ_HEAD
@@ -1035,7 +987,7 @@ class SplashRender
 public:
     SplashRender(const char *_fileName);
     ~SplashRender();
-    int Load();
+    bool load();
     void RenderPage(int pageNo);
     void FreePage(void);
     SplashBitmap* Bitmap(void);
@@ -1049,20 +1001,18 @@ public:
     GBool               useMediaBox;
     GBool               crop;
     GBool               doLinks;
-    GooString *         fileNameStr;
-    PDFDoc *            pdfDoc;
     SplashOutputDev *   outputDevice;
     SplashBitmap *      bitmap;
+    PdfEnginePoppler *  pdfEngine;
+
 };
 
 SplashRender::SplashRender(const char *_fileName)
 {
     fileName = _fileName;
-    fileNameStr = NULL;
-    pdfDoc = NULL;
+    pdfEngine = NULL;
     outputDevice = NULL;
     bitmap = NULL;
-
     outputDevice = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
     if (!outputDevice) {
         error(-1, "renderPdfFile(): failed to create outputDev\n");
@@ -1073,31 +1023,23 @@ SplashRender::~SplashRender()
 {
     FreePage();
     delete outputDevice;
-    delete pdfDoc;
+    delete pdfEngine;
 }
 
-int SplashRender::Load()
+bool SplashRender::load()
 {
-    /* note: don't delete fileNameStr since PDFDoc takes ownership and deletes them itself */
-    fileNameStr = new GooString(fileName);
-    if (!fileNameStr)
-        goto Error;
-
-    pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, NULL);
-    if (!pdfDoc->isOk()) {
-        error(-1, "renderPdfFile(): failed to open PDF file %s\n", fileName);
-        goto Error;
-    }
-    outputDevice->startDoc(pdfDoc->getXRef());
-    return TRUE;
-Error:
-    return FALSE;
+    pdfEngine = new PdfEnginePoppler();
+    if (!pdfEngine) return false;
+    if (!pdfEngine->load(fileName))
+        return false;
+    outputDevice->startDoc(pdfEngine->pdfDoc()->getXRef());
+    return true;
 }
 
 void SplashRender::RenderPage(int pageNo)
 {
-    pageDx = (int)pdfDoc->getPageCropWidth(pageNo);
-    pageDy = (int)pdfDoc->getPageCropHeight(pageNo);
+    pageDx = (int)pdfEngine->pdfDoc()->getPageCropWidth(pageNo);
+    pageDy = (int)pdfEngine->pdfDoc()->getPageCropHeight(pageNo);
 
     renderDx = pageDx;
     renderDy = pageDy;
@@ -1117,7 +1059,7 @@ void SplashRender::RenderPage(int pageNo)
         scaleY = (double)renderDy / (double)pageDy;
     hDPI = (double)PDF_FILE_DPI * scaleX;
     vDPI = (double)PDF_FILE_DPI * scaleY;
-    pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
+    pdfEngine->pdfDoc()->displayPage(outputDevice, pageNo, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
     FreePage();
 }
 
@@ -1156,7 +1098,7 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     renderSplash = new SplashRender(POPPLER_TMP_NAME);
 
     MsTimer_Start(&msTimer);
-    if (!renderFitz->Load()) {
+    if (!renderFitz->load()) {
         LogInfo("failed to load fitz\n");
         goto Error;
     }
@@ -1165,7 +1107,7 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     LogInfo("load fitz  : %.2f ms\n", timeInMs);
 
     MsTimer_Start(&msTimer);
-    if (!renderSplash->Load()) {
+    if (!renderSplash->load()) {
         LogInfo("failed to load splash\n");
         goto Error;
     }
@@ -1174,8 +1116,8 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load splash: %.2f ms\n", timeInMs);
 
-    pageCountFitz = renderFitz->pages->count;
-    pageCountSplash = renderSplash->pdfDoc->getNumPages();
+    pageCountFitz = renderFitz->pdfEngine->pageCount();
+    pageCountSplash = renderSplash->pdfEngine->pageCount();
     pageCount = pageCountFitz;
     if (pageCountSplash < pageCount)
         pageCount = pageCountSplash;
@@ -1240,7 +1182,7 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
     render = new FitzRender(fileName);
 
     MsTimer_Start(&msTimer);
-    fOk = render->Load();
+    fOk = render->load();
     if (!fOk) {
         LogInfo("failed to load\n");
         goto Error;
@@ -1249,7 +1191,7 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = render->pages->count;
+    pageCount = render->pdfEngine->pageCount();
     LogInfo("page count: %d\n", pageCount);
 
     if (gfLoadOnly)
@@ -1293,12 +1235,12 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
     LogInfo("started poppler: %s\n", fileName);
 
     MsTimer_Start(&msTimer);
-    render->Load();
+    render->load();
     MsTimer_End(&msTimer);
     timeInMs = MsTimer_GetTimeInMs(&msTimer);
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = render->pdfDoc->getNumPages();
+    pageCount = render->pdfEngine->pageCount();
     LogInfo("page count: %d\n", pageCount);
 
     if (gfLoadOnly)
@@ -1323,7 +1265,7 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
     }
 DumpLinks:
     if (gfDumpLinks)
-        DumpLinks(render->pdfDoc);
+        DumpLinks(render->pdfEngine->pdfDoc());
     LogInfo("finished poppler: %s\n", fileName);
     delete render;
 }

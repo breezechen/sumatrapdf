@@ -4,9 +4,6 @@
 #include "GooString.h"
 #include "UGooString.h"
 
-#include <fitz.h>
-#include <mupdf.h>
-
 DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode)
 {
     // TODO: probably will need something

@@ -2,9 +2,6 @@
 
 #include <assert.h>
 
-#include <fitz.h>
-#include <mupdf.h>
-
 #include "ErrorCodes.h"
 #include "GooString.h"
 #include "GooList.h"
@@ -16,16 +13,32 @@
 #include "PDFDoc.h"
 #include "SecurityHandler.h"
 #include "Link.h"
+#include "BaseUtils.h"
+
+PdfEnginePoppler::PdfEnginePoppler() : 
+    PdfEngine()
+   , _pdfDoc(NULL)
+{
+}
+
+PdfEnginePoppler::~PdfEnginePoppler()
+{
+    delete _pdfDoc;
+}
 
 bool PdfEnginePoppler::load(const char *fileName)
 {
     setFileName(fileName);
-    return false;
-}
+    /* note: don't delete fileNameStr since PDFDoc takes ownership and deletes them itself */
+    GooString *fileNameStr = new GooString(fileName);
+    if (!fileNameStr) return false;
 
-int PdfEnginePoppler::pageCount(void)
-{
-    return INVALID_PAGE_NO;
+    _pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, NULL);
+    if (!_pdfDoc->isOk()) {
+        return false;
+    }
+    _pageCount = _pdfDoc->getNumPages();
+    return true;
 }
 
 int PdfEnginePoppler::pageRotation(int pageNo)
@@ -39,16 +52,74 @@ SizeD PdfEnginePoppler::pageSize(int pageNo)
     return SizeD(0,0);
 }
 
+PdfEngineFitz::PdfEngineFitz() : 
+        PdfEngine()
+        , _xref(NULL)
+#if 0
+        , _outline(NULL)
+#endif
+        , _pages(NULL)
+{
+}
+
+PdfEngineFitz::~PdfEngineFitz()
+{
+    if (_pages)
+        pdf_droppagetree(_pages);
+
+#if 0
+    if (_outline)
+        pdf_dropoutline(_outline);
+#endif
+
+    if (_xref) {
+        if (_xref->store)
+            pdf_dropstore(_xref->store);
+        _xref->store = 0;
+        pdf_closexref(_xref);
+    }
+}
+
 bool PdfEngineFitz::load(const char *fileName)
 {
     setFileName(fileName);
-    // TODO: implement me
-    return false;
-}
+    fz_error *error = pdf_newxref(&_xref);
+    if (error)
+        goto Error;
 
-int PdfEngineFitz::pageCount(void)
-{
-    return INVALID_PAGE_NO;
+    error = pdf_loadxref(_xref, (char*)fileName);
+    if (error) {
+        if (!strncmp(error->msg, "ioerror", 7))
+            goto Error;
+        error = pdf_repairxref(_xref, (char*)fileName);
+        if (error)
+            goto Error;
+    }
+
+    error = pdf_decryptxref(_xref);
+    if (error)
+        goto Error;
+
+    if (_xref->crypt) {
+#ifdef FITZ_HEAD
+        int okay = pdf_setpassword(_xref->crypt, "");
+        if (!okay)
+            goto Error;
+#else
+        error = pdf_setpassword(_xref->crypt, "");
+        if (error)
+            goto Error;
+#endif
+    }
+
+    error = pdf_loadpagetree(&_pages, _xref);
+    if (error)
+        goto Error;
+
+    _pageCount = _pages->count;
+    return true;
+Error:
+    return false;
 }
 
 int PdfEngineFitz::pageRotation(int pageNo)
