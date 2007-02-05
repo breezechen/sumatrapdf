@@ -66,7 +66,7 @@ private:
     PDFDoc *    _pdfDoc;
 };
 
-class PdfEngineFitz :public  PdfEngine {
+class PdfEngineFitz : public  PdfEngine {
 public:
     PdfEngineFitz();
     virtual ~PdfEngineFitz();

@@ -90,9 +90,11 @@ public:
     DisplayModelSplash(DisplayMode displayMode);
     virtual ~DisplayModelSplash();
 
-    virtual void  SetDisplayMode(DisplayMode displayMode);
+    virtual void  setDisplayMode(DisplayMode displayMode);
     virtual int   currentPageNo(void) const;
-    virtual void  SetZoomVirtual(double zoomVirtual);
+    virtual void  setZoomVirtual(double zoomVirtual);
+
+    PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
     PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);
@@ -174,12 +176,9 @@ public:
     PdfPageInfo* FindFirstVisiblePage(void);
 
 public:
-    /* PDF document we're displaying. Owned by this structure */
-    PDFDoc *        pdfDoc;
-
-    SplashOutputDev * outputDevice;
-
-    TextOutputDev * textOutDevice;
+    PDFDoc *            pdfDoc;
+    SplashOutputDev *   outputDevice;
+    TextOutputDev *     textOutDevice;
 
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.

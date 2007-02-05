@@ -155,79 +155,41 @@ public:
     DisplayModel();
     virtual ~DisplayModel();
 
+    PdfEngine *pdfEngine() { return _pdfEngine; }
+
     /* number of pages in PDF document */
-    int  pageCount() const {
-        return _pageCount;
-    }
-
-    void setPageCount(int pageCount) {
-        _pageCount = pageCount;
-    }
-
-    bool validPageNo(int pageNo) const
-    {
-        if ((pageNo >= 1) && (pageNo <= pageCount()))
-            return true;
-        return false;
-    }
+    int  pageCount() const { return _pdfEngine->pageCount(); }
+    bool load(const char *fileName) { return _pdfEngine->load(fileName); }
+    bool validPageNo(int pageNo) const { return _pdfEngine->validPageNo(pageNo); }
 
     /* current rotation selected by user */
-    int rotation(void) const {
-        return _rotation; 
-    }
-
-    void setRotation(int rotation) {
-        _rotation = rotation;
-    }
-
-    DisplayMode displayMode() const {
-        return _displayMode;
-    }
+    int rotation(void) const { return _rotation; }
+    void setRotation(int rotation) { _rotation = rotation; }
+    DisplayMode displayMode() const { return _displayMode; }
 
     /* TODO: make non-virtual */
-    virtual void SetDisplayMode(DisplayMode displayMode) = 0;
+    virtual void setDisplayMode(DisplayMode displayMode) = 0;
+    const char *fileName(void) const { return _pdfEngine->fileName(); }
 
-    const char *fileName(void) const {
-        return _fileName;
-    }
-
-    void setFileName(const char *fileName) {
-        _fileName = (const char*)Str_Dup(fileName);
-    }
-
-    bool fullScreen(void) const {
-        return _fullScreen;
-    }
-
-    void setFullScreen(bool fullScreen) {
-        _fullScreen = fullScreen;
-    }
+    bool fullScreen(void) const { return _fullScreen; }
+    void setFullScreen(bool fullScreen) { _fullScreen = fullScreen; }
 
     /* a "virtual" zoom level. Can be either a real zoom level in percent
        (i.e. 100.0 is original size) or one of virtual values ZOOM_FIT_PAGE
        or ZOOM_FIT_WIDTH, whose real value depends on draw area size */
-    double zoomVirtual(void) const {
-        return _zoomVirtual;
-    }
+    double zoomVirtual(void) const { return _zoomVirtual; }
+    virtual void setZoomVirtual(double zoomVirtual) = 0;
 
-    virtual void SetZoomVirtual(double zoomVirtual) = 0;
-
-    int startPage(void) const {
-        return _startPage;
-    }
+    int startPage(void) const { return _startPage; }
 
     /* TODO: should become non-virtual */
     virtual int currentPageNo(void) const = 0;
 
     /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
        could link this to a data describing window displaying  this document */
-    void * appData() const {
-        return _appData;
-    }
+    void * appData() const { return _appData; }
 
-    void setAppData(void *appData) {
-        _appData = appData;
-    }
+    void setAppData(void *appData) { _appData = appData; }
 
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
@@ -256,9 +218,8 @@ public:
     RectI           searchHitRectCanvas;
 
 protected:
-    const char *    _fileName;
+    PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode;
-    int             _pageCount;
     int             _rotation;
     double          _zoomVirtual;
     bool            _fullScreen;

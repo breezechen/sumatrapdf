@@ -20,12 +20,12 @@ int DisplayModelFitz::currentPageNo(void) const
     return 1;
 }
 
-void DisplayModelFitz::SetZoomVirtual(double zoomVirtual)
+void DisplayModelFitz::setZoomVirtual(double zoomVirtual)
 {
     // TODO: probably will need something
 }
 
-void DisplayModelFitz::SetDisplayMode(DisplayMode displayMode)
+void DisplayModelFitz::setDisplayMode(DisplayMode displayMode)
 {
 #if 0  // TODO: obviously
     int             currPageNo;
@@ -52,8 +52,8 @@ void DisplayModelFitz::SetDisplayMode(DisplayMode displayMode)
 }
 
 
-static DisplayModelFitz *DisplayModelFitz_CreateFromPageTree(
-  pdf_pagetree *pageTree,
+static DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
+  const char *fileName, void *data,
   RectDSize totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage)
@@ -61,16 +61,13 @@ static DisplayModelFitz *DisplayModelFitz_CreateFromPageTree(
     PdfPageInfo *           pageInfo;
     DisplayModelFitz *    dm = NULL;
 
-    assert(pageTree);
-    if (!pageTree)
-        goto Error;
-
     dm = new DisplayModelFitz(displayMode);
     if (!dm)
         goto Error;
 
-//    dm->setFileName(pdfDoc->getFileName()->getCString());
-//    dm->pdfDoc = pdfDoc;
+    if (!dm->load(fileName))
+        goto Error;
+
 //    dm->textOutDevice = NULL;
     dm->totalDrawAreaSize = totalDrawAreaSize;
     dm->scrollbarXDy = scrollbarXDy;
@@ -88,7 +85,6 @@ static DisplayModelFitz *DisplayModelFitz_CreateFromPageTree(
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
-//    dm->setPageCount(pdfDoc->getNumPages());
 //    DBG_OUT("DisplayModelFitz_CreateFromPageTree() pageCount = %d, startPage=%d, displayMode=%d\n",
 //        dm->pageCount(), (int)dm->startPage, (int)displayMode);
     dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount() * sizeof(PdfPageInfo));
@@ -122,52 +118,4 @@ Error:
     return NULL;
 }
 
-DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
-  const char *fileName, void *data,
-  RectDSize totalDrawAreaSize,
-  int scrollbarXDy, int scrollbarYDx,
-  DisplayMode displayMode, int startPage)
-{
-    pdf_xref *          xref;
-    pdf_pagetree *      pages;
-    fz_error *          error;
-
-    error = pdf_newxref(&xref);
-    if (error)
-        goto Error;
-
-    error = pdf_loadxref(xref, (char*)fileName);
-    if (error) {
-        if (!strncmp(error->msg, "ioerror", 7))
-            goto Error;
-        error = pdf_repairxref(xref, (char*)fileName);
-        if (error)
-            goto Error;
-    }
-
-    error = pdf_decryptxref(xref);
-    if (error)
-        goto Error;
-
-    if (xref->crypt) {
-#ifdef FITZ_HEAD
-        int okay = pdf_setpassword(xref->crypt, "");
-        if (!okay)
-            goto Error;
-#else
-        error = pdf_setpassword(xref->crypt, "");
-        if (error)
-            goto Error;
-#endif
-    }
-
-    error = pdf_loadpagetree(&pages, xref);
-    if (error)
-        goto Error;
-
-    return DisplayModelFitz_CreateFromPageTree(pages, totalDrawAreaSize,
-        scrollbarXDy, scrollbarYDx, displayMode, startPage);
-Error:
-    return NULL;
-}
 

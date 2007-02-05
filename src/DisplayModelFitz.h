@@ -9,10 +9,9 @@ public:
     DisplayModelFitz(DisplayMode displayMode);
     virtual ~DisplayModelFitz();
 
-    virtual void  SetDisplayMode(DisplayMode displayMode);
+    virtual void  setDisplayMode(DisplayMode displayMode);
     virtual int   currentPageNo(void) const;
-    virtual void  SetZoomVirtual(double zoomVirtual);
-
+    virtual void  setZoomVirtual(double zoomVirtual);
 };
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(

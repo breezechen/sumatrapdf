@@ -472,7 +472,7 @@ static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
 
-    win->dm->SetDisplayMode(displayMode);
+    win->dm->setDisplayMode(displayMode);
     if (DM_SINGLE_PAGE == displayMode) {
         id = IDM_VIEW_SINGLE_PAGE;
     } else if (DM_FACING == displayMode) {
@@ -1733,9 +1733,9 @@ static void WindowInfo_ToggleZoom(WindowInfo *win)
     if (!dm) return;
 
     if (ZOOM_FIT_PAGE == dm->zoomVirtual())
-        dm->SetZoomVirtual(ZOOM_FIT_WIDTH);
+        dm->setZoomVirtual(ZOOM_FIT_WIDTH);
     else if (ZOOM_FIT_WIDTH == dm->zoomVirtual())
-        dm->SetZoomVirtual(ZOOM_FIT_PAGE);
+        dm->setZoomVirtual(ZOOM_FIT_PAGE);
 }
 
 static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
@@ -3493,7 +3493,7 @@ static void OnChar(WindowInfo *win, int key)
         win->dmSplash->GoToNextPage(0);
     } else if ('c' == key) {
         // TODO: probably should preserve facing vs. non-facing
-        win->dm->SetDisplayMode(DM_CONTINUOUS);
+        win->dm->setDisplayMode(DM_CONTINUOUS);
     } else if ('p' == key) {
         win->dmSplash->GoToPrevPage(0);
     } else if ('z' == key) {

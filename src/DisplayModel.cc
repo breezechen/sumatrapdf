@@ -28,16 +28,15 @@ DisplaySettings *GetGlobalDisplaySettings(void)
 
 DisplayModel::DisplayModel()
 {
-    _fileName = NULL;
-    _pageCount = 0;
     _rotation = INVALID_ROTATION;
     _zoomVirtual = INVALID_ZOOM;
     _fullScreen = false;
     _startPage = INVALID_PAGE_NO;
     _appData = NULL;
+    _pdfEngine = NULL;
 }
 
 DisplayModel::~DisplayModel()
 {
-    free((void*)_fileName);
+    delete _pdfEngine;
 }

@@ -633,59 +633,23 @@ DisplayModelSplash *DisplayModelSplash_CreateFromFileName(
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage)
 {
-    GBool               bitmapTopDown = gTrue;
-    PDFDoc *            pdfDoc;
-    SplashOutputDev *   outputDev;
-    GooString *         fileNameStr = NULL;
-
-    fileNameStr = new GooString(fileName);
-    if (!fileNameStr)
-        return NULL;
-
-    pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, (void*)data);
-    if (!pdfDoc->isOk()) {
-        error(-1, "LoadPdf(): failed to open PDF file %s\n", fileName);
-        delete fileNameStr;
-        return NULL;
-    }
-
-    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
-    if (!outputDev) {
-        delete pdfDoc;
-        return NULL;
-    }
-
-    return DisplayModelSplash_CreateFromPdfDoc(pdfDoc, outputDev, totalDrawAreaSize,
-        scrollbarXDy, scrollbarYDx, displayMode, startPage);
-}
-
-/* Create display info from a 'pdfDoc' etc. 'pdfDoc' will be owned by DisplayInfo
-   from now on, so the caller should not delete it itself. Not very good but
-   alternative is worse.
-   TODO: probably shouldn't hard-code SplashOutputDev
-   */
-DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
-  PDFDoc *pdfDoc, SplashOutputDev *outputDev, RectDSize totalDrawAreaSize,
-  int scrollbarXDy, int scrollbarYDx,
-  DisplayMode displayMode, int startPage)
-{
+    GBool                   bitmapTopDown = gTrue;
+    SplashOutputDev *       outputDev;
     PdfPageInfo *           pageInfo;
     DisplayModelSplash *    dm = NULL;
-
-    assert(pdfDoc);
-    if (!pdfDoc)
-        goto Error;
-
-    assert(outputDev);
-    if (!outputDev)
-        goto Error;
 
     dm = new DisplayModelSplash(displayMode);
     if (!dm)
         goto Error;
 
-    dm->setFileName(pdfDoc->getFileName()->getCString());
-    dm->pdfDoc = pdfDoc;
+    if (!dm->load(fileName))
+        goto Error;
+
+    outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
+    if (!outputDev)
+        goto Error;
+
+    dm->pdfDoc = dm->pdfEnginePoppler()->pdfDoc();
     dm->outputDevice = outputDev;
     dm->textOutDevice = NULL;
     dm->totalDrawAreaSize = totalDrawAreaSize;
@@ -698,13 +662,12 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
     dm->searchState.strU = new UGooString();
     dm->searchHitPageNo = INVALID_PAGE_NO;
 
-    outputDev->startDoc(pdfDoc->getXRef());
+    outputDev->startDoc(dm->pdfDoc->getXRef());
 
     /* TODO: drawAreaSize not always is minus scrollbars (e.g. on Windows)*/
     dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
     dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
 
-    dm->setPageCount(pdfDoc->getNumPages());
     DBG_OUT("DisplayModelSplash::CreateFromPdfDoc() pageCount = %d, startPage=%d, displayMode=%d\n",
         dm->pageCount(), (int)dm->startPage, (int)displayMode);
     dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount() * sizeof(PdfPageInfo));
@@ -713,9 +676,9 @@ DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(
 
     for (int pageNo = 1; pageNo <= dm->pageCount(); pageNo++) {
         pageInfo = &(dm->pagesInfo[pageNo-1]);
-        pageInfo->pageDx = pdfDoc->getPageCropWidth(pageNo);
-        pageInfo->pageDy = pdfDoc->getPageCropHeight(pageNo);
-        pageInfo->rotation = pdfDoc->getPageRotate(pageNo);
+        pageInfo->pageDx = dm->pdfDoc->getPageCropWidth(pageNo);
+        pageInfo->pageDy = dm->pdfDoc->getPageCropHeight(pageNo);
+        pageInfo->rotation = dm->pdfEngine()->pageRotation(pageNo);
         pageInfo->links = NULL;
         pageInfo->textPage = NULL;
         pageInfo->visible = false;
@@ -1121,7 +1084,7 @@ void DisplayModelSplash::EnsureSearchHitVisible()
         GoToPage(pageNo, yNewPos, xNewPos);
 }
 
-void DisplayModelSplash::SetDisplayMode(DisplayMode displayMode)
+void DisplayModelSplash::setDisplayMode(DisplayMode displayMode)
 {
     int             currPageNo;
     PdfPageInfo *   pageInfo;
@@ -1231,7 +1194,7 @@ double DisplayModelSplash::ZoomRealFromFirtualForPage(double zoomVirtual, int pa
     return _zoomReal;
 }
 
-void DisplayModelSplash::SetZoomVirtual(double zoomVirtual)
+void DisplayModelSplash::setZoomVirtual(double zoomVirtual)
 {
     int     pageNo;
     double  minZoom = INVALID_BIG_ZOOM;
@@ -1355,7 +1318,7 @@ void DisplayModelSplash::Relayout(double zoomVirtual, int rotation)
 
     currPosY = PADDING_PAGE_BORDER_TOP;
     currZoomReal = zoomReal;
-    SetZoomVirtual(zoomVirtual);
+    setZoomVirtual(zoomVirtual);
     if (currZoomReal != zoomReal)
         freeCache = TRUE;
 

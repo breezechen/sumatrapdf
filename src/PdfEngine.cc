@@ -44,12 +44,14 @@ bool PdfEnginePoppler::load(const char *fileName)
 int PdfEnginePoppler::pageRotation(int pageNo)
 {
     assert(validPageNo(pageNo));
-    return INVALID_ROTATION;
+    return pdfDoc()->getPageRotate(pageNo);
 }
 
 SizeD PdfEnginePoppler::pageSize(int pageNo)
 {
-    return SizeD(0,0);
+    double dx = pdfDoc()->getPageCropWidth(pageNo);
+    double dy = pdfDoc()->getPageCropHeight(pageNo);
+    return SizeD(dx, dy);
 }
 
 PdfEngineFitz::PdfEngineFitz() : 
