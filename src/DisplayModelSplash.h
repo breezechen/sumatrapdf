@@ -77,9 +77,6 @@ protected:
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
-/* arbitrary but big */
-#define INVALID_BIG_ZOOM    999999.0
-
 /* Information needed to drive the display of a given PDF document on a screen.
    You can think of it as a model in the MVC pardigm.
    All the display changes should be done through changing this model via
@@ -91,14 +88,10 @@ public:
     virtual ~DisplayModelSplash();
 
     virtual void  setDisplayMode(DisplayMode displayMode);
-    virtual int   currentPageNo(void) const;
-    virtual void  setZoomVirtual(double zoomVirtual);
 
     PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
     TextPage *    GetTextPage(int pageNo);
-
-    double        GetZoomReal();
 
     void          GoToPage(int pageNo, int scrollY, int scrollX=-1);
     BOOL          GoToPrevPage(int scrollY);
@@ -121,7 +114,6 @@ public:
     void          RotateBy(int rotation);
 
     void          RenderVisibleParts();
-    void          Relayout(double zoomVirtual, int rotation);
     void          RecalcVisibleParts();
 
     void          changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
@@ -162,7 +154,6 @@ public:
     void        RecalcSearchHitCanvasPos(void);
     void        RecalcLinksCanvasPos(void);
     void        SetStartPage(int startPage);
-    double      ZoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
     void        RecalcLinks(void);
     void        GoToDest(LinkDest *linkDest);
     void        GoToNamedDest(UGooString *dest);
@@ -170,27 +161,11 @@ public:
     void        FreeLinks(void);
     void        CvtUserToScreen(int pageNo, double *x, double *y);
     void        RectCvtUserToScreen(int pageNo, RectD *r);
-    BOOL        IsPageShown(int pageNo);
-    int         FindFirstVisiblePageNo(void) const;
-    PdfPageInfo* FindFirstVisiblePage(void);
 
 public:
     PDFDoc *            pdfDoc;
     SplashOutputDev *   outputDevice;
     TextOutputDev *     textOutDevice;
-
-    /* In non-continuous mode is the first page from a PDF file that we're
-       displaying.
-       No meaning in continous mode. */
-    int             startPage;
-
-    /* real zoom value calculated from zoomVirtual. Same as zoomVirtual except
-       for ZOOM_FIT_PAGE and ZOOM_FIT_WIDTH */
-    double          zoomReal;
-
-    /* size of virtual canvas containing all rendered pages.
-       TODO: re-consider, 32 signed number should be large enough for everything. */
-    SizeD           canvasSize;
 
     /* total number of links */
     int             linkCount;
@@ -204,7 +179,7 @@ public:
    and corresponding rendered bitmap.
 */
 typedef struct {
-  DisplayModelSplash * dm;
+  DisplayModel * dm;
   int            pageNo;
   int            rotation;
   double         zoomLevel;

@@ -1,7 +1,6 @@
 #include "DisplayState.h"
 #include <assert.h>
 #include "BaseUtils.h"
-#include "DisplayModel.h"
 #include "dstring.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,30 +79,6 @@ void DisplayState_Free(DisplayState *ds)
 {
     free((void*)ds->filePath);
     DisplayState_Init(ds);
-}
-
-BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
-{
-    ds->filePath = Str_Escape(dm->fileName());
-    if (!ds->filePath)
-        return FALSE;
-    ds->displayMode = dm->displayMode();
-    ds->fullScreen = dm->fullScreen();
-    ds->pageNo = dm->currentPageNo();
-    ds->rotation = dm->rotation();
-    ds->zoomVirtual = dm->zoomVirtual();
-    ds->scrollX = (int)dm->areaOffset.x;
-    if (IsDisplayModeContinuous(dm->displayMode())) {
-        /* TODO: should be offset of top page */
-        ds->scrollY = 0;
-    } else {
-        ds->scrollY = (int)dm->areaOffset.y;
-    }
-    ds->windowDx = (int)dm->drawAreaSize.dx;
-    ds->windowDy = (int)dm->drawAreaSize.dy;
-    ds->windowX = 0;
-    ds->windowY = 0;
-    return TRUE;
 }
 
 BOOL DisplayState_Serialize(DisplayState *ds, DString *strOut)

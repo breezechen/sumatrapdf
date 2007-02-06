@@ -330,7 +330,7 @@ void RenderQueue_Add(DisplayModelSplash *dm, int pageNo) {
     pageInfo = dm->getPageInfo(pageNo);
     rotation = dm->rotation();
     NormalizeRotation(&rotation);
-    zoomLevel = dm->zoomReal;
+    zoomLevel = dm->zoomReal();
 
     if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
         goto LeaveCsAndExit;
@@ -1508,7 +1508,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         zoomVirtual = fileFromHistory->state.zoomVirtual;
         rotation = fileFromHistory->state.rotation;
     }
-    win->dmSplash->Relayout(zoomVirtual, rotation);
+    win->dm->Relayout(zoomVirtual, rotation);
     if (!win->dm->validPageNo(startPage))
         startPage = 1;
     /* TODO: need to calculate proper offsetY, currently giving large offsetY
@@ -1627,8 +1627,8 @@ void DisplayModelSplash::SetScrollbarsState(void)
     si.cbSize = sizeof(si);
     si.fMask = SIF_ALL;
 
-    canvasDx = (int)canvasSize.dx;
-    canvasDy = (int)canvasSize.dy;
+    canvasDx = (int)_canvasSize.dx;
+    canvasDy = (int)_canvasSize.dy;
     drawAreaDx = (int)drawAreaSize.dx;
     drawAreaDy = (int)drawAreaSize.dy;
     offsetX = (int)areaOffset.x;
@@ -2079,7 +2079,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
 
         splashBmp = NULL;
-        entry = BitmapCache_Find(dmSplash, pageNo, dmSplash->zoomReal, dmSplash->rotation());
+        entry = BitmapCache_Find(dmSplash, pageNo, dmSplash->zoomReal(), dmSplash->rotation());
         if (entry) {
             WinRenderedBitmap *renderedBmp = (WinRenderedBitmap*)entry->bitmap;
             splashBmp = renderedBmp->bitmap();
@@ -2931,7 +2931,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
     /* store current page number and zoom state to reset
        when finished printing */
     int pageNoInitial = win->dm->currentPageNo();
-    int zoomInitial = dmSplash->zoomReal;
+    int zoomInitial = win->dm->zoomReal();
 
     // set the print job name from the file name
     di.lpszDocName = (LPCSTR)win->dm->fileName();
@@ -2959,7 +2959,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         pageInfo = win->dm->getPageInfo(pageNo);
 
         int rotation = win->dm->rotation() + pageInfo->rotation;
-        double zoomLevel = dmSplash->zoomReal;
+        double zoomLevel = win->dm->zoomReal();
 
         splashBmp = NULL;
 

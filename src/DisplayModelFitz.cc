@@ -4,23 +4,13 @@
 #include "GooString.h"
 #include "UGooString.h"
 
-DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode)
+DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode) :
+    DisplayModel(displayMode)
 {
     // TODO: probably will need something
 }
 
 DisplayModelFitz::~DisplayModelFitz()
-{
-    // TODO: probably will need something
-}
-
-int DisplayModelFitz::currentPageNo(void) const
-{
-    // TODO: probably will need something
-    return 1;
-}
-
-void DisplayModelFitz::setZoomVirtual(double zoomVirtual)
 {
     // TODO: probably will need something
 }
@@ -57,51 +47,20 @@ DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage)
 {
-    PdfPageInfo *         pageInfo;
     DisplayModelFitz *    dm = NULL;
 
     dm = new DisplayModelFitz(displayMode);
     if (!dm)
         goto Error;
 
-    if (!dm->load(fileName))
+    if (!dm->load(fileName, startPage))
         goto Error;
 
     dm->setScrollbarsSize(scrollbarXDy, scrollbarYDx);
     dm->setTotalDrawAreaSize(totalDrawAreaSize);
 
-//    dm->textOutDevice = NULL;
-//    dm->startPage = startPage;
-    dm->searchState.searchState = eSsNone;
-    dm->searchState.str = new GooString();
-    dm->searchState.strU = new UGooString();
-    dm->searchHitPageNo = INVALID_PAGE_NO;
-
-//    outputDev->startDoc(pdfDoc->getXRef());
 //    DBG_OUT("DisplayModelFitz_CreateFromPageTree() pageCount = %d, startPage=%d, displayMode=%d\n",
 //        dm->pageCount(), (int)dm->startPage, (int)displayMode);
-
-    for (int pageNo = 1; pageNo <= dm->pageCount(); pageNo++) {
-        pageInfo = &(dm->pagesInfo[pageNo-1]);
-//        pageInfo->pageDx = pdfDoc->getPageCropWidth(pageNo);
-//        pageInfo->pageDy = pdfDoc->getPageCropHeight(pageNo);
-//        pageInfo->rotation = pdfDoc->getPageRotate(pageNo);
-        pageInfo->links = NULL;
-        pageInfo->textPage = NULL;
-        pageInfo->visible = false;
-        pageInfo->shown = false;
-#if 0
-        if (IsDisplayModeContinuous(dm->displayMode())) {
-            pageInfo->shown = true;
-        } else {
-            if ((pageNo >= startPage) && (pageNo < startPage + ColumnsFromDisplayMode(dm->displayMode()))) {
-                DBG_OUT("DisplayModelSplash::CreateFromPdfDoc() set page %d as shown\n", pageNo);
-                pageInfo->shown = true;
-            }
-        }
-#endif
-    }
-
     return dm;
 Error:
     delete dm;

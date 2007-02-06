@@ -2,6 +2,7 @@
 #define _DISPLAY_MODEL_H_
 
 #include "BaseUtils.h"
+#include "DisplayState.h"
 #include "PdfEngine.h"
 #include "SimpleRect.h"
 
@@ -16,15 +17,7 @@ class UGooString;
 //#include "TextOutputDev.h"
 
 #define INVALID_ZOOM        -99
-
-enum DisplayMode {
-    DM_FIRST = 1,
-    DM_SINGLE_PAGE = DM_FIRST,
-    DM_FACING,
-    DM_CONTINUOUS,
-    DM_CONTINUOUS_FACING,
-    DM_LAST = DM_CONTINUOUS_FACING
-};
+#define INVALID_BIG_ZOOM    999999.0   /* arbitrary but big */
 
 typedef struct DisplaySettings {
     int     paddingPageBorderTop;
@@ -71,7 +64,7 @@ typedef struct PdfLink {
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
        recorded in PDF file */
-    double          pageDx;
+    double          pageDx; // TODO: consider SizeD instead of pageDx/pageDy
     double          pageDy;
     int             rotation;
 
@@ -152,14 +145,14 @@ typedef struct SearchStateData {
 class DisplayModel
 {
 public:
-    DisplayModel();
+    DisplayModel(DisplayMode displayMode);
     virtual ~DisplayModel();
 
     PdfEngine *pdfEngine() { return _pdfEngine; }
 
     /* number of pages in PDF document */
     int  pageCount() const { return _pdfEngine->pageCount(); }
-    bool load(const char *fileName);
+    bool load(const char *fileName, int startPage);
     bool validPageNo(int pageNo) const { return _pdfEngine->validPageNo(pageNo); }
 
     /* current rotation selected by user */
@@ -178,12 +171,14 @@ public:
        (i.e. 100.0 is original size) or one of virtual values ZOOM_FIT_PAGE
        or ZOOM_FIT_WIDTH, whose real value depends on draw area size */
     double zoomVirtual(void) const { return _zoomVirtual; }
-    virtual void setZoomVirtual(double zoomVirtual) = 0;
+    void setZoomVirtual(double zoomVirtual);
+
+    double zoomReal(void) const { return _zoomReal; }
 
     int startPage(void) const { return _startPage; }
 
     /* TODO: should become non-virtual */
-    virtual int currentPageNo(void) const = 0;
+    int currentPageNo(void) const;
 
     /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
        could link this to a data describing window displaying  this document */
@@ -224,14 +219,20 @@ public:
         drawAreaSize.dy = _totalDrawAreaSize.dy - _scrollbarXDy;
     }
 
+    bool            pageShown(int pageNo);
+    void            Relayout(double zoomVirtual, int rotation);
+
 protected:
-    bool allocatePagesInfo();
+    bool            buildPagesInfo();
+    double          zoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
+    int             firstVisiblePageNo(void) const;
 
     PdfEngine *     _pdfEngine;
-    DisplayMode     _displayMode;
-    int             _rotation;
-    double          _zoomVirtual;
+    DisplayMode     _displayMode; /* TODO: not used yet */
     bool            _fullScreen;
+    /* In non-continuous mode is the first page from a PDF file that we're
+       displaying.
+       No meaning in continous mode. */
     int             _startPage;
     void *          _appData;
 
@@ -242,10 +243,22 @@ protected:
     /* size of total draw area (i.e. window size) */
     SizeD           _totalDrawAreaSize;
 
+    /* size of virtual canvas containing all rendered pages.
+       TODO: re-consider, 32 signed number should be large enough for everything. */
+    SizeD           _canvasSize;
+
+    /* real zoom value calculated from zoomVirtual. Same as zoomVirtual except
+       for ZOOM_FIT_PAGE and ZOOM_FIT_WIDTH */
+    double          _zoomReal;
+    double          _zoomVirtual;
+    int             _rotation;
 };
 
+bool                ValidZoomReal(double zoomReal);
 bool                IsDisplayModeContinuous(DisplayMode displayMode);
 DisplaySettings *   GetGlobalDisplaySettings(void);
+int                 ColumnsFromDisplayMode(DisplayMode displayMode);
+void                PageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation, double *pageDxOut, double *pageDyOut);
 
 extern DisplaySettings gDisplaySettings;
 

@@ -46,6 +46,7 @@ void pdf_debugpagetree(pdf_pagetree *pages);
 void pdf_droppagetree(pdf_pagetree *pages);
 
 /* page.c */
+fz_error *pdf_getpageinfo(fz_obj *dict, fz_rect *bboxp, int *rotatep);
 fz_error *pdf_loadpage(pdf_page **pagep, pdf_xref *xref, fz_obj *ref);
 void pdf_droppage(pdf_page *page);
 

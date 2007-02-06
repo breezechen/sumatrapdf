@@ -4,6 +4,15 @@
 #include "BaseUtils.h"
 #include "dstring.h"
 
+enum DisplayMode {
+    DM_FIRST = 1,
+    DM_SINGLE_PAGE = DM_FIRST,
+    DM_FACING,
+    DM_CONTINUOUS,
+    DM_CONTINUOUS_FACING,
+    DM_LAST = DM_CONTINUOUS_FACING
+};
+
 #define ZOOM_FIT_PAGE       -1
 #define ZOOM_FIT_WIDTH      -2
 #define ZOOM_MAX            1600.0  /* max zoom in % */

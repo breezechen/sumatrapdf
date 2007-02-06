@@ -165,23 +165,11 @@ loadpagecontents(fz_tree **treep, pdf_xref *xref, fz_obj *rdb, fz_obj *ref)
 }
 
 fz_error *
-pdf_loadpage(pdf_page **pagep, pdf_xref *xref, fz_obj *dict)
+pdf_getpageinfo(fz_obj *dict, fz_rect *bboxp, int *rotatep)
 {
-    fz_error *error;
-    fz_obj *obj;
-    pdf_page *page;
-    fz_obj *rdb;
-    pdf_comment *comments = nil;
-    pdf_link *links = nil;
-    fz_tree *tree;
     fz_rect bbox;
     int rotate;
-
-    pdf_logpage("load page {\n");
-
-    /*
-     * Sort out page media
-     */
+    fz_obj *obj;
 
     obj = fz_dictgets(dict, "CropBox");
     if (!obj)
@@ -200,6 +188,35 @@ pdf_loadpage(pdf_page **pagep, pdf_xref *xref, fz_obj *dict)
         rotate = 0;
 
     pdf_logpage("rotate %d\n", rotate);
+
+    if (bboxp)
+        *bboxp = bbox;
+    if (rotatep)
+        *rotatep = rotate;
+    return nil;
+}
+
+fz_error *
+pdf_loadpage(pdf_page **pagep, pdf_xref *xref, fz_obj *dict)
+{
+    fz_error *error;
+    fz_obj *obj;
+    pdf_page *page;
+    fz_obj *rdb;
+    pdf_comment *comments = nil;
+    pdf_link *links = nil;
+    fz_tree *tree;
+    fz_rect bbox;
+    int rotate;
+
+    pdf_logpage("load page {\n");
+
+    /*
+     * Sort out page media
+     */
+    error = pdf_getpageinfo(dict, &bbox, &rotate);
+    if (error)
+        return error;
 
     /*
      * Load annotations
