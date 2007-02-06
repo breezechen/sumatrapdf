@@ -96,7 +96,6 @@ public:
 
     PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
-    PdfPageInfo * GetPageInfo(int pageNo) const;
     TextPage *    GetTextPage(int pageNo);
 
     double        GetZoomReal();
@@ -125,7 +124,7 @@ public:
     void          Relayout(double zoomVirtual, int rotation);
     void          RecalcVisibleParts();
 
-    void          SetTotalDrawAreaSize(RectDSize totalDrawAreaSize);
+    void          changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
 
     PdfLink *     GetLinkAtPosition(int x, int y);
     void          HandleLinkGoTo(LinkGoTo *linkGoTo);
@@ -191,7 +190,7 @@ public:
 
     /* size of virtual canvas containing all rendered pages.
        TODO: re-consider, 32 signed number should be large enough for everything. */
-    RectDSize       canvasSize;
+    SizeD           canvasSize;
 
     /* total number of links */
     int             linkCount;
@@ -224,12 +223,12 @@ typedef struct {
 BOOL              ValidDisplayMode(DisplayMode dm);
 
 DisplayModelSplash *DisplayModelSplash_CreateFromFileName(const char *fileName, void *data,
-                                            RectDSize totalDrawAreaSize,
+                                            SizeD totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
 
 DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
-                                            RectDSize totalDrawAreaSize,
+                                            SizeD totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
 

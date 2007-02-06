@@ -51,14 +51,13 @@ void DisplayModelFitz::setDisplayMode(DisplayMode displayMode)
 #endif
 }
 
-
-static DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
+DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
   const char *fileName, void *data,
-  RectDSize totalDrawAreaSize,
+  SizeD totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage)
 {
-    PdfPageInfo *           pageInfo;
+    PdfPageInfo *         pageInfo;
     DisplayModelFitz *    dm = NULL;
 
     dm = new DisplayModelFitz(displayMode);
@@ -68,11 +67,10 @@ static DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
     if (!dm->load(fileName))
         goto Error;
 
+    dm->setScrollbarsSize(scrollbarXDy, scrollbarYDx);
+    dm->setTotalDrawAreaSize(totalDrawAreaSize);
+
 //    dm->textOutDevice = NULL;
-    dm->totalDrawAreaSize = totalDrawAreaSize;
-    dm->scrollbarXDy = scrollbarXDy;
-    dm->scrollbarYDx = scrollbarYDx;
-    dm->setFullScreen(false);
 //    dm->startPage = startPage;
     dm->searchState.searchState = eSsNone;
     dm->searchState.str = new GooString();
@@ -80,16 +78,8 @@ static DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
     dm->searchHitPageNo = INVALID_PAGE_NO;
 
 //    outputDev->startDoc(pdfDoc->getXRef());
-
-    /* TODO: drawAreaSize not always is minus scrollbars (e.g. on Windows)*/
-    dm->drawAreaSize.dx = dm->totalDrawAreaSize.dx - dm->scrollbarYDx;
-    dm->drawAreaSize.dy = dm->totalDrawAreaSize.dy - dm->scrollbarXDy;
-
 //    DBG_OUT("DisplayModelFitz_CreateFromPageTree() pageCount = %d, startPage=%d, displayMode=%d\n",
 //        dm->pageCount(), (int)dm->startPage, (int)displayMode);
-    dm->pagesInfo = (PdfPageInfo*)calloc(1, dm->pageCount() * sizeof(PdfPageInfo));
-    if (!dm->pagesInfo)
-        goto Error;
 
     for (int pageNo = 1; pageNo <= dm->pageCount(); pageNo++) {
         pageInfo = &(dm->pagesInfo[pageNo-1]);

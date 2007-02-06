@@ -159,7 +159,7 @@ public:
 
     /* number of pages in PDF document */
     int  pageCount() const { return _pdfEngine->pageCount(); }
-    bool load(const char *fileName) { return _pdfEngine->load(fileName); }
+    bool load(const char *fileName);
     bool validPageNo(int pageNo) const { return _pdfEngine->validPageNo(pageNo); }
 
     /* current rotation selected by user */
@@ -191,6 +191,9 @@ public:
 
     void setAppData(void *appData) { _appData = appData; }
 
+    /* TODO: rename to pageInfo() */
+    PdfPageInfo * getPageInfo(int pageNo) const;
+
     /* an array of PdfPageInfo, len of array is pageCount */
     PdfPageInfo *   pagesInfo;
 
@@ -198,18 +201,11 @@ public:
        areaOffset.x is offset of total area rect inside draw area, otherwise
        an offset of draw area inside total area.
        The same for areaOff.y, except it's for dy */
-    RectDPos        areaOffset;
+    PointD          areaOffset;
 
-    /* size of draw area i.e. totalDrawAreaSize minus scrollbarsSize (if
+    /* size of draw area i.e. _totalDrawAreaSize minus scrollbarsSize (if
        they're shown) */
-    RectDSize       drawAreaSize;
-
-    /* size of scrollbars */
-    int             scrollbarXDy;
-    int             scrollbarYDx;
-
-    /* size of total draw area (i.e. window size) */
-    RectDSize       totalDrawAreaSize;
+    SizeD           drawAreaSize;
 
     SearchStateData searchState;
 
@@ -217,7 +213,20 @@ public:
     RectD           searchHitRectPage;
     RectI           searchHitRectCanvas;
 
+    void            setScrollbarsSize(int scrollbarXDy, int scrollbarYDx) {
+        _scrollbarXDy = scrollbarXDy;
+        _scrollbarYDx = scrollbarYDx;
+    }
+
+    void            setTotalDrawAreaSize(SizeD size) {
+        _totalDrawAreaSize = size;
+        drawAreaSize.dx = _totalDrawAreaSize.dx - _scrollbarYDx;
+        drawAreaSize.dy = _totalDrawAreaSize.dy - _scrollbarXDy;
+    }
+
 protected:
+    bool allocatePagesInfo();
+
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode;
     int             _rotation;
@@ -225,6 +234,14 @@ protected:
     bool            _fullScreen;
     int             _startPage;
     void *          _appData;
+
+    /* size of scrollbars */
+    int             _scrollbarXDy;
+    int             _scrollbarYDx;
+
+    /* size of total draw area (i.e. window size) */
+    SizeD           _totalDrawAreaSize;
+
 };
 
 bool                IsDisplayModeContinuous(DisplayMode displayMode);

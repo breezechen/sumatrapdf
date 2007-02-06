@@ -11,22 +11,6 @@ typedef struct RectI {
     int dx, dy;
 } RectI;
 
-typedef struct RectDSize {
-    double dx, dy;
-} RectDSize;
-
-typedef struct RectISize {
-    int    dx, dy;
-} RectISize;
-
-typedef struct RectDPos {
-    double  x,y;
-} RectDPos;
-
-typedef struct RectIPos {
-    double x,y;
-} RectIPos;
-
 typedef struct RectD {
     double x,y;
     double dx,dy;
@@ -47,7 +31,9 @@ void   u_RectI_Intersect(void);
 #ifdef __cplusplus
 class PointD {
 public:
+    PointD() { x = 0; y = 0; }
     PointD(double _x, double _y) { x = _x; y = _y; }
+    void set(double _x, double _y) { x = _x; y = _y; }
     double x;
     double y;
 };
@@ -55,8 +41,18 @@ public:
 class SizeD {
 public:
     SizeD(double _dx, double _dy) { dx = _dx; dy = _dy; }
+    SizeD() { dx = 0; dy = 0; }
+    void set(double _dx, double _dy) { dx = _dx; dy = _dy; }
     double dx;
     double dy;
+};
+
+class SizeI {
+public:
+    SizeI(int _dx, int _dy) { dx = _dx; dy = _dy; }
+    void set(int _dx, int _dy) { dx = _dx; dy = _dy; }
+    int dx;
+    int dy;
 };
 #endif
 

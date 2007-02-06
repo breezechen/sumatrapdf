@@ -16,7 +16,7 @@ public:
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
   const char *fileName, void *data,
-  RectDSize totalDrawAreaSize,
+  SizeD totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage);
 

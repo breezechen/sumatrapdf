@@ -167,7 +167,7 @@ static HPEN                         ghpenBlue = NULL;
 static SplashColorPtr               gBgColor = SPLASH_COL_WHITE_PTR;
 static SplashColorMode              gSplashColorMode = splashModeBGR8;
 
-static AppVisualStyle               gVisualStyle = VS_WINDOWS;
+//static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName = NULL;
 static int                          gBenchPageNum = INVALID_PAGE_NO;
@@ -193,6 +193,8 @@ static PageRenderRequest *          gCurPageRenderReq = NULL;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
+
+static bool                         gUseFitz = true;
 
 typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
@@ -325,7 +327,7 @@ void RenderQueue_Add(DisplayModelSplash *dm, int pageNo) {
     if (!dm) goto Exit;
 
     LockCache();
-    pageInfo = dm->GetPageInfo(pageNo);
+    pageInfo = dm->getPageInfo(pageNo);
     rotation = dm->rotation();
     NormalizeRotation(&rotation);
     zoomLevel = dm->zoomReal;
@@ -1365,8 +1367,6 @@ static WindowInfo* WindowInfo_CreateEmpty(void)
     return win;
 }
 
-static bool gUseFitz = false;
-
 BOOL GetDesktopWindowClientRect(RECT *r)
 {
     HWND hwnd = GetDesktopWindow();
@@ -1419,7 +1419,6 @@ void IntelligentWindowResize(WindowInfo *win)
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
     WindowInfo *        win;
-    RectDSize           totalDrawAreaSize;
     
     assert(fileName);
     if (!fileName) return NULL;
@@ -1440,8 +1439,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
 
     WindowInfo_GetCanvasSize(win);
 
-    totalDrawAreaSize.dx = (double)win->winDx;
-    totalDrawAreaSize.dy = (double)win->winDy;
+    SizeD totalDrawAreaSize((double)win->winDx, (double)win->winDy);
     if (fileFromHistory && !ignoreHistorySizePos) {
         WinResizeClientArea(win->hwndCanvas, fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
         totalDrawAreaSize.dx = (double)fileFromHistory->state.windowDx;
@@ -1470,10 +1468,17 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         offsetY = fileFromHistory->state.scrollY;
     }
 
-    win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
-        totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
-    win->dm = win->dmSplash;
-    win->dmFitz = NULL;
+    if (gUseFitz) {
+        win->dmFitz = DisplayModelFitz_CreateFromFileName(fileName, (void*)win, 
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
+        win->dm = win->dmFitz;
+        win->dmSplash = NULL;
+    } else {
+        win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
+        win->dm = win->dmSplash;
+        win->dmFitz = NULL;
+    }
 
     if (!win->dm) {
         if (!reuseExistingWindow && WindowInfoList_ExistsWithError()) {
@@ -1658,19 +1663,14 @@ void DisplayModelSplash::SetScrollbarsState(void)
 
 static void WindowInfo_ResizeToWindow(WindowInfo *win)
 {
-    RectDSize     totalDrawAreaSize;
-
     assert(win);
     if (!win) return;
-
     assert(win->dm);
     if (!win->dm) return;
 
     WindowInfo_GetCanvasSize(win);
-
-    totalDrawAreaSize.dx = (double)win->winDx;
-    totalDrawAreaSize.dy = (double)win->winDy;
-    win->dmSplash->SetTotalDrawAreaSize(totalDrawAreaSize);
+    SizeD totalDrawAreaSize((double)win->winDx, (double)win->winDy);
+    win->dmSplash->changeTotalDrawAreaSize(totalDrawAreaSize);
 }
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
@@ -1705,7 +1705,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
         assert(win->dm->validPageNo(pageNo));
         if (!win->dm->validPageNo(pageNo))
             return;
-        pageInfo = dmSplash->GetPageInfo(pageNo);
+        pageInfo = win->dm->getPageInfo(pageNo);
         assert(pageInfo);
         if (!pageInfo)
             return;
@@ -1937,6 +1937,7 @@ static void DrawLineSimple(HDC hdc, int sx, int sy, int ex, int ey)
     LineTo(hdc, ex, ey);
 }
 
+#if 0
 /* Draw caption area for a given window 'win' in the classic AmigaOS style */
 static void AmigaCaptionDraw(WindowInfo *win)
 {
@@ -1988,6 +1989,7 @@ static void AmigaCaptionDraw(WindowInfo *win)
 
     SelectObject(hdc, prevPen);
 }
+#endif
 
 static void WinResizeIfNeeded(WindowInfo *win)
 {
@@ -2069,7 +2071,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
     DBG_OUT("WindowInfo_Paint() start\n");
     for (pageNo = 1; pageNo <= dmSplash->pageCount(); ++pageNo) {
-        pageInfo = dmSplash->GetPageInfo(pageNo);
+        pageInfo = dmSplash->getPageInfo(pageNo);
         if (!pageInfo->visible)
             continue;
         assert(pageInfo->shown);
@@ -2954,7 +2956,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
     // print all the pages the user requested unless
     // bContinue flags there is a problem.
     for (pageNo = fromPage; pageNo <= toPage; pageNo++) {
-        pageInfo = dmSplash->GetPageInfo(pageNo);
+        pageInfo = win->dm->getPageInfo(pageNo);
 
         int rotation = win->dm->rotation() + pageInfo->rotation;
         double zoomLevel = dmSplash->zoomReal;
@@ -4303,7 +4305,7 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
         goto Exit;
     }
 
-    PdfPageInfo * pageInfo = pageInfo = win->dmSplash->GetPageInfo(1);
+    PdfPageInfo * pageInfo = pageInfo = win->dm->getPageInfo(1);
 
     if (pageInfo->bitmapDx > pageInfo->bitmapDy) {
         devMode->dmOrientation = DMORIENT_LANDSCAPE;

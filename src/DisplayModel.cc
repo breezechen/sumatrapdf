@@ -34,9 +34,37 @@ DisplayModel::DisplayModel()
     _startPage = INVALID_PAGE_NO;
     _appData = NULL;
     _pdfEngine = NULL;
+    pagesInfo = NULL;
 }
 
 DisplayModel::~DisplayModel()
 {
     delete _pdfEngine;
 }
+
+PdfPageInfo *DisplayModel::getPageInfo(int pageNo) const
+{
+    assert(validPageNo(pageNo));
+    assert(pagesInfo);
+    if (!pagesInfo) return NULL;
+    return &(pagesInfo[pageNo-1]);
+}
+
+bool DisplayModel::load(const char *fileName) 
+{ 
+    if (!_pdfEngine->load(fileName))
+        return false;
+    if (!allocatePagesInfo())
+        return false;
+    return true;
+}
+
+bool DisplayModel::allocatePagesInfo()
+{
+    assert(!pagesInfo);
+    pagesInfo = (PdfPageInfo*)calloc(1, pageCount() * sizeof(PdfPageInfo));
+    if (!pagesInfo)
+        return false;
+    return true;
+}
+
