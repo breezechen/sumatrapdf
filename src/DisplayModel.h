@@ -246,6 +246,8 @@ protected:
     void            setScrollbarsState(void);
     /* called when a page number changes */
     void            pageChanged(void);
+    /* called when we decide that the display needs to be redrawn */
+    void            repaintDisplay(bool delayed);
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */

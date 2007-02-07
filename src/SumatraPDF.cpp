@@ -1596,7 +1596,7 @@ void DisplayModel::pageChanged(void)
     }
 }
 
-void DisplayModelSplash::RepaintDisplay(bool delayed)
+void DisplayModel::repaintDisplay(bool delayed)
 {
     WindowInfo *win;
 

@@ -423,7 +423,7 @@ void DisplayModelSplash::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         pageChanged();
-    RepaintDisplay(true);
+    repaintDisplay(true);
 }
 
 /* Create display info from a 'fileName' etc. 'pdfDoc' will be owned by DisplayInfo
@@ -502,7 +502,7 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
     renderVisibleParts();
     setScrollbarsState();
     pageChanged();
-    RepaintDisplay(true);
+    repaintDisplay(true);
 }
 
 /* given 'columns' and an absolute 'pageNo', return the number of the first
@@ -616,7 +616,7 @@ void DisplayModelSplash::ScrollYTo(int yOff)
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         pageChanged();
-    RepaintDisplay(false);
+    repaintDisplay(false);
 }
 
 void DisplayModelSplash::ScrollXTo(int xOff)
@@ -626,7 +626,7 @@ void DisplayModelSplash::ScrollXTo(int xOff)
     recalcVisibleParts();
     recalcLinksCanvasPos();
     setScrollbarsState();
-    RepaintDisplay(false);
+    repaintDisplay(false);
 }
 
 void DisplayModelSplash::ScrollXBy(int dx)
@@ -711,7 +711,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
         pageChanged();
-    RepaintDisplay(false);
+    repaintDisplay(false);
 }
 
 void DisplayModelSplash::ScrollYByAreaDy(bool forward, bool changePage)
