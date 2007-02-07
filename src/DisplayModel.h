@@ -229,6 +229,13 @@ public:
     bool            goToFirstPage(void);
     bool            goToLastPage(void);
 
+    void            scrollXTo(int xOff);
+    void            scrollXBy(int dx);
+
+    void            scrollYTo(int yOff);
+    void            scrollYBy(int dy, bool changePage);
+    void            scrollYByAreaDy(bool forward, bool changePage);
+
     void            clearSearchHit(void);
     void            setSearchHit(int pageNo, RectD *hitRect);
     void            recalcLinksCanvasPos(void);

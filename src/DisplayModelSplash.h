@@ -91,13 +91,6 @@ public:
 
     TextPage *    GetTextPage(int pageNo);
 
-    void          ScrollXTo(int xOff);
-    void          ScrollXBy(int dx);
-
-    void          ScrollYTo(int yOff);
-    void          ScrollYBy(int dy, bool changePage);
-    void          ScrollYByAreaDy(bool forward, bool changePage);
-
     void          EnsureSearchHitVisible();
 
     void          ZoomTo(double zoomVirtual);

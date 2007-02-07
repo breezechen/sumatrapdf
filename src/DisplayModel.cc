@@ -879,4 +879,120 @@ bool DisplayModel::goToFirstPage(void)
     return TRUE;
 }
 
+void DisplayModel::scrollXTo(int xOff)
+{
+    DBG_OUT("DisplayModel::scrollXTo(xOff=%d)\n", xOff);
+    areaOffset.x = (double)xOff;
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
+    setScrollbarsState();
+    repaintDisplay(false);
+}
+
+void DisplayModel::scrollXBy(int dx)
+{
+    DBG_OUT("DisplayModel::scrollXBy(dx=%d)\n", dx);
+
+    double maxX = _canvasSize.dx - drawAreaSize.dx;
+    assert(maxX >= 0.0);
+    double prevX = areaOffset.x;
+    double newX = prevX + (double)dx;
+    if (newX < 0.0)
+        newX = 0.0;
+    else
+        if (newX > maxX)
+            newX = maxX;
+
+    if (newX == prevX)
+        return;
+
+    scrollXTo((int)newX);
+}
+
+void DisplayModel::scrollYTo(int yOff)
+{
+    DBG_OUT("DisplayModel::scrollYTo(yOff=%d)\n", yOff);
+
+    int currPageNo = currentPageNo();
+    areaOffset.y = (double)yOff;
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
+    renderVisibleParts();
+
+    int newPageNo = currentPageNo();
+    if (newPageNo != currPageNo)
+        pageChanged();
+    repaintDisplay(false);
+}
+
+/* Scroll the doc in y-axis by 'dy'. If 'changePage' is TRUE, automatically
+   switch to prev/next page in non-continuous mode if we scroll past the edges
+   of current page */
+void DisplayModel::scrollYBy(int dy, bool changePage)
+{
+    PdfPageInfo *   pageInfo;
+    int             currYOff = (int)areaOffset.y;
+    int             newPageNo;
+    int             currPageNo;
+
+    DBG_OUT("DisplayModel::scrollYBy(dy=%d, changePage=%d)\n", dy, (int)changePage);
+    assert(0 != dy);
+    if (0 == dy) return;
+
+    int newYOff = currYOff;
+
+    if (!displayModeContinuous(displayMode()) && changePage) {
+        if ((dy < 0) && (0 == currYOff)) {
+            if (_startPage > 1) {
+                newPageNo = _startPage-1;
+                assert(validPageNo(newPageNo));
+                pageInfo = getPageInfo(newPageNo);
+                newYOff = (int)pageInfo->currDy - (int)drawAreaSize.dy;
+                if (newYOff < 0)
+                    newYOff = 0; /* TODO: center instead? */
+                goToPrevPage(newYOff);
+                return;
+            }
+        }
+
+        /* see if we have to change page when scrolling forward */
+        if ((dy > 0) && (_startPage < pageCount())) {
+            if ((int)areaOffset.y + (int)drawAreaSize.dy >= (int)_canvasSize.dy) {
+                goToNextPage(0);
+                return;
+            }
+        }
+    }
+
+    newYOff += dy;
+    if (newYOff < 0) {
+        newYOff = 0;
+    } else if (newYOff + (int)drawAreaSize.dy > (int)_canvasSize.dy) {
+        newYOff = (int)_canvasSize.dy - (int)drawAreaSize.dy;
+    }
+
+    if (newYOff == currYOff)
+        return;
+
+    currPageNo = currentPageNo();
+    areaOffset.y = (double)newYOff;
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
+    renderVisibleParts();
+    setScrollbarsState();
+    newPageNo = currentPageNo();
+    if (newPageNo != currPageNo)
+        pageChanged();
+    repaintDisplay(false);
+}
+
+void DisplayModel::scrollYByAreaDy(bool forward, bool changePage)
+{
+    int toScroll = (int)drawAreaSize.dy;
+    if (forward)
+        scrollYBy(toScroll, changePage);
+    else
+        scrollYBy(-toScroll, changePage);
+}
+
 

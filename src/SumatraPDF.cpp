@@ -1418,11 +1418,10 @@ void IntelligentWindowResize(WindowInfo *win)
 
 static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
 {
-    WindowInfo *        win;
-    
     assert(fileName);
     if (!fileName) return NULL;
 
+    WindowInfo *        win;
     FileHistoryList *   fileFromHistory = NULL;
     if (!ignoreHistory)
         fileFromHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
@@ -1516,7 +1515,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     offsetY = 0;
     /* TODO: make sure offsetX isn't bogus */
     win->dm->goToPage(startPage, offsetY);
-    win->dmSplash->ScrollXTo(offsetX);
+    win->dm->scrollXTo(offsetX);
 
 #if 0  // TODO: not good enough yet
     if (!fileFromHistory || ignoreHistorySizePos)
@@ -1670,13 +1669,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 {
-    int                 dx, dy;
-    int                 displayDx, displayDy;
-    BOOL                fullScreen = FALSE;
-    DisplaySettings *   displaySettings;
-    DisplayModelSplash *dmSplash;
-    PdfPageInfo *       pageInfo;
-    HDC                 hdc;
+    bool fullScreen = false;
 
     assert(win);
     if (!win) return;
@@ -1684,13 +1677,12 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
     if (!win->dm)
         return;
 
-    dmSplash = win->dmSplash;
-
     /* TODO: should take current monitor into account? */
-    hdc = GetDC(win->hwndCanvas);
-    displayDx = GetDeviceCaps(hdc, HORZRES);
-    displayDy = GetDeviceCaps(hdc, VERTRES);
+    HDC hdc = GetDC(win->hwndCanvas);
+    int displayDx = GetDeviceCaps(hdc, HORZRES);
+    int displayDy = GetDeviceCaps(hdc, VERTRES);
 
+    int  dx, dy;
     if (fullScreen) {
         /* TODO: fullscreen not yet supported */
         assert(0);
@@ -1700,11 +1692,11 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
         assert(win->dm->validPageNo(pageNo));
         if (!win->dm->validPageNo(pageNo))
             return;
-        pageInfo = win->dm->getPageInfo(pageNo);
+        PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
         assert(pageInfo);
         if (!pageInfo)
             return;
-        displaySettings = globalDisplaySettings();
+        DisplaySettings *displaySettings = globalDisplaySettings();
         dx = pageInfo->currDx + displaySettings->paddingPageBorderLeft + displaySettings->paddingPageBorderRight;
         dy = pageInfo->currDy + displaySettings->paddingPageBorderTop + displaySettings->paddingPageBorderBottom;
         if (dx > displayDx - 10)
@@ -2511,9 +2503,9 @@ static void WinMoveDocBy(WindowInfo *win, int dx, int dy)
     assert(!win->linkOnLastButtonDown);
     if (win->linkOnLastButtonDown) return;
     if (0 != dx)
-        win->dmSplash->ScrollXBy(dx);
+        win->dm->scrollXBy(dx);
     if (0 != dy)
-        win->dmSplash->ScrollYBy(dy, FALSE);
+        win->dm->scrollYBy(dy, FALSE);
 }
 
 static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
@@ -3214,7 +3206,7 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
-        win->dmSplash->ScrollYTo(si.nPos);
+        win->dm->scrollYTo(si.nPos);
 }
 
 static void OnHScroll(WindowInfo *win, WPARAM wParam)
@@ -3270,7 +3262,7 @@ static void OnHScroll(WindowInfo *win, WPARAM wParam)
 
     // If the position has changed, scroll the window and update it
     if (win->dm && (si.nPos != iVertPos))
-        win->dmSplash->ScrollXTo(si.nPos);
+        win->dm->scrollXTo(si.nPos);
 }
 
 static void ViewWithAcrobat(WindowInfo *win)
@@ -3477,9 +3469,9 @@ static void OnChar(WindowInfo *win, int key)
         return;
 
     if (VK_SPACE == key) {
-        win->dmSplash->ScrollYByAreaDy(true, true);
+        win->dm->scrollYByAreaDy(true, true);
     } else if (VK_BACK == key) {
-        win->dmSplash->ScrollYByAreaDy(false, true);
+        win->dm->scrollYByAreaDy(false, true);
     } else if ('g' == key) {
         OnMenuGoToPage(win);
     } else if ('k' == key) {
