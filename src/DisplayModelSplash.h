@@ -93,11 +93,6 @@ public:
 
     void          EnsureSearchHitVisible();
 
-    void          ZoomTo(double zoomVirtual);
-    void          ZoomBy(double zoomFactor);
-
-    void          RotateBy(int rotation);
-
     void          HandleLinkGoTo(LinkGoTo *linkGoTo);
     void          HandleLinkGoToR(LinkGoToR *linkGoToR);
     void          HandleLinkURI(LinkURI *linkURI);

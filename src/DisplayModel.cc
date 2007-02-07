@@ -995,4 +995,41 @@ void DisplayModel::scrollYByAreaDy(bool forward, bool changePage)
         scrollYBy(-toScroll, changePage);
 }
 
+void DisplayModel::zoomTo(double zoomVirtual)
+{
+    //DBG_OUT("DisplayModel::zoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
+    int currPageNo = currentPageNo();
+    relayout(zoomVirtual, rotation());
+    goToPage(currPageNo, 0);
+}
+
+void DisplayModel::zoomBy(double zoomFactor)
+{
+    double newZoom = _zoomReal * zoomFactor;
+    //DBG_OUT("DisplayModel::zoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
+    if (newZoom > ZOOM_MAX)
+        return;
+    zoomTo(newZoom);
+}
+
+void DisplayModel::rotateBy(int newRotation)
+{
+    normalizeRotation(&newRotation);
+    assert(0 != newRotation);
+    if (0 == newRotation)
+        return;
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
+        return;
+
+    newRotation += rotation();
+    normalizeRotation(&newRotation);
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
+        return;
+
+    int currPageNo = currentPageNo();
+    relayout(zoomVirtual(), newRotation);
+    goToPage(currPageNo, 0);
+}
 

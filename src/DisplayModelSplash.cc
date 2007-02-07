@@ -488,50 +488,6 @@ void DisplayModelSplash::EnsureSearchHitVisible()
         goToPage(pageNo, yNewPos, xNewPos);
 }
 
-void DisplayModelSplash::ZoomTo(double _zoomVirtual)
-{
-    int     currPageNo;
-
-    //DBG_OUT("DisplayModelSplash::ZoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
-    currPageNo = currentPageNo();
-    relayout(_zoomVirtual, rotation());
-    goToPage(currPageNo, 0);
-}
-
-void DisplayModelSplash::ZoomBy(double zoomFactor)
-{
-    double newZoom;
-    newZoom = _zoomReal * zoomFactor;
-    //DBG_OUT("DisplayModelSplash::ZoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
-    if (newZoom > ZOOM_MAX)
-        return;
-    ZoomTo(newZoom);
-}
-
-void DisplayModelSplash::RotateBy(int newRotation)
-{
-    int     currPageNo;
-
-    normalizeRotation(&newRotation);
-    assert(0 != newRotation);
-    if (0 == newRotation)
-        return;
-    assert(validRotation(newRotation));
-    if (!validRotation(newRotation))
-        return;
-
-    newRotation += rotation();
-    normalizeRotation(&newRotation);
-    assert(validRotation(newRotation));
-    if (!validRotation(newRotation))
-        return;
-
-    currPageNo = currentPageNo();
-    relayout(zoomVirtual(), newRotation);
-    goToPage(currPageNo, 0);
-
-}
-
 /* Recalcualte 'linkCount' and 'links' out of 'pagesInfo' data.
    Should only be called if link data has chagned in 'pagesInfo'. */
 void DisplayModelSplash::RecalcLinks(void)

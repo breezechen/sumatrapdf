@@ -236,6 +236,10 @@ public:
     void            scrollYBy(int dy, bool changePage);
     void            scrollYByAreaDy(bool forward, bool changePage);
 
+    void            zoomTo(double zoomVirtual);
+    void            zoomBy(double zoomFactor);
+    void            rotateBy(int rotation);
+
     void            clearSearchHit(void);
     void            setSearchHit(int pageNo, RectD *hitRect);
     void            recalcLinksCanvasPos(void);

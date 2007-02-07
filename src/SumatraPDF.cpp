@@ -2880,13 +2880,11 @@ static double ZoomMenuItemToZoom(UINT menuItemId)
 */
 static void OnMenuZoom(WindowInfo *win, UINT menuId)
 {
-    double       zoom;
-
-    if (!win->dmSplash)
+    if (!win->dm)
         return;
 
-    zoom = ZoomMenuItemToZoom(menuId);
-    win->dmSplash->ZoomTo(zoom);
+    double zoom = ZoomMenuItemToZoom(menuId);
+    win->dm->zoomTo(zoom);
     ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
@@ -2927,7 +2925,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
 
     // to increase the resolution of the bitmap created for
     // the printed page, zoom in by say 250, seems to work ok.
-    dmSplash->ZoomTo(250);
+    dm->zoomTo(250);
 
     // most printers can support stretchdibits,
     // whereas a lot of printers do not support bitblt
@@ -3037,7 +3035,7 @@ Exit:
     // reset the page and zoom that the user had before starting to print.
     if (pageNoInitial > -1) {
         dm->goToPage(pageNoInitial, 0);
-        dmSplash->ZoomTo(zoomInitial);
+        dm->zoomTo(zoomInitial);
     }
 }
 
@@ -3141,7 +3139,7 @@ static void RotateLeft(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->RotateBy(-90);
+    win->dm->rotateBy(-90);
 }
 
 static void RotateRight(WindowInfo *win)
@@ -3150,7 +3148,7 @@ static void RotateRight(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->RotateBy(90);
+    win->dm->rotateBy(90);
 }
 
 static void OnVScroll(WindowInfo *win, WPARAM wParam)
@@ -3490,9 +3488,9 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('q' == key) {
         DestroyWindow(win->hwndFrame);
     } else if ('+' == key) {
-        win->dmSplash->ZoomBy(ZOOM_IN_FACTOR);
+        win->dm->zoomBy(ZOOM_IN_FACTOR);
     } else if ('-' == key) {
-        win->dmSplash->ZoomBy(ZOOM_OUT_FACTOR);
+        win->dm->zoomBy(ZOOM_OUT_FACTOR);
     } else if ('l' == key) {
         RotateLeft(win);
     } else if ('r' == key) {
@@ -3838,12 +3836,12 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDT_VIEW_ZOOMIN:
                     if (win->dm)
-                        win->dmSplash->ZoomBy(ZOOM_IN_FACTOR);
+                        win->dm->zoomBy(ZOOM_IN_FACTOR);
                     break;
 
                 case IDT_VIEW_ZOOMOUT:
                     if (win->dm)
-                        win->dmSplash->ZoomBy(ZOOM_OUT_FACTOR);
+                        win->dm->zoomBy(ZOOM_OUT_FACTOR);
                     break;
 
                 case IDM_ZOOM_6400:
