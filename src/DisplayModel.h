@@ -307,6 +307,7 @@ bool                displayModeFacing(DisplayMode displayMode);
 DisplaySettings *   globalDisplaySettings(void);
 int                 columnsFromDisplayMode(DisplayMode displayMode);
 void                pageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation, double *pageDxOut, double *pageDyOut);
+bool                displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm);
 
 extern DisplaySettings gDisplaySettings;
 

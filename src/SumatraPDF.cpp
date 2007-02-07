@@ -940,7 +940,7 @@ static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
         return;
 
     DisplayState_Init(&ds);
-    if (!DisplayState_FromDisplayModel(&ds, win->dm))
+    if (!displayStateFromDisplayModel(&ds, win->dm))
         return;
 
     UpdateDisplayStateWindowPos(win, &ds);

@@ -156,13 +156,6 @@ DisplayModelSplash *DisplayModelSplash_CreateFromFileName(const char *fileName, 
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
 
-DisplayModelSplash *DisplayModelSplash_CreateFromPdfDoc(PDFDoc *pdfDoc, SplashOutputDev *outputDev,
-                                            SizeD totalDrawAreaSize,
-                                            int scrollbarXDy, int scrollbarYDx,
-                                            DisplayMode displayMode, int startPage);
-
-BOOL              DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm);
-
 /* Lock protecting both bitmap cache and page render queue */
 void              LockCache();
 void              UnlockCache();

@@ -75,15 +75,15 @@ DisplaySettings *globalDisplaySettings(void)
     return &gDisplaySettings;
 }
 
-int FlippedRotation(int rotation)
+bool rotationFlipped(int rotation)
 {
     assert(validRotation(rotation));
     if ((90 == rotation) || (270 == rotation))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-BOOL DisplayState_FromDisplayModel(DisplayState *ds, DisplayModel *dm)
+bool displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm)
 {
     ds->filePath = Str_Escape(dm->fileName());
     if (!ds->filePath)
@@ -122,7 +122,7 @@ void pageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation,
 
     rotation = rotation + pageInfo->rotation;
     normalizeRotation(&rotation);
-    if (FlippedRotation(rotation))
+    if (rotationFlipped(rotation))
         SwapDouble(pageDxOut, pageDyOut);
 }
 
