@@ -242,6 +242,8 @@ protected:
     void            rectCvtUserToScreen(int pageNo, RectD *r);
     void            recalcSearchHitCanvasPos(void);
     void            renderVisibleParts(void);
+    /* Those need to be implemented somewhere else by the GUI */
+    void            setScrollbarsState(void);
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */

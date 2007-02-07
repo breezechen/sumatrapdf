@@ -132,8 +132,6 @@ public:
     SplashBitmap* GetBitmapForPage(int pageNo, 
         BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
 
-    /* Those need to be implemented somewhere else by the GUI */
-    void        SetScrollbarsState();
     /* called when a page number changes */
     void        PageChanged();
     /* called when we decide that the display needs to be redrawn */

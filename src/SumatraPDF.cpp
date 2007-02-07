@@ -1612,7 +1612,7 @@ void DisplayModelSplash::RepaintDisplay(bool delayed)
     WindowInfo_RedrawAll(win);
 }
 
-void DisplayModelSplash::SetScrollbarsState(void)
+void DisplayModel::setScrollbarsState(void)
 {
     WindowInfo *    win;
     SCROLLINFO      si = {0};
