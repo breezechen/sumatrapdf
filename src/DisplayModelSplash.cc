@@ -114,25 +114,6 @@ void UnlockCache(void) {
     gUnlockMutex(&cacheMutex);
 }
 
-BOOL ValidDisplayMode(DisplayMode dm)
-{
-    if ((int)dm < (int)DM_FIRST)
-        return FALSE;
-    if ((int)dm > (int)DM_LAST)
-        return FALSE;
-    return TRUE;
-}
-
-static BOOL IsDisplayModeFacing(DisplayMode displayMode)
-{
-    if ((DM_SINGLE_PAGE == displayMode) || (DM_CONTINUOUS == displayMode))
-        return FALSE;
-    else if ((DM_FACING == displayMode) || (DM_CONTINUOUS_FACING == displayMode))
-        return TRUE;
-    assert(0);
-    return FALSE;
-}
-
 #if 0
 static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
 {
@@ -236,8 +217,6 @@ static void TransfromUpsideDown(DisplayModelSplash *dm, int pageNo, double *y1, 
 
 DisplayModelSplash::DisplayModelSplash(DisplayMode displayMode) :
     DisplayModel(displayMode)
-    , linkCount(0)
-    , links(NULL)
 {
 }
 
@@ -374,7 +353,7 @@ DisplayModelSplash::~DisplayModelSplash()
     delete textOutDevice;
     delete searchState.str;
     delete searchState.strU;
-    free((void*)links);
+    free((void*)_links);
     free((void*)pagesInfo);
     delete pdfDoc;
 }
@@ -393,27 +372,12 @@ void DisplayModelSplash::CvtUserToScreen(int pageNo, double *x, double *y)
 
     dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
     rotationTmp = rotation();
-    NormalizeRotation(&rotationTmp);
+    normalizeRotation(&rotationTmp);
     pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotationTmp, outputDevice->upsideDown());
 
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
     *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->currPosX;
     *y = ctm[1] * xTmp + ctm[3] * yTmp + ctm[5] + 0.5 + pageInfo->currPosY;
-}
-
-/* Map rectangle <r> on the page <pageNo> to point on the screen. */
-void DisplayModelSplash::RectCvtUserToScreen(int pageNo, RectD *r)
-{
-    double          sx, sy, ex, ey;
-
-    sx = r->x;
-    sy = r->y;
-    ex = r->x + r->dx;
-    ey = r->y + r->dy;
-
-    CvtUserToScreen(pageNo, &sx, &sy);
-    CvtUserToScreen(pageNo, &ex, &ey);
-    RectD_FromXY(r, sx, ex, sy, ey);
 }
 
 /* Given <region> (in user coordinates ) on page <pageNo>, return a text in that
@@ -464,77 +428,6 @@ Exit:
     return txt;
 }
 
-void DisplayModelSplash::RecalcSearchHitCanvasPos(void)
-{
-    int             pageNo;
-    RectD           rect;
-
-    pageNo = searchHitPageNo;
-    if (INVALID_PAGE_NO == pageNo) return;
-    rect = searchHitRectPage;
-    RectCvtUserToScreen(pageNo, &rect);
-    searchHitRectCanvas.x = (int)rect.x;
-    searchHitRectCanvas.y = (int)rect.y;
-    searchHitRectCanvas.dx = (int)rect.dx;
-    searchHitRectCanvas.dy = (int)rect.dy;
-}
-
-/* Recalculates the position of each link on the canvas i.e. applies current
-   rotation and zoom level and offsets it by the offset of each page in
-   the canvas.
-   TODO: applying rotation and zoom level could be split into a separate
-         function for speedup, since it only has to change after rotation/zoomLevel
-         changes while this function has to be called after each scrolling.
-         But I'm not sure if this would be a significant speedup */
-void DisplayModelSplash::RecalcLinksCanvasPos(void)
-{
-    PdfLink *       pdfLink;
-    PdfPageInfo *   pageInfo;
-    int             linkNo;
-    RectD           rect;
-
-    // TODO: calling it here is a bit of a hack
-    RecalcSearchHitCanvasPos();
-
-    DBG_OUT("DisplayModelSplash::RecalcLinksCanvasPos() linkCount=%d\n", linkCount);
-
-    if (0 == linkCount)
-        return;
-    assert(links);
-    if (!links)
-        return;
-
-    for (linkNo = 0; linkNo < linkCount; linkNo++) {
-        pdfLink = &(links[linkNo]);
-        pageInfo = getPageInfo(pdfLink->pageNo);
-        if (!pageInfo->visible) {
-            /* hack: make the links on pages that are not shown invisible by
-                     moving it off canvas. A better solution would probably be
-                     not adding those links in the first place */
-            pdfLink->rectCanvas.x = -100;
-            pdfLink->rectCanvas.y = -100;
-            pdfLink->rectCanvas.dx = 0;
-            pdfLink->rectCanvas.dy = 0;
-            continue;
-        }
-
-        rect = pdfLink->rectPage;
-        RectCvtUserToScreen(pdfLink->pageNo, &rect);
-        pdfLink->rectCanvas.x = (int)rect.x;
-        pdfLink->rectCanvas.y = (int)rect.y;
-        pdfLink->rectCanvas.dx = (int)rect.dx;
-        pdfLink->rectCanvas.dy = (int)rect.dy;
-#if 0
-        DBG_OUT("  link on page (x=%d, y=%d, dx=%d, dy=%d),\n",
-            (int)pdfLink->rectPage.x, (int)pdfLink->rectPage.y,
-            (int)pdfLink->rectPage.dx, (int)pdfLink->rectPage.dy);
-        DBG_OUT("        screen (x=%d, y=%d, dx=%d, dy=%d)\n",
-                (int)rect.x, (int)rect.y,
-                (int)rect.dx, (int)rect.dy);
-#endif
-    }
-}
-
 void DisplayModelSplash::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
 {
     int     newPageNo;
@@ -544,9 +437,9 @@ void DisplayModelSplash::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
 
     setTotalDrawAreaSize(totalDrawAreaSize);
 
-    Relayout(zoomVirtual(), rotation());
-    RecalcVisibleParts();
-    RecalcLinksCanvasPos();
+    relayout(zoomVirtual(), rotation());
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
     RenderVisibleParts();
     SetScrollbarsState();
     newPageNo = currentPageNo();
@@ -593,31 +486,6 @@ Error:
     return NULL;
 }
 
-void DisplayModelSplash::SetStartPage(int startPage)
-{
-    PdfPageInfo *    pageInfo;
-    int              columns;
-
-    assert(validPageNo(startPage));
-    assert(!IsDisplayModeContinuous(displayMode()));
-
-    columns = ColumnsFromDisplayMode(displayMode());
-    startPage = startPage;
-    for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
-        pageInfo = getPageInfo(pageNo);
-        if (IsDisplayModeContinuous(displayMode()))
-            pageInfo->shown = true;
-        else
-            pageInfo->shown = false;
-        if ((pageNo >= startPage) && (pageNo < startPage + columns)) {
-            //DBG_OUT("DisplayModelSplash::SetStartPage() set page %d as shown\n", pageNo);
-            pageInfo->shown = true;
-        }
-        pageInfo->visible = false;
-    }
-    Relayout(zoomVirtual(), rotation());
-}
-
 void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
 {
     assert(validPageNo(pageNo));
@@ -626,13 +494,13 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
 
     /* in facing mode only start at odd pages (odd because page
        numbering starts with 1, so odd is really an even page) */
-    if (IsDisplayModeFacing(displayMode()))
+    if (displayModeFacing(displayMode()))
       pageNo = ((pageNo-1) & ~1) + 1;
 
-    if (!IsDisplayModeContinuous(displayMode())) {
+    if (!displayModeContinuous(displayMode())) {
         /* in single page mode going to another page involves recalculating
            the size of canvas */
-        SetStartPage(pageNo);
+        changeStartPage(pageNo);
     }
     //DBG_OUT("DisplayModelSplash::GoToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     if (-1 != scrollX)
@@ -645,14 +513,14 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
        TODO: is there a better way of y-centering?
        TODO: it probably doesn't work in continuous mode (but that's a corner
              case, I hope) */
-    if (!IsDisplayModeContinuous(displayMode()))
+    if (!displayModeContinuous(displayMode()))
         areaOffset.y = (double)scrollY;
     else
         areaOffset.y = pageInfo->currPosY - PADDING_PAGE_BORDER_TOP + (double)scrollY;
     /* TODO: prevent scrolling too far */
 
-    RecalcVisibleParts();
-    RecalcLinksCanvasPos();
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
     RenderVisibleParts();
     SetScrollbarsState();
     PageChanged();
@@ -685,7 +553,7 @@ BOOL DisplayModelSplash::GoToNextPage(int scrollY)
     int             firstPageInCurrRow, firstPageInNewRow;
     int             columns;
 
-    columns = ColumnsFromDisplayMode(displayMode());
+    columns = columnsFromDisplayMode(displayMode());
     currPageNo = currentPageNo();
     firstPageInCurrRow = FirstPageInARowNo(currPageNo, columns);
     newPageNo = currPageNo + columns;
@@ -705,7 +573,7 @@ BOOL DisplayModelSplash::GoToPrevPage(int scrollY)
     int             currPageNo;
     int             columns;
 
-    columns = ColumnsFromDisplayMode(displayMode());
+    columns = columnsFromDisplayMode(displayMode());
     currPageNo = currentPageNo();
     DBG_OUT("DisplayModelSplash::GoToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
     if (currPageNo <= columns) {
@@ -724,7 +592,7 @@ BOOL DisplayModelSplash::GoToLastPage(void)
 
     DBG_OUT("DisplayModelSplash::GoToLastPage()\n");
 
-    columns = ColumnsFromDisplayMode(displayMode());
+    columns = columnsFromDisplayMode(displayMode());
     currPageNo = currentPageNo();
     firstPageInLastRow = FirstPageInARowNo(pageCount(), columns);
 
@@ -739,7 +607,7 @@ BOOL DisplayModelSplash::GoToFirstPage(void)
 {
     DBG_OUT("DisplayModelSplash::GoToFirstPage()\n");
 
-    if (IsDisplayModeContinuous(displayMode())) {
+    if (displayModeContinuous(displayMode())) {
         if (0 == areaOffset.y) {
             return FALSE;
         }
@@ -763,8 +631,8 @@ void DisplayModelSplash::ScrollYTo(int yOff)
 
     currPageNo = currentPageNo();
     areaOffset.y = (double)yOff;
-    RecalcVisibleParts();
-    RecalcLinksCanvasPos();
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
     RenderVisibleParts();
 
     newPageNo = currentPageNo();
@@ -777,8 +645,8 @@ void DisplayModelSplash::ScrollXTo(int xOff)
 {
     DBG_OUT("DisplayModelSplash::ScrollXTo(xOff=%d)\n", xOff);
     areaOffset.x = (double)xOff;
-    RecalcVisibleParts();
-    RecalcLinksCanvasPos();
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
     SetScrollbarsState();
     RepaintDisplay(false);
 }
@@ -823,7 +691,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
 
     newYOff = currYOff;
 
-    if (!IsDisplayModeContinuous(displayMode()) && changePage) {
+    if (!displayModeContinuous(displayMode()) && changePage) {
         if ((dy < 0) && (0 == currYOff)) {
             if (_startPage > 1) {
                 newPageNo = _startPage-1;
@@ -858,8 +726,8 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
 
     currPageNo = currentPageNo();
     areaOffset.y = (double)newYOff;
-    RecalcVisibleParts();
-    RecalcLinksCanvasPos();
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
     RenderVisibleParts();
     SetScrollbarsState();
     newPageNo = currentPageNo();
@@ -925,24 +793,21 @@ void DisplayModelSplash::EnsureSearchHitVisible()
 
 void DisplayModelSplash::setDisplayMode(DisplayMode displayMode)
 {
-    int             currPageNo;
-    PdfPageInfo *   pageInfo;
-
     if (_displayMode == displayMode)
         return;
 
     _displayMode = displayMode;
-    currPageNo = currentPageNo();
-    if (IsDisplayModeContinuous(displayMode)) {
+    int currPageNo = currentPageNo();
+    if (displayModeContinuous(displayMode)) {
         /* mark all pages as shown but not yet visible. The equivalent code
-           for non-continuous mode is in DisplayModelSplash::SetStartPage() called
+           for non-continuous mode is in DisplayModel::changeStartPage() called
            from DisplayModelSplash::GoToPage() */
         for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
-            pageInfo = &(pagesInfo[pageNo-1]);
+            PdfPageInfo *pageInfo = &(pagesInfo[pageNo-1]);
             pageInfo->shown = true;
             pageInfo->visible = false;
         }
-        Relayout(zoomVirtual(), rotation());
+        relayout(zoomVirtual(), rotation());
     }
     GoToPage(currPageNo, 0);
 }
@@ -953,7 +818,7 @@ void DisplayModelSplash::ZoomTo(double _zoomVirtual)
 
     //DBG_OUT("DisplayModelSplash::ZoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
     currPageNo = currentPageNo();
-    Relayout(_zoomVirtual, rotation());
+    relayout(_zoomVirtual, rotation());
     GoToPage(currPageNo, 0);
 }
 
@@ -971,22 +836,22 @@ void DisplayModelSplash::RotateBy(int newRotation)
 {
     int     currPageNo;
 
-    NormalizeRotation(&newRotation);
+    normalizeRotation(&newRotation);
     assert(0 != newRotation);
     if (0 == newRotation)
         return;
-    assert(ValidRotation(newRotation));
-    if (!ValidRotation(newRotation))
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
         return;
 
     newRotation += rotation();
-    NormalizeRotation(&newRotation);
-    assert(ValidRotation(newRotation));
-    if (!ValidRotation(newRotation))
+    normalizeRotation(&newRotation);
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
         return;
 
     currPageNo = currentPageNo();
-    Relayout(zoomVirtual(), newRotation);
+    relayout(zoomVirtual(), newRotation);
     GoToPage(currPageNo, 0);
 
 }
@@ -995,33 +860,31 @@ void DisplayModelSplash::RotateBy(int newRotation)
    Should only be called if link data has chagned in 'pagesInfo'. */
 void DisplayModelSplash::RecalcLinks(void)
 {
-    int             linkCount;
     int             pageNo;
     int             i;
     PdfPageInfo *   pageInfo;
-    Link *          link;
+    Link *          popplerLink;
     PdfLink *       currPdfLink;
     int             currPdfLinkNo;
     double          xs, ys, xe, ye;
 
     DBG_OUT("DisplayModelSplash::RecalcLinks()\n");
 
-    free((void*)links);
-    links = NULL;
-    linkCount = 0;
+    free((void*)_links);
+    _links = NULL;
+    _linkCount = 0;
 
     /* calculate number of links */
-    linkCount = 0;
     for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
         pageInfo = getPageInfo(pageNo);
         if (!pageInfo->links)
             continue;
-        linkCount += pageInfo->links->getNumLinks();
+        _linkCount += pageInfo->links->getNumLinks();
     }
 
-    assert(linkCount > 0);
-    links = (PdfLink*)malloc(linkCount * sizeof(PdfLink));
-    if (!links)
+    assert(_linkCount > 0);
+    _links = (PdfLink*)malloc(_linkCount * sizeof(PdfLink));
+    if (!_links)
         return;
 
     /* build links info */
@@ -1031,118 +894,21 @@ void DisplayModelSplash::RecalcLinks(void)
         if (!pageInfo->links)
             continue;
         for (i = 0; i < pageInfo->links->getNumLinks(); i++) {
-            currPdfLink = &(links[currPdfLinkNo]);
-            link = pageInfo->links->getLink(i);
-            link->getRect(&xs, &ys, &xe, &ye);
+            currPdfLink = link(currPdfLinkNo);
+            popplerLink = pageInfo->links->getLink(i);
+            popplerLink->getRect(&xs, &ys, &xe, &ye);
             /* note: different param order than getRect() is intentional */
             RectD_FromXY(&currPdfLink->rectPage, xs, xe, ys, ye);
             assert(currPdfLink->rectPage.dx >= 0);
             assert(currPdfLink->rectPage.dy >= 0);
             currPdfLink->pageNo = pageNo;
-            currPdfLink->link = link;
+            currPdfLink->link = popplerLink;
             ++currPdfLinkNo;
         }
     }
-    assert(linkCount == currPdfLinkNo);
-    RecalcLinksCanvasPos();
-    DBG_OUT("DisplayModelSplash::RecalcLinks() new link count: %d\n", linkCount);
-}
-
-/* Given positions of each page in a large sheet that is continous view and
-   coordinates of a current view into that large sheet, calculate which
-   parts of each page is visible on the screen.
-   Needs to be recalucated after scrolling the view. */
-void DisplayModelSplash::RecalcVisibleParts(void)
-{
-    int             pageNo;
-    RectI           drawAreaRect;
-    RectI           pageRect;
-    RectI           intersect;
-    PdfPageInfo*    pageInfo;
-    int             visibleCount;
-
-    assert(pagesInfo);
-    if (!pagesInfo)
-        return;
-
-    drawAreaRect.x = (int)areaOffset.x;
-    drawAreaRect.y = (int)areaOffset.y;
-    drawAreaRect.dx = (int)drawAreaSize.dx;
-    drawAreaRect.dy = (int)drawAreaSize.dy;
-
-//    DBG_OUT("DisplayModelSplash::RecalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
-//        drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
-    visibleCount = 0;
-    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
-        pageInfo = getPageInfo(pageNo);
-        if (!pageInfo->shown) {
-            assert(!pageInfo->visible);
-            continue;
-        }
-        pageRect.x = (int)pageInfo->currPosX;
-        pageRect.y = (int)pageInfo->currPosY;
-        pageRect.dx = (int)pageInfo->currDx;
-        pageRect.dy = (int)pageInfo->currDy;
-        pageInfo->visible = false;
-        if (RectI_Intersect(&pageRect, &drawAreaRect, &intersect)) {
-            pageInfo->visible = true;
-            visibleCount += 1;
-            pageInfo->bitmapX = (int) ((double)intersect.x - pageInfo->currPosX);
-            assert(pageInfo->bitmapX >= 0);
-            pageInfo->bitmapY = (int) ((double)intersect.y - pageInfo->currPosY);
-            assert(pageInfo->bitmapY >= 0);
-            pageInfo->bitmapDx = intersect.dx;
-            pageInfo->bitmapDy = intersect.dy;
-            pageInfo->screenX = (int) ((double)intersect.x - areaOffset.x);
-            assert(pageInfo->screenX >= 0);
-            assert(pageInfo->screenX <= drawAreaSize.dx);
-            pageInfo->screenY = (int) ((double)intersect.y - areaOffset.y);
-            assert(pageInfo->screenX >= 0);
-            assert(pageInfo->screenY <= drawAreaSize.dy);
-/*            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
-                pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
-                          pageInfo->bitmapDx, pageInfo->bitmapDy,
-                          pageInfo->screenX, pageInfo->screenY); */
-        }
-    }
-
-    assert(visibleCount > 0);
-}
-
-/* Given position 'x'/'y' in the draw area, returns a structure describing
-   a link or NULL if there is no link at this position.
-   Note: DisplayModelSplash owns this memory so it should not be changed by the
-   caller and caller should not reference it after it has changed (i.e. process
-   it immediately since it will become invalid after each _Relayout()).
-   TODO: this function is called frequently from UI code so make sure that
-         it's fast enough for a decent number of link.
-         Possible speed improvement: remember which links are visible after
-         scrolling and skip the _Inside test for those invisible.
-         Another way: build another list with only those visible, so we don't
-         even have to travers those that are invisible.
-   */
-PdfLink *DisplayModelSplash::GetLinkAtPosition(int x, int y)
-{
-    PdfLink *       currLink;
-    int             i;
-    int             canvasPosX, canvasPosY;
-
-    if (0 == linkCount)
-        return NULL;
-
-    assert(links);
-    if (!links)
-        return NULL;
-
-    canvasPosX = x + (int)areaOffset.x;
-    canvasPosY = y + (int)areaOffset.y;
-    for (i = 0; i < linkCount; i++) {
-        currLink = &(links[i]);
-
-        if (RectI_Inside(&(currLink->rectCanvas), canvasPosX, canvasPosY))
-            return currLink;
-    }
-    return NULL;
+    assert(_linkCount == currPdfLinkNo);
+    recalcLinksCanvasPos();
+    DBG_OUT("DisplayModelSplash::RecalcLinks() new link count: %d\n", _linkCount);
 }
 
 void DisplayModelSplash::GoToDest(LinkDest *linkDest)
@@ -1289,7 +1055,7 @@ BOOL DisplayModelSplash::CanGoToPrevPage(void)
 /* Return TRUE if can go to next page (i.e. doesn't already show last page) */
 BOOL DisplayModelSplash::CanGoToNextPage(void)
 {
-    if (IsDisplayModeFacing(displayMode())) {
+    if (displayModeFacing(displayMode())) {
         if (currentPageNo()+1 >= pageCount())
             return FALSE;
     } else {
@@ -1379,7 +1145,7 @@ BOOL DisplayModelSplash::FindNextBackward(void)
             } else {
                 searchState.searchState = eSsFoundPrev;
             }
-            SetSearchHit(pageNo, &hitRect);
+            setSearchHit(pageNo, &hitRect);
             EnsureSearchHitVisible();
             goto Exit;
         }
@@ -1399,7 +1165,7 @@ BOOL DisplayModelSplash::FindNextBackward(void)
             (searchState.currPage == searchState.startPage) &&
             (eSsNone == searchState.searchState) ) {
             searchState.searchState = eSsNotFound;
-            ClearSearchHit();
+            clearSearchHit();
             goto Exit;
         }
     }
@@ -1478,7 +1244,7 @@ BOOL DisplayModelSplash::FindNextForward(void)
             } else {
                 searchState.searchState = eSsFoundNext;
             }
-            SetSearchHit(pageNo, &hitRect);
+            setSearchHit(pageNo, &hitRect);
             EnsureSearchHitVisible();
             goto Exit;
         }
@@ -1497,28 +1263,13 @@ BOOL DisplayModelSplash::FindNextForward(void)
             (searchState.currPage == searchState.startPage) &&
             (eSsNone == searchState.searchState) ) {
             searchState.searchState = eSsNotFound;
-            ClearSearchHit();
+            clearSearchHit();
             goto Exit;
         }
     }
 Exit:
     ShowNormalCursor();
     return found;
-}
-
-
-void DisplayModelSplash::ClearSearchHit()
-{
-    DBG_OUT("DisplayModelSplash::ClearSearchHit()\n");
-    searchHitPageNo = INVALID_PAGE_NO;
-}
-
-void DisplayModelSplash::SetSearchHit(int pageNo, RectD *hitRect)
-{
-    //DBG_OUT("DisplayModelSplash::SetSearchHit() page=%d at pos (%.2f, %.2f)-(%.2f,%.2f)\n", pageNo, xs, ys, xe, ye);
-    searchHitPageNo = pageNo;
-    searchHitRectPage = *hitRect;
-    RecalcSearchHitCanvasPos();
 }
 
 SplashBitmap* RenderBitmap(DisplayModelSplash *dm,
@@ -1651,10 +1402,10 @@ void BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int r
     assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
     assert(dm);
     assert(bitmap);
-    assert(ValidRotation(rotation));
-    assert(ValidZoomReal(zoomLevel));
+    assert(validRotation(rotation));
+    assert(validZoomReal(zoomLevel));
 
-    NormalizeRotation(&rotation);
+    normalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
     LockCache();
     if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
@@ -1682,7 +1433,7 @@ UnlockAndExit:
 BitmapCacheEntry *BitmapCache_Find(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation) {
     BitmapCacheEntry *entry;
 
-    NormalizeRotation(&rotation);
+    normalizeRotation(&rotation);
     LockCache();
     for (int i = 0; i < gBitmapCacheCount; i++) {
         entry = gBitmapCache[i];

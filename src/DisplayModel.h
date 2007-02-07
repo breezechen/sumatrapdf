@@ -68,14 +68,14 @@ typedef struct PdfPageInfo {
     double          pageDy;
     int             rotation;
 
-    /* data that needs to be set before DisplayModel_Relayout().
+    /* data that needs to be set before DisplayModel_relayout().
        Determines whether a given page should be shown on the screen. */
     bool            shown;
 
     /* data that changes when zoom and rotation changes */
     /* position and size within total area after applying zoom and rotation.
        Represents display rectangle for a given page.
-       Calculated in DisplayModel_Relayout() */
+       Calculated in DisplayModel_relayout() */
 
     /* TODO: change it to RectD ?*/
     double          currDx;
@@ -220,12 +220,26 @@ public:
     }
 
     bool            pageShown(int pageNo);
-    void            Relayout(double zoomVirtual, int rotation);
+    void            relayout(double zoomVirtual, int rotation);
+
+    void            clearSearchHit(void);
+    void            setSearchHit(int pageNo, RectD *hitRect);
+    void            recalcLinksCanvasPos(void);
+
+    int             linkCount(void) const { return _linkCount; }
+    PdfLink *       link(int linkNo) const { return &(_links[linkNo]); }
+    PdfLink *       linkAtPosition(int x, int y);
 
 protected:
-    bool            buildPagesInfo();
+    virtual void CvtUserToScreen(int pageNo, double *x, double *y) = 0;
+
+    bool            buildPagesInfo(void);
     double          zoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
     int             firstVisiblePageNo(void) const;
+    void            changeStartPage(int startPage);
+    void            recalcVisibleParts(void);
+    void            rectCvtUserToScreen(int pageNo, RectD *r);
+    void            recalcSearchHitCanvasPos(void);
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */
@@ -252,13 +266,21 @@ protected:
     double          _zoomReal;
     double          _zoomVirtual;
     int             _rotation;
+
+    /* total number of links */
+    int             _linkCount;
+    /* an array of 'totalLinksCount' size, each entry describing a link */
+    PdfLink *       _links;
+
 };
 
-bool                ValidZoomReal(double zoomReal);
-bool                IsDisplayModeContinuous(DisplayMode displayMode);
-DisplaySettings *   GetGlobalDisplaySettings(void);
-int                 ColumnsFromDisplayMode(DisplayMode displayMode);
-void                PageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation, double *pageDxOut, double *pageDyOut);
+bool                validZoomReal(double zoomReal);
+//bool                validDisplayMode(DisplayMode dm);
+bool                displayModeContinuous(DisplayMode displayMode);
+bool                displayModeFacing(DisplayMode displayMode);
+DisplaySettings *   globalDisplaySettings(void);
+int                 columnsFromDisplayMode(DisplayMode displayMode);
+void                pageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation, double *pageDxOut, double *pageDyOut);
 
 extern DisplaySettings gDisplaySettings;
 

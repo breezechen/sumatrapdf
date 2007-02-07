@@ -329,7 +329,7 @@ void RenderQueue_Add(DisplayModelSplash *dm, int pageNo) {
     LockCache();
     pageInfo = dm->getPageInfo(pageNo);
     rotation = dm->rotation();
-    NormalizeRotation(&rotation);
+    normalizeRotation(&rotation);
     zoomLevel = dm->zoomReal();
 
     if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
@@ -1508,7 +1508,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         zoomVirtual = fileFromHistory->state.zoomVirtual;
         rotation = fileFromHistory->state.rotation;
     }
-    win->dm->Relayout(zoomVirtual, rotation);
+    win->dm->relayout(zoomVirtual, rotation);
     if (!win->dm->validPageNo(startPage))
         startPage = 1;
     /* TODO: need to calculate proper offsetY, currently giving large offsetY
@@ -1709,7 +1709,7 @@ static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
         assert(pageInfo);
         if (!pageInfo)
             return;
-        displaySettings = GetGlobalDisplaySettings();
+        displaySettings = globalDisplaySettings();
         dx = pageInfo->currDx + displaySettings->paddingPageBorderLeft + displaySettings->paddingPageBorderRight;
         dy = pageInfo->currDy + displaySettings->paddingPageBorderTop + displaySettings->paddingPageBorderBottom;
         if (dx > displayDx - 10)
@@ -2160,8 +2160,8 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     drawAreaRect.dx = (int)dmSplash->drawAreaSize.dx;
     drawAreaRect.dy = (int)dmSplash->drawAreaSize.dy;
 
-    for (linkNo = 0; linkNo < dmSplash->linkCount; ++linkNo) {
-        pdfLink = &(dmSplash->links[linkNo]);
+    for (linkNo = 0; linkNo < dm->linkCount(); ++linkNo) {
+        pdfLink = dm->link(linkNo);
 
         rectLink.x = pdfLink->rectCanvas.x;
         rectLink.y = pdfLink->rectCanvas.y;
@@ -2528,7 +2528,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     if (WS_SHOWING_PDF == win->state) {
         assert(win->dm);
         if (!win->dm) return;
-        win->linkOnLastButtonDown = win->dmSplash->GetLinkAtPosition(x, y);
+        win->linkOnLastButtonDown = win->dm->linkAtPosition(x, y);
         /* dragging mode only starts when we're not on a link */
         if (!win->linkOnLastButtonDown) {
             SetCapture(win->hwndCanvas);
@@ -2591,7 +2591,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
         if (!win->linkOnLastButtonDown)
             return;
 
-        link = win->dmSplash->GetLinkAtPosition(x, y);
+        link = win->dm->linkAtPosition(x, y);
         if (link && (link == win->linkOnLastButtonDown))
             HandleLink(win->dmSplash, link);
         win->linkOnLastButtonDown = NULL;
@@ -2625,7 +2625,7 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
             win->dragPrevPosY = y;
             return;
         }
-        link = win->dmSplash->GetLinkAtPosition(x, y);
+        link = win->dm->linkAtPosition(x, y);
         if (link) {
             SetCursor(LoadCursor(NULL, IDC_HAND));
         } else {

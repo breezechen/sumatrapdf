@@ -58,8 +58,8 @@ typedef struct DisplayState {
     int                 windowDy;
 } DisplayState;
 
-void    NormalizeRotation(int *rotation);
-BOOL    ValidRotation(int rotation);
+void    normalizeRotation(int *rotation);
+BOOL    validRotation(int rotation);
 BOOL    ValidZoomVirtual(double zoomVirtual);
 
 const char *      DisplayModeNameFromEnum(DisplayMode var);

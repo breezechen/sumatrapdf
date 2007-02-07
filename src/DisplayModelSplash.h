@@ -114,11 +114,9 @@ public:
     void          RotateBy(int rotation);
 
     void          RenderVisibleParts();
-    void          RecalcVisibleParts();
 
     void          changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
 
-    PdfLink *     GetLinkAtPosition(int x, int y);
     void          HandleLinkGoTo(LinkGoTo *linkGoTo);
     void          HandleLinkGoToR(LinkGoToR *linkGoToR);
     void          HandleLinkURI(LinkURI *linkURI);
@@ -130,9 +128,6 @@ public:
     void          FindInit(int startPageNo);
     BOOL          FindNextForward();
     BOOL          FindNextBackward();
-
-    void          ClearSearchHit();
-    void          SetSearchHit(int pageNo, RectD *hitRect);
 
     GooString *   GetTextInRegion(int pageNo, RectD *region);
 
@@ -151,27 +146,19 @@ public:
     void        CancelBackgroundRendering();
 
     void        FreeTextPages(void);
-    void        RecalcSearchHitCanvasPos(void);
-    void        RecalcLinksCanvasPos(void);
-    void        SetStartPage(int startPage);
     void        RecalcLinks(void);
     void        GoToDest(LinkDest *linkDest);
     void        GoToNamedDest(UGooString *dest);
     void        StartRenderingPage(int pageNo);
     void        FreeLinks(void);
-    void        CvtUserToScreen(int pageNo, double *x, double *y);
-    void        RectCvtUserToScreen(int pageNo, RectD *r);
+
+protected:
+    virtual void CvtUserToScreen(int pageNo, double *x, double *y);
 
 public:
     PDFDoc *            pdfDoc;
     SplashOutputDev *   outputDevice;
     TextOutputDev *     textOutDevice;
-
-    /* total number of links */
-    int             linkCount;
-
-    /* an array of 'totalLinksCount' size, each entry describing a link */
-    PdfLink *       links;
 };
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
@@ -194,8 +181,6 @@ typedef struct {
     int             rotation;
     int             abort;
 } PageRenderRequest;
-
-BOOL              ValidDisplayMode(DisplayMode dm);
 
 DisplayModelSplash *DisplayModelSplash_CreateFromFileName(const char *fileName, void *data,
                                             SizeD totalDrawAreaSize,

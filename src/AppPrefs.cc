@@ -145,7 +145,7 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
     if (Str_Eq(ROTATION_STR, key)) {
         fOk = ParseInt(value, &dsOut->rotation);
         assert(fOk);
-        if (!fOk || !ValidRotation(dsOut->rotation))
+        if (!fOk || !validRotation(dsOut->rotation))
             dsOut->rotation = 0;
         return;
     }

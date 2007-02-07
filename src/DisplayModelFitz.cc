@@ -26,16 +26,16 @@ void DisplayModelFitz::setDisplayMode(DisplayMode displayMode)
 
     _displayMode = displayMode;
     currPageNo = currentPageNo();
-    if (IsDisplayModeContinuous(displayMode)) {
+    if (displayModeContinuous(displayMode)) {
         /* mark all pages as shown but not yet visible. The equivalent code
-           for non-continuous mode is in DisplayModelSplash::SetStartPage() called
-           from DisplayModelSplash::GoToPage() */
+           for non-continuous mode is in DisplayModel::changeStartPage() called
+           from DisplayModel::GoToPage() */
         for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
             pageInfo = &(pagesInfo[pageNo-1]);
             pageInfo->shown = true;
             pageInfo->visible = false;
         }
-        Relayout(zoomVirtual(), rotation());
+        relayout(zoomVirtual(), rotation());
     }
     GoToPage(currPageNo, 0);
 #endif
@@ -67,4 +67,7 @@ Error:
     return NULL;
 }
 
-
+void DisplayModelFitz::CvtUserToScreen(int pageNo, double *x, double *y)
+{
+    // TODO: implement me
+}

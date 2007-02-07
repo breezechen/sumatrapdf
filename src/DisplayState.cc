@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void NormalizeRotation(int *rotation)
+void normalizeRotation(int *rotation)
 {
     assert(rotation);
     if (!rotation) return;
@@ -15,9 +15,9 @@ void NormalizeRotation(int *rotation)
         *rotation -= 360;
 }
 
-BOOL ValidRotation(int rotation)
+BOOL validRotation(int rotation)
 {
-    NormalizeRotation(&rotation);
+    normalizeRotation(&rotation);
     if ((0 == rotation) || (90 == rotation) ||
         (180 == rotation) || (270 == rotation))
         return TRUE;
