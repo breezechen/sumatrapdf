@@ -1573,15 +1573,9 @@ static void Win32_Font_Delete(HFONT font)
     DeleteObject(font);
 }
 
-void DisplayModelSplash::PageChanged(void)
+void DisplayModel::pageChanged(void)
 {
-    char            titleBuf[256];
-    const char *    baseName;
-    int             pageCount;
-    HRESULT         hr;
-    WindowInfo *    win;
-
-    win = (WindowInfo*)appData();
+    WindowInfo *win = (WindowInfo*)appData();
     assert(win);
     if (!win) return;
 
@@ -1591,12 +1585,13 @@ void DisplayModelSplash::PageChanged(void)
 #endif
 
     int currPageNo = currentPageNo();
-    pageCount = win->dm->pageCount();
-    baseName = Path_GetBaseName(win->dm->fileName());
+    int pageCount = win->dm->pageCount();
+    const char *baseName = Path_GetBaseName(win->dm->fileName());
     if (pageCount <= 0)
         WinSetText(win->hwndFrame, baseName);
     else {
-        hr = StringCchPrintfA(titleBuf, dimof(titleBuf), "%s page %d of %d", baseName, currPageNo, pageCount);
+        char titleBuf[256];
+        HRESULT hr = StringCchPrintfA(titleBuf, dimof(titleBuf), "%s page %d of %d", baseName, currPageNo, pageCount);
         WinSetText(win->hwndFrame, titleBuf);
     }
 }

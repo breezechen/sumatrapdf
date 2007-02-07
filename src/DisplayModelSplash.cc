@@ -422,7 +422,7 @@ void DisplayModelSplash::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
     setScrollbarsState();
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
-        PageChanged();
+        pageChanged();
     RepaintDisplay(true);
 }
 
@@ -501,7 +501,7 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
     recalcLinksCanvasPos();
     renderVisibleParts();
     setScrollbarsState();
-    PageChanged();
+    pageChanged();
     RepaintDisplay(true);
 }
 
@@ -615,7 +615,7 @@ void DisplayModelSplash::ScrollYTo(int yOff)
 
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
-        PageChanged();
+        pageChanged();
     RepaintDisplay(false);
 }
 
@@ -710,7 +710,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
     setScrollbarsState();
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
-        PageChanged();
+        pageChanged();
     RepaintDisplay(false);
 }
 

@@ -244,6 +244,8 @@ protected:
     void            renderVisibleParts(void);
     /* Those need to be implemented somewhere else by the GUI */
     void            setScrollbarsState(void);
+    /* called when a page number changes */
+    void            pageChanged(void);
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */

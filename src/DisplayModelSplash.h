@@ -132,8 +132,6 @@ public:
     SplashBitmap* GetBitmapForPage(int pageNo, 
         BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
 
-    /* called when a page number changes */
-    void        PageChanged();
     /* called when we decide that the display needs to be redrawn */
     void        RepaintDisplay(bool delayed);
 
