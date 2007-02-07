@@ -231,7 +231,8 @@ public:
     PdfLink *       linkAtPosition(int x, int y);
 
 protected:
-    virtual void CvtUserToScreen(int pageNo, double *x, double *y) = 0;
+    virtual void cvtUserToScreen(int pageNo, double *x, double *y) = 0;
+    virtual void startRenderingPage(int pageNo) = 0;
 
     bool            buildPagesInfo(void);
     double          zoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
@@ -240,6 +241,7 @@ protected:
     void            recalcVisibleParts(void);
     void            rectCvtUserToScreen(int pageNo, RectD *r);
     void            recalcSearchHitCanvasPos(void);
+    void            renderVisibleParts(void);
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */

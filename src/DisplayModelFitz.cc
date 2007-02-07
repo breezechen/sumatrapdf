@@ -67,7 +67,14 @@ Error:
     return NULL;
 }
 
-void DisplayModelFitz::CvtUserToScreen(int pageNo, double *x, double *y)
+void DisplayModelFitz::cvtUserToScreen(int pageNo, double *x, double *y)
 {
     // TODO: implement me
 }
+
+/* Send the request to render a given page to a rendering thread */
+void DisplayModelFitz::startRenderingPage(int pageNo)
+{
+    // TODO: implement me
+}
+

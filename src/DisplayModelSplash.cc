@@ -295,31 +295,9 @@ SplashBitmap* DisplayModelSplash::GetBitmapForPage(int pageNo,
 }
 
 /* Send the request to render a given page to a rendering thread */
-void DisplayModelSplash::StartRenderingPage(int pageNo)
+void DisplayModelSplash::startRenderingPage(int pageNo)
 {
     RenderQueue_Add(this, pageNo);
-}
-
-void DisplayModelSplash::RenderVisibleParts()
-{
-    int             pageNo;
-    PdfPageInfo*    pageInfo;
-    int             lastVisible = 0;
-
-//    DBG_OUT("DisplayModelSplash::RenderVisibleParts()\n");
-    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
-        pageInfo = getPageInfo(pageNo);
-        if (pageInfo->visible) {
-            assert(pageInfo->shown);
-            StartRenderingPage(pageNo);
-            lastVisible = pageNo;
-        }
-    }
-    assert(0 != lastVisible);
-#ifdef PREDICTIVE_RENDER
-    if (lastVisible != pageCount())
-        StartRenderingPage(lastVisible+1);
-#endif
 }
 
 void DisplayModelSplash::FreeLinks(void)
@@ -359,7 +337,7 @@ DisplayModelSplash::~DisplayModelSplash()
 }
 
 /* Map point <x>/<y> on the page <pageNo> to point on the screen. */
-void DisplayModelSplash::CvtUserToScreen(int pageNo, double *x, double *y)
+void DisplayModelSplash::cvtUserToScreen(int pageNo, double *x, double *y)
 {
     double          xTmp = *x;
     double          yTmp = *y;
@@ -440,7 +418,7 @@ void DisplayModelSplash::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
     relayout(zoomVirtual(), rotation());
     recalcVisibleParts();
     recalcLinksCanvasPos();
-    RenderVisibleParts();
+    renderVisibleParts();
     SetScrollbarsState();
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
@@ -521,7 +499,7 @@ void DisplayModelSplash::GoToPage(int pageNo, int scrollY, int scrollX)
 
     recalcVisibleParts();
     recalcLinksCanvasPos();
-    RenderVisibleParts();
+    renderVisibleParts();
     SetScrollbarsState();
     PageChanged();
     RepaintDisplay(true);
@@ -633,7 +611,7 @@ void DisplayModelSplash::ScrollYTo(int yOff)
     areaOffset.y = (double)yOff;
     recalcVisibleParts();
     recalcLinksCanvasPos();
-    RenderVisibleParts();
+    renderVisibleParts();
 
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)
@@ -728,7 +706,7 @@ void DisplayModelSplash::ScrollYBy(int dy, bool changePage)
     areaOffset.y = (double)newYOff;
     recalcVisibleParts();
     recalcLinksCanvasPos();
-    RenderVisibleParts();
+    renderVisibleParts();
     SetScrollbarsState();
     newPageNo = currentPageNo();
     if (newPageNo != currPageNo)

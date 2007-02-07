@@ -12,7 +12,8 @@ public:
     virtual void  setDisplayMode(DisplayMode displayMode);
 
 protected:
-    virtual void CvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void startRenderingPage(int pageNo);
 };
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(

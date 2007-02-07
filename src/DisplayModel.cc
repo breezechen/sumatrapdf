@@ -572,8 +572,8 @@ void DisplayModel::rectCvtUserToScreen(int pageNo, RectD *r)
     ex = r->x + r->dx;
     ey = r->y + r->dy;
 
-    CvtUserToScreen(pageNo, &sx, &sy);
-    CvtUserToScreen(pageNo, &ex, &ey);
+    cvtUserToScreen(pageNo, &sx, &sy);
+    cvtUserToScreen(pageNo, &ex, &ey);
     RectD_FromXY(r, sx, ex, sy, ey);
 }
 
@@ -690,3 +690,26 @@ PdfLink *DisplayModel::linkAtPosition(int x, int y)
     }
     return NULL;
 }
+
+void DisplayModel::renderVisibleParts(void)
+{
+    int             pageNo;
+    PdfPageInfo*    pageInfo;
+    int             lastVisible = 0;
+
+//    DBG_OUT("DisplayModel::renderVisibleParts()\n");
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
+        pageInfo = getPageInfo(pageNo);
+        if (pageInfo->visible) {
+            assert(pageInfo->shown);
+            startRenderingPage(pageNo);
+            lastVisible = pageNo;
+        }
+    }
+    assert(0 != lastVisible);
+#ifdef PREDICTIVE_RENDER
+    if (lastVisible != pageCount())
+        startRenderingPage(lastVisible+1);
+#endif
+}
+

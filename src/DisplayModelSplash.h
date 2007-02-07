@@ -113,8 +113,6 @@ public:
 
     void          RotateBy(int rotation);
 
-    void          RenderVisibleParts();
-
     void          changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
 
     void          HandleLinkGoTo(LinkGoTo *linkGoTo);
@@ -149,11 +147,11 @@ public:
     void        RecalcLinks(void);
     void        GoToDest(LinkDest *linkDest);
     void        GoToNamedDest(UGooString *dest);
-    void        StartRenderingPage(int pageNo);
     void        FreeLinks(void);
 
 protected:
-    virtual void CvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void startRenderingPage(int pageNo);
 
 public:
     PDFDoc *            pdfDoc;
