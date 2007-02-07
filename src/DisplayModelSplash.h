@@ -87,17 +87,9 @@ public:
     DisplayModelSplash(DisplayMode displayMode);
     virtual ~DisplayModelSplash();
 
-    virtual void  setDisplayMode(DisplayMode displayMode);
-
     PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
     TextPage *    GetTextPage(int pageNo);
-
-    void          GoToPage(int pageNo, int scrollY, int scrollX=-1);
-    BOOL          GoToPrevPage(int scrollY);
-    BOOL          GoToNextPage(int scrollY);
-    BOOL          GoToFirstPage();
-    BOOL          GoToLastPage();
 
     void          ScrollXTo(int xOff);
     void          ScrollXBy(int dx);
@@ -112,8 +104,6 @@ public:
     void          ZoomBy(double zoomFactor);
 
     void          RotateBy(int rotation);
-
-    void          changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
 
     void          HandleLinkGoTo(LinkGoTo *linkGoTo);
     void          HandleLinkGoToR(LinkGoToR *linkGoToR);

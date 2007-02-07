@@ -160,8 +160,7 @@ public:
     void setRotation(int rotation) { _rotation = rotation; }
     DisplayMode displayMode() const { return _displayMode; }
 
-    /* TODO: make non-virtual */
-    virtual void setDisplayMode(DisplayMode displayMode) = 0;
+    void changeDisplayMode(DisplayMode displayMode);
     const char *fileName(void) const { return _pdfEngine->fileName(); }
 
     bool fullScreen(void) const { return _fullScreen; }
@@ -219,8 +218,16 @@ public:
         drawAreaSize.dy = _totalDrawAreaSize.dy - _scrollbarXDy;
     }
 
+    void            changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
+
     bool            pageShown(int pageNo);
     void            relayout(double zoomVirtual, int rotation);
+
+    void            goToPage(int pageNo, int scrollY, int scrollX=-1);
+    bool            goToPrevPage(int scrollY);
+    bool            goToNextPage(int scrollY);
+    bool            goToFirstPage(void);
+    bool            goToLastPage(void);
 
     void            clearSearchHit(void);
     void            setSearchHit(int pageNo, RectD *hitRect);

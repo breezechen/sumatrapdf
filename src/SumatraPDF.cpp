@@ -474,7 +474,7 @@ static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
     CheckMenuItem(menuMain, IDM_VIEW_FACING, MF_BYCOMMAND | MF_UNCHECKED);
     CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS_FACING, MF_BYCOMMAND | MF_UNCHECKED);
 
-    win->dm->setDisplayMode(displayMode);
+    win->dm->changeDisplayMode(displayMode);
     if (DM_SINGLE_PAGE == displayMode) {
         id = IDM_VIEW_SINGLE_PAGE;
     } else if (DM_FACING == displayMode) {
@@ -1515,7 +1515,7 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
        remembered for continuous mode breaks things (makes all pages invisible) */
     offsetY = 0;
     /* TODO: make sure offsetX isn't bogus */
-    win->dmSplash->GoToPage(startPage, offsetY);
+    win->dm->goToPage(startPage, offsetY);
     win->dmSplash->ScrollXTo(offsetX);
 
 #if 0  // TODO: not good enough yet
@@ -1665,7 +1665,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
 
     WindowInfo_GetCanvasSize(win);
     SizeD totalDrawAreaSize((double)win->winDx, (double)win->winDy);
-    win->dmSplash->changeTotalDrawAreaSize(totalDrawAreaSize);
+    win->dm->changeTotalDrawAreaSize(totalDrawAreaSize);
 }
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
@@ -2014,7 +2014,7 @@ static void OnBenchNextAction(WindowInfo *win)
     if (!win->dm)
         return;
 
-    if (win->dmSplash->GoToNextPage(0))
+    if (win->dm->goToNextPage(0))
         PostBenchNextAction(win->hwndFrame);
 }
 
@@ -2906,6 +2906,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
 {
     int                 pageNo;
     DisplayModelSplash* dmSplash;
+    DisplayModel *      dm;
     PdfPageInfo*        pageInfo;
     SplashBitmap *      splashBmp;
     int                 splashBmpDx, splashBmpDy;
@@ -2922,6 +2923,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
 
     if (!win) return;
 
+    dm = win->dm;
     dmSplash = win->dmSplash;
     /* store current page number and zoom state to reset
        when finished printing */
@@ -2959,7 +2961,7 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         splashBmp = NULL;
 
         // initiate the creation of the bitmap for the page.
-        dmSplash->GoToPage(pageNo, 0);
+        dm->goToPage(pageNo, 0);
 
         // because we're multithreaded the bitmap may not be
         // ready yet so keep checking until it is available
@@ -3042,7 +3044,7 @@ Exit:
 
     // reset the page and zoom that the user had before starting to print.
     if (pageNoInitial > -1) {
-        dmSplash->GoToPage(pageNoInitial, 0);
+        dm->goToPage(pageNoInitial, 0);
         dmSplash->ZoomTo(zoomInitial);
     }
 }
@@ -3365,7 +3367,7 @@ static void OnMenuGoToNextPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->GoToNextPage(0);
+    win->dm->goToNextPage(0);
 }
 
 static void OnMenuGoToPrevPage(WindowInfo *win)
@@ -3374,7 +3376,7 @@ static void OnMenuGoToPrevPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->GoToPrevPage(0);
+    win->dm->goToPrevPage(0);
 }
 
 static void OnMenuGoToLastPage(WindowInfo *win)
@@ -3383,7 +3385,7 @@ static void OnMenuGoToLastPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->GoToLastPage();
+    win->dm->goToLastPage();
 }
 
 static void OnMenuGoToFirstPage(WindowInfo *win)
@@ -3392,21 +3394,19 @@ static void OnMenuGoToFirstPage(WindowInfo *win)
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
-    win->dmSplash->GoToFirstPage();
+    win->dm->goToFirstPage();
 }
 
 static void OnMenuGoToPage(WindowInfo *win)
 {
-    int     newPageNo;
-
     assert(win);
     if (!win) return;
     if (!WindowInfo_PdfLoaded(win))
         return;
 
-    newPageNo = Dialog_GoToPage(win);
+    int newPageNo = Dialog_GoToPage(win);
     if (win->dm->validPageNo(newPageNo))
-        win->dmSplash->GoToPage(newPageNo, 0);
+        win->dm->goToPage(newPageNo, 0);
 }
 
 static void OnMenuViewRotateLeft(WindowInfo *win)
@@ -3450,12 +3450,12 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
     if (VK_PRIOR == key) {
         /* TODO: more intelligence (see VK_NEXT comment). Also, probably
            it's exactly the same as 'n' so the code should be factored out */
-        win->dmSplash->GoToPrevPage(0);
+        win->dm->goToPrevPage(0);
        /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEUP, 0); */
     } else if (VK_NEXT == key) {
         /* TODO: this probably should be more intelligent (scroll if not yet at the bottom,
            go to next page if at the bottom, and something entirely different in continuous mode */
-        win->dmSplash->GoToNextPage(0);
+        win->dm->goToNextPage(0);
         /* SendMessage (win->hwnd, WM_VSCROLL, SB_PAGEDOWN, 0); */
     } else if (VK_UP == key) {
         SendMessage (win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
@@ -3487,12 +3487,12 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('j' == key) {
         SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
     } else if ('n' == key) {
-        win->dmSplash->GoToNextPage(0);
+        win->dm->goToNextPage(0);
     } else if ('c' == key) {
         // TODO: probably should preserve facing vs. non-facing
-        win->dm->setDisplayMode(DM_CONTINUOUS);
+        win->dm->changeDisplayMode(DM_CONTINUOUS);
     } else if ('p' == key) {
-        win->dmSplash->GoToPrevPage(0);
+        win->dm->goToPrevPage(0);
     } else if ('z' == key) {
         WindowInfo_ToggleZoom(win);
     } else if ('q' == key) {

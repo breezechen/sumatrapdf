@@ -713,3 +713,170 @@ void DisplayModel::renderVisibleParts(void)
 #endif
 }
 
+void DisplayModel::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
+{
+    int     newPageNo;
+    int     currPageNo;
+
+    currPageNo = currentPageNo();
+
+    setTotalDrawAreaSize(totalDrawAreaSize);
+
+    relayout(zoomVirtual(), rotation());
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
+    renderVisibleParts();
+    setScrollbarsState();
+    newPageNo = currentPageNo();
+    if (newPageNo != currPageNo)
+        pageChanged();
+    repaintDisplay(true);
+}
+
+void DisplayModel::goToPage(int pageNo, int scrollY, int scrollX)
+{
+    assert(validPageNo(pageNo));
+    if (!validPageNo(pageNo))
+        return;
+
+    /* in facing mode only start at odd pages (odd because page
+       numbering starts with 1, so odd is really an even page) */
+    if (displayModeFacing(displayMode()))
+      pageNo = ((pageNo-1) & ~1) + 1;
+
+    if (!displayModeContinuous(displayMode())) {
+        /* in single page mode going to another page involves recalculating
+           the size of canvas */
+        changeStartPage(pageNo);
+    }
+    //DBG_OUT("DisplayModel::goToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    if (-1 != scrollX)
+        areaOffset.x = (double)scrollX;
+    PdfPageInfo * pageInfo = getPageInfo(pageNo);
+
+    /* Hack: if an image is smaller in Y axis than the draw area, then we center
+       the image by setting pageInfo->currPosY in RecalcPagesInfo. So we shouldn't
+       scroll (adjust areaOffset.y) there because it defeats the purpose.
+       TODO: is there a better way of y-centering?
+       TODO: it probably doesn't work in continuous mode (but that's a corner
+             case, I hope) */
+    if (!displayModeContinuous(displayMode()))
+        areaOffset.y = (double)scrollY;
+    else
+        areaOffset.y = pageInfo->currPosY - PADDING_PAGE_BORDER_TOP + (double)scrollY;
+    /* TODO: prevent scrolling too far */
+
+    recalcVisibleParts();
+    recalcLinksCanvasPos();
+    renderVisibleParts();
+    setScrollbarsState();
+    pageChanged();
+    repaintDisplay(true);
+}
+
+
+void DisplayModel::changeDisplayMode(DisplayMode displayMode)
+{
+    if (_displayMode == displayMode)
+        return;
+
+    _displayMode = displayMode;
+    int currPageNo = currentPageNo();
+    if (displayModeContinuous(displayMode)) {
+        /* mark all pages as shown but not yet visible. The equivalent code
+           for non-continuous mode is in DisplayModel::changeStartPage() called
+           from DisplayModel::goToPage() */
+        for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
+            PdfPageInfo *pageInfo = &(pagesInfo[pageNo-1]);
+            pageInfo->shown = true;
+            pageInfo->visible = false;
+        }
+        relayout(zoomVirtual(), rotation());
+    }
+    goToPage(currPageNo, 0);
+}
+
+/* given 'columns' and an absolute 'pageNo', return the number of the first
+   page in a row to which a 'pageNo' belongs e.g. if 'columns' is 2 and we
+   have 5 pages in 3 rows:
+   (1,2)
+   (3,4)
+   (5)
+   then, we return 1 for pages (1,2), 3 for (3,4) and 5 for (5).
+   This is 1-based index, not 0-based. */
+static int FirstPageInARowNo(int pageNo, int columns)
+{
+    int row = ((pageNo - 1) / columns); /* 0-based row number */
+    int firstPageNo = row * columns + 1; /* 1-based page in a row */
+    return firstPageNo;
+}
+
+/* In continuous mode just scrolls to the next page. In single page mode
+   rebuilds the display model for the next page.
+   Returns true if advanced to the next page or false if couldn't advance
+   (e.g. because already was at the last page) */
+bool DisplayModel::goToNextPage(int scrollY)
+{
+    int columns = columnsFromDisplayMode(displayMode());
+    int currPageNo = currentPageNo();
+    int firstPageInCurrRow = FirstPageInARowNo(currPageNo, columns);
+    int newPageNo = currPageNo + columns;
+    int firstPageInNewRow = FirstPageInARowNo(newPageNo, columns);
+
+//    DBG_OUT("DisplayModel::goToNextPage(scrollY=%d), currPageNo=%d, firstPageInNewRow=%d\n", scrollY, currPageNo, firstPageInNewRow);
+    if ((firstPageInNewRow > pageCount()) || (firstPageInCurrRow == firstPageInNewRow)) {
+        /* we're on a last row or after it, can't go any further */
+        return FALSE;
+    }
+    goToPage(firstPageInNewRow, scrollY);
+    return TRUE;
+}
+
+bool DisplayModel::goToPrevPage(int scrollY)
+{
+    int columns = columnsFromDisplayMode(displayMode());
+    int currPageNo = currentPageNo();
+    DBG_OUT("DisplayModel::goToPrevPage(scrollY=%d), currPageNo=%d\n", scrollY, currPageNo);
+    if (currPageNo <= columns) {
+        /* we're on a first page, can't go back */
+        return FALSE;
+    }
+    goToPage(currPageNo - columns, scrollY);
+    return TRUE;
+}
+
+bool DisplayModel::goToLastPage(void)
+{
+    DBG_OUT("DisplayModel::goToLastPage()\n");
+
+    int columns = columnsFromDisplayMode(displayMode());
+    int currPageNo = currentPageNo();
+    int firstPageInLastRow = FirstPageInARowNo(pageCount(), columns);
+
+    if (currPageNo != firstPageInLastRow) { /* are we on the last page already ? */
+        goToPage(firstPageInLastRow, 0);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+bool DisplayModel::goToFirstPage(void)
+{
+    DBG_OUT("DisplayModel::goToFirstPage()\n");
+
+    if (displayModeContinuous(displayMode())) {
+        if (0 == areaOffset.y) {
+            return FALSE;
+        }
+    } else {
+        assert(pageShown(_startPage));
+        if (1 == _startPage) {
+            /* we're on a first page already */
+            return FALSE;
+        }
+    }
+    goToPage(1, 0);
+    return TRUE;
+}
+
+

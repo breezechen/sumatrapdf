@@ -9,8 +9,6 @@ public:
     DisplayModelFitz(DisplayMode displayMode);
     virtual ~DisplayModelFitz();
 
-    virtual void  setDisplayMode(DisplayMode displayMode);
-
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);
     virtual void startRenderingPage(int pageNo);
