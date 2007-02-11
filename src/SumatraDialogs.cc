@@ -1,6 +1,5 @@
 #include "SumatraDialogs.h"
 #include <assert.h>
-#include "BaseUtils.h"
 #include "DisplayModel.h"
 #include "dstring.h"
 #include "Resource.h"

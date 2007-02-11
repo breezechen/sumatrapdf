@@ -203,7 +203,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\BaseUtils.c"
+				RelativePath=".\baseutils\base_util.c"
 				>
 			</File>
 			<File
@@ -220,6 +220,10 @@
 			</File>
 			<File
 				RelativePath=".\src\pdiff.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\str_util.c"
 				>
 			</File>
 		</Filter>

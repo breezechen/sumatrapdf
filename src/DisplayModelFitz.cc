@@ -7,7 +7,7 @@
 DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode) :
     DisplayModel(displayMode)
 {
-    // TODO: probably will need something
+    _pdfEngine = new PdfEngineFitz();
 }
 
 DisplayModelFitz::~DisplayModelFitz()

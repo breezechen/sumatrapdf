@@ -1,10 +1,13 @@
 #include "DisplayModel.h"
-#include <assert.h>
-#include <stdlib.h>
+
+#include "str_util.h"
 
 // TODO: get rid of the need for GooString and UGooString in common code
 #include "GooString.h"
 #include "UGooString.h"
+
+#include <assert.h>
+#include <stdlib.h>
 
 DisplaySettings gDisplaySettings = {
   PADDING_PAGE_BORDER_TOP_DEF,
@@ -85,7 +88,7 @@ bool rotationFlipped(int rotation)
 
 bool displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm)
 {
-    ds->filePath = Str_Escape(dm->fileName());
+    ds->filePath = str_escape(dm->fileName());
     if (!ds->filePath)
         return FALSE;
     ds->displayMode = dm->displayMode();
@@ -105,6 +108,14 @@ bool displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm)
     ds->windowX = 0;
     ds->windowY = 0;
     return TRUE;
+}
+
+/* move to base_util.c or use C's MIN/MAX */
+static void SwapDouble(double *one, double *two)
+{
+    double tmp = *one;
+    *one = *two;
+    *two = tmp;
 }
 
 /* Given 'pageInfo', which should contain correct information about

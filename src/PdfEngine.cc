@@ -13,7 +13,6 @@
 #include "PDFDoc.h"
 #include "SecurityHandler.h"
 #include "Link.h"
-#include "BaseUtils.h"
 
 PdfEnginePoppler::PdfEnginePoppler() : 
     PdfEngine()

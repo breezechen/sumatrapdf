@@ -1,7 +1,6 @@
 #ifndef FILE_HISTORY_H_
 #define FILE_HISTORY_H_
 
-#include "BaseUtils.h"
 #include "DisplayState.h"
 #include "dstring.h"
 

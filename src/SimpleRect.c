@@ -1,6 +1,29 @@
-#include <assert.h>
-#include "BaseUtils.h"
 #include "SimpleRect.h"
+#include "base_util.h"
+
+#include <assert.h>
+
+static void SwapInt(int *one, int *two)
+{
+    int tmp = *one;
+    *one = *two;
+    *two = tmp;
+}
+
+static void SwapDouble(double *one, double *two)
+{
+    double tmp = *one;
+    *one = *two;
+    *two = tmp;
+}
+
+static int MinInt(int one, int two)
+{
+    if (one < two)
+        return one;
+    else
+        return two;
+}
 
 /* Return true if 'r1' and 'r2' intersect. Put the intersect area into
    'rIntersectOut'.

@@ -11,25 +11,8 @@
      of a previous run.
 */
 
-#include <assert.h>
-#include <config.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <time.h>
-
-#ifdef HAVE_DIRENT_H
-#include <dirent.h>
-#endif
-
-#ifdef WIN32
-#include <windows.h>
-#else
-#define stricmp strcasecmp
-#endif
+#include "str_util.h"
+#include "base_util.h"
 
 #include "PdfEngine.h"
 
@@ -44,9 +27,21 @@
 #include "PDFDoc.h"
 #include "SecurityHandler.h"
 #include "Link.h"
-
-#include "BaseUtils.h"
 #include "pdiff.h"
+
+#include <assert.h>
+#include <config.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <time.h>
+
+#ifdef HAVE_DIRENT_H
+#include <dirent.h>
+#endif
 
 extern void PreviewBitmapInit(void);
 extern void PreviewBitmap(SplashBitmap *);
@@ -485,7 +480,7 @@ int StrList_Insert(StrList **root, char *txt)
     assert(root && txt);
     if (!root || !txt)
         return FALSE;
-    txtDup = Str_Dup(txt);
+    txtDup = str_dup(txt);
     if (!txtDup)
         return FALSE;
 
@@ -1406,38 +1401,38 @@ void ParseCommandLine(int argc, char **argv)
         arg = argv[i];
         assert(arg);
         if ('-' == arg[0]) {
-            if (Str_EqNoCase(arg, TIMINGS_ARG)) {
+            if (str_ieq(arg, TIMINGS_ARG)) {
                 gfTimings = TRUE;
-            } else if (Str_EqNoCase(arg, RESOLUTION_ARG)) {
+            } else if (str_ieq(arg, RESOLUTION_ARG)) {
                 ++i;
                 if (i == argc)
                     PrintUsageAndExit(argc, argv); /* expect a file name after that */
                 if (!ParseResolutionString(argv[i], &gResolutionX, &gResolutionY))
                     PrintUsageAndExit(argc, argv);
                 gfForceResolution = TRUE;
-            } else if (Str_EqNoCase(arg, RECURSIVE_ARG)) {
+            } else if (str_ieq(arg, RECURSIVE_ARG)) {
                 gfRecursive = TRUE;
-            } else if (Str_EqNoCase(arg, OUT_ARG)) {
+            } else if (str_ieq(arg, OUT_ARG)) {
                 /* expect a file name after that */
                 ++i;
                 if (i == argc)
                     PrintUsageAndExit(argc, argv);
-                gOutFileName = Str_Dup(argv[i]);
-            } else if (Str_EqNoCase(arg, PREVIEW_ARG)) {
+                gOutFileName = str_dup(argv[i]);
+            } else if (str_ieq(arg, PREVIEW_ARG)) {
                 gfPreview = TRUE;
-            } else if (Str_EqNoCase(arg, TEXT_ARG)) {
+            } else if (str_ieq(arg, TEXT_ARG)) {
                 gfTextOnly = TRUE;
-            } else if (Str_EqNoCase(arg, SLOW_PREVIEW_ARG)) {
+            } else if (str_ieq(arg, SLOW_PREVIEW_ARG)) {
                 gfSlowPreview = TRUE;
-            } else if (Str_EqNoCase(arg, LOAD_ONLY_ARG)) {
+            } else if (str_ieq(arg, LOAD_ONLY_ARG)) {
                 gfLoadOnly = TRUE;
-            } else if (Str_EqNoCase(arg, FITZ_ARG)) {
+            } else if (str_ieq(arg, FITZ_ARG)) {
                 gfFitzRendering = TRUE;
-            } else if (Str_EqNoCase(arg, BOTH_ARG)) {
+            } else if (str_ieq(arg, BOTH_ARG)) {
                 gfBoth = TRUE;
-            } else if (Str_EqNoCase(arg, PDIFF_ARG)) {
+            } else if (str_ieq(arg, PDIFF_ARG)) {
                 gfPDiff = TRUE;
-            } else if (Str_EqNoCase(arg, PAGE_ARG)) {
+            } else if (str_ieq(arg, PAGE_ARG)) {
                 /* expect an integer after that */
                 ++i;
                 if (i == argc)
@@ -1445,7 +1440,7 @@ void ParseCommandLine(int argc, char **argv)
                 gPageNo = atoi(argv[i]);
                 if (gPageNo < 1)
                     PrintUsageAndExit(argc, argv);
-            } else if (Str_EqNoCase(arg, DUMP_LINKS_ARG)) {
+            } else if (str_ieq(arg, DUMP_LINKS_ARG)) {
                 gfDumpLinks = TRUE;
             } else {
                 /* unknown option */
@@ -1477,17 +1472,17 @@ void RenderPdfFileList(char *pdfFileList)
         error(-1, "couldn't load file '%s'", pdfFileList);
         return;
     }
-    dataNormalized = Str_NormalizeNewline(data, UNIX_NEWLINE);
+    dataNormalized = str_normalize_newline(data, UNIX_NEWLINE);
     if (!dataNormalized) {
         error(-1, "couldn't normalize data of file '%s'", pdfFileList);
         goto Exit;
     }
     for (;;) {
-        pdfFileName = Str_SplitIter(&dataNormalized, UNIX_NEWLINE_C);
+        pdfFileName = str_split_iter(&dataNormalized, UNIX_NEWLINE_C);
         if (!pdfFileName)
             break;
-        Str_StripWsBoth(pdfFileName);
-        if (Str_Empty(pdfFileName)) {
+        str_strip_ws_both(pdfFileName);
+        if (str_empty(pdfFileName)) {
             free((void*)pdfFileName);
             continue;
         }
@@ -1548,7 +1543,7 @@ int IsFileName(char *path)
 
 int IsPdfFileName(char *path)
 {
-    if (Str_EndsWithNoCase(path, ".pdf"))
+    if (str_endswith(path, ".pdf"))
         return TRUE;
     return FALSE;
 }

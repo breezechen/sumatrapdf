@@ -1,4 +1,5 @@
 #include "FileHistory.h"
+#include "str_util.h"
 
 #include <string.h>
 #include <assert.h>
@@ -52,7 +53,7 @@ FileHistoryList *FileHistoryList_Node_CreateFromFilePath(const char *filePath)
     if (!node)
         return NULL;
 
-    node->state.filePath = (const char*)Str_Dup(filePath);
+    node->state.filePath = (const char*)str_dup(filePath);
     if (!node->state.filePath)
         goto Error;
     return node;
@@ -154,7 +155,7 @@ FileHistoryList *FileHistoryList_Node_FindByFilePath(FileHistoryList **root, con
     curr = *root;
     while (curr) {
         assert(curr->state.filePath);
-        if (Str_Eq(filePath, curr->state.filePath))
+        if (str_eq(filePath, curr->state.filePath))
             return curr;
         curr = curr->next;
     }

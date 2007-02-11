@@ -1,7 +1,7 @@
 #ifndef _DISPLAY_MODEL_H_
 #define _DISPLAY_MODEL_H_
 
-#include "BaseUtils.h"
+#include "base_util.h"
 #include "DisplayState.h"
 #include "PdfEngine.h"
 #include "SimpleRect.h"

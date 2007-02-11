@@ -2,8 +2,8 @@
    License: GPLv2 */
 
 #include "DisplayModelSplash.h"
-#include <assert.h>
-#include "BaseUtils.h"
+#include "str_util.h"
+
 #include "GlobalParams.h"
 #include "GooMutex.h"
 #include "GooString.h"
@@ -12,8 +12,10 @@
 #include "PDFDoc.h"
 #include "SplashBitmap.h"
 #include "SplashOutputDev.h"
-#include <stdlib.h> /* malloc etc. */
 #include "TextOutputDev.h"
+
+#include <assert.h>
+#include <stdlib.h> /* malloc etc. */
 
 #ifdef _WIN32
 #define PREDICTIVE_RENDER 1
@@ -637,7 +639,7 @@ void DisplayModelSplash::HandleLinkURI(LinkURI *linkURI)
     const char *uri;
 
     uri = linkURI->getURI()->getCString();
-    if (Str_Empty(uri))
+    if (str_empty(uri))
         return;
     LaunchBrowser(uri);
 }
@@ -663,13 +665,13 @@ void DisplayModelSplash::HandleLinkNamed(LinkNamed *linkNamed)
     if (!name)
       return;
     nameTxt = name->getCString();
-    if (Str_Eq(ACTION_NEXT_PAGE, nameTxt)) {
+    if (str_eq(ACTION_NEXT_PAGE, nameTxt)) {
         goToNextPage(0);
-    } else if (Str_Eq(ACTION_PREV_PAGE, nameTxt)) {
+    } else if (str_eq(ACTION_PREV_PAGE, nameTxt)) {
         goToPrevPage(0);
-    } else if (Str_Eq(ACTION_LAST_PAGE, nameTxt)) {
+    } else if (str_eq(ACTION_LAST_PAGE, nameTxt)) {
         goToLastPage();
-    } else if (Str_Eq(ACTION_FIRST_PAGE, nameTxt)) {
+    } else if (str_eq(ACTION_FIRST_PAGE, nameTxt)) {
         goToFirstPage();
     } else {
         /* not supporting: "GoBack", "GoForward", "Quit" */

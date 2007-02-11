@@ -1,7 +1,9 @@
+
 #include "DisplayState.h"
-#include <assert.h>
-#include "BaseUtils.h"
+#include "str_util.h"
 #include "dstring.h"
+
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -49,7 +51,7 @@ const char *DisplayModeNameFromEnum(DisplayMode var)
 }
 
 #define IS_STR_ENUM(enumName) \
-    if (Str_Eq(txt, enumName##_STR)) { \
+    if (str_eq(txt, enumName##_STR)) { \
         *resOut = enumName; \
         return TRUE; \
     }

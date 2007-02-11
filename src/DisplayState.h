@@ -1,7 +1,7 @@
 #ifndef DISPLAY_STATE_H_
 #define DISPLAY_STATE_H_
 
-#include "BaseUtils.h"
+#include "base_util.h"
 #include "dstring.h"
 
 enum DisplayMode {

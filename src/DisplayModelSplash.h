@@ -45,7 +45,6 @@
   those pages to a bitmap and display those bitmaps.
 */
 
-#include "BaseUtils.h"
 #include "DisplayState.h"
 #include "DisplayModel.h"
 

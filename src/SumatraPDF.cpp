@@ -1,10 +1,11 @@
+#include "SumatraPDF.h"
+#include "str_util.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <direct.h> /* for _mkdir() */
-
-#include "SumatraPDF.h"
 
 #include <shellapi.h>
 #include <shlobj.h>
@@ -27,7 +28,6 @@
 
 #include "SimpleRect.h"
 #include "DisplayModelSplash.h"
-#include "BaseUtils.h"
 #include <windowsx.h>
 
 //#define FANCY_UI 1
@@ -412,7 +412,7 @@ void RenderQueue_Pop(PageRenderRequest *req)
     UnlockCache();
 }
 
-/* TODO: move to BaseUtils.h */
+/* TODO: move to file_util (?) */
 static const char *Path_GetBaseName(const char *path)
 {
     const char *fileBaseName = (const char*)strrchr(path, DIR_SEP_CHAR);
@@ -425,7 +425,7 @@ static const char *Path_GetBaseName(const char *path)
 
 static char *Path_GetDir(const char *path)
 {
-    char *dir = Str_Dup(path);
+    char *dir = str_dup(path);
     if (!dir) return NULL;
     char *lastSep = (char*)strrchr(path, DIR_SEP_CHAR);
     if (NULL != lastSep)
@@ -788,7 +788,7 @@ static bool IsRunningFromProgramFiles(void)
     char *exePath = ExePathGet();
     if (!exePath) return true; // again, assume it is
     bool fromProgramFiles = false;
-    if (Str_StartsWithNoCase(dir, exePath))
+    if (str_startswithi(dir, exePath))
         fromProgramFiles = true;
     free((void*)exePath);
     return fromProgramFiles;
@@ -830,7 +830,7 @@ static void AppGenDataFilename(char* pFilename, DString* pDs)
     } else {
         AppGetAppDir(pDs);
     }
-    if (!Str_EndsWithNoCase(pDs->pString, DIR_SEP_STR) && !(DIR_SEP_CHAR == pFilename[0])) {
+    if (!str_endswithi(pDs->pString, DIR_SEP_STR) && !(DIR_SEP_CHAR == pFilename[0])) {
         DStringAppend(pDs, DIR_SEP_STR, -1);
     }
     DStringAppend(pDs, pFilename, -1);
@@ -860,7 +860,7 @@ static void Prefs_Load(void)
     Prefs_GetFileName(&path);
 
     prefsTxt = File_Slurp(path.pString, &prefsFileLen);
-    if (Str_Empty(prefsTxt)) {
+    if (str_empty(prefsTxt)) {
         DBG_OUT("  no prefs file or is empty\n");
         return;
     }
@@ -3500,28 +3500,28 @@ static void OnChar(WindowInfo *win, int key)
 
 static inline BOOL IsDontRegisterExtArg(char *txt)
 {
-    if (Str_EqNoCase(txt, NO_REGISTER_EXT_ARG_TXT))
+    if (str_ieq(txt, NO_REGISTER_EXT_ARG_TXT))
         return TRUE;
     return FALSE;
 }
 
 static inline BOOL IsPrintToArg(char *txt)
 {
-    if (Str_EqNoCase(txt, PRINT_TO_ARG_TXT))
+    if (str_ieq(txt, PRINT_TO_ARG_TXT))
         return TRUE;
     return FALSE;
 }
 
 static inline BOOL IsExitOnPrintArg(char *txt)
 {
-    if (Str_EqNoCase(txt, EXIT_ON_PRINT_ARG_TXT))
+    if (str_ieq(txt, EXIT_ON_PRINT_ARG_TXT))
         return TRUE;
     return FALSE;
 }
 
 static inline BOOL IsBenchArg(char *txt)
 {
-    if (Str_EqNoCase(txt, BENCH_ARG_TXT))
+    if (str_ieq(txt, BENCH_ARG_TXT))
         return TRUE;
     return FALSE;
 }
@@ -3548,7 +3548,7 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
     while (curr) {
         DBG_OUT("  id=%d for '%s'\n", (int)curr->menuId, curr->state.filePath);
         if (curr->menuId == menuId)
-            return Str_Dup(curr->state.filePath);
+            return str_dup(curr->state.filePath);
         curr = curr->next;
     }
     return NULL;
@@ -4128,7 +4128,7 @@ static StrList *StrList_FromCmdLine(char *cmdLine)
     }
 
     for (;;) {
-        txt = Str_ParsePossiblyQuoted(&cmdLine);
+        txt = str_parse_possibly_quoted(&cmdLine);
         if (!txt)
             break;
         if (!StrList_InsertAndOwn(&strList, txt)) {

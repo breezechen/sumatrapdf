@@ -1,4 +1,5 @@
 #include "AppPrefs.h"
+#include "str_util.h"
 #include "DisplayModel.h"
 #include "DisplayState.h"
 #include "dstring.h"
@@ -110,23 +111,23 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
     if (!key || !value || !dsOut)
         return;
 
-    if (Str_Eq(FILE_STR, key)) {
+    if (str_eq(FILE_STR, key)) {
         assert(value);
         if (!value) return;
         assert(!dsOut->filePath);
         free((void*)dsOut->filePath);
-        dsOut->filePath = Str_Dup(value);
+        dsOut->filePath = str_dup(value);
         return;
     }
 
-    if (Str_Eq(DISPLAY_MODE_STR, key)) {
+    if (str_eq(DISPLAY_MODE_STR, key)) {
         dsOut->displayMode = DM_SINGLE_PAGE;
         fOk = ParseDisplayMode(value, &dsOut->displayMode);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(PAGE_NO_STR, key)) {
+    if (str_eq(PAGE_NO_STR, key)) {
         fOk = ParseInt(value, &dsOut->pageNo);
         assert(fOk);
         if (!fOk || (dsOut->pageNo < 1))
@@ -134,7 +135,7 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
         return;
     }
 
-    if (Str_Eq(ZOOM_VIRTUAL_STR, key)) {
+    if (str_eq(ZOOM_VIRTUAL_STR, key)) {
         fOk = ParseDouble(value, &dsOut->zoomVirtual);
         assert(fOk);
         if (!fOk || !ValidZoomVirtual(dsOut->zoomVirtual))
@@ -142,7 +143,7 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
         return;
     }
 
-    if (Str_Eq(ROTATION_STR, key)) {
+    if (str_eq(ROTATION_STR, key)) {
         fOk = ParseInt(value, &dsOut->rotation);
         assert(fOk);
         if (!fOk || !validRotation(dsOut->rotation))
@@ -150,56 +151,56 @@ static void ParseKeyValue(char *key, char *value, DisplayState *dsOut)
         return;
     }
 
-    if (Str_Eq(VISIBLE_STR, key)) {
+    if (str_eq(VISIBLE_STR, key)) {
         dsOut->visible= FALSE;
         fOk = ParseBool(value, &dsOut->visible);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(FULLSCREEN_STR, key)) {
+    if (str_eq(FULLSCREEN_STR, key)) {
         dsOut->fullScreen = FALSE;
         fOk = ParseBool(value, &dsOut->fullScreen);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(SCROLL_X_STR, key)) {
+    if (str_eq(SCROLL_X_STR, key)) {
         dsOut->scrollX = 0;
         fOk = ParseInt(value, &dsOut->scrollX);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(SCROLL_Y_STR, key)) {
+    if (str_eq(SCROLL_Y_STR, key)) {
         dsOut->scrollY = 0;
         fOk = ParseInt(value, &dsOut->scrollY);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(WINDOW_X_STR, key)) {
+    if (str_eq(WINDOW_X_STR, key)) {
         dsOut->windowX = DEFAULT_WINDOW_X;
         fOk = ParseInt(value, &dsOut->windowX);
         assert(fOk);
         return;
     } 
 
-    if (Str_Eq(WINDOW_Y_STR, key)) {
+    if (str_eq(WINDOW_Y_STR, key)) {
         dsOut->windowY = DEFAULT_WINDOW_Y;
         fOk = ParseInt(value, &dsOut->windowY);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(WINDOW_DX_STR, key)) {
+    if (str_eq(WINDOW_DX_STR, key)) {
         dsOut->windowDx = DEFAULT_WINDOW_DX;
         fOk = ParseInt(value, &dsOut->windowDx);
         assert(fOk);
         return;
     }
 
-    if (Str_Eq(WINDOW_DY_STR, key)) {
+    if (str_eq(WINDOW_DY_STR, key)) {
         dsOut->windowDy = DEFAULT_WINDOW_DY;
         fOk = ParseInt(value, &dsOut->windowDy);
         assert(fOk);
@@ -239,19 +240,19 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 
     DisplayState_Init(&currState);
 
-    prefsTxtNormalized = Str_NormalizeNewline(prefsTxt, UNIX_NEWLINE);
+    prefsTxtNormalized = str_normalize_newline(prefsTxt, UNIX_NEWLINE);
     if (!prefsTxtNormalized)
         goto Exit;
 
     strTmp = prefsTxtNormalized;
     for (;;) {
-        line = Str_SplitIter(&strTmp, UNIX_NEWLINE_C);
+        line = str_split_iter(&strTmp, UNIX_NEWLINE_C);
         if (!line)
             break;
-        Str_StripWsRight(line);
+        str_strip_ws_right(line);
 
         /* skip empty and comment lines*/
-        if (Str_Empty(line))
+        if (str_empty(line))
             goto Next;
         if (Prefs_LineIsComment(line))
             goto Next;
@@ -260,12 +261,12 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
            value is optional. If value exists, there must
            be a space after ':' */
         value = line;
-        keyToFree = Str_SplitIter(&value, ':');
+        keyToFree = str_split_iter(&value, ':');
         key = keyToFree;
         assert(key);
         if (!key)
             goto Next;
-        if (Str_Empty(value)) {
+        if (str_empty(value)) {
             value = NULL; /* there was no value */
         } else {
             assert(' ' == *value);
@@ -280,22 +281,22 @@ BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 StartOver:
         switch (state) {
             case PPS_START:
-                if (Str_Eq(SHOW_TOOLBAR_STR, key)) {
+                if (str_eq(SHOW_TOOLBAR_STR, key)) {
                     gShowToolbar = TRUE;
                     ParseBool(value, &gShowToolbar);
                     break;
                 }
-                if (Str_Eq(PDF_ASSOCIATE_DONT_ASK_STR, key)) {
+                if (str_eq(PDF_ASSOCIATE_DONT_ASK_STR, key)) {
                     gPdfAssociateDontAskAgain = FALSE;
                     ParseBool(value, &gPdfAssociateDontAskAgain);
                     break;
                 }
-                if (Str_Eq(PDF_ASSOCIATE_ASSOCIATE, key)) {
+                if (str_eq(PDF_ASSOCIATE_ASSOCIATE, key)) {
                     gPdfAssociateShouldAssociate = TRUE;
                     ParseBool(value, &gPdfAssociateShouldAssociate);
                     break;
                 }
-                if (Str_Eq(FILE_HISTORY_STR, key)) {
+                if (str_eq(FILE_HISTORY_STR, key)) {
                     assert(!isStructVal);
                     state = PPS_IN_FILE_HISTORY;
                     assert(!value);

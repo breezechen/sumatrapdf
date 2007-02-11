@@ -4,8 +4,6 @@
 #include "DisplayState.h"
 #include "FileHistory.h"
 
-#include "BaseUtils.h"
-
 BOOL    Prefs_Serialize(FileHistoryList **root, DString *strOut);
 BOOL    Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot);
 
