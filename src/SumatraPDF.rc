@@ -65,8 +65,8 @@ BEGIN
     BEGIN
         MENUITEM "Next Page",                   IDM_GOTO_NEXT_PAGE
         MENUITEM "Previous Page",               IDM_GOTO_PREV_PAGE
-        MENUITEM "First Page",                  IDM_GOTO_FIRST_PAGE
-        MENUITEM "Last Page",                   IDM_GOTO_LAST_PAGE
+        MENUITEM "First Page\tHome",            IDM_GOTO_FIRST_PAGE
+        MENUITEM "Last Page\tEnd",              IDM_GOTO_LAST_PAGE
         MENUITEM "Page...",                     IDM_GOTO_PAGE
     END
     POPUP "&Zoom"

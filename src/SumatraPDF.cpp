@@ -3455,6 +3455,10 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         SendMessage (win->hwndCanvas, WM_HSCROLL, SB_PAGEUP, 0);
     } else if (VK_RIGHT == key) {
         SendMessage (win->hwndCanvas, WM_HSCROLL, SB_PAGEDOWN, 0);
+    } else if (VK_HOME == key) {
+        win->dm->goToFirstPage();
+    } else if (VK_END == key) {
+        win->dm->goToLastPage();    
     } else if (('g' == key) || ('G' == key)) {
         if (IsCtrlLeftPressed())
             OnMenuGoToPage(win);
