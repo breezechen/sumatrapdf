@@ -11,6 +11,7 @@ class Link;
 class Links;
 class TextPage;
 class UGooString;
+class SplashBitmap;
 
 // TODO: remove those when dependency on Link and TextPage are gone
 //#include "Link.h"
@@ -141,12 +142,24 @@ typedef struct SearchStateData {
     int             currPage; /* page for the last hit */
 } SearchStateData;
 
+/* Abstract class representing cached bitmap. Allows different implementations
+   on different platforms. */
+class PlatformRenderedBitmap {
+public:
+  virtual ~PlatformRenderedBitmap() {};
+  // TODO: this is for WINDOWS only
+  virtual HBITMAP CreateDIBitmap(HDC hdc) = 0;
+};
 
 class DisplayModel
 {
 public:
     DisplayModel(DisplayMode displayMode);
     virtual ~DisplayModel();
+
+    virtual PlatformRenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+                         BOOL (*abortCheckCbkA)(void *data),
+                         void *abortCheckCbkDataA) = 0;
 
     PdfEngine *pdfEngine() { return _pdfEngine; }
 
@@ -250,7 +263,8 @@ public:
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y) = 0;
-    virtual void startRenderingPage(int pageNo) = 0;
+
+    void            startRenderingPage(int pageNo);
 
     bool            buildPagesInfo(void);
     double          zoomRealFromFirtualForPage(double zoomVirtual, int pageNo);
@@ -266,6 +280,9 @@ protected:
     void            pageChanged(void);
     /* called when we decide that the display needs to be redrawn */
     void            repaintDisplay(bool delayed);
+
+    void            showBusyCursor();
+    void            showNormalCursor();
 
     PdfEngine *     _pdfEngine;
     DisplayMode     _displayMode; /* TODO: not used yet */
@@ -313,5 +330,40 @@ extern DisplaySettings gDisplaySettings;
 
 /* must be implemented somewhere else */
 extern void         LaunchBrowser(const char *uri);
+
+/* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
+   that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
+   and corresponding rendered bitmap.
+*/
+typedef struct {
+  DisplayModel * dm;
+  int            pageNo;
+  int            rotation;
+  double         zoomLevel;
+  PlatformRenderedBitmap *bitmap;
+  double         renderTime;
+} BitmapCacheEntry;
+
+typedef struct {
+    DisplayModel *  dm;
+    int             pageNo;
+    double          zoomLevel;
+    int             rotation;
+    int             abort;
+} PageRenderRequest;
+
+/* Lock protecting both bitmap cache and page render queue */
+void              LockCache();
+void              UnlockCache();
+
+void              RenderQueue_Add(DisplayModel *dm, int pageNo);
+
+BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
+BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
+void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, 
+                                  PlatformRenderedBitmap *bitmap, double renderTime);
+void              BitmapCache_FreeAll(void);
+BOOL              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
+BOOL              BitmapCache_FreeNotVisible(void);
 
 #endif

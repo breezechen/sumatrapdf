@@ -32,18 +32,6 @@
 
 //#define FANCY_UI 1
 
-class WinRenderedBitmap : public PlatformCachedBitmap {
-public:
-    WinRenderedBitmap(SplashBitmap *b) : mBitmap(b) {}
-    virtual ~WinRenderedBitmap() {
-        delete mBitmap;
-    }
-    SplashBitmap *bitmap(void) { return mBitmap; }
-
-protected:
-    SplashBitmap *mBitmap;
-};
-
 /* Define if you want to conserve memory by always freeing cached bitmaps
    for pages not visible. Only enable for stress-testing the logic. On
    desktop machine we usually have plenty memory */
@@ -122,7 +110,7 @@ static BOOL             gDebugShowLinks = FALSE;
 
 /* A special "pointer" vlaue indicating that we tried to render this bitmap
    but couldn't (e.g. due to lack of memory) */
-#define BITMAP_CANNOT_RENDER (SplashBitmap*)NULL
+#define BITMAP_CANNOT_RENDER (PlatformRenderedBitmap*)NULL
 
 #define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
                   RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
@@ -268,25 +256,19 @@ static BOOL pageRenderAbortCb(void *data)
         return FALSE;
 }
 
-void RenderQueue_RemoveForDisplayModel(DisplayModelSplash *dm) {
-    int                 i = 0;
-    int                 curPos = 0;
-    int                 reqCount;
-    BOOL                shouldRemove;
-    PageRenderRequest * req = NULL;
-
+void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
     LockCache();
-    reqCount = gPageRenderRequestsCount;
-    while (i < reqCount) {
-        req = &(gPageRenderRequests[i]);
-        shouldRemove = (req->dm == dm);
+    int reqCount = gPageRenderRequestsCount;
+    int curPos = 0;
+    for(int i = 0; i < reqCount; i++) {
+        PageRenderRequest *req = &(gPageRenderRequests[i]);
+        bool shouldRemove = (req->dm == dm);
         if (i != curPos)
             gPageRenderRequests[curPos] = gPageRenderRequests[i];
         if (shouldRemove)
             --gPageRenderRequestsCount;
         else
             ++curPos;
-        ++i;
     }
     UnlockCache();
 }
@@ -294,8 +276,7 @@ void RenderQueue_RemoveForDisplayModel(DisplayModelSplash *dm) {
 /* Wait until rendering of a page beloging to <dm> has finished. */
 /* TODO: this might take some time, would be good to show a dialog to let the
    user know he has to wait until we finish */
-void CancelRenderingForDisplayModel(DisplayModelSplash *dm)
-{
+void CancelRenderingForDisplayModel(DisplayModel *dm) {
     BOOL renderingFinished = FALSE;
 
     DBG_OUT("CancelRenderingForDisplayModel()\n");
@@ -314,23 +295,20 @@ void CancelRenderingForDisplayModel(DisplayModelSplash *dm)
 }
 
 /* Render a bitmap for page <pageNo> in <dm>. */
-void RenderQueue_Add(DisplayModelSplash *dm, int pageNo) {
+void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     PageRenderRequest *   newRequest = NULL;
     PageRenderRequest *   req = NULL;
-    PdfPageInfo *         pageInfo;
     LONG                  prevCount;
-    int                   rotation;
-    double                zoomLevel;
 
     DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
     assert(dm);
     if (!dm) goto Exit;
 
     LockCache();
-    pageInfo = dm->getPageInfo(pageNo);
-    rotation = dm->rotation();
+    PdfPageInfo *pageInfo = dm->getPageInfo(pageNo);
+    int rotation = dm->rotation();
     normalizeRotation(&rotation);
-    zoomLevel = dm->zoomReal();
+    double zoomLevel = dm->zoomReal();
 
     if (BitmapCache_Exists(dm, pageNo, zoomLevel, rotation)) {
         goto LeaveCsAndExit;
@@ -2018,37 +1996,19 @@ static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
 
 static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
-    int                   pageNo;
-    PdfPageInfo*          pageInfo;
-    DisplayModelSplash *  dmSplash;
     DisplayModel *        dm;
-    SplashBitmap *        splashBmp;
-    int                   splashBmpDx, splashBmpDy;
-    SplashColorMode       splashBmpColorMode;
-    SplashColorPtr        splashBmpData;
-    int                   splashBmpRowSize;
-    int                   xSrc, ySrc, xDest, yDest;
-    int                   bmpDx, bmpDy;
-    int                   linkNo;
-    PdfLink *             pdfLink;
-    RectI                 drawAreaRect;
-    RectI                 intersect;
-    RectI                 rectLink;
-    RECT                  rectScreen;
-    HBITMAP               hbmp = NULL;
-    BITMAPINFOHEADER      bmih;
-    HDC                   bmpDC = NULL;
     RECT                  bounds;
-    BitmapCacheEntry *    entry;
+    PlatformRenderedBitmap *renderedBmp = NULL;
 
     assert(win);
     if (!win) return;
-    dmSplash = win->dmSplash;
     dm = win->dm;
-    assert(dmSplash);
-    if (!dmSplash) return;
-    assert(dmSplash->pdfDoc);
-    if (!dmSplash->pdfDoc) return;
+    assert(dm);
+    if (!dm) return;
+#if 0 // TODO: write the equivalent dm->isOk() ?
+    assert(dm->pdfDoc);
+    if (!dm->pdfDoc) return;
+#endif
 
     assert(win->hdcToDraw);
     hdc = win->hdcToDraw;
@@ -2057,32 +2017,29 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
     DBG_OUT("WindowInfo_Paint() start\n");
-    for (pageNo = 1; pageNo <= dmSplash->pageCount(); ++pageNo) {
-        pageInfo = dmSplash->getPageInfo(pageNo);
+    for (int pageNo = 1; pageNo <= dm->pageCount(); ++pageNo) {
+        PdfPageInfo *pageInfo = dm->getPageInfo(pageNo);
         if (!pageInfo->visible)
             continue;
         assert(pageInfo->shown);
         if (!pageInfo->shown)
             continue;
 
-        splashBmp = NULL;
-        entry = BitmapCache_Find(dmSplash, pageNo, dmSplash->zoomReal(), dmSplash->rotation());
-        if (entry) {
-            WinRenderedBitmap *renderedBmp = (WinRenderedBitmap*)entry->bitmap;
-            splashBmp = renderedBmp->bitmap();
-        }
+        BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, dm->zoomReal(), dm->rotation());
+        if (entry)
+            renderedBmp = entry->bitmap;
 
-        if (!splashBmp)
+        if (!renderedBmp)
             DBG_OUT("   missing bitmap on visible page %d\n", pageNo);
 
         //TODO: FillRect() ps->rcPaint - bounds
 
-        xSrc = (int)pageInfo->bitmapX;
-        ySrc = (int)pageInfo->bitmapY;
-        bmpDx = (int)pageInfo->bitmapDx;
-        bmpDy = (int)pageInfo->bitmapDy;
-        xDest = (int)pageInfo->screenX;
-        yDest = (int)pageInfo->screenY;
+        int xSrc = (int)pageInfo->bitmapX;
+        int ySrc = (int)pageInfo->bitmapY;
+        int bmpDx = (int)pageInfo->bitmapDx;
+        int bmpDy = (int)pageInfo->bitmapDy;
+        int xDest = (int)pageInfo->screenX;
+        int yDest = (int)pageInfo->screenY;
 
         if (!entry) {
             /* TODO: assert is queued for rendering ? */
@@ -2096,7 +2053,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
         }
 
-        if (BITMAP_CANNOT_RENDER == splashBmp) {
+        if (BITMAP_CANNOT_RENDER == renderedBmp) {
             bounds.left = xDest;
             bounds.top = yDest;
             bounds.right = xDest + bmpDx;
@@ -2107,25 +2064,10 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         }
 
         DBG_OUT("   drawing bitmap for %d\n", pageNo);
-        splashBmpDx = splashBmp->getWidth();
-        splashBmpDy = splashBmp->getHeight();
-        splashBmpRowSize = splashBmp->getRowSize();
-        splashBmpData = splashBmp->getDataPtr();
-        splashBmpColorMode = splashBmp->getMode();
 
-        bmih.biSize = sizeof(bmih);
-        bmih.biHeight = -splashBmpDy;
-        bmih.biWidth = splashBmpDx;
-        bmih.biPlanes = 1;
-        bmih.biBitCount = 24;
-        bmih.biCompression = BI_RGB;
-        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
-        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-        bmih.biClrUsed = bmih.biClrImportant = 0;
-
-        hbmp = CreateDIBitmap(hdc, &bmih, CBM_INIT, splashBmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS );
+        HBITMAP hbmp = renderedBmp->CreateDIBitmap(hdc);
         if (hbmp) {
-            bmpDC = CreateCompatibleDC(hdc);
+            HDC bmpDC = CreateCompatibleDC(hdc);
             if (bmpDC) {
                 SelectObject(bmpDC, hbmp);
                 BitBlt(hdc, xDest, yDest, bmpDx, bmpDy, bmpDC, xSrc, ySrc, SRCCOPY);
@@ -2141,28 +2083,31 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     if (!gDebugShowLinks)
         return;
 
+    RectI drawAreaRect;
     /* debug code to visualize links */
-    drawAreaRect.x = (int)dmSplash->areaOffset.x;
-    drawAreaRect.y = (int)dmSplash->areaOffset.y;
-    drawAreaRect.dx = (int)dmSplash->drawAreaSize.dx;
-    drawAreaRect.dy = (int)dmSplash->drawAreaSize.dy;
+    drawAreaRect.x = (int)dm->areaOffset.x;
+    drawAreaRect.y = (int)dm->areaOffset.y;
+    drawAreaRect.dx = (int)dm->drawAreaSize.dx;
+    drawAreaRect.dy = (int)dm->drawAreaSize.dy;
 
-    for (linkNo = 0; linkNo < dm->linkCount(); ++linkNo) {
-        pdfLink = dm->link(linkNo);
+    for (int linkNo = 0; linkNo < dm->linkCount(); ++linkNo) {
+        PdfLink *pdfLink = dm->link(linkNo);
 
+        RectI rectLink, intersect;
         rectLink.x = pdfLink->rectCanvas.x;
         rectLink.y = pdfLink->rectCanvas.y;
         rectLink.dx = pdfLink->rectCanvas.dx;
         rectLink.dy = pdfLink->rectCanvas.dy;
 
         if (RectI_Intersect(&rectLink, &drawAreaRect, &intersect)) {
+            RECT rectScreen;
             rectScreen.left = (LONG) ((double)intersect.x - dm->areaOffset.x);
             rectScreen.top = (LONG) ((double)intersect.y - dm->areaOffset.y);
             rectScreen.right = rectScreen.left + rectLink.dx;
             rectScreen.bottom = rectScreen.top + rectLink.dy;
             FillRect(hdc, &rectScreen, gBrushLinkDebug);
             DBG_OUT("  link on screen rotate=%d, (x=%d, y=%d, dx=%d, dy=%d)\n",
-                dmSplash->rotation() + dmSplash->pagesInfo[pdfLink->pageNo-1].rotation,
+                dm->rotation() + dm->pagesInfo[pdfLink->pageNo-1].rotation,
                 rectScreen.left, rectScreen.top, RectDx(&rectScreen), RectDy(&rectScreen));
         }
     }
@@ -2530,19 +2475,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     }
 }
 
-void DisplayModelSplash::ShowNormalCursor(void)
-{
-    SetCursor(LoadCursor(NULL, IDC_ARROW));
-}
-
-void DisplayModelSplash::ShowBusyCursor(void)
-{
-    // TODO: what is the right cursor?
-    // can I set it per-window only?
-    SetCursor(LoadCursor(NULL, IDC_ARROW));
-}
-
-void DisplayModelSplash::CancelBackgroundRendering(void)
+void DisplayModelSplash::cancelBackgroundRendering(void)
 {
     // TODO: implement me!
     return;
@@ -2894,13 +2827,13 @@ TODO:
 */
 static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromPage, int toPage)
 {
+#if 0
     int                 pageNo;
     DisplayModelSplash* dmSplash;
     DisplayModel *      dm;
     PdfPageInfo*        pageInfo;
     SplashBitmap *      splashBmp;
     int                 splashBmpDx, splashBmpDy;
-    SplashColorMode     splashBmpColorMode;
     SplashColorPtr      splashBmpData;
     int                 splashBmpRowSize;
     BITMAPINFOHEADER    bmih;
@@ -2967,7 +2900,6 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         splashBmpDy = splashBmp->getHeight();
         splashBmpRowSize = splashBmp->getRowSize();
         splashBmpData = splashBmp->getDataPtr();
-        splashBmpColorMode = splashBmp->getMode();
 
         bmih.biSize = sizeof(bmih);
         bmih.biHeight = -splashBmpDy;
@@ -3037,6 +2969,7 @@ Exit:
         dm->goToPage(pageNoInitial, 0);
         dm->zoomTo(zoomInitial);
     }
+#endif
 }
 
 /* Show Print Dialog box to allow user to select the printer
@@ -4174,7 +4107,7 @@ private:
 static DWORD WINAPI PageRenderThread(PVOID data)
 {
     PageRenderRequest       req;
-    SplashBitmap *          bmp;
+    PlatformRenderedBitmap *bmp;
     BOOL                    fOk;
     DWORD                   waitResult;
     int                     count;
@@ -4203,7 +4136,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
         assert(!req.abort);
         HiResTimer renderTimer;
-        bmp = RenderBitmap(req.dm, req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
+        bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
         renderTimer.Stop();
         LockCache();
         gCurPageRenderReq = NULL;
@@ -4215,9 +4148,8 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         /* TODO: can bmp be NULL ? */
         assert(bmp);
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
-        WinRenderedBitmap *renderedBmp = new WinRenderedBitmap(bmp);
         double renderTime = renderTimer.GetTimeInMs();
-        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, renderedBmp, renderTime);
+        BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp, renderTime);
 #ifdef CONSERVE_MEMORY
         BitmapCache_FreeNotVisible();
 #endif

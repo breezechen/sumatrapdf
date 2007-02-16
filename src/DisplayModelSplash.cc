@@ -21,18 +21,10 @@
 #define PREDICTIVE_RENDER 1
 #endif
 
-#define MAX_BITMAPS_CACHED 256
-
 #define ACTION_NEXT_PAGE    "NextPage"
 #define ACTION_PREV_PAGE    "PrevPage"
 #define ACTION_FIRST_PAGE   "FirstPage"
 #define ACTION_LAST_PAGE    "LastPage"
-
-static GooMutex             cacheMutex;
-static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};
-static int                  gBitmapCacheCount = 0;
-
-static MutexAutoInitDestroy gAutoCacheMutex(&cacheMutex);
 
 static SplashColorMode              gSplashColorMode = splashModeBGR8;
 
@@ -106,14 +98,6 @@ void CDECL error(int pos, char *msg, ...) {
     *p   = '\0';
     OutputDebugString(buf);
     va_end(args);
-}
-
-void LockCache(void) {
-    gLockMutex(&cacheMutex);
-}
-
-void UnlockCache(void) {
-    gUnlockMutex(&cacheMutex);
 }
 
 #if 0
@@ -217,9 +201,36 @@ static void TransfromUpsideDown(DisplayModelSplash *dm, int pageNo, double *y1, 
     *y2 = dy - *y2;
 }
 
+RenderedBitmapSplash::~RenderedBitmapSplash() {
+    delete _bitmap;
+}
+
+HBITMAP RenderedBitmapSplash::CreateDIBitmap(HDC hdc)
+{
+    int splashBmpDx = _bitmap->getWidth();
+    int splashBmpDy = _bitmap->getHeight();
+    int splashBmpRowSize = _bitmap->getRowSize();
+
+    BITMAPINFOHEADER      bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biHeight = -splashBmpDy;
+    bmih.biWidth = splashBmpDx;
+    bmih.biPlanes = 1;
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
+    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = bmih.biClrImportant = 0;
+
+    SplashColorPtr splashBmpData = _bitmap->getDataPtr();
+    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, splashBmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
+    return hbmp;
+}
+
 DisplayModelSplash::DisplayModelSplash(DisplayMode displayMode) :
     DisplayModel(displayMode)
 {
+    _pdfEngine = new PdfEnginePoppler();
 }
 
 /* TODO: caches dm->textOutDevice, but new TextOutputDev() is cheap so
@@ -255,6 +266,7 @@ TextPage *DisplayModelSplash::GetTextPage(int pageNo)
     return pdfPageInfo->textPage;
 }
 
+#if 0
 SplashBitmap* DisplayModelSplash::GetBitmapForPage(int pageNo, 
     BOOL (*abortCheckCbkA)(void *data),
     void *abortCheckCbkDataA)
@@ -295,12 +307,7 @@ SplashBitmap* DisplayModelSplash::GetBitmapForPage(int pageNo,
     }
     return bmp;
 }
-
-/* Send the request to render a given page to a rendering thread */
-void DisplayModelSplash::startRenderingPage(int pageNo)
-{
-    RenderQueue_Add(this, pageNo);
-}
+#endif
 
 void DisplayModelSplash::FreeLinks(void)
 {
@@ -318,8 +325,8 @@ void DisplayModelSplash::FreeTextPages()
     }
 }
 
-extern void RenderQueue_RemoveForDisplayModel(DisplayModelSplash *dm);
-extern void CancelRenderingForDisplayModel(DisplayModelSplash *dm);
+extern void RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
+extern void CancelRenderingForDisplayModel(DisplayModel *dm);
 
 DisplayModelSplash::~DisplayModelSplash()
 {
@@ -335,7 +342,6 @@ DisplayModelSplash::~DisplayModelSplash()
     delete searchState.strU;
     free((void*)_links);
     free((void*)pagesInfo);
-    delete pdfDoc;
 }
 
 /* Map point <x>/<y> on the page <pageNo> to point on the screen. */
@@ -731,9 +737,9 @@ BOOL DisplayModelSplash::FindNextBackward(void)
 
     // searching uses the same code as rendering and that code is not
     // thread safe, so we have to cancel all background rendering
-    CancelBackgroundRendering();
+    cancelBackgroundRendering();
 
-    ShowBusyCursor();
+    showBusyCursor();
 
     backward = gTrue;
     caseSensitive = searchState.caseSensitive;
@@ -804,7 +810,7 @@ BOOL DisplayModelSplash::FindNextBackward(void)
         }
     }
 Exit:
-    ShowNormalCursor();
+    showNormalCursor();
     return found;
 }
 
@@ -832,7 +838,7 @@ BOOL DisplayModelSplash::FindNextForward(void)
 
     // searching uses the same code as rendering and that code is not
     // thread safe, so we have to cancel all background rendering
-    CancelBackgroundRendering();
+    cancelBackgroundRendering();
 
     backward = gFalse;
     caseSensitive =searchState.caseSensitive;
@@ -902,10 +908,42 @@ BOOL DisplayModelSplash::FindNextForward(void)
         }
     }
 Exit:
-    ShowNormalCursor();
+    showNormalCursor();
     return found;
 }
 
+PlatformRenderedBitmap *DisplayModelSplash::renderBitmap(
+                           int pageNo, double zoomReal, int rotation,
+                           BOOL (*abortCheckCbkA)(void *data),
+                           void *abortCheckCbkDataA)
+{
+    double          hDPI, vDPI;
+    GBool           useMediaBox = gFalse;
+    GBool           crop        = gTrue;
+    GBool           doLinks     = gTrue;
+
+    DBG_OUT("DisplayModelSplash::RenderBitmap(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
+
+    hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
+    vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
+    assert(outputDevice);
+    if (!outputDevice) return NULL;
+    pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
+        abortCheckCbkA, abortCheckCbkDataA);
+
+    PdfPageInfo *pageInfo = getPageInfo(pageNo);
+    if (!pageInfo->links) {
+        /* displayPage calculates links for this page (if doLinks is true)
+           and puts inside pdfDoc */
+        pageInfo->links = pdfDoc->takeLinks();
+        if (pageInfo->links->getNumLinks() > 0)
+            RecalcLinks();
+    }
+    RenderedBitmapSplash *renderedBitmap = new RenderedBitmapSplash(outputDevice->takeBitmap());
+    return renderedBitmap;
+}
+
+#if 0
 SplashBitmap* RenderBitmap(DisplayModelSplash *dm,
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
@@ -936,161 +974,4 @@ SplashBitmap* RenderBitmap(DisplayModelSplash *dm,
     }
     return dm->outputDevice->takeBitmap();
 }
-
-static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
-    assert(entry);
-    if (!entry) return;
-    DBG_OUT("BitmapCacheEntry_Free() page=%d\n", entry->pageNo);
-    assert(entry->bitmap);
-    delete entry->bitmap;
-    free((void*)entry);
-}
-
-void BitmapCache_FreeAll(void) {
-    LockCache();
-    for (int i=0; i < gBitmapCacheCount; i++) {
-        BitmapCacheEntry_Free(gBitmapCache[i]);
-        gBitmapCache[i] = NULL;
-    }
-    gBitmapCacheCount = 0;
-    UnlockCache();
-}
-
-/* Free all bitmaps in the cache that are not visible. Returns TRUE if freed
-   at least one item. */
-BOOL BitmapCache_FreeNotVisible(void)
-{
-    int                 curPos = 0;
-    int                 i;
-    BOOL                shouldFree;
-    BitmapCacheEntry *  entry;
-    DisplayModel *      dm;
-    PdfPageInfo *       pageInfo;
-    BOOL                freedSomething = FALSE;
-    int                 cacheCount;
-
-    DBG_OUT("BitmapCache_FreeNotVisible()\n");
-    LockCache();
-    cacheCount = gBitmapCacheCount;
-    for (i = 0; i < cacheCount; i++) {
-        entry = gBitmapCache[i];
-        dm = entry->dm;
-        pageInfo = dm->getPageInfo(entry->pageNo);
-        shouldFree = FALSE;
-        if (!pageInfo->visible)
-            shouldFree = TRUE;
-        
-        if (shouldFree) {
-            freedSomething = TRUE;
-            BitmapCacheEntry_Free(gBitmapCache[i]);
-            gBitmapCache[i] = NULL;
-            --gBitmapCacheCount;
-        }
-
-        if (curPos != i)
-            gBitmapCache[curPos] = gBitmapCache[i];
-
-        if (!shouldFree)
-            ++curPos;
-    }
-    UnlockCache();
-    return freedSomething;
-}
-
-/* Free all bitmaps cached for a given <dm>. Returns TRUE if freed
-   at least one item. */
-BOOL BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm)
-{
-    int     curPos = 0;
-    int     i;
-    BOOL    shouldFree;
-    BOOL    freedSomething = FALSE;
-    int     cacheCount;
-
-    DBG_OUT("BitmapCache_FreeForDisplayModel()\n");
-    LockCache();
-    cacheCount = gBitmapCacheCount;
-    for (i = 0; i < cacheCount; i++) {
-        shouldFree = (gBitmapCache[i]->dm == dm);
-        if (shouldFree) {
-            freedSomething = TRUE;
-            BitmapCacheEntry_Free(gBitmapCache[i]);
-            gBitmapCache[i] = NULL;
-            --gBitmapCacheCount;
-        }
-
-        if (curPos != i)
-            gBitmapCache[curPos] = gBitmapCache[i];
-
-        if (!shouldFree)
-            ++curPos;
-    }
-    UnlockCache();
-    return freedSomething;
-}
-
-void BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, 
-    PlatformCachedBitmap *bitmap, double renderTime)
-{
-    BitmapCacheEntry *entry;
-    assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
-    assert(dm);
-    assert(bitmap);
-    assert(validRotation(rotation));
-    assert(validZoomReal(zoomLevel));
-
-    normalizeRotation(&rotation);
-    DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
-    LockCache();
-    if (gBitmapCacheCount >= MAX_BITMAPS_CACHED - 1) {
-        /* TODO: find entry that is not visible and remove it from cache to
-           make room for new entry */
-        delete bitmap;
-        goto UnlockAndExit;
-    }
-    entry = (BitmapCacheEntry*)malloc(sizeof(BitmapCacheEntry));
-    if (!entry) {
-        delete bitmap;
-        goto UnlockAndExit;
-    }
-    entry->dm = dm;
-    entry->pageNo = pageNo;
-    entry->zoomLevel = zoomLevel;
-    entry->rotation = rotation;
-    entry->bitmap = bitmap;
-    entry->renderTime = renderTime;
-    gBitmapCache[gBitmapCacheCount++] = entry;
-UnlockAndExit:
-    UnlockCache();
-}
-
-BitmapCacheEntry *BitmapCache_Find(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation) {
-    BitmapCacheEntry *entry;
-
-    normalizeRotation(&rotation);
-    LockCache();
-    for (int i = 0; i < gBitmapCacheCount; i++) {
-        entry = gBitmapCache[i];
-        if ( (dm == entry->dm) && (pageNo == entry->pageNo) && 
-             (zoomLevel == entry->zoomLevel) && (rotation == entry->rotation)) {
-             //DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) found\n", pageNo, zoomLevel, rotation);
-             goto Exit;
-        }
-    }
-    //DBG_OUT("BitmapCache_Find(pageNo=%d, zoomLevel=%.2f%%, rotation=%d) didn't find\n", pageNo, zoomLevel, rotation);
-    entry = NULL;
-Exit:
-    UnlockCache();
-    return entry;
-}
-
-/* Return TRUE if a bitmap for a page defined by <dm>, <pageNo>, <zoomLevel>
-   and <rotation> exists in the cache */
-BOOL BitmapCache_Exists(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation) {
-    BitmapCacheEntry *entry;
-    entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
-    if (entry)
-        return TRUE;
-    return FALSE;
-}
-
+#endif

@@ -4,6 +4,11 @@
 #include "GooString.h"
 #include "UGooString.h"
 
+HBITMAP RenderedBitmapFitz::CreateDIBitmap(HDC)
+{
+    return NULL;
+}
+
 DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode) :
     DisplayModel(displayMode)
 {
@@ -46,9 +51,11 @@ void DisplayModelFitz::cvtUserToScreen(int pageNo, double *x, double *y)
     // TODO: implement me
 }
 
-/* Send the request to render a given page to a rendering thread */
-void DisplayModelFitz::startRenderingPage(int pageNo)
+PlatformRenderedBitmap *DisplayModelFitz::renderBitmap(
+                           int pageNo, double zoomReal, int rotation,
+                           BOOL (*abortCheckCbkA)(void *data),
+                           void *abortCheckCbkDataA)
 {
-    // TODO: implement me
+    return NULL;
 }
 

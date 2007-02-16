@@ -64,17 +64,19 @@ class TextOutputDev;
 class TextPage;
 class UGooString;
 
-/* Abstract class representing cached bitmap. Allows different implementations
-   on different platforms. */
-class PlatformCachedBitmap {
-public:
-  virtual ~PlatformCachedBitmap() {};
-protected:
-  PlatformCachedBitmap() {}; /* disallow creating objects of this class */
-};
-
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
+
+class RenderedBitmapSplash : public PlatformRenderedBitmap {
+public:
+    RenderedBitmapSplash(SplashBitmap *bitmap) { _bitmap = bitmap; }
+
+    virtual ~RenderedBitmapSplash();
+    virtual HBITMAP CreateDIBitmap(HDC hdc);
+
+protected:
+    SplashBitmap *_bitmap;
+};
 
 /* Information needed to drive the display of a given PDF document on a screen.
    You can think of it as a model in the MVC pardigm.
@@ -85,6 +87,11 @@ class DisplayModelSplash : public DisplayModel
 public:
     DisplayModelSplash(DisplayMode displayMode);
     virtual ~DisplayModelSplash();
+
+    virtual PlatformRenderedBitmap *renderBitmap(
+                           int pageNo, double zoomReal, int rotation,
+                           BOOL (*abortCheckCbkA)(void *data),
+                           void *abortCheckCbkDataA);
 
     PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
@@ -106,12 +113,12 @@ public:
 
     GooString *   GetTextInRegion(int pageNo, RectD *region);
 
+#if 0
     SplashBitmap* GetBitmapForPage(int pageNo, 
         BOOL (*abortCheckCbkA)(void *data) = NULL, void *abortCheckCbkDataA = NULL);
+#endif
 
-    void        ShowBusyCursor();
-    void        ShowNormalCursor();
-    void        CancelBackgroundRendering();
+    void        cancelBackgroundRendering();
 
     void        FreeTextPages(void);
     void        RecalcLinks(void);
@@ -121,7 +128,6 @@ public:
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);
-    virtual void startRenderingPage(int pageNo);
 
 public:
     PDFDoc *            pdfDoc;
@@ -129,50 +135,17 @@ public:
     TextOutputDev *     textOutDevice;
 };
 
-/* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
-   that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
-   and corresponding rendered bitmap.
-*/
-typedef struct {
-  DisplayModel * dm;
-  int            pageNo;
-  int            rotation;
-  double         zoomLevel;
-  PlatformCachedBitmap *bitmap;
-  double         renderTime;
-} BitmapCacheEntry;
-
-typedef struct {
-    DisplayModelSplash *  dm;
-    int             pageNo;
-    double          zoomLevel;
-    int             rotation;
-    int             abort;
-} PageRenderRequest;
-
 DisplayModelSplash *DisplayModelSplash_CreateFromFileName(const char *fileName, void *data,
                                             SizeD totalDrawAreaSize,
                                             int scrollbarXDy, int scrollbarYDx,
                                             DisplayMode displayMode, int startPage);
 
-/* Lock protecting both bitmap cache and page render queue */
-void              LockCache();
-void              UnlockCache();
-
+#if 0
 SplashBitmap*     RenderBitmap(DisplayModelSplash *dm,
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA);
-
-void              RenderQueue_Add(DisplayModelSplash *dm, int pageNo);
-
-BitmapCacheEntry *BitmapCache_Find(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
-BOOL              BitmapCache_Exists(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation);
-void              BitmapCache_Add(DisplayModelSplash *dm, int pageNo, double zoomLevel, int rotation, 
-                                  PlatformCachedBitmap *bitmap, double renderTime);
-void              BitmapCache_FreeAll(void);
-BOOL              BitmapCache_FreeForDisplayModel(DisplayModelSplash *dm);
-BOOL              BitmapCache_FreeNotVisible(void);
+#endif
 
 void SplashColorsInit(void);
 
