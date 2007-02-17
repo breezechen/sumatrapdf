@@ -12,6 +12,9 @@
 #include <mupdf.h>
 #endif
 
+#include <windows.h>
+
+class SplashBitmap;
 class PDFDoc;
 
 /* For simplicity, all in one file. Would be cleaner if they were
@@ -19,6 +22,38 @@ class PDFDoc;
 
 #define INVALID_PAGE_NO     -1
 #define INVALID_ROTATION    -1
+
+/* Abstract class representing cached bitmap. Allows different implementations
+   on different platforms. */
+class RenderedBitmap {
+public:
+    virtual ~RenderedBitmap() {};
+    // TODO: this is for WINDOWS only
+    virtual HBITMAP createDIBitmap(HDC) = 0;
+    virtual void stretchDIBits(HDC, int, int, int, int) = 0;
+};
+
+class RenderedBitmapFitz : public RenderedBitmap {
+public:
+    RenderedBitmapFitz(fz_pixmap *image);
+    virtual ~RenderedBitmapFitz();
+    virtual HBITMAP createDIBitmap(HDC);
+    virtual void stretchDIBits(HDC, int, int, int, int);
+protected:
+    fz_pixmap *_image;
+};
+
+class RenderedBitmapSplash : public RenderedBitmap {
+public:
+    RenderedBitmapSplash(SplashBitmap *);
+
+    virtual ~RenderedBitmapSplash();
+    virtual HBITMAP createDIBitmap(HDC);
+    virtual void stretchDIBits(HDC, int, int, int, int);
+
+protected:
+    SplashBitmap *_bitmap;
+};
 
 class PdfEngine {
 public:
@@ -85,4 +120,3 @@ private:
 };
 
 #endif
-

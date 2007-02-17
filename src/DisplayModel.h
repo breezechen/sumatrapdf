@@ -142,22 +142,13 @@ typedef struct SearchStateData {
     int             currPage; /* page for the last hit */
 } SearchStateData;
 
-/* Abstract class representing cached bitmap. Allows different implementations
-   on different platforms. */
-class PlatformRenderedBitmap {
-public:
-  virtual ~PlatformRenderedBitmap() {};
-  // TODO: this is for WINDOWS only
-  virtual HBITMAP CreateDIBitmap(HDC hdc) = 0;
-};
-
 class DisplayModel
 {
 public:
     DisplayModel(DisplayMode displayMode);
     virtual ~DisplayModel();
 
-    virtual PlatformRenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+    virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA) = 0;
 
@@ -340,7 +331,7 @@ typedef struct {
   int            pageNo;
   int            rotation;
   double         zoomLevel;
-  PlatformRenderedBitmap *bitmap;
+  RenderedBitmap *bitmap;
   double         renderTime;
 } BitmapCacheEntry;
 
@@ -361,7 +352,7 @@ void              RenderQueue_Add(DisplayModel *dm, int pageNo);
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, 
-                                  PlatformRenderedBitmap *bitmap, double renderTime);
+                                  RenderedBitmap *bitmap, double renderTime);
 void              BitmapCache_FreeAll(void);
 BOOL              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
 BOOL              BitmapCache_FreeNotVisible(void);

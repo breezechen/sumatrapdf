@@ -201,32 +201,6 @@ static void TransfromUpsideDown(DisplayModelSplash *dm, int pageNo, double *y1, 
     *y2 = dy - *y2;
 }
 
-RenderedBitmapSplash::~RenderedBitmapSplash() {
-    delete _bitmap;
-}
-
-HBITMAP RenderedBitmapSplash::CreateDIBitmap(HDC hdc)
-{
-    int bmpDx = _bitmap->getWidth();
-    int bmpDy = _bitmap->getHeight();
-    int bmpRowSize = _bitmap->getRowSize();
-
-    BITMAPINFOHEADER bmih;
-    bmih.biSize = sizeof(bmih);
-    bmih.biHeight = -bmpDy;
-    bmih.biWidth = bmpDx;
-    bmih.biPlanes = 1;
-    bmih.biBitCount = 24;
-    bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = bmpDy * bmpRowSize;;
-    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-    bmih.biClrUsed = bmih.biClrImportant = 0;
-
-    SplashColorPtr bmpData = _bitmap->getDataPtr();
-    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
-    return hbmp;
-}
-
 DisplayModelSplash::DisplayModelSplash(DisplayMode displayMode) :
     DisplayModel(displayMode)
 {
@@ -912,7 +886,7 @@ Exit:
     return found;
 }
 
-PlatformRenderedBitmap *DisplayModelSplash::renderBitmap(
+RenderedBitmap *DisplayModelSplash::renderBitmap(
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA)

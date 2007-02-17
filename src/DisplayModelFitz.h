@@ -3,15 +3,6 @@
 
 #include "DisplayModel.h"
 
-class RenderedBitmapFitz : public PlatformRenderedBitmap {
-public:
-    RenderedBitmapFitz(fz_pixmap *image);
-    virtual ~RenderedBitmapFitz();
-    virtual HBITMAP CreateDIBitmap(HDC hdc);
-protected:
-    fz_pixmap *_image;
-};
-
 class DisplayModelFitz : public DisplayModel
 {
 public:
@@ -22,7 +13,7 @@ public:
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);
-    virtual PlatformRenderedBitmap *renderBitmap(
+    virtual RenderedBitmap *renderBitmap(
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA);

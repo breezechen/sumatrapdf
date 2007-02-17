@@ -1170,7 +1170,7 @@ BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
 }
 
 void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, 
-    PlatformRenderedBitmap *bitmap, double renderTime)
+    RenderedBitmap *bitmap, double renderTime)
 {
     BitmapCacheEntry *entry;
     assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);

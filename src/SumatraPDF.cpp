@@ -28,6 +28,7 @@
 
 #include "SimpleRect.h"
 #include "DisplayModelSplash.h"
+#include "file_util.h"
 #include <windowsx.h>
 
 //#define FANCY_UI 1
@@ -110,7 +111,7 @@ static BOOL             gDebugShowLinks = FALSE;
 
 /* A special "pointer" vlaue indicating that we tried to render this bitmap
    but couldn't (e.g. due to lack of memory) */
-#define BITMAP_CANNOT_RENDER (PlatformRenderedBitmap*)NULL
+#define BITMAP_CANNOT_RENDER (RenderedBitmap*)NULL
 
 #define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
                   RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
@@ -390,27 +391,6 @@ void RenderQueue_Pop(PageRenderRequest *req)
     UnlockCache();
 }
 
-/* TODO: move to file_util (?) */
-static const char *Path_GetBaseName(const char *path)
-{
-    const char *fileBaseName = (const char*)strrchr(path, DIR_SEP_CHAR);
-    if (NULL == fileBaseName)
-        fileBaseName = path;
-    else
-        ++fileBaseName;
-    return fileBaseName;
-}
-
-static char *Path_GetDir(const char *path)
-{
-    char *dir = str_dup(path);
-    if (!dir) return NULL;
-    char *lastSep = (char*)strrchr(path, DIR_SEP_CHAR);
-    if (NULL != lastSep)
-        *lastSep = 0;
-    return dir;
-}
-
 static HMENU FindMenuItem(WindowInfo *win, UINT id)
 {
     HMENU   menuMain;
@@ -495,7 +475,7 @@ static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
     if (!menuFile)
         return;
 
-    txt = Path_GetBaseName(node->state.filePath);
+    txt = FilePath_GetBaseName(node->state.filePath);
 
     newId = node->menuId;
     if (INVALID_MENU_ID == node->menuId)
@@ -573,7 +553,7 @@ static char *PossiblyUnescapePath(char *txt)
     }
     /* might be a bit bigger due to un-escaping, but that's ok */
     exePathLen = (exePathEnd - exePathStart);
-    exePath = (TCHAR*)malloc(sizeof(TCHAR)*exePathLen+1);
+    exePath = (char*)malloc(sizeof(char)*exePathLen+1);
     if (!exePath)
         return NULL;
     src = exePathStart;
@@ -732,7 +712,7 @@ static void AddFileToHistory(const char *filePath)
 
 static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
 {
-    fileName = Path_GetBaseName(fileName);
+    fileName = FilePath_GetBaseName(fileName);
     return Dialog_GetPassword(win, fileName);
 }
 
@@ -800,7 +780,7 @@ static void AppGenDataFilename(char* pFilename, DString* pDs)
         /* Use the same path as the binary */
         char *exePath = ExePathGet();
         if (!exePath) return;
-        char *dir = Path_GetDir(exePath);
+        char *dir = FilePath_GetDir(exePath);
         if (dir)
             DStringSprintf(pDs, "%s", dir);
         free((void*)exePath);
@@ -1563,7 +1543,7 @@ void DisplayModel::pageChanged(void)
 
     int currPageNo = currentPageNo();
     int pageCount = win->dm->pageCount();
-    const char *baseName = Path_GetBaseName(win->dm->fileName());
+    const char *baseName = FilePath_GetBaseName(win->dm->fileName());
     if (pageCount <= 0)
         WinSetText(win->hwndFrame, baseName);
     else {
@@ -1996,9 +1976,9 @@ static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
 
 static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
-    DisplayModel *        dm;
-    RECT                  bounds;
-    PlatformRenderedBitmap *renderedBmp = NULL;
+    DisplayModel *      dm;
+    RECT                bounds;
+    RenderedBitmap *    renderedBmp = NULL;
 
     assert(win);
     if (!win) return;
@@ -2827,27 +2807,12 @@ TODO:
 */
 static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromPage, int toPage)
 {
-#if 0
-    int                 pageNo;
-    DisplayModelSplash* dmSplash;
-    DisplayModel *      dm;
-    PdfPageInfo*        pageInfo;
-    SplashBitmap *      splashBmp;
-    int                 splashBmpDx, splashBmpDy;
-    SplashColorPtr      splashBmpData;
-    int                 splashBmpRowSize;
-    BITMAPINFOHEADER    bmih;
-    BitmapCacheEntry *  entry;
-
-    DOCINFO             di = {0};
-    di.cbSize = sizeof (DOCINFO);
-
     assert(toPage >= fromPage);
 
     if (!win) return;
 
-    dm = win->dm;
-    dmSplash = win->dmSplash;
+    DisplayModel dm = win->dm;
+
     /* store current page number and zoom state to reset
        when finished printing */
     int pageNoInitial = win->dm->currentPageNo();
@@ -2870,49 +2835,33 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         goto Exit;
     }
 
+    DOCINFO di = {0};
+    di.cbSize = sizeof (DOCINFO);
     if (StartDoc(hDC, &di) <= 0)
         goto Exit;
 
     // print all the pages the user requested unless
     // bContinue flags there is a problem.
-    for (pageNo = fromPage; pageNo <= toPage; pageNo++) {
-        pageInfo = win->dm->getPageInfo(pageNo);
+    for (int pageNo = fromPage; pageNo <= toPage; pageNo++) {
+        PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
 
         int rotation = win->dm->rotation() + pageInfo->rotation;
         double zoomLevel = win->dm->zoomReal();
-
-        splashBmp = NULL;
 
         // initiate the creation of the bitmap for the page.
         dm->goToPage(pageNo, 0);
 
         // because we're multithreaded the bitmap may not be
         // ready yet so keep checking until it is available
+        RenderedBitmap *bmp = NULL;
         do {
-            entry = BitmapCache_Find(dmSplash, pageNo, zoomLevel, rotation);
+            BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
             if (entry)
-                splashBmp = ((WinRenderedBitmap*)entry->bitmap)->bitmap();
+                bmp = entry->bitmap;
             Sleep(10);
-        } while (!splashBmp);
+        } while (!bmp);
 
         DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
-        splashBmpDx = splashBmp->getWidth();
-        splashBmpDy = splashBmp->getHeight();
-        splashBmpRowSize = splashBmp->getRowSize();
-        splashBmpData = splashBmp->getDataPtr();
-
-        bmih.biSize = sizeof(bmih);
-        bmih.biHeight = -splashBmpDy;
-        bmih.biWidth = splashBmpDx;
-        bmih.biPlanes = 1;
-        // we could create this dibsection in monochrome
-        // if the printer is monochrome, to reduce memory consumption
-        // but splash is currently setup to return a full colour bitmap
-        bmih.biBitCount = 24;
-        bmih.biCompression = BI_RGB;
-        bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
-        bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-        bmih.biClrUsed = bmih.biClrImportant = 0;
 
         // initiate the printed page
         StartPage(hDC);
@@ -2926,25 +2875,12 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         int pageWidth = GetDeviceCaps(hDC, PHYSICALWIDTH);
 
         // Get physical printer margins
-        int topMargin;
-        int leftMargin;
-        if (DMORIENT_LANDSCAPE == devMode->dmOrientation) {
-            topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
-            leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
-        } else {
-            topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
-            leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
-        }
+        int topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
+        int leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+        if (DMORIENT_LANDSCAPE == devMode->dmOrientation)
+            SwapInt(&topMargin, &leftMargin);
 
-        StretchDIBits(hDC,
-            // destination rectangle
-            -leftMargin, -topMargin, pageWidth, pageHeight,
-            // source rectangle
-            0, 0, splashBmpDx, splashBmpDy,
-            splashBmpData,
-            (BITMAPINFO *)&bmih ,
-            DIB_RGB_COLORS,
-            SRCCOPY);
+        bmp->StretchDIBits(hDC, -leftMargin, -topMargin, pageWidth, pageHeight)
 
         // we're creating about 30MB per page so clear the
         // bitmap now to avoid running out of RAM on old machines.
@@ -2969,7 +2905,6 @@ Exit:
         dm->goToPage(pageNoInitial, 0);
         dm->zoomTo(zoomInitial);
     }
-#endif
 }
 
 /* Show Print Dialog box to allow user to select the printer
@@ -4106,21 +4041,18 @@ private:
 
 static DWORD WINAPI PageRenderThread(PVOID data)
 {
-    PageRenderRequest       req;
-    PlatformRenderedBitmap *bmp;
-    BOOL                    fOk;
-    DWORD                   waitResult;
-    int                     count;
+    PageRenderRequest   req;
+    RenderedBitmap *    bmp;
 
     DBG_OUT("PageRenderThread() started\n");
     while (1) {
         DBG_OUT("Worker: wait\n");
         LockCache();
         gCurPageRenderReq = NULL;
-        count = gPageRenderRequestsCount;
+        int count = gPageRenderRequestsCount;
         UnlockCache();
         if (0 == count) {
-            waitResult = WaitForSingleObject(gPageRenderSem, INFINITE);
+            DWORD waitResult = WaitForSingleObject(gPageRenderSem, INFINITE);
             if (WAIT_OBJECT_0 != waitResult) {
                 DBG_OUT("  WaitForSingleObject() failed\n");
                 continue;
@@ -4155,7 +4087,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
 #endif
         WindowInfo * win = NULL;
         win = (WindowInfo*)req.dm->appData();
-        fOk = PostMessage(win->hwndCanvas, WM_APP_MSG_REFRESH, 0, 0);
+        BOOL fOk = PostMessage(win->hwndCanvas, WM_APP_MSG_REFRESH, 0, 0);
     }
     DBG_OUT("PageRenderThread() finished\n");
     return 0;

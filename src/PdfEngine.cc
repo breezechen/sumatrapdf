@@ -14,6 +14,142 @@
 #include "SecurityHandler.h"
 #include "Link.h"
 
+RenderedBitmapFitz::RenderedBitmapFitz(fz_pixmap *image)
+{
+    _image = image;
+}
+
+RenderedBitmapFitz::~RenderedBitmapFitz()
+{
+    if (_image)
+        fz_droppixmap(_image);
+}
+
+HBITMAP RenderedBitmapFitz::createDIBitmap(HDC hdc)
+{
+    int bmpDx = _image->w;
+    int bmpDy = _image->h;
+    int bmpRowSize = ((_image->w * 3 + 3) / 4) * 4;
+
+    BITMAPINFOHEADER bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biHeight = -bmpDy;
+    bmih.biWidth = bmpDx;
+    bmih.biPlanes = 1;
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = bmpDy * bmpRowSize;;
+    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = bmih.biClrImportant = 0;
+
+#ifdef FITZ_HEAD
+    unsigned char* bmpData = _image->p;
+#else
+    unsigned char* bmpData = _image->samples;
+#endif
+    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
+    return hbmp;
+}
+
+void RenderedBitmapFitz::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
+{
+    int bmpDx = _image->w;
+    int bmpDy = _image->h;
+    int bmpRowSize = ((_image->w * 3 + 3) / 4) * 4;
+
+    BITMAPINFOHEADER bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biHeight = -bmpDy;
+    bmih.biWidth = bmpDx;
+    bmih.biPlanes = 1;
+    // we could create this dibsection in monochrome
+    // if the printer is monochrome, to reduce memory consumption
+    // but fitz is currently setup to return a full colour bitmap
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = bmpDy * bmpRowSize;;
+    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = bmih.biClrImportant = 0;
+
+#ifdef FITZ_HEAD
+    unsigned char* bmpData = _image->p;
+#else
+    unsigned char* bmpData = _image->samples;
+#endif
+    ::StretchDIBits(hdc,
+        // destination rectangle
+        -leftMargin, -topMargin, pageDx, pageDy,
+        // source rectangle
+        0, 0, bmpDx, bmpDy,
+        bmpData,
+        (BITMAPINFO *)&bmih ,
+        DIB_RGB_COLORS,
+        SRCCOPY);
+}
+
+RenderedBitmapSplash::RenderedBitmapSplash(SplashBitmap *bitmap)
+{
+    _bitmap = bitmap;
+}
+
+RenderedBitmapSplash::~RenderedBitmapSplash() {
+    delete _bitmap;
+}
+
+HBITMAP RenderedBitmapSplash::createDIBitmap(HDC hdc)
+{
+    int bmpDx = _bitmap->getWidth();
+    int bmpDy = _bitmap->getHeight();
+    int bmpRowSize = _bitmap->getRowSize();
+
+    BITMAPINFOHEADER bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biHeight = -bmpDy;
+    bmih.biWidth = bmpDx;
+    bmih.biPlanes = 1;
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = bmpDy * bmpRowSize;;
+    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = bmih.biClrImportant = 0;
+
+    SplashColorPtr bmpData = _bitmap->getDataPtr();
+    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
+    return hbmp;
+}
+
+void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
+{
+    int bmpDx = _bitmap->getWidth();
+    int bmpDy = _bitmap->getHeight();
+    int bmpRowSize = _bitmap->getRowSize();
+
+    BITMAPINFOHEADER bmih;
+    bmih.biSize = sizeof(bmih);
+    bmih.biHeight = -bmpDy;
+    bmih.biWidth = bmpDx;
+    bmih.biPlanes = 1;
+    // we could create this dibsection in monochrome
+    // if the printer is monochrome, to reduce memory consumption
+    // but splash is currently setup to return a full colour bitmap
+    bmih.biBitCount = 24;
+    bmih.biCompression = BI_RGB;
+    bmih.biSizeImage = bmpDy * bmpRowSize;;
+    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
+    bmih.biClrUsed = bmih.biClrImportant = 0;
+    SplashColorPtr bmpData = _bitmap->getDataPtr();
+
+    ::StretchDIBits(hdc,
+        // destination rectangle
+        -leftMargin, -topMargin, pageDx, pageDy,
+        // source rectangle
+        0, 0, bmpDx, bmpDy,
+        bmpData,
+        (BITMAPINFO *)&bmih ,
+        DIB_RGB_COLORS,
+        SRCCOPY);
+}
+
 PdfEnginePoppler::PdfEnginePoppler() : 
     PdfEngine()
    , _pdfDoc(NULL)

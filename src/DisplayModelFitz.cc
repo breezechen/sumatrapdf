@@ -4,43 +4,6 @@
 #include "GooString.h"
 #include "UGooString.h"
 
-RenderedBitmapFitz::RenderedBitmapFitz(fz_pixmap *image)
-{
-    _image = image;
-}
-
-RenderedBitmapFitz::~RenderedBitmapFitz()
-{
-    if (_image)
-        fz_droppixmap(_image);
-}
-
-HBITMAP RenderedBitmapFitz::CreateDIBitmap(HDC hdc)
-{
-    int bmpDx = _image->w;
-    int bmpDy = _image->h;
-    int bmpRowSize = ((_image->w * 3 + 3) / 4) * 4;
-
-    BITMAPINFOHEADER bmih;
-    bmih.biSize = sizeof(bmih);
-    bmih.biHeight = -bmpDy;
-    bmih.biWidth = bmpDx;
-    bmih.biPlanes = 1;
-    bmih.biBitCount = 24;
-    bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = bmpDy * bmpRowSize;;
-    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-    bmih.biClrUsed = bmih.biClrImportant = 0;
-
-#ifdef FITZ_HEAD
-    unsigned char* bmpData = _image->p;
-#else
-    unsigned char* bmpData = _image->samples;
-#endif
-    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
-    return hbmp;
-}
-
 DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode) :
     DisplayModel(displayMode)
 {
@@ -119,7 +82,7 @@ fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
     return ctm;
 }
 
-PlatformRenderedBitmap *DisplayModelFitz::renderBitmap(
+RenderedBitmap *DisplayModelFitz::renderBitmap(
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA)

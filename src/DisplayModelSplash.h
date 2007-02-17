@@ -67,17 +67,6 @@ class UGooString;
 /* It seems that PDF documents are encoded assuming DPI of 72.0 */
 #define PDF_FILE_DPI        72
 
-class RenderedBitmapSplash : public PlatformRenderedBitmap {
-public:
-    RenderedBitmapSplash(SplashBitmap *bitmap) { _bitmap = bitmap; }
-
-    virtual ~RenderedBitmapSplash();
-    virtual HBITMAP CreateDIBitmap(HDC hdc);
-
-protected:
-    SplashBitmap *_bitmap;
-};
-
 /* Information needed to drive the display of a given PDF document on a screen.
    You can think of it as a model in the MVC pardigm.
    All the display changes should be done through changing this model via
@@ -88,7 +77,7 @@ public:
     DisplayModelSplash(DisplayMode displayMode);
     virtual ~DisplayModelSplash();
 
-    virtual PlatformRenderedBitmap *renderBitmap(
+    virtual RenderedBitmap *renderBitmap(
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA);
