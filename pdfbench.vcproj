@@ -223,7 +223,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\pdiff.cc"
+				RelativePath=".\baseutils\pdiff.cc"
 				>
 			</File>
 			<File
@@ -249,7 +249,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\pdiff.h"
+				RelativePath=".\baseutils\pdiff.h"
 				>
 			</File>
 			<File
