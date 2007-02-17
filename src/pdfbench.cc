@@ -1463,7 +1463,7 @@ void RenderPdfFileList(char *pdfFileList)
     char *data = NULL;
     char *dataNormalized = NULL;
     char *pdfFileName;
-    unsigned long fileSize;
+    size_t fileSize;
 
     assert(pdfFileList);
     if (!pdfFileList)

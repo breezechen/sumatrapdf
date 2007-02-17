@@ -261,6 +261,10 @@
 				RelativePath=".\src\SumatraPDF.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\baseutils\win_util.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -317,6 +321,10 @@
 			</File>
 			<File
 				RelativePath=".\src\SumatraPDF.h"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\win_util.h"
 				>
 			</File>
 		</Filter>

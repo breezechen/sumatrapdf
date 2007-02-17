@@ -1,15 +1,14 @@
 #include "SumatraPDF.h"
+
 #include "str_util.h"
+#include "file_util.h"
+#include "win_util.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <direct.h> /* for _mkdir() */
-
-#include <shellapi.h>
-#include <shlobj.h>
-#include <strsafe.h>
+#include "SumatraDialogs.h"
+#include "FileHistory.h"
+#include "AppPrefs.h"
+#include "SimpleRect.h"
+#include "DisplayModelSplash.h"
 
 #include "ErrorCodes.h"
 #include "GooString.h"
@@ -22,13 +21,16 @@
 #include "Link.h"
 #include "SecurityHandler.h"
 
-#include "SumatraDialogs.h"
-#include "FileHistory.h"
-#include "AppPrefs.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <direct.h> /* for _mkdir() */
 
-#include "SimpleRect.h"
-#include "DisplayModelSplash.h"
-#include "file_util.h"
+#include <shellapi.h>
+#include <shlobj.h>
+#include <strsafe.h>
+
 #include <windowsx.h>
 
 //#define FANCY_UI 1
@@ -213,37 +215,9 @@ void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
 static void WindowInfo_ResizeToWindow(WindowInfo *win);
 
-int RectDx(RECT *r)
-{
-    int dx = r->right - r->left;
-    assert(dx >= 0);
-    return dx;
-}
-
-int RectDy(RECT *r)
-{
-    int dy = r->bottom - r->top;
-    assert(dy >= 0);
-    return dy;
-}
-
 void LaunchBrowser(const TCHAR *url)
 {
-    SHELLEXECUTEINFO sei;
-    BOOL             res;
-
-    if (NULL == url)
-        return;
-
-    ZeroMemory(&sei, sizeof(sei));
-    sei.cbSize  = sizeof(sei);
-    sei.fMask   = SEE_MASK_FLAG_NO_UI;
-    sei.lpVerb  = TEXT("open");
-    sei.lpFile  = url;
-    sei.nShow   = SW_SHOWNORMAL;
-
-    res = ShellExecuteEx(&sei);
-    return;
+    launch_url(url);
 }
 
 static BOOL pageRenderAbortCb(void *data)
@@ -635,15 +609,13 @@ static void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
 static void WinResizeClientArea(HWND hwnd, int dx, int dy)
 {
     RECT rc;
-    RECT rw;
-    int  win_dx, win_dy;
-
     GetClientRect(hwnd, &rc);
-    if ((RectDx(&rc) == dx) && (RectDy(&rc) == dy))
+    if ((rect_dx(&rc) == dx) && (rect_dy(&rc) == dy))
         return;
+    RECT rw;
     GetWindowRect(hwnd, &rw);
-    win_dx = RectDx(&rw) + (dx - RectDx(&rc));
-    win_dy = RectDy(&rw) + (dy - RectDy(&rc));
+    int win_dx = rect_dx(&rw) + (dx - rect_dx(&rc));
+    int win_dy = rect_dy(&rw) + (dy - rect_dy(&rc));
     SetWindowPos(hwnd, NULL, 0, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
 }
 
@@ -653,9 +625,9 @@ static void SetCanvasSizeToDxDy(WindowInfo *win, int w, int h)
     GetWindowRect(win->hwndCanvas, &canvasRect);
     RECT frameRect;
     GetWindowRect(win->hwndFrame, &frameRect);
-    int dx = RectDx(&frameRect) - RectDx(&canvasRect);
+    int dx = rect_dx(&frameRect) - rect_dx(&canvasRect);
     assert(dx >= 0);
-    int dy = RectDy(&frameRect) - RectDy(&canvasRect);
+    int dy = rect_dy(&frameRect) - rect_dy(&canvasRect);
     assert(dy >= 0);
     SetWindowPos(win->hwndFrame, NULL, 0, 0, w+dx, h+dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
     //SetWindowPos(win->hwndCanvas, NULL, 0, 0, w, h, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOMOVE| SWP_NOZORDER);
@@ -805,7 +777,7 @@ static void Prefs_Load(void)
 {
     DString             path;
     static int          loaded = FALSE;
-    unsigned long       prefsFileLen;
+    size_t              prefsFileLen;
     char *              prefsTxt = NULL;
     BOOL                fOk;
 
@@ -975,8 +947,8 @@ static void WindowInfo_GetCanvasSize(WindowInfo *win)
 {
     RECT  rc;
     GetClientRect(win->hwndCanvas, &rc);
-    win->winDx = RectDx(&rc);
-    win->winDy = RectDy(&rc);
+    win->winDx = rect_dx(&rc);
+    win->winDy = rect_dy(&rc);
 }
 
 static BOOL WindowInfo_Dib_Init(WindowInfo *win)
@@ -1337,8 +1309,8 @@ void GetTaskBarSize(int *dxOut, int *dyOut)
     APPBARDATA abd = { sizeof(abd) };
     *dxOut = *dyOut = 0;
     if (SHAppBarMessage(ABM_GETTASKBARPOS, &abd)) {
-        *dxOut = RectDx(&abd.rc);
-        *dyOut = RectDy(&abd.rc);
+        *dxOut = rect_dx(&abd.rc);
+        *dyOut = rect_dy(&abd.rc);
     }
 }
 
@@ -1348,9 +1320,9 @@ void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
     GetWindowRect(win->hwndCanvas, &canvasRect);
     RECT totalRect;
     GetWindowRect(win->hwndFrame, &totalRect);
-    *dxOut = RectDx(&totalRect) - RectDx(&canvasRect);
+    *dxOut = rect_dx(&totalRect) - rect_dx(&canvasRect);
     assert(*dxOut >= 0);
-    *dyOut = RectDy(&totalRect) - RectDy(&canvasRect);
+    *dyOut = rect_dy(&totalRect) - rect_dy(&canvasRect);
     assert(*dyOut >= 0);
 }
 
@@ -1361,8 +1333,8 @@ void IntelligentWindowResize(WindowInfo *win)
 
     int dx, dy;
     GetCanvasDxDyDiff(win, &dx, &dy);
-    int maxCanvasDx = RectDx(&r) - dx;
-    int maxCanvasDy = RectDy(&r) - dy;
+    int maxCanvasDx = rect_dx(&r) - dx;
+    int maxCanvasDy = rect_dy(&r) - dy;
     GetTaskBarSize(&dx, &dy);
     if (dx < maxCanvasDx)
         maxCanvasDx -= dx;
@@ -1939,10 +1911,9 @@ static void AmigaCaptionDraw(WindowInfo *win)
 static void WinResizeIfNeeded(WindowInfo *win)
 {
     RECT    rc;
-    int     win_dx, win_dy;
     GetClientRect(win->hwndCanvas, &rc);
-    win_dx = RectDx(&rc);
-    win_dy = RectDy(&rc);
+    int win_dx = rect_dx(&rc);
+    int win_dy = rect_dy(&rc);
 
     if ((win_dx == win->winDx) &&
         (win_dy == win->winDy) && win->hdcToDraw)
@@ -2088,7 +2059,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             FillRect(hdc, &rectScreen, gBrushLinkDebug);
             DBG_OUT("  link on screen rotate=%d, (x=%d, y=%d, dx=%d, dy=%d)\n",
                 dm->rotation() + dm->pagesInfo[pdfLink->pageNo-1].rotation,
-                rectScreen.left, rectScreen.top, RectDx(&rectScreen), RectDy(&rectScreen));
+                rectScreen.left, rectScreen.top, rect_dx(&rectScreen), rect_dy(&rectScreen));
         }
     }
 }
@@ -2198,7 +2169,6 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     HFONT           fontBetaTxt = NULL;
     HFONT           fontLeftTxt = NULL;
     HFONT           fontRightTxt = NULL;
-    int             areaDx, areaDy;
     int             i;
     SIZE            txtSize;
     const char *    txt;
@@ -2227,8 +2197,8 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
     DStringInit(&str);
 
-    areaDx = RectDx(&rc);
-    areaDy = RectDy(&rc);
+    int areaDx = rect_dx(&rc);
+    int areaDy = rect_dy(&rc);
 
     fontSumatraTxt = Win32_Font_GetSimple(hdc, SUMATRA_TXT_FONT, SUMATRA_TXT_FONT_SIZE);
     fontBetaTxt = Win32_Font_GetSimple(hdc, BETA_TXT_FONT, BETA_TXT_FONT_SIZE);
@@ -2583,7 +2553,6 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     static int      curTxtPosX = -1;
     static int      curTxtPosY = -1;
     static int      curDir = SCROLL_SPEED;
-    int             areaDx, areaDy;
 
     GetClientRect(win->hwndCanvas, &rc);
 
@@ -2594,8 +2563,8 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     if (-1 == curTxtPosY)
         curTxtPosY = 25;
 
-    areaDx = RectDx(&rc);
-    areaDy = RectDy(&rc);
+    int areaDx = rect_dx(&rc);
+    int areaDy = rect_dy(&rc);
 
 #if 0
     if (state->frame % 24 <= 12) {
@@ -2636,10 +2605,9 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
 {
     RECT    rc;
-    int     win_dx, win_dy;
     GetClientRect(win->hwndCanvas, &rc);
-    win_dx = RectDx(&rc);
-    win_dy = RectDy(&rc);
+    int win_dx = rect_dx(&rc);
+    int win_dy = rect_dy(&rc);
 
     if ((win_dx == win->winDx) &&
         (win_dy == win->winDy) && win->hdcToDraw)
