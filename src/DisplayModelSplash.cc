@@ -207,23 +207,23 @@ RenderedBitmapSplash::~RenderedBitmapSplash() {
 
 HBITMAP RenderedBitmapSplash::CreateDIBitmap(HDC hdc)
 {
-    int splashBmpDx = _bitmap->getWidth();
-    int splashBmpDy = _bitmap->getHeight();
-    int splashBmpRowSize = _bitmap->getRowSize();
+    int bmpDx = _bitmap->getWidth();
+    int bmpDy = _bitmap->getHeight();
+    int bmpRowSize = _bitmap->getRowSize();
 
-    BITMAPINFOHEADER      bmih;
+    BITMAPINFOHEADER bmih;
     bmih.biSize = sizeof(bmih);
-    bmih.biHeight = -splashBmpDy;
-    bmih.biWidth = splashBmpDx;
+    bmih.biHeight = -bmpDy;
+    bmih.biWidth = bmpDx;
     bmih.biPlanes = 1;
     bmih.biBitCount = 24;
     bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = splashBmpDy * splashBmpRowSize;;
+    bmih.biSizeImage = bmpDy * bmpRowSize;;
     bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
     bmih.biClrUsed = bmih.biClrImportant = 0;
 
-    SplashColorPtr splashBmpData = _bitmap->getDataPtr();
-    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, splashBmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
+    SplashColorPtr bmpData = _bitmap->getDataPtr();
+    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
     return hbmp;
 }
 

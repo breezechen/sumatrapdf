@@ -5,10 +5,11 @@
 
 class RenderedBitmapFitz : public PlatformRenderedBitmap {
 public:
-    RenderedBitmapFitz() {}
-    virtual ~RenderedBitmapFitz() {}
+    RenderedBitmapFitz(fz_pixmap *image);
+    virtual ~RenderedBitmapFitz();
     virtual HBITMAP CreateDIBitmap(HDC hdc);
 protected:
+    fz_pixmap *_image;
 };
 
 class DisplayModelFitz : public DisplayModel
@@ -16,6 +17,8 @@ class DisplayModelFitz : public DisplayModel
 public:
     DisplayModelFitz(DisplayMode displayMode);
     virtual ~DisplayModelFitz();
+
+    PdfEngineFitz *pdfEngineFitz(void) { return (PdfEngineFitz*)_pdfEngine; }
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);
