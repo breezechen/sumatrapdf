@@ -198,6 +198,7 @@ void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin,
 PdfEnginePoppler::PdfEnginePoppler() : 
     PdfEngine()
    , _pdfDoc(NULL)
+   , _outputDev(NULL)
 {
 }
 

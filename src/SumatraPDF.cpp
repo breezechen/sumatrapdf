@@ -2149,7 +2149,10 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     { "programming", "Krzysztof Kowalczyk", "http://blog.kowalczyk.info",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
-    { "pdf rendering", "poppler + xpdf", "http://poppler.freedesktop.org/",
+    { "pdf rendering 1", "poppler + xpdf", "http://poppler.freedesktop.org/",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "pdf rendering 2", "MuPDF", "http://ccxvii.net/apparition/",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { "license", "GPL v2", "http://www.gnu.org/copyleft/gpl.html",
@@ -2841,10 +2844,10 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int from
 
         DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
 
-        // render at a big zoom, 2.5 should be good enough. It's a compromise
+        // render at a big zoom, 250% should be good enough. It's a compromise
         // between quality and memory usage. TODO: ideally we would use zoom
         // that matches the size of the page in the printer
-        RenderedBitmap *bmp = pdfEngine->renderBitmap(pageNo, 2.5, rotation, NULL, NULL);
+        RenderedBitmap *bmp = pdfEngine->renderBitmap(pageNo, 250.0, rotation, NULL, NULL);
         if (!bmp)
             goto Error; /* most likely ran out of memory */
 
@@ -4091,7 +4094,6 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
     char *driver = strtok (devstring, (const char *) ",");
     char *port = strtok((char *) NULL, (const char *) ",");
 
-    HDC  hdcPrint = NULL;
     if (!driver || !port) {
         MessageBox(win->hwndFrame, "Printer with given name doesn't exist", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
         return;
@@ -4103,6 +4105,7 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
         return;
     }
 
+    HDC  hdcPrint = NULL;
     structSize = DocumentProperties(NULL,
         printer,                /* Handle to our printer. */ 
         (LPSTR) printerName,    /* Name of the printer. */ 
