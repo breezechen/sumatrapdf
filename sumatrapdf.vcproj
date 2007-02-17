@@ -230,7 +230,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\dstring.c"
+				RelativePath=".\baseutils\dstring.c"
 				>
 			</File>
 			<File
@@ -272,10 +272,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\BaseUtils.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\DisplayModel.h"
 				>
 			</File>
@@ -292,7 +288,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\dstring.h"
+				RelativePath=".\baseutils\dstring.h"
 				>
 			</File>
 			<File
