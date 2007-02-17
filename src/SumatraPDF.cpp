@@ -3754,6 +3754,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     OnMenuViewRotateRight(win);
                     break;
 
+                case IDM_VISIT_WEBSITE:
+                    LaunchBrowser(_T("http://blog.kowalczyk.info/software/sumatrapdf/"));
+                    break;
 #if 0
                 case IDM_ABOUT:
                     assert(win);
