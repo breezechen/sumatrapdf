@@ -90,10 +90,9 @@ typedef struct PdfPageInfo {
     int             bitmapX, bitmapY, bitmapDx, bitmapDy;
     /* where it should be blitted on the screen */
     int             screenX, screenY;
-
-    Links *         links;
-
+    
     // TODO: remove it from common code, only splash needs it
+    Links *         links;
     TextPage *      textPage;
 } PdfPageInfo;
 
@@ -148,9 +147,12 @@ public:
     DisplayModel(DisplayMode displayMode);
     virtual ~DisplayModel();
 
-    virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+    RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
-                         void *abortCheckCbkDataA) = 0;
+                         void *abortCheckCbkDataA) {
+        if (!_pdfEngine) return NULL;
+        return _pdfEngine->renderBitmap(pageNo, zoomReal, rotation, abortCheckCbkA, abortCheckCbkDataA);
+    }
 
     PdfEngine *pdfEngine() { return _pdfEngine; }
 
@@ -348,6 +350,8 @@ void              LockCache();
 void              UnlockCache();
 
 void              RenderQueue_Add(DisplayModel *dm, int pageNo);
+extern void       RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
+extern void       CancelRenderingForDisplayModel(DisplayModel *dm);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);

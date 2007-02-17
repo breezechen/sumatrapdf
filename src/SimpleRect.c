@@ -3,28 +3,6 @@
 
 #include <assert.h>
 
-static void SwapInt(int *one, int *two)
-{
-    int tmp = *one;
-    *one = *two;
-    *two = tmp;
-}
-
-static void SwapDouble(double *one, double *two)
-{
-    double tmp = *one;
-    *one = *two;
-    *two = tmp;
-}
-
-static int MinInt(int one, int two)
-{
-    if (one < two)
-        return one;
-    else
-        return two;
-}
-
 /* Return true if 'r1' and 'r2' intersect. Put the intersect area into
    'rIntersectOut'.
    Return false if there is no intersection. */
@@ -50,8 +28,8 @@ int RectI_Intersect(RectI *r1, RectI *r2, RectI *rIntersectOut)
     /* problem is symmetric, so reduce the number of different cases by
        consistent ordering where r1 is always before r2 in axis-x */
     if (x2s < x1s) {
-        SwapInt(&x1s, &x2s);
-        SwapInt(&x1e, &x2e);
+        swap_int(&x1s, &x2s);
+        swap_int(&x1e, &x2e);
     }
 
     /* case of non-overlapping rectangles i.e.:
@@ -76,8 +54,8 @@ int RectI_Intersect(RectI *r1, RectI *r2, RectI *rIntersectOut)
     y1e = y1s + r1->dy;
     y2e = y2s + r2->dy;
     if (y2s < y1s) {
-        SwapInt(&y1s, &y2s);
-        SwapInt(&y1e, &y2e);
+        swap_int(&y1s, &y2s);
+        swap_int(&y1e, &y2e);
     }
     if (y2s > y1e)
         return 0;
@@ -122,9 +100,9 @@ void RectD_FromXY(RectD *rOut, double xs, double xe, double ys, double ye)
     if (!rOut)
         return;
     if (xs > xe)
-        SwapDouble(&xs, &xe);
+        swap_double(&xs, &xe);
     if (ys > ye)
-        SwapDouble(&ys, &ye);
+        swap_double(&ys, &ye);
 
     rOut->x = xs;
     rOut->y = ys;

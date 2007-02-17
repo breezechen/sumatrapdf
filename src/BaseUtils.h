@@ -76,11 +76,6 @@ extern "C"
 
 #define WHITE_SPACE_CHARS " \n\t\r"
 
-/* TODO: consider using standard C macros for SWAP and MIN */
-void        SwapInt(int *one, int *two);
-void        SwapDouble(double *one, double *two);
-int         MinInt(int one, int two);
-
 #ifndef _WIN32 /* TODO: should probably be based on MSVC version */
 /* Re-implementation of Visual Studio C runtime function for c libs that don't
    have it. */
@@ -126,10 +121,6 @@ char *  Str_PathJoin(const char *path, const char *fileName);
 
 char *  CanonizeAbsolutePath(const char *path);
 
-unsigned long File_GetSize(const char *fileName);
-char *  File_Slurp(const char *fileName, unsigned long *file_size_out);
-
-void    SleepMilliseconds(int milliseconds);
 #ifdef __cplusplus
 }
 #endif

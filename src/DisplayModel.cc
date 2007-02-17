@@ -119,14 +119,6 @@ bool displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm)
     return TRUE;
 }
 
-/* move to base_util.c or use C's MIN/MAX */
-static void SwapDouble(double *one, double *two)
-{
-    double tmp = *one;
-    *one = *two;
-    *two = tmp;
-}
-
 /* Given 'pageInfo', which should contain correct information about
    pageDx, pageDy and rotation, return a page size after applying a global
    rotation */
@@ -143,7 +135,7 @@ void pageSizeAfterRotation(PdfPageInfo *pageInfo, int rotation,
     rotation = rotation + pageInfo->rotation;
     normalizeRotation(&rotation);
     if (rotationFlipped(rotation))
-        SwapDouble(pageDxOut, pageDyOut);
+        swap_double(pageDxOut, pageDyOut);
 }
 
 DisplayModel::DisplayModel(DisplayMode displayMode)

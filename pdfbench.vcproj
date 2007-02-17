@@ -207,6 +207,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\baseutils\file_util.c"
+				>
+			</File>
+			<File
 				RelativePath=".\src\pdfbench.cc"
 				>
 			</File>

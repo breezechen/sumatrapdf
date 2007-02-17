@@ -13,14 +13,10 @@ public:
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);
-    virtual RenderedBitmap *renderBitmap(
-                           int pageNo, double zoomReal, int rotation,
-                           BOOL (*abortCheckCbkA)(void *data),
-                           void *abortCheckCbkDataA);
 };
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
-  const char *fileName, void *data,
+  const char *fileName,
   SizeD totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage);

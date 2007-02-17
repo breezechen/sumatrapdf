@@ -15,6 +15,7 @@
 #include <windows.h>
 
 class SplashBitmap;
+class SplashOutputDev;
 class PDFDoc;
 
 /* For simplicity, all in one file. Would be cleaner if they were
@@ -22,6 +23,10 @@ class PDFDoc;
 
 #define INVALID_PAGE_NO     -1
 #define INVALID_ROTATION    -1
+/* It seems that PDF documents are encoded assuming DPI of 72.0 */
+#define PDF_FILE_DPI        72
+
+void SplashColorsInit(void);
 
 /* Abstract class representing cached bitmap. Allows different implementations
    on different platforms. */
@@ -82,7 +87,9 @@ public:
     virtual bool load(const char *fileName) = 0;
     virtual int pageRotation(int pageNo) = 0;
     virtual SizeD pageSize(int pageNo) = 0;
-
+    virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+                         BOOL (*abortCheckCbkA)(void *data),
+                         void *abortCheckCbkDataA) = 0;
 protected:
     const char *_fileName;
     int _pageCount;
@@ -95,10 +102,15 @@ public:
     virtual bool load(const char *fileName);
     virtual int pageRotation(int pageNo);
     virtual SizeD pageSize(int pageNo);
+    virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+                         BOOL (*abortCheckCbkA)(void *data),
+                         void *abortCheckCbkDataA);
 
     PDFDoc* pdfDoc() { return _pdfDoc; }
+    SplashOutputDev *   outputDevice();
 private:
-    PDFDoc *    _pdfDoc;
+    PDFDoc *            _pdfDoc;
+    SplashOutputDev *   _outputDev;
 };
 
 class PdfEngineFitz : public  PdfEngine {
@@ -108,6 +120,9 @@ public:
     virtual bool load(const char *fileName);
     virtual int pageRotation(int pageNo);
     virtual SizeD pageSize(int pageNo);
+    virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+                         BOOL (*abortCheckCbkA)(void *data),
+                         void *abortCheckCbkDataA);
 
     pdf_xref * xref() { return _xref; }
     pdf_pagetree * pages() { return _pages; }
@@ -117,6 +132,11 @@ private:
     pdf_outline *   _outline;
 #endif
     pdf_pagetree *  _pages;
+#ifdef FITZ_HEAD
+    fz_graphics *   _rast;
+#else
+    fz_renderer *   _rast;
+#endif
 };
 
 #endif

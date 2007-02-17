@@ -26,51 +26,6 @@
 #define ACTION_FIRST_PAGE   "FirstPage"
 #define ACTION_LAST_PAGE    "LastPage"
 
-static SplashColorMode              gSplashColorMode = splashModeBGR8;
-
-static SplashColor splashColRed;
-static SplashColor splashColGreen;
-static SplashColor splashColBlue;
-static SplashColor splashColWhite;
-static SplashColor splashColBlack;
-
-#define SPLASH_COL_RED_PTR (SplashColorPtr)&(splashColRed[0])
-#define SPLASH_COL_GREEN_PTR (SplashColorPtr)&(splashColGreen[0])
-#define SPLASH_COL_BLUE_PTR (SplashColorPtr)&(splashColBlue[0])
-#define SPLASH_COL_WHITE_PTR (SplashColorPtr)&(splashColWhite[0])
-#define SPLASH_COL_BLACK_PTR (SplashColorPtr)&(splashColBlack[0])
-
-static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
-
-static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
-{
-    switch (gSplashColorMode)
-    {
-        case splashModeBGR8:
-            col[0] = blue;
-            col[1] = green;
-            col[2] = red;
-            break;
-        case splashModeRGB8:
-            col[0] = red;
-            col[1] = green;
-            col[2] = blue;
-            break;
-        default:
-            assert(0);
-            break;
-    }
-}
-
-void SplashColorsInit(void)
-{
-    SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
-    SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
-    SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
-}
-
 void CDECL error(int pos, char *msg, ...) {
     va_list args;
     char        buf[4096], *p = buf;
@@ -207,81 +162,29 @@ DisplayModelSplash::DisplayModelSplash(DisplayMode displayMode) :
     _pdfEngine = new PdfEnginePoppler();
 }
 
-/* TODO: caches dm->textOutDevice, but new TextOutputDev() is cheap so
-   we can probably get rid of this function */
-static TextOutputDev *GetTextOutDevice(DisplayModelSplash *dm)
-{
-    assert(dm);
-    if (!dm) return NULL;
-    if (!dm->textOutDevice)
-        dm->textOutDevice = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
-    return dm->textOutDevice;
-}
-
 TextPage *DisplayModelSplash::GetTextPage(int pageNo)
 {
-    PdfPageInfo *   pdfPageInfo;
-    TextOutputDev * textOut;
-
     assert(pdfDoc);
     if (!pdfDoc) return NULL;
     assert(validPageNo(pageNo));
     assert(pagesInfo);
     if (!pagesInfo) return NULL;
 
-    pdfPageInfo = &(pagesInfo[pageNo-1]);
+    PdfPageInfo * pdfPageInfo = &(pagesInfo[pageNo-1]);
     if (!pdfPageInfo->textPage) {
-        textOut = GetTextOutDevice(this);
-        if (!textOut || !textOut->isOk())
+        TextOutputDev *textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
+        if (!textOut)
             return NULL;
+        if (!textOut->isOk()) {
+            delete textOut;
+            return NULL;
+        }
         pdfDoc->displayPage(textOut, pageNo, 72, 72, 0, gFalse, gTrue, gFalse);
         pdfPageInfo->textPage = textOut->takeText();
+        delete textOut;
     }
     return pdfPageInfo->textPage;
 }
-
-#if 0
-SplashBitmap* DisplayModelSplash::GetBitmapForPage(int pageNo, 
-    BOOL (*abortCheckCbkA)(void *data),
-    void *abortCheckCbkDataA)
-{
-    int             pageDx, pageDy;
-    SplashBitmap *  bmp;
-    int             bmpDx, bmpDy;
-    PageRenderRequest *req;
-    BOOL            aborted = FALSE;
-
-    assert(pdfDoc);
-    if (!pdfDoc) return NULL;
-
-    PdfPageInfo *pageInfo = getPageInfo(pageNo);
-    pageDx = (int)pageInfo->pageDx;
-    pageDy = (int)pageInfo->pageDy;
-
-    DBG_OUT("DisplayModelSplash::GetBitmapForPage(pageNo=%d) orig=(%d,%d) curr=(%d,%d)",
-        pageNo,
-        pageDx, pageDy,
-        (int)pageInfo->currDx,
-        (int)pageInfo->currDy);
-
-    assert(outputDevice);
-    if (!outputDevice) return NULL;
-    bmp = RenderBitmap(this, pageNo, _zoomReal, rotation(), abortCheckCbkA, abortCheckCbkDataA);
-
-    bmpDx = bmp->getWidth();
-    bmpDy = bmp->getHeight();
-    req = (PageRenderRequest*)abortCheckCbkDataA;
-    if (req && req->abort)
-        aborted = TRUE;
-    if ( (bmpDx != (int)pageInfo->currDx) || (bmpDy != (int)pageInfo->currDy)) {
-        DBG_OUT("  mismatched bitmap sizes (aborted=%d)!!!\n", aborted);
-        DBG_OUT("  calculated: (%4d-%4d)\n", (int)pageInfo->currDx, (int)pageInfo->currDy);
-        DBG_OUT("  real:       (%4d-%4d)\n", bmpDx, bmpDy);
-        assert(aborted);
-    }
-    return bmp;
-}
-#endif
 
 void DisplayModelSplash::FreeLinks(void)
 {
@@ -299,9 +202,6 @@ void DisplayModelSplash::FreeTextPages()
     }
 }
 
-extern void RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
-extern void CancelRenderingForDisplayModel(DisplayModel *dm);
-
 DisplayModelSplash::~DisplayModelSplash()
 {
     RenderQueue_RemoveForDisplayModel(this);
@@ -310,8 +210,6 @@ DisplayModelSplash::~DisplayModelSplash()
     FreeLinks();
     FreeTextPages();
 
-    delete outputDevice;
-    delete textOutDevice;
     delete searchState.str;
     delete searchState.strU;
     free((void*)_links);
@@ -333,7 +231,8 @@ void DisplayModelSplash::cvtUserToScreen(int pageNo, double *x, double *y)
     dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
     rotationTmp = rotation();
     normalizeRotation(&rotationTmp);
-    pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotationTmp, outputDevice->upsideDown());
+    SplashOutputDev *outputDev = pdfEnginePoppler()->outputDevice();
+    pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotationTmp, outputDev->upsideDown());
 
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
     *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->currPosX;
@@ -344,23 +243,19 @@ void DisplayModelSplash::cvtUserToScreen(int pageNo, double *x, double *y)
    region or NULL if no text */
 GooString *DisplayModelSplash::GetTextInRegion(int pageNo, RectD *region)
 {
-    TextOutputDev *     textOut = NULL;
     GooString *         txt = NULL;
     double              xMin, yMin, xMax, yMax;
-    double              dpi;
     GBool               useMediaBox = gFalse;
     GBool               crop = gTrue;
     GBool               doLinks = gFalse;
 
     assert(pdfDoc);
     if (!pdfDoc) return NULL;
-    assert(outputDevice);
-    if (!outputDevice) return NULL;
 
-    dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
+    double dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
 
     /* TODO: cache textOut? */
-    textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
+    TextOutputDev *textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
     if (!textOut->isOk()) {
         delete textOut;
         goto Exit;
@@ -393,7 +288,7 @@ Exit:
    alternative is worse.
    */
 DisplayModelSplash *DisplayModelSplash_CreateFromFileName(
-  const char *fileName, void *data,
+  const char *fileName,
   SizeD totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage)
@@ -408,15 +303,7 @@ DisplayModelSplash *DisplayModelSplash_CreateFromFileName(
     dm->setScrollbarsSize(scrollbarXDy, scrollbarYDx);
     dm->setTotalDrawAreaSize(totalDrawAreaSize);
 
-    GBool bitmapTopDown = gTrue;
-    SplashOutputDev *outputDev = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor, bitmapTopDown);
-    if (!outputDev)
-        goto Error;
-
     dm->pdfDoc = dm->pdfEnginePoppler()->pdfDoc();
-    dm->outputDevice = outputDev;
-    dm->textOutDevice = NULL;
-    outputDev->startDoc(dm->pdfDoc->getXRef());
 
     DBG_OUT("DisplayModelSplash::CreateFromPdfDoc() pageCount = %d, startPage=%d, displayMode=%d\n",
         dm->pageCount(), (int)dm->startPage(), (int)displayMode);
@@ -886,66 +773,3 @@ Exit:
     return found;
 }
 
-RenderedBitmap *DisplayModelSplash::renderBitmap(
-                           int pageNo, double zoomReal, int rotation,
-                           BOOL (*abortCheckCbkA)(void *data),
-                           void *abortCheckCbkDataA)
-{
-    double          hDPI, vDPI;
-    GBool           useMediaBox = gFalse;
-    GBool           crop        = gTrue;
-    GBool           doLinks     = gTrue;
-
-    DBG_OUT("DisplayModelSplash::RenderBitmap(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
-
-    hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    assert(outputDevice);
-    if (!outputDevice) return NULL;
-    pdfDoc->displayPage(outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
-        abortCheckCbkA, abortCheckCbkDataA);
-
-    PdfPageInfo *pageInfo = getPageInfo(pageNo);
-    if (!pageInfo->links) {
-        /* displayPage calculates links for this page (if doLinks is true)
-           and puts inside pdfDoc */
-        pageInfo->links = pdfDoc->takeLinks();
-        if (pageInfo->links->getNumLinks() > 0)
-            RecalcLinks();
-    }
-    RenderedBitmapSplash *renderedBitmap = new RenderedBitmapSplash(outputDevice->takeBitmap());
-    return renderedBitmap;
-}
-
-#if 0
-SplashBitmap* RenderBitmap(DisplayModelSplash *dm,
-                           int pageNo, double zoomReal, int rotation,
-                           BOOL (*abortCheckCbkA)(void *data),
-                           void *abortCheckCbkDataA)
-{
-    double          hDPI, vDPI;
-    GBool           useMediaBox = gFalse;
-    GBool           crop        = gTrue;
-    GBool           doLinks     = gTrue;
-    PdfPageInfo *   pageInfo;
-
-    DBG_OUT("RenderBitmap(pageNo=%d) rotate=%d, zoomReal=%.2f%%\n", pageNo, rotation, zoomReal);
-
-    hDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    vDPI = (double)PDF_FILE_DPI * zoomReal * 0.01;
-    assert(dm->outputDevice);
-    if (!dm->outputDevice) return NULL;
-    dm->pdfDoc->displayPage(dm->outputDevice, pageNo, hDPI, vDPI, rotation, useMediaBox, crop, doLinks,
-        abortCheckCbkA, abortCheckCbkDataA);
-
-    pageInfo = dm->getPageInfo(pageNo);
-    if (!pageInfo->links) {
-        /* displayPage calculates links for this page (if doLinks is true)
-           and puts inside pdfDoc */
-        pageInfo->links = dm->pdfDoc->takeLinks();
-        if (pageInfo->links->getNumLinks() > 0)
-            dm->RecalcLinks();
-    }
-    return dm->outputDevice->takeBitmap();
-}
-#endif

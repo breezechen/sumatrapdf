@@ -291,7 +291,7 @@ void CancelRenderingForDisplayModel(DisplayModel *dm) {
         if (renderingFinished)
             break;
         /* TODO: busy loop is not good, but I don't have a better idea */
-        SleepMilliseconds(500);
+        sleep_milliseconds(500);
     }
 }
 
@@ -817,7 +817,7 @@ static void Prefs_Load(void)
     DStringInit(&path);
     Prefs_GetFileName(&path);
 
-    prefsTxt = File_Slurp(path.pString, &prefsFileLen);
+    prefsTxt = file_read_all(path.pString, &prefsFileLen);
     if (str_empty(prefsTxt)) {
         DBG_OUT("  no prefs file or is empty\n");
         return;
@@ -1426,12 +1426,12 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     }
 
     if (gUseFitz) {
-        win->dmFitz = DisplayModelFitz_CreateFromFileName(fileName, (void*)win, 
+        win->dmFitz = DisplayModelFitz_CreateFromFileName(fileName, 
             totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
         win->dm = win->dmFitz;
         win->dmSplash = NULL;
     } else {
-        win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, (void*)win, 
+        win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, 
             totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
         win->dm = win->dmSplash;
         win->dmFitz = NULL;
@@ -2045,7 +2045,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         DBG_OUT("   drawing bitmap for %d\n", pageNo);
 
-        HBITMAP hbmp = renderedBmp->CreateDIBitmap(hdc);
+        HBITMAP hbmp = renderedBmp->createDIBitmap(hdc);
         if (hbmp) {
             HDC bmpDC = CreateCompatibleDC(hdc);
             if (bmpDC) {
@@ -2805,39 +2805,36 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
 TODO:
  * a better, synchronous way of generating a bitmap to print
 */
-static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromPage, int toPage)
+static void PrintToDevice(WindowInfo *win, HDC hdc, LPDEVMODE devMode, int fromPage, int toPage)
 {
     assert(toPage >= fromPage);
 
     if (!win) return;
-
-    DisplayModel dm = win->dm;
 
     /* store current page number and zoom state to reset
        when finished printing */
     int pageNoInitial = win->dm->currentPageNo();
     int zoomInitial = win->dm->zoomReal();
 
-    // set the print job name from the file name
+    DOCINFO di = {0};
+    di.cbSize = sizeof (DOCINFO);
     di.lpszDocName = (LPCSTR)win->dm->fileName();
 
     // to increase the resolution of the bitmap created for
     // the printed page, zoom in by say 250, seems to work ok.
-    dm->zoomTo(250);
+    win->dm->zoomTo(250);
 
     // most printers can support stretchdibits,
     // whereas a lot of printers do not support bitblt
     // quit if printer doesn't support StretchDIBits
-    int rasterCaps = GetDeviceCaps(hDC, RASTERCAPS);
+    int rasterCaps = GetDeviceCaps(hdc, RASTERCAPS);
     int supportsStretchDib = rasterCaps & RC_STRETCHDIB;
     if (!supportsStretchDib) {
         MessageBox(win->hwndFrame, "This printer doesn't support StretchDIBits function", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
         goto Exit;
     }
 
-    DOCINFO di = {0};
-    di.cbSize = sizeof (DOCINFO);
-    if (StartDoc(hDC, &di) <= 0)
+    if (StartDoc(hdc, &di) <= 0)
         goto Exit;
 
     // print all the pages the user requested unless
@@ -2849,13 +2846,13 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         double zoomLevel = win->dm->zoomReal();
 
         // initiate the creation of the bitmap for the page.
-        dm->goToPage(pageNo, 0);
+        win->dm->goToPage(pageNo, 0);
 
         // because we're multithreaded the bitmap may not be
         // ready yet so keep checking until it is available
         RenderedBitmap *bmp = NULL;
         do {
-            BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
+            BitmapCacheEntry *entry = BitmapCache_Find(win->dm, pageNo, zoomLevel, rotation);
             if (entry)
                 bmp = entry->bitmap;
             Sleep(10);
@@ -2864,23 +2861,23 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
 
         // initiate the printed page
-        StartPage(hDC);
+        StartPage(hdc);
 
         // initialise device context
-        SetMapMode(hDC, MM_TEXT);
+        SetMapMode(hdc, MM_TEXT);
         // MM_TEXT: Each logical unit is mapped to one device pixel.
         // Positive x is to the right; positive y is down.
 
-        int pageHeight = GetDeviceCaps(hDC, PHYSICALHEIGHT);
-        int pageWidth = GetDeviceCaps(hDC, PHYSICALWIDTH);
+        int pageHeight = GetDeviceCaps(hdc, PHYSICALHEIGHT);
+        int pageWidth = GetDeviceCaps(hdc, PHYSICALWIDTH);
 
         // Get physical printer margins
-        int topMargin = GetDeviceCaps(hDC, PHYSICALOFFSETY);
-        int leftMargin = GetDeviceCaps(hDC, PHYSICALOFFSETX);
+        int topMargin = GetDeviceCaps(hdc, PHYSICALOFFSETY);
+        int leftMargin = GetDeviceCaps(hdc, PHYSICALOFFSETX);
         if (DMORIENT_LANDSCAPE == devMode->dmOrientation)
-            SwapInt(&topMargin, &leftMargin);
+            swap_int(&topMargin, &leftMargin);
 
-        bmp->StretchDIBits(hDC, -leftMargin, -topMargin, pageWidth, pageHeight)
+        bmp->stretchDIBits(hdc, -leftMargin, -topMargin, pageWidth, pageHeight);
 
         // we're creating about 30MB per page so clear the
         // bitmap now to avoid running out of RAM on old machines.
@@ -2889,21 +2886,21 @@ static void PrintToDevice(WindowInfo *win, HDC hDC, LPDEVMODE devMode, int fromP
         BitmapCache_FreeAll();
 
         // end the page, and check no error occurred
-        if (EndPage(hDC) <= 0) {
-            AbortDoc(hDC);
+        if (EndPage(hdc) <= 0) {
+            AbortDoc(hdc);
             goto Exit;
         }
     }
 
-    EndDoc(hDC);
+    EndDoc(hdc);
 
 Exit:
-    DeleteDC(hDC);
+    DeleteDC(hdc);
 
     // reset the page and zoom that the user had before starting to print.
     if (pageNoInitial > -1) {
-        dm->goToPage(pageNoInitial, 0);
-        dm->zoomTo(zoomInitial);
+        win->dm->goToPage(pageNoInitial, 0);
+        win->dm->zoomTo(zoomInitial);
     }
 }
 

@@ -13,6 +13,7 @@
 
 #include "str_util.h"
 #include "base_util.h"
+#include "file_util.h"
 
 #include "PdfEngine.h"
 
@@ -1143,7 +1144,7 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
         if (ShowPreview()) {
             PreviewBitmapSplashFitz(splashBmp, renderFitz->image);
             if (gfSlowPreview)
-                SleepMilliseconds(SLOW_PREVIEW_TIME);
+                sleep_milliseconds(SLOW_PREVIEW_TIME);
         }
 
         if (DoPDiff()) {
@@ -1207,7 +1208,7 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
         if (ShowPreview()) {
             PreviewBitmapFitz(render->image);
             if (gfSlowPreview)
-                SleepMilliseconds(SLOW_PREVIEW_TIME);
+                sleep_milliseconds(SLOW_PREVIEW_TIME);
         }
 
     }
@@ -1255,7 +1256,7 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
         if (ShowPreview()) {
             PreviewBitmapSplash(render->Bitmap());
             if (gfSlowPreview)
-                SleepMilliseconds(SLOW_PREVIEW_TIME);
+                sleep_milliseconds(SLOW_PREVIEW_TIME);
         }
     }
 DumpLinks:
@@ -1467,7 +1468,7 @@ void RenderPdfFileList(char *pdfFileList)
     assert(pdfFileList);
     if (!pdfFileList)
         return;
-    data = File_Slurp(pdfFileList, &fileSize);
+    data = file_read_all(pdfFileList, &fileSize);
     if (!data) {
         error(-1, "couldn't load file '%s'", pdfFileList);
         return;
