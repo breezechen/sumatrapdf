@@ -2801,107 +2801,76 @@ static void OnMenuZoom(WindowInfo *win, UINT menuId)
     ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
 }
 
-/*
-TODO:
- * a better, synchronous way of generating a bitmap to print
-*/
-static void PrintToDevice(WindowInfo *win, HDC hdc, LPDEVMODE devMode, int fromPage, int toPage)
+static bool CheckPrinterStretchDibSupport(HWND hwndForMsgBox, HDC hdc)
 {
-    assert(toPage >= fromPage);
-
-    if (!win) return;
-
-    /* store current page number and zoom state to reset
-       when finished printing */
-    int pageNoInitial = win->dm->currentPageNo();
-    int zoomInitial = win->dm->zoomReal();
-
-    DOCINFO di = {0};
-    di.cbSize = sizeof (DOCINFO);
-    di.lpszDocName = (LPCSTR)win->dm->fileName();
-
-    // to increase the resolution of the bitmap created for
-    // the printed page, zoom in by say 250, seems to work ok.
-    win->dm->zoomTo(250);
-
     // most printers can support stretchdibits,
     // whereas a lot of printers do not support bitblt
     // quit if printer doesn't support StretchDIBits
     int rasterCaps = GetDeviceCaps(hdc, RASTERCAPS);
     int supportsStretchDib = rasterCaps & RC_STRETCHDIB;
-    if (!supportsStretchDib) {
-        MessageBox(win->hwndFrame, "This printer doesn't support StretchDIBits function", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
-        goto Exit;
-    }
+    if (supportsStretchDib)
+        return true;
+
+    MessageBox(hwndForMsgBox, "This printer doesn't support StretchDIBits function", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+    return false;
+}
+
+// TODO: make it run in a background thread by constructing new PdfEngine()
+// from a file name - this should be thread safe
+static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int fromPage, int toPage) {
+
+    assert(toPage >= fromPage);
+    assert(dm);
+    if (!dm) return;
+
+    PdfEngine *pdfEngine = dm->pdfEngine();
+    DOCINFO di = {0};
+    di.cbSize = sizeof (DOCINFO);
+    di.lpszDocName = (LPCSTR)pdfEngine->fileName();
 
     if (StartDoc(hdc, &di) <= 0)
-        goto Exit;
+        return;
+
+    // rendering for the same DisplayModel is not thread-safe
+    CancelRenderingForDisplayModel(dm);
 
     // print all the pages the user requested unless
     // bContinue flags there is a problem.
     for (int pageNo = fromPage; pageNo <= toPage; pageNo++) {
-        PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
-
-        int rotation = win->dm->rotation() + pageInfo->rotation;
-        double zoomLevel = win->dm->zoomReal();
-
-        // initiate the creation of the bitmap for the page.
-        win->dm->goToPage(pageNo, 0);
-
-        // because we're multithreaded the bitmap may not be
-        // ready yet so keep checking until it is available
-        RenderedBitmap *bmp = NULL;
-        do {
-            BitmapCacheEntry *entry = BitmapCache_Find(win->dm, pageNo, zoomLevel, rotation);
-            if (entry)
-                bmp = entry->bitmap;
-            Sleep(10);
-        } while (!bmp);
+        int rotation = pdfEngine->pageRotation(pageNo);
 
         DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
 
-        // initiate the printed page
-        StartPage(hdc);
+        // render at a big zoom, 2.5 should be good enough. It's a compromise
+        // between quality and memory usage. TODO: ideally we would use zoom
+        // that matches the size of the page in the printer
+        RenderedBitmap *bmp = pdfEngine->renderBitmap(pageNo, 2.5, rotation, NULL, NULL);
+        if (!bmp)
+            goto Error; /* most likely ran out of memory */
 
-        // initialise device context
-        SetMapMode(hdc, MM_TEXT);
+        StartPage(hdc);
         // MM_TEXT: Each logical unit is mapped to one device pixel.
         // Positive x is to the right; positive y is down.
+        SetMapMode(hdc, MM_TEXT);
 
         int pageHeight = GetDeviceCaps(hdc, PHYSICALHEIGHT);
         int pageWidth = GetDeviceCaps(hdc, PHYSICALWIDTH);
 
-        // Get physical printer margins
         int topMargin = GetDeviceCaps(hdc, PHYSICALOFFSETY);
         int leftMargin = GetDeviceCaps(hdc, PHYSICALOFFSETX);
         if (DMORIENT_LANDSCAPE == devMode->dmOrientation)
             swap_int(&topMargin, &leftMargin);
 
         bmp->stretchDIBits(hdc, -leftMargin, -topMargin, pageWidth, pageHeight);
-
-        // we're creating about 30MB per page so clear the
-        // bitmap now to avoid running out of RAM on old machines.
-        // ideally call BitmapCacheEntry_Free(entry) but that's
-        // not available to us here, so clear all instead!
-        BitmapCache_FreeAll();
-
-        // end the page, and check no error occurred
+        delete bmp;
         if (EndPage(hdc) <= 0) {
             AbortDoc(hdc);
-            goto Exit;
+            return;
         }
     }
 
+Error:
     EndDoc(hdc);
-
-Exit:
-    DeleteDC(hdc);
-
-    // reset the page and zoom that the user had before starting to print.
-    if (pageNoInitial > -1) {
-        win->dm->goToPage(pageNoInitial, 0);
-        win->dm->zoomTo(zoomInitial);
-    }
 }
 
 /* Show Print Dialog box to allow user to select the printer
@@ -2919,12 +2888,12 @@ So far have tested printing from XP to
 */
 static void OnMenuPrint(WindowInfo *win)
 {
-    DisplayModel *      dm;
     PRINTDLG            pd;
 
     assert(win);
     if (!win) return;
-    dm = win->dm;
+
+    DisplayModel *dm = win->dm;
     assert(dm);
     if (!dm) return;
 
@@ -2935,7 +2904,6 @@ static void OnMenuPrint(WindowInfo *win)
        way we only need to concern ourselves with one dm.
        TODO: don't re-use WindowInfo, use a different, synchronious
        way of creating a bitmap */
-
     ZeroMemory(&pd, sizeof(pd));
     pd.lStructSize = sizeof(pd);
     pd.hwndOwner   = win->hwndFrame;
@@ -2945,9 +2913,9 @@ static void OnMenuPrint(WindowInfo *win)
     pd.nCopies     = 1;
     /* by default print all pages */
     pd.nFromPage   = 1;
-    pd.nToPage     = win->dm->pageCount();
+    pd.nToPage     = dm->pageCount();
     pd.nMinPage    = 1;
-    pd.nMaxPage    = win->dm->pageCount();
+    pd.nMaxPage    = dm->pageCount();
 
     BOOL pressedOk = PrintDlg(&pd);
     if (!pressedOk) {
@@ -2962,8 +2930,10 @@ static void OnMenuPrint(WindowInfo *win)
         return;
     }
 
-    PrintToDevice(win, pd.hDC, (LPDEVMODE)pd.hDevMode, pd.nFromPage, pd.nToPage);
+    if (CheckPrinterStretchDibSupport(win->hwndFrame, pd.hDC))
+        PrintToDevice(dm, pd.hDC, (LPDEVMODE)pd.hDevMode, pd.nFromPage, pd.nToPage);
 
+    DeleteDC(pd.hDC);
     if (pd.hDevNames != NULL) GlobalFree(pd.hDevNames);
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
 }
@@ -4103,9 +4073,7 @@ static void CreatePageRenderThread(void)
 
 static void PrintFile(WindowInfo *win, const char *fileName, const char *printerName)
 {
-    char*       driver;
     char        devstring[256];      // array for WIN.INI data 
-    char *      port;                // port name 
     HANDLE      printer;
     LPDEVMODE   devMode = NULL;
     DWORD       structSize, returnCode;
@@ -4117,8 +4085,8 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
     // Parse the string of names, setting ptrs as required 
     // If the string contains the required names, use them to 
     // create a device context. 
-    driver = strtok (devstring, (const char *) ",");
-    port = strtok((char *) NULL, (const char *) ",");
+    char *driver = strtok (devstring, (const char *) ",");
+    char *port = strtok((char *) NULL, (const char *) ",");
 
     HDC  hdcPrint = NULL;
     if (!driver || !port) {
@@ -4184,11 +4152,11 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
         goto Exit;
     }
 
-    PrintToDevice(win, hdcPrint, devMode, 1, win->dm->pageCount());
+    if (CheckPrinterStretchDibSupport(win->hwndFrame, hdcPrint))
+        PrintToDevice(win->dm, hdcPrint, devMode, 1, win->dm->pageCount());
 Exit:
     free(devMode);
-    if (hdcPrint)
-        DeleteDC(hdcPrint);
+    DeleteDC(hdcPrint);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
