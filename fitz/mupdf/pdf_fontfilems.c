@@ -559,7 +559,7 @@ pdf_createfontlistMS()
 	WIN32_FIND_DATA FileData;
 	fz_error *err;
 
-	if(fontlistMS.len != 0)
+	if (fontlistMS.len != 0)
 		return nil;
 
 	GetWindowsDirectory(szFontDir, sizeof(szFontDir));
@@ -580,23 +580,19 @@ pdf_createfontlistMS()
 	fFinished = FALSE;
 	while (!fFinished)
 	{
-		if(!(FileData.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
+		if (!(FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		{
 			// Get the full path for sub directory
-			sprintf(szFile,"%s%s",szFontDir,FileData.cFileName);
-			if( szFile[strlen(szFile)-1] == 'c'||
-				szFile[strlen(szFile)-1] == 'C' )
+			sprintf(szFile,"%s%s", szFontDir, FileData.cFileName);
+			if (szFile[strlen(szFile)-1] == 'c' || szFile[strlen(szFile)-1] == 'C')
 			{
 				err = parseTTCs(szFile);
-				if(err)
-					goto cleanup;
+                // ignore errors parsing a given font file
 			}
-			else if( szFile[strlen(szFile)-1] == 'f'||
-				szFile[strlen(szFile)-1] == 'F' )
+			else if (szFile[strlen(szFile)-1] == 'f'|| szFile[strlen(szFile)-1] == 'F')
 			{
 				err = parseTTFs(szFile);
-				if(err)
-					goto cleanup;
+                // ignore errors parsing a given font file
 			}
 		}
 
@@ -610,10 +606,6 @@ pdf_createfontlistMS()
 	}
 
 	removeredundancy(&fontlistMS);
-
-cleanup:
-//	if (err)
-//		fz_abort(err);
 	return nil;
 }
 
@@ -627,36 +619,63 @@ pdf_destoryfontlistMS()
 	fontlistMS.cap = 0;
 }
 
+#if 0 /* This is for testing if localbsearch() fails unexpectedly */
+pdf_fontmapMS *
+findlinear(pdf_fontlistMS *list, pdf_fontmapMS *item)
+{
+    int i, len;
+    pdf_fontmapMS *curritem = list->fontmap;
+
+    len = list->len;
+    for (i = 0; i < len; i++)
+    {
+        if (0 == stricmp(curritem->fontface, item->fontface))
+            return curritem;
+        ++curritem;
+    }
+    return 0;
+}
+#endif
+
 fz_error *
 pdf_lookupfontMS(char *fontname, char **fontpath, int *index)
 {
-	pdf_fontmapMS fontmap;
-	pdf_fontmapMS *found = nil;
-	char *pattern;
-	int i;
+    pdf_fontmapMS fontmap;
+    pdf_fontmapMS *found = nil;
+    char *pattern;
+    int i;
 
-	if(fontlistMS.len == 0)
-		return fz_throw("fonterror : no fonts in the system");
+    if (fontlistMS.len == 0)
+        return fz_throw("fonterror : no fonts in the system");
 
-	pattern = fontname;
-	for (i = 0; i < ARRAY_SIZE(basenames); i++)
-		if (!strcmp(fontname, basenames[i]))
-			pattern = basepatterns[i];
-	
-	strlcpy(fontmap.fontface,pattern,sizeof(fontmap.fontface));
-	found = localbsearch(&fontmap,fontlistMS.fontmap,fontlistMS.len,
-		sizeof(pdf_fontmapMS),compare);
+    pattern = fontname;
+    for (i = 0; i < ARRAY_SIZE(basenames); i++)
+    {
+        if (0 == strcmp(fontname, basenames[i]))
+        {
+            pattern = basepatterns[i];
+            break;
+        }
+    }
 
-	if(found)
-	{
-		*fontpath = found->fontpath;
-		*index = found->index;
-	}
-	else
-	{
-		*fontpath = fontlistMS.fontmap[0].fontpath;
-		*index = fontlistMS.fontmap[0].index;
-	}
+    strlcpy(fontmap.fontface,pattern,sizeof(fontmap.fontface));
+    found = localbsearch(&fontmap, fontlistMS.fontmap, fontlistMS.len, sizeof(pdf_fontmapMS),compare);
+
+#if 0
+    if (!found)
+        found = findlinear(&fontlistMS, &fontmap);
+#endif
+
+    if (found)
+    {
+        *fontpath = found->fontpath;
+        *index = found->index;
+    }
+    else
+    {
+        *fontpath = fontlistMS.fontmap[0].fontpath;
+        *index = fontlistMS.fontmap[0].index;
+    }
 
 	return nil;
 }

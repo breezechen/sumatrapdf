@@ -557,7 +557,7 @@ pdf_createfontlistMS()
 	WIN32_FIND_DATA FileData;
 	fz_error *err;
 
-	if(fontlistMS.len != 0)
+	if (fontlistMS.len != 0)
 		return nil;
 
 	GetWindowsDirectory(szFontDir, sizeof(szFontDir));
@@ -578,23 +578,19 @@ pdf_createfontlistMS()
 	fFinished = FALSE;
 	while (!fFinished)
 	{
-		if(!(FileData.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY))
+		if (!(FileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 		{
 			// Get the full path for sub directory
 			sprintf(szFile,"%s%s",szFontDir,FileData.cFileName);
-			if( szFile[strlen(szFile)-1] == 'c'||
-				szFile[strlen(szFile)-1] == 'C' )
+			if (szFile[strlen(szFile)-1] == 'c'|| szFile[strlen(szFile)-1] == 'C' )
 			{
 				err = parseTTCs(szFile);
-				if(err)
-					goto cleanup;
+                // ignore error parsing a given font file
 			}
-			else if( szFile[strlen(szFile)-1] == 'f'||
-				szFile[strlen(szFile)-1] == 'F' )
+			else if (szFile[strlen(szFile)-1] == 'f' || szFile[strlen(szFile)-1] == 'F' )
 			{
 				err = parseTTFs(szFile);
-				if(err)
-					goto cleanup;
+                // ignore error parsing a given font file
 			}
 		}
 
@@ -608,10 +604,6 @@ pdf_createfontlistMS()
 	}
 
 	removeredundancy(&fontlistMS);
-
-cleanup:
-//	if (err)
-//		fz_abort(err);
 	return nil;
 }
 
