@@ -2131,7 +2131,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta v0.3"
+#define BETA_TXT                "Beta v0.4"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"
@@ -2537,8 +2537,8 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         if (!win->dm) return;
         if (win->dragging) {
             dragDx = 0; dragDy = 0;
-            dragDx = x - win->dragPrevPosX;
-            dragDy = y - win->dragPrevPosY;
+            dragDx = -(x - win->dragPrevPosX);
+            dragDy = -(y - win->dragPrevPosY);
             DBG_OUT(" drag move, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
             WinMoveDocBy(win, dragDx, dragDy*2);
             win->dragPrevPosX = x;
