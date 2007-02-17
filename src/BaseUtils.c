@@ -1,68 +1,3 @@
-#include "BaseUtils.h"
-
-#include <string.h>
-#include <assert.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#include <strsafe.h>
-#else
-#include <unistd.h>
-#include <time.h>
-#include <errno.h>
-#endif
-#include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-int Char_IsWsOrZero(char c)
-{
-    switch (c) {
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-        case 0:
-            return TRUE;
-    }
-    return FALSE;
-}
-
-
-int Char_IsWs(char c)
-{
-    switch (c) {
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-            return TRUE;
-    }
-    return FALSE;
-}
-
-int Char_IsDigit(char c)
-{
-    if ((c >= '0') && (c <= '9'))
-        return TRUE;
-    return FALSE;
-}
-
-void memzero(void *dst, size_t len)
-{
-    if (len <= 0)
-        return;
-    memset(dst, 0, len);
-}
-
-int Str_Empty(const char *txt)
-{
-    if (!txt)
-        return TRUE;
-    if (0 == *txt)
-        return TRUE;
-    return FALSE;
-}
 int Str_ValidNumber(const char *txt)
 {
     if (!txt)
@@ -73,95 +8,6 @@ int Str_ValidNumber(const char *txt)
         ++txt;
     }
     return TRUE;
-}
-
-char *Str_New3(const char *str1, const char *str2, const char *str3)
-{
-    size_t  len1 = 0, len2 = 0, len3 = 0;
-    char *  str, *tmp;
-
-    if (str1)
-        len1 = strlen(str1);
-    if (str2)
-        len2 = strlen(str2);
-    if (str3)
-        len3 = strlen(str3);
-
-    str = (char*)malloc(len1 + len2 + len3 + 1);
-    if (!str)
-        return NULL;
-    tmp = str;
-    if (str1) {
-        memcpy(tmp, str1, len1);
-        tmp += len1;
-    }
-    if (str2) {
-        memcpy(tmp, str2, len2);
-        tmp += len2;
-    }
-    if (str3) {
-        memcpy(tmp, str3, len3);
-        tmp += len3;
-    }
-    *tmp = 0;
-    return str;
-}
-
-char *Str_New2(const char *str1, const char *str2)
-{
-    return Str_New3(str1, str2, NULL);
-}
-
-char *Str_New(const char *str1)
-{
-    return Str_New3(str1, NULL, NULL);
-}
-
-char *Str_DupN(const char *str, size_t len)
-{
-    char *  str_new;
-    if (!str)
-        return NULL;
-
-    str_new = (char*)malloc(len+1);
-    if (!str_new)
-        return NULL;
-
-    memcpy(str_new, str, len);
-    str_new[len] = 0;
-    return str_new;
-}
-
-char *Str_Dup(const char *str)
-{
-    size_t  len;
-    if (!str)
-        return NULL;
-
-    len = strlen(str);
-    return Str_DupN(str, len);
-}
-
-int Str_Eq(const char *str1, const char *str2)
-{
-    if (!str1 && !str2)
-        return TRUE;
-    if (!str1 || !str2)
-        return FALSE;
-    if (0 == strcmp(str1, str2))
-        return TRUE;
-    return FALSE;
-}
-
-int Str_EqNoCase(const char *str1, const char *str2)
-{
-    if (!str1 && !str2)
-        return TRUE;
-    if (!str1 || !str2)
-        return FALSE;
-    if (0 == stricmp(str1, str2))
-        return TRUE;
-    return FALSE;
 }
 
 char *Str_Printf(const char *format, ...)
@@ -227,49 +73,6 @@ Error:
 #endif
 }
 
-/* Return TRUE if string 'txt' ends with string 'end', case-insensitive */
-int Str_EndsWithNoCase(const char *txt, const char *end)
-{
-    size_t end_len;
-    size_t txt_len;
-
-    if (!txt || !end)
-        return FALSE;
-
-    txt_len = strlen(txt);
-    end_len = strlen(end);
-    if (end_len > txt_len)
-        return FALSE;
-    if (Str_EqNoCase(txt+txt_len-end_len, end))
-        return TRUE;
-    return FALSE;
-}
-
-/* Return TRUE if string <txt> starts with string <start>, case-insensitive */
-int Str_StartsWithNoCase(const char *txt, const char *start)
-{
-    size_t txt_len;
-    size_t start_len;
-
-    if (!txt || !start)
-        return FALSE;
-    txt_len = strlen(txt);
-    start_len = strlen(start);
-    if (start_len > txt_len)
-        return FALSE;
-    if (0 == strnicmp(txt, start, start_len))
-        return TRUE;
-    return FALSE;    
-}
-
-int Str_Contains(const char *str, char c)
-{
-    const char *pos = strchr(str, c);
-    if (!pos)
-        return FALSE;
-    return TRUE;
-}
-
 /* Strip all 'to_strip' characters from the beginning of the string.
    Does stripping in-place */
 void Str_StripLeft(char *txt, const char *to_strip)
@@ -321,23 +124,6 @@ void Str_StripRight(char *txt, const char *to_strip)
         new_end[0] = 0;
     else
         new_end[1] = 0;
-}
-
-void Str_StripWsRight(char *txt)
-{
-    Str_StripRight(txt, WHITE_SPACE_CHARS);
-}
-
-void Str_StripBoth(char *txt, const char *to_strip)
-{
-    Str_StripLeft(txt, to_strip);
-    Str_StripRight(txt, to_strip);
-}
-
-void Str_StripWsBoth(char *txt)
-{
-    Str_StripWsLeft(txt);
-    Str_StripWsRight(txt);
 }
 
 
@@ -679,13 +465,6 @@ char *CanonizeAbsolutePath(const char *path)
 #endif
 }
 
-#define U_HEX_TXT "0123456789ABCDEF"
-// buf must be at least 2 characters in size!!!
-static void ByteToHexStr(unsigned char b, char *buf) {
-    buf[0] = U_HEX_TXT[b / 16];
-    buf[1] = U_HEX_TXT[b % 16];
-}
-
 #ifdef _WIN32
 void win32_dbg_out(const char *format, ...) 
 {
@@ -706,38 +485,6 @@ void win32_dbg_out(const char *format, ...)
     fflush(stdout); */
     OutputDebugString(buf);
     va_end(args);
-}
-
-void win32_dbg_out_hex(const char *dsc, const char *data, int dataLen)
-{
-    unsigned char    buf[64+1];
-    unsigned char *  curPos;
-    int              bufCharsLeft;
-
-    if (dsc) win32_dbg_out(dsc); /* a bit dangerous if contains formatting codes */
-    if (!data) return;
-
-    bufCharsLeft = sizeof(buf)-1;
-    curPos = buf;
-    while (dataLen > 0) {
-        if (bufCharsLeft <= 1) {
-            *curPos = 0;
-            win32_dbg_out((unsigned char*)buf);
-            bufCharsLeft = sizeof(buf)-1;
-            curPos = buf;
-        }
-        ByteToHexStr(*data, curPos);
-        curPos += 2;
-        bufCharsLeft -= 2;
-        --dataLen;
-        ++data;
-    }
-
-    if (curPos != buf) {
-        *curPos = 0;
-        win32_dbg_out((unsigned char*)buf);
-    }
-    win32_dbg_out("\n");
 }
 #endif
 
