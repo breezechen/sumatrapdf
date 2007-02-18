@@ -4,12 +4,82 @@
 extern void fz_droparray(fz_obj *array);
 extern void fz_dropdict(fz_obj *dict);
 
+//#define DO_OBJ_STATS 1
+
+#ifdef DO_OBJ_STATS
+static int objstats[FZ_POINTER+1];
+static int intsLessThan65k;
+
+static const char *getTypeName(int type)
+{
+    switch (type) {
+        case FZ_NULL:
+            return "FZ_NULL";
+        case FZ_BOOL:
+            return "FZ_BOOL";
+        case FZ_INT:
+            return "FZ_INT";
+        case FZ_REAL:
+            return "FZ_REAL";
+        case FZ_STRING:
+            return "FZ_STRING";
+        case FZ_NAME:
+            return "FZ_NAME";
+        case FZ_ARRAY:
+            return "FZ_ARRAY";
+        case FZ_DICT:
+            return "FZ_DICT";
+        case FZ_INDIRECT:
+            return "FZ_INDIRECT";
+        case FZ_POINTER:
+            return "FZ_POINTER";
+    }
+    return "unknown";
+}
+
+void dump_type_stats(void)
+{
+    int i;
+    int total = 0;
+    int val;
+    double percent;
+
+    for (i = FZ_NULL; i <= FZ_POINTER; i++) {
+        total += objstats[i];
+    }
+
+    printf("total: %d\n", total);
+    for (i = FZ_NULL; i <= FZ_POINTER; i++) {
+        val = objstats[i];
+        percent = ((double)val * 100.0) / (double)total;
+        printf("%5d %.2f%% %s\n", val, percent, getTypeName(i));
+    }
+    val = intsLessThan65k;
+    percent = ((double)val * 100.0) / (double)total;
+    printf("%5d %.2f%% %s\n", val, percent, "intsLessThan65k");
+}
+#else
+void dump_type_stats(void)
+{
+}
+#endif
+
+#ifdef DO_OBJ_STATS
 #define NEWOBJ(KIND,SIZE)            \
 	fz_obj *o;                       \
 	o = *op = fz_malloc(SIZE);       \
 	if (!o) return fz_outofmem;      \
 	o->refs = 1;                    \
 	o->kind = KIND;                  \
+	objstats[KIND]++;
+#else
+#define NEWOBJ(KIND,SIZE)            \
+	fz_obj *o;                       \
+	o = *op = fz_malloc(SIZE);       \
+	if (!o) return fz_outofmem;      \
+	o->refs = 1;                    \
+	o->kind = KIND;
+#endif
 
 fz_error *
 fz_newnull(fz_obj **op)
@@ -31,7 +101,11 @@ fz_newint(fz_obj **op, int i)
 {
 	NEWOBJ(FZ_INT, sizeof (fz_obj));
 	o->u.i = i;
-	return nil;
+#ifdef DO_OBJ_STATS
+        if (i < 65536)
+		++intsLessThan65k;
+#endif DO_OBJ_STATS
+        return nil;
 }
 
 fz_error *
