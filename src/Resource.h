@@ -47,6 +47,7 @@
 #define IDM_VIEW_SHOW_HIDE_TOOLBAR      434
 #define IDM_MAKE_DEFAULT_READER         435
 #define IDM_VISIT_WEBSITE               436
+#define IDM_VIEW_USE_FITZ               437
 #define IDI_SUMATRAPDF                  1
 #define IDI_SMALL                       601
 #define IDC_SUMATRAPDF                  600

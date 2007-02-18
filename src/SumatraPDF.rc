@@ -60,6 +60,8 @@ BEGIN
         MENUITEM "Rotate right",                IDM_VIEW_ROTATE_RIGHT
         MENUITEM SEPARATOR
         MENUITEM "Show toolbar"                 IDM_VIEW_SHOW_HIDE_TOOLBAR
+        MENUITEM SEPARATOR
+        MENUITEM "Use MuPDF rendering engine"   IDM_VIEW_USE_FITZ
     END
     POPUP "&Go To"
     BEGIN

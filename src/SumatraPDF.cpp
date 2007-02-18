@@ -163,6 +163,7 @@ static SplashColorMode              gSplashColorMode = splashModeBGR8;
 static char *                       gBenchFileName = NULL;
 static int                          gBenchPageNum = INVALID_PAGE_NO;
 BOOL                                gShowToolbar = TRUE;
+BOOL                                gUseFitz = TRUE;
 /* If false, we won't ask the user if he wants Sumatra to handle PDF files */
 BOOL                                gPdfAssociateDontAskAgain = FALSE;
 /* If gPdfAssociateDontAskAgain is TRUE, says whether we should silently associate
@@ -184,8 +185,6 @@ static PageRenderRequest *          gCurPageRenderReq = NULL;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
-
-static bool                         gUseFitz = true;
 
 typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
@@ -777,6 +776,65 @@ static void Prefs_Load(void)
     free((void*)prefsTxt);
 }
 
+static struct idToZoomMap {
+    UINT id;
+    double zoom;
+} gZoomMenuItemsId[] = {
+    { IDM_ZOOM_6400, 6400.0 },
+    { IDM_ZOOM_3200, 3200.0 },
+    { IDM_ZOOM_1600, 1600.0 },
+    { IDM_ZOOM_800, 800.0 },
+    { IDM_ZOOM_400, 400.0 },
+    { IDM_ZOOM_200, 200.0 },
+    { IDM_ZOOM_150, 150.0 },
+    { IDM_ZOOM_125, 125.0 },
+    { IDM_ZOOM_100, 100.0 },
+    { IDM_ZOOM_50, 50.0 },
+    { IDM_ZOOM_25, 25.0 },
+    { IDM_ZOOM_12_5, 12.5 },
+    { IDM_ZOOM_8_33, 8.33 },
+    { IDM_ZOOM_FIT_PAGE, ZOOM_FIT_PAGE },
+    { IDM_ZOOM_FIT_WIDTH, ZOOM_FIT_WIDTH },
+    { IDM_ZOOM_ACTUAL_SIZE, 100.0 }
+};
+
+static UINT MenuIdFromVirtualZoom(double virtualZoom)
+{
+    for (int i=0; i < dimof(gZoomMenuItemsId); i++) {
+        if (virtualZoom == gZoomMenuItemsId[i].zoom)
+            return gZoomMenuItemsId[i].id;
+    }
+    return IDM_ZOOM_ACTUAL_SIZE;
+}
+
+static void ZoomMenuItemCheck(HMENU hmenu, UINT menuItemId)
+{
+    BOOL    found = FALSE;
+
+    for (int i=0; i<dimof(gZoomMenuItemsId); i++) {
+        UINT checkState = MF_BYCOMMAND | MF_UNCHECKED;
+        if (menuItemId == gZoomMenuItemsId[i].id) {
+            assert(!found);
+            found = TRUE;
+            checkState = MF_BYCOMMAND | MF_CHECKED;
+        }
+        CheckMenuItem(hmenu, gZoomMenuItemsId[i].id, checkState);
+    }
+    assert(found);
+}
+
+static double ZoomMenuItemToZoom(UINT menuItemId)
+{
+    int     i;
+    for (i=0; i<dimof(gZoomMenuItemsId); i++) {
+        if (menuItemId == gZoomMenuItemsId[i].id) {
+            return gZoomMenuItemsId[i].zoom;
+        }
+    }
+    assert(0);
+    return 100.0;
+}
+
 static void Win32_Win_GetSize(HWND hwnd, int *dxOut, int *dyOut)
 {
     RECT    r;
@@ -789,10 +847,6 @@ static void Win32_Win_GetSize(HWND hwnd, int *dxOut, int *dyOut)
     }
 }
 
-static void Win32_Win_SetSize(HWND hwnd, int dx, int dy)
-{
-    SetWindowPos(hwnd, NULL, 0, 0, dx, dy, SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_DRAWFRAME);
-}
 static void Win32_Win_GetPos(HWND hwnd, int *xOut, int *yOut)
 {
     RECT    r;
@@ -1159,13 +1213,22 @@ static void ToolbarUpdateStateForWindow(WindowInfo *win)
 
 static void MenuUpdateShowToolbarStateForWindow(WindowInfo *win)
 {
-    HMENU     hmenu;
-    hmenu = GetMenu(win->hwndFrame);
+    HMENU hmenu = GetMenu(win->hwndFrame);
 
     if (gShowToolbar)
         CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_CHECKED);
     else
         CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_UNCHECKED);
+}
+
+static void MenuUpdateUseFitzStateForWindow(WindowInfo *win)
+{
+    HMENU hmenu = GetMenu(win->hwndFrame);
+
+    if (gUseFitz)
+        CheckMenuItem(hmenu, IDM_VIEW_USE_FITZ, MF_BYCOMMAND | MF_CHECKED);
+    else
+        CheckMenuItem(hmenu, IDM_VIEW_USE_FITZ, MF_BYCOMMAND | MF_UNCHECKED);
 }
 
 static void MenuUpdateStateForWindow(WindowInfo *win)
@@ -1193,7 +1256,8 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_GRAYED);
 
     MenuUpdateShowToolbarStateForWindow(win);
-        
+    MenuUpdateUseFitzStateForWindow(win);
+
     for (int i = 0; i < dimof(menusToDisableIfNoPdf); i++) {
         menuId = menusToDisableIfNoPdf[i];
         if (WS_SHOWING_PDF == win->state)
@@ -1407,6 +1471,10 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
         zoomVirtual = fileFromHistory->state.zoomVirtual;
         rotation = fileFromHistory->state.rotation;
     }
+
+    UINT menuId = MenuIdFromVirtualZoom(zoomVirtual);
+    ZoomMenuItemCheck(GetMenu(win->hwndFrame), menuId);
+
     win->dm->relayout(zoomVirtual, rotation);
     if (!win->dm->validPageNo(startPage))
         startPage = 1;
@@ -2641,58 +2709,6 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
         MenuToolbarUpdateStateForAllWindows();
 }
 
-static struct idToZoomMap {
-    UINT id;
-    double zoom;
-} gZoomMenuItemsId[] = {
-    { IDM_ZOOM_6400, 6400.0 },
-    { IDM_ZOOM_3200, 3200.0 },
-    { IDM_ZOOM_1600, 1600.0 },
-    { IDM_ZOOM_800, 800.0 },
-    { IDM_ZOOM_400, 400.0 },
-    { IDM_ZOOM_200, 200.0 },
-    { IDM_ZOOM_150, 150.0 },
-    { IDM_ZOOM_125, 125.0 },
-    { IDM_ZOOM_100, 100.0 },
-    { IDM_ZOOM_50, 50.0 },
-    { IDM_ZOOM_25, 25.0 },
-    { IDM_ZOOM_12_5, 12.5 },
-    { IDM_ZOOM_8_33, 8.33 },
-    { IDM_ZOOM_FIT_PAGE, ZOOM_FIT_PAGE },
-    { IDM_ZOOM_FIT_WIDTH, ZOOM_FIT_WIDTH },
-    { IDM_ZOOM_ACTUAL_SIZE, 100.0 }
-};
-
-static void ZoomMenuItemCheck(HMENU hmenu, UINT menuItemId)
-{
-    BOOL    found = FALSE;
-    int     i;
-    UINT    checkState;
-
-    for (i=0; i<dimof(gZoomMenuItemsId); i++) {
-        checkState = MF_BYCOMMAND | MF_UNCHECKED;
-        if (menuItemId == gZoomMenuItemsId[i].id) {
-            assert(!found);
-            found = TRUE;
-            checkState = MF_BYCOMMAND | MF_CHECKED;
-        }
-        CheckMenuItem(hmenu, gZoomMenuItemsId[i].id, checkState);
-    }
-    assert(found);
-}
-
-static double ZoomMenuItemToZoom(UINT menuItemId)
-{
-    int     i;
-    for (i=0; i<dimof(gZoomMenuItemsId); i++) {
-        if (menuItemId == gZoomMenuItemsId[i].id) {
-            return gZoomMenuItemsId[i].zoom;
-        }
-    }
-    assert(0);
-    return 100.0;
-}
-
 /* Zoom document in window 'hwnd' to zoom level 'zoom'.
    'zoom' is given as a floating-point number, 1.0 is 100%, 2.0 is 200% etc.
 */
@@ -3043,11 +3059,25 @@ static void OnSize(WindowInfo *win, int dx, int dy)
     //SetTimer(win->hwndCanvas, RESIZE_TIMER_ID, RESIZE_DELAY_IN_MS, sNULL);
 }
 
+static void OnMenuViewUseFitz(WindowInfo *win)
+{
+    assert(win);
+    DBG_OUT("OnMenuViewUseFitz()\n");
+    if (gUseFitz)
+        gUseFitz = FALSE;
+    else
+        gUseFitz = TRUE;
+
+    win = gWindowList;
+    while (win) {
+        MenuUpdateUseFitzStateForWindow(win);
+        win = win->next;
+    }
+}
+
 static void OnMenuViewShowHideToolbar(WindowInfo *win)
 {
-    int     dx, dy, x, y;
     assert(win);
-
     DBG_OUT("OnMenuViewShowHideToolbar()\n");
 
     if (gShowToolbar)
@@ -3061,6 +3091,7 @@ static void OnMenuViewShowHideToolbar(WindowInfo *win)
             ShowWindow(win->hwndReBar, SW_SHOW);
         else
             ShowWindow(win->hwndReBar, SW_HIDE);
+        int dx, dy, x, y;
         Win32_Win_GetPos(win->hwndFrame, &x, &y);
         Win32_Win_GetSize(win->hwndFrame, &dx, &dy);
         // TODO: a hack. I add 1 to dy to cause sending WM_SIZE msg to hwndFrame
@@ -3625,6 +3656,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDM_VIEW_SHOW_HIDE_TOOLBAR:
                     OnMenuViewShowHideToolbar(win);
+                    break;
+
+                case IDM_VIEW_USE_FITZ:
+                    OnMenuViewUseFitz(win);
                     break;
 
                 case IDM_GOTO_NEXT_PAGE:

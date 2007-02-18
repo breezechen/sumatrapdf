@@ -11,6 +11,7 @@
 #include <assert.h>
 
 extern BOOL gShowToolbar;
+extern BOOL gUseFitz;
 extern BOOL gPdfAssociateDontAskAgain;
 extern BOOL gPdfAssociateShouldAssociate;
 
@@ -34,6 +35,7 @@ BOOL Prefs_Serialize(FileHistoryList **root, DString *strOut)
 {
     assert(0 == strOut->length);
     DStringSprintf(strOut, "  %s: %d\n", SHOW_TOOLBAR_STR, gShowToolbar);
+    DStringSprintf(strOut, "  %s: %d\n", USE_FITZ_STR, gUseFitz);
     DStringSprintf(strOut, "  %s: %d\n", PDF_ASSOCIATE_DONT_ASK_STR, gPdfAssociateDontAskAgain);
     DStringSprintf(strOut, "  %s: %d\n", PDF_ASSOCIATE_ASSOCIATE, gPdfAssociateShouldAssociate);
     return FileHistoryList_Serialize(root, strOut);
@@ -284,6 +286,11 @@ StartOver:
                 if (str_eq(SHOW_TOOLBAR_STR, key)) {
                     gShowToolbar = TRUE;
                     ParseBool(value, &gShowToolbar);
+                    break;
+                }
+                if (str_eq(USE_FITZ_STR, key)) {
+                    gUseFitz = TRUE;
+                    ParseBool(value, &gUseFitz);
                     break;
                 }
                 if (str_eq(PDF_ASSOCIATE_DONT_ASK_STR, key)) {
