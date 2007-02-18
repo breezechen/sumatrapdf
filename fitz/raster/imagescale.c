@@ -73,7 +73,40 @@ static void srow1(byte *src, byte *dst, int w, int denom)
 
 static void srow2(byte *src, byte *dst, int w, int denom)
 {
-	srown(src, dst, w, denom, 2);
+#if 0
+    srown(src, dst, w, denom, 2);
+#else
+    unsigned left;
+    unsigned sum[2];
+    byte *srcend;
+
+    left = 0;
+    sum[0] = 0;
+    sum[1] = 0;
+
+    srcend = src + (2 * w);
+    while (src < srcend)
+    {
+        sum[0] += *src++;
+        sum[1] += *src++;
+        if (++left == denom)
+        {
+            left = 0;
+            dst[0] = sum[0] / denom;
+            dst[1] = sum[1] / denom;
+            sum[0] = 0;
+            sum[1] = 0;
+            dst += 2;
+        }
+    }
+
+    /* left overs */
+    if (left)
+    {
+        dst[0] = sum[0] / left;
+        dst[1] = sum[1] / left;
+    }
+#endif
 }
 
 static void srow4(byte *src, byte *dst, int w, int denom)
