@@ -1846,6 +1846,9 @@ static void RegisterForPdfExtentions(HWND hwnd)
     if (AlreadyRegisteredForPdfExtentions())
         return;
 
+    if (IsRunningInPortableMode())
+        return;
+
     /* Ask user for permission, unless he previously said he doesn't want to
        see this dialog */
     if (!gPdfAssociateDontAskAgain) {
