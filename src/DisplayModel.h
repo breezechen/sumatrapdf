@@ -2,9 +2,9 @@
 #define _DISPLAY_MODEL_H_
 
 #include "base_util.h"
+#include "geom_util.h"
 #include "DisplayState.h"
 #include "PdfEngine.h"
-#include "SimpleRect.h"
 
 class GooString;
 class Link;

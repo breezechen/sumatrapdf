@@ -2,12 +2,12 @@
 
 #include "str_util.h"
 #include "file_util.h"
+#include "geom_util.h"
 #include "win_util.h"
 
 #include "SumatraDialogs.h"
 #include "FileHistory.h"
 #include "AppPrefs.h"
-#include "SimpleRect.h"
 #include "DisplayModelSplash.h"
 
 #include "ErrorCodes.h"

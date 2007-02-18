@@ -1,11 +1,11 @@
 #ifndef _PDF_ENGINE_H_
 #define _PDF_ENGINE_H_
 
+#include "geom_util.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "SimpleRect.h"
 
 #ifndef _FITZ_H_
 #include <fitz.h>
