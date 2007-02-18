@@ -148,16 +148,6 @@ static HBRUSH                       gBrushLinkDebug;
 static HPEN                         ghpenWhite = NULL;
 static HPEN                         ghpenBlue = NULL;
 
-/* TODO: those should go away */
-#define SPLASH_COL_RED_PTR          (SplashColorPtr)&(splashColRed[0])
-#define SPLASH_COL_GREEN_PTR        (SplashColorPtr)&(splashColGreen[0])
-#define SPLASH_COL_BLUE_PTR         (SplashColorPtr)&(splashColBlue[0])
-#define SPLASH_COL_WHITE_PTR        (SplashColorPtr)&(splashColWhite[0])
-#define SPLASH_COL_BLACK_PTR        (SplashColorPtr)&(splashColBlack[0])
-
-static SplashColorPtr               gBgColor = SPLASH_COL_WHITE_PTR;
-static SplashColorMode              gSplashColorMode = splashModeBGR8;
-
 //static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName = NULL;
