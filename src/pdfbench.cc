@@ -928,7 +928,7 @@ static void renderFile(const char *fileName)
         if (gfFitzRendering)
             renderType = renderFitz;
     }
-    renderPdf(fileName, renderBoth);
+    renderPdf(fileName, renderType);
 }
 
 static int ParseInteger(const char *start, const char *end, int *intOut)

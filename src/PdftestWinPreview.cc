@@ -203,6 +203,8 @@ static void UpdateWindows(void)
         ShowWindow(gHwndFitz, SW_SHOW);
         InvalidateRect(gHwndFitz, NULL, FALSE);
         UpdateWindow(gHwndFitz);
+    } else {
+        ShowWindow(gHwndFitz, SW_HIDE);
     }
 
     if (gBmpSplash) {
@@ -210,6 +212,8 @@ static void UpdateWindows(void)
         ShowWindow(gHwndSplash, SW_SHOW);
         InvalidateRect(gHwndSplash, NULL, FALSE);
         UpdateWindow(gHwndSplash);
+    } else {
+        ShowWindow(gHwndSplash, SW_HIDE);
     }
 
     pumpMessages();
