@@ -131,7 +131,6 @@ private:
     int             rowSize;
 };
 
-
 #define PDF_FILE_DPI 72
 
 #define MAX_FILENAME_SIZE 1024
@@ -647,81 +646,6 @@ static void PrintUsageAndExit(int argc, char **argv)
     exit(0);
 }
 
-/* milli-second timer */
-#ifdef WIN32
-typedef struct MsTimer {
-    LARGE_INTEGER   start;
-    LARGE_INTEGER   end;
-} MsTimer;
-
-void MsTimer_Start(MsTimer *timer)
-{
-    assert(timer);
-    if (!timer)
-        return;
-    QueryPerformanceCounter(&timer->start);
-}
-void MsTimer_End(MsTimer *timer)
-{
-    assert(timer);
-    if (!timer)
-        return;
-    QueryPerformanceCounter(&timer->end);
-}
-
-double MsTimer_GetTimeInMs(MsTimer *timer)
-{
-    LARGE_INTEGER freq;
-    QueryPerformanceFrequency(&freq);
-    double durationInSecs = (double)(timer->end.QuadPart-timer->start.QuadPart)/(double)freq.QuadPart;
-    return durationInSecs * 1000.0;
-}
-
-#else
-#include <sys/time.h>
-
-typedef struct MsTimer {
-    struct timeval    start;
-    struct timeval    end;
-} MsTimer;
-
-void MsTimer_Start(MsTimer *timer)
-{
-    assert(timer);
-    if (!timer)
-        return;
-    gettimeofday(&timer->start, NULL);
-}
-
-void MsTimer_End(MsTimer *timer)
-{
-    assert(timer);
-    if (!timer)
-        return;
-    gettimeofday(&timer->end, NULL);
-}
-
-double MsTimer_GetTimeInMs(MsTimer *timer)
-{
-    double timeInMs;
-    time_t seconds;
-    int    usecs;
-
-    assert(timer);
-    if (!timer)
-        return 0.0;
-    /* TODO: this logic needs to be verified */
-    seconds = timer->end.tv_sec - timer->start.tv_sec;
-    usecs = timer->end.tv_usec - timer->start.tv_usec;
-    if (usecs < 0) {
-        --seconds;
-        usecs += 1000000;
-    }
-    timeInMs = (double)seconds*(double)1000.0 + (double)usecs/(double)1000.0;
-    return timeInMs;
-}
-#endif
-
 void *StandardSecurityHandler::getAuthData()
 {
     return NULL;
@@ -806,16 +730,8 @@ static void DumpLinks(PDFDoc *doc)
 
 static void RenderPdfFileAsText(const char *fileName)
 {
-    MsTimer             msTimer;
-    double              timeInMs;
-    int                 pageCount;
-    int                 rotate;
-    GBool               useMediaBox;
-    GBool               crop;
-    GBool               doLinks;
     GooString *         fileNameStr = NULL;
     PDFDoc *            pdfDoc = NULL;
-    TextOutputDev *     textOut = NULL;
     GooString *         txt = NULL;
 
     assert(fileName);
@@ -824,12 +740,13 @@ static void RenderPdfFileAsText(const char *fileName)
 
     LogInfo("started: %s\n", fileName);
 
-    textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
+    TextOutputDev * textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
     if (!textOut->isOk()) {
-        goto Exit;
+        delete textOut;
+        return;
     }
 
-    MsTimer_Start(&msTimer);
+    MsTimer msTimer;
     /* note: don't delete fileNameStr since PDFDoc takes ownership and deletes them itself */
     fileNameStr = new GooString(fileName);
     if (!fileNameStr)
@@ -841,26 +758,26 @@ static void RenderPdfFileAsText(const char *fileName)
         goto Exit;
     }
 
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    msTimer.stop();
+    double timeInMs = msTimer.timeInMs();
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = pdfDoc->getNumPages();
+    int pageCount = pdfDoc->getNumPages();
     LogInfo("page count: %d\n", pageCount);
 
     for (int curPage = 1; curPage <= pageCount; curPage++) {
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
 
-        MsTimer_Start(&msTimer);
-        rotate = 0;
-        useMediaBox = gFalse;
-        crop = gTrue;
-        doLinks = gFalse;
+        msTimer.start();
+        int rotate = 0;
+        GBool useMediaBox = gFalse;
+        GBool crop = gTrue;
+        GBool doLinks = gFalse;
         pdfDoc->displayPage(textOut, curPage, 72, 72, rotate, useMediaBox, crop, doLinks);
         txt = textOut->getText(0.0, 0.0, 10000.0, 10000.0);
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        msTimer.stop();
+        timeInMs = msTimer.timeInMs();
         if (gfTimings)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
         printf("%s\n", txt->getCString());
@@ -1078,8 +995,6 @@ SplashBitmap* SplashRender::Bitmap(void)
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
 static void RenderPdfFileAsGfxWithBoth(const char *fileName)
 {
-    MsTimer             msTimer;
-    double              timeInMs;
     int                 pageCountFitz, pageCountSplash, pageCount;
     FitzRender *        renderFitz = NULL;
     SplashRender *      renderSplash = NULL;
@@ -1093,23 +1008,23 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     renderFitz = new FitzRender(FITZ_TMP_NAME);
     renderSplash = new SplashRender(POPPLER_TMP_NAME);
 
-    MsTimer_Start(&msTimer);
+    MsTimer msTimer;
     if (!renderFitz->load()) {
         LogInfo("failed to load fitz\n");
         goto Error;
     }
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    msTimer.stop();
+    double timeInMs = msTimer.timeInMs();
     LogInfo("load fitz  : %.2f ms\n", timeInMs);
 
-    MsTimer_Start(&msTimer);
+    msTimer.start();
     if (!renderSplash->load()) {
         LogInfo("failed to load splash\n");
         goto Error;
     }
 
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    msTimer.stop();
+    timeInMs = msTimer.timeInMs();
     LogInfo("load splash: %.2f ms\n", timeInMs);
 
     pageCountFitz = renderFitz->pdfEngine->pageCount();
@@ -1122,10 +1037,10 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
     for (int curPage = 1; curPage <= pageCount; curPage++) {
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
-        MsTimer_Start(&msTimer);
+        msTimer.start();
         renderFitz->RenderPage(curPage);
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        msTimer.stop();
+        timeInMs = msTimer.timeInMs();
 
         if (gfTimings)
             if (!renderFitz || !renderFitz->image)
@@ -1133,10 +1048,10 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
             else
                 LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, renderFitz->image->w, renderFitz->image->h, timeInMs);
 
-        MsTimer_Start(&msTimer);
+        msTimer.start();
         renderSplash->RenderPage(curPage);
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        msTimer.stop();
+        timeInMs = msTimer.timeInMs();
         SplashBitmap *splashBmp = renderSplash->Bitmap();
         if (gfTimings)
             LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, splashBmp->getWidth(), splashBmp->getHeight(), timeInMs);
@@ -1166,28 +1081,22 @@ Error:
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
 static void RenderPdfFileAsGfxWithFitz(const char *fileName)
 {
-    MsTimer             msTimer;
-    double              timeInMs;
-    int                 pageCount;
-    FitzRender *        render = NULL;
-    int                 fOk;
-
     LogInfo("started fitz: %s\n", fileName);
+
     initfontlibs_ms();
+    FitzRender * render = new FitzRender(fileName);
 
-    render = new FitzRender(fileName);
-
-    MsTimer_Start(&msTimer);
-    fOk = render->load();
+    MsTimer msTimer;
+    bool fOk = render->load();
+    msTimer.stop();
     if (!fOk) {
         LogInfo("failed to load\n");
         goto Error;
     }
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    double timeInMs = msTimer.timeInMs();
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = render->pdfEngine->pageCount();
+    int pageCount = render->pdfEngine->pageCount();
     LogInfo("page count: %d\n", pageCount);
 
     if (gfLoadOnly)
@@ -1197,10 +1106,10 @@ static void RenderPdfFileAsGfxWithFitz(const char *fileName)
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
 
-        MsTimer_Start(&msTimer);
+        msTimer.start();
         render->RenderPage(curPage);
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        msTimer.stop();
+        timeInMs = timeInMs = msTimer.timeInMs();
 
         if (gfTimings)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
@@ -1221,22 +1130,17 @@ Error:
 /* Render one pdf file with a given 'fileName'. Log apropriate info. */
 static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
 {
-    MsTimer             msTimer;
-    double              timeInMs;
-    int                 pageCount;
-    SplashRender *      render;
-
-    render = new SplashRender(fileName);
-
     LogInfo("started poppler: %s\n", fileName);
 
-    MsTimer_Start(&msTimer);
+    SplashRender * render = new SplashRender(fileName);
+
+    MsTimer msTimer;
     render->load();
-    MsTimer_End(&msTimer);
-    timeInMs = MsTimer_GetTimeInMs(&msTimer);
+    msTimer.stop();
+    double timeInMs = msTimer.timeInMs();
     LogInfo("load: %.2f ms\n", timeInMs);
 
-    pageCount = render->pdfEngine->pageCount();
+    int pageCount = render->pdfEngine->pageCount();
     LogInfo("page count: %d\n", pageCount);
 
     if (gfLoadOnly)
@@ -1246,10 +1150,10 @@ static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
 
-        MsTimer_Start(&msTimer);
+        msTimer.start();
         render->RenderPage(curPage);
-        MsTimer_End(&msTimer);
-        timeInMs = MsTimer_GetTimeInMs(&msTimer);
+        msTimer.stop();
+        timeInMs = msTimer.timeInMs();
         if (gfTimings)
             LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
 

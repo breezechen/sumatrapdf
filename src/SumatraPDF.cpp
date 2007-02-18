@@ -3897,23 +3897,6 @@ static void u_DoAllTests(void)
 #endif
 }
 
-// TODO: move to a common file
-class HiResTimer {
-public:
-    HiResTimer() { Start(); }
-    void Start(void) { QueryPerformanceCounter(&_start); }
-    void Stop(void) { QueryPerformanceCounter(&_end); }
-    double GetTimeInMs(void) {
-        LARGE_INTEGER freq;
-        QueryPerformanceFrequency(&freq);
-        double durationInSecs = (double)(_end.QuadPart-_start.QuadPart)/(double)freq.QuadPart;
-        return durationInSecs * 1000.0;
-    }    
-private:
-    LARGE_INTEGER   _start;
-    LARGE_INTEGER   _end;
-};
-
 static DWORD WINAPI PageRenderThread(PVOID data)
 {
     PageRenderRequest   req;
@@ -3942,9 +3925,9 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         UnlockCache();
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
         assert(!req.abort);
-        HiResTimer renderTimer;
+        MsTimer renderTimer;
         bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
-        renderTimer.Stop();
+        renderTimer.stop();
         LockCache();
         gCurPageRenderReq = NULL;
         UnlockCache();
@@ -3955,7 +3938,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         /* TODO: can bmp be NULL ? */
         assert(bmp);
         DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
-        double renderTime = renderTimer.GetTimeInMs();
+        double renderTime = renderTimer.timeInMs();
         BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp, renderTime);
 #ifdef CONSERVE_MEMORY
         BitmapCache_FreeNotVisible();
