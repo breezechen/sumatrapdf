@@ -4,7 +4,7 @@
 
 typedef unsigned char byte;
 
-static inline void srown(byte * restrict src, byte * restrict dst, unsigned w, unsigned denom, unsigned n)
+static FORCEINLINE void srown(byte * restrict src, byte * restrict dst, unsigned w, unsigned denom, unsigned n)
 {
 	unsigned x, left, k;
 	unsigned sum[FZ_MAXCOLORS];
@@ -88,10 +88,10 @@ static void srow5(byte *src, byte *dst, int w, int denom)
 
 static void srow5p2(byte * restrict src, byte * restrict dst, int w, int log2denom)
 {
-       	srownp2(src, dst, w, log2denom, 5);        
+    srownp2(src, dst, w, log2denom, 5);        
 }
 
-static inline void scoln(byte * restrict src, byte * restrict dst, int w, int denom, int n)
+static FORCEINLINE void scoln(byte * restrict src, byte * restrict dst, int w, int denom, int n)
 {
 	int x, y, k;
 	byte *s;
