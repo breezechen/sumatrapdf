@@ -45,10 +45,18 @@
 #endif
 
 extern void PreviewBitmapInit(void);
-extern void PreviewBitmapSplash(SplashBitmap *);
-extern void PreviewBitmapFitz(fz_pixmap *);
-extern void PreviewBitmapSplashFitz(SplashBitmap *, fz_pixmap *);
 extern void PreviewBitmapDestroy(void);
+extern void PreviewBitmapSplashFitz(RenderedBitmap *bmpSplash, RenderedBitmap *bmpFitz);
+
+static void PreviewBitmapFitz(RenderedBitmap *bmpFitz)
+{
+    PreviewBitmapSplashFitz(NULL, bmpFitz);
+}
+
+static void PreviewBitmapSplash(RenderedBitmap *bmpSplash)
+{
+    PreviewBitmapSplashFitz(bmpSplash, NULL);
+}
 
 class RGBAImageFitz : public RGBAImage
 {
@@ -223,28 +231,17 @@ void *StandardSecurityHandler::getAuthData()
 }
 #endif
 
-/* strcat and truncate. */
-char *pstrcat(char *buf, int buf_size, const char *s)
-{
-    int len;
-    len = strlen(buf);
-    if (len < buf_size)
-        strcpy_s(buf + len, buf_size - len, s);
-    return buf;
-}
-
 char *makepath(char *buf, int buf_size, const char *path,
                const char *filename)
 {
-    int len;
-
     strcpy_s(buf, buf_size, path);
-    len = strlen(path);
+    int len = strlen(path);
     if (len > 0 && path[len - 1] != DIR_SEP_CHAR && len + 1 < buf_size) {
         buf[len++] = DIR_SEP_CHAR;
         buf[len] = '\0';
     }
-    return pstrcat(buf, buf_size, filename);
+    strcat_s(buf, buf_size, filename);
+    return buf;
 }
 
 #ifdef WIN32
@@ -426,21 +423,6 @@ static BOOL gfDumpLinks = FALSE;
 /* if TRUE, will timer, render and preview both fitz and poppler backends */
 static BOOL gfBoth = FALSE;
 
-static SplashColor splashColRed;
-static SplashColor splashColGreen;
-static SplashColor splashColBlue;
-static SplashColor splashColWhite;
-static SplashColor splashColBlack;
-
-#define SPLASH_COL_RED_PTR (SplashColorPtr)&(splashColRed[0])
-#define SPLASH_COL_GREEN_PTR (SplashColorPtr)&(splashColGreen[0])
-#define SPLASH_COL_BLUE_PTR (SplashColorPtr)&(splashColBlue[0])
-#define SPLASH_COL_WHITE_PTR (SplashColorPtr)&(splashColWhite[0])
-#define SPLASH_COL_BLACK_PTR (SplashColorPtr)&(splashColBlack[0])
-
-static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
-static SplashColorMode gSplashColorMode = splashModeBGR8;
-
 int StrList_Len(StrList **root)
 {
     int         len = 0;
@@ -529,36 +511,6 @@ void StrList_Destroy(StrList **root)
     *root = NULL;
 }
 
-static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
-{
-    switch (gSplashColorMode)
-    {
-        case splashModeBGR8:
-            col[0] = blue;
-            col[1] = green;
-            col[2] = red;
-            break;
-        case splashModeRGB8:
-            col[0] = red;
-            col[1] = green;
-            col[2] = blue;
-            break;
-        default:
-            assert(0);
-            break;
-    }
-}
-
-static void ColorsInit(void)
-{
-    /* splash colors */
-    SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
-    SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
-    SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
-}
-
 #ifndef WIN32
 void OutputDebugString(const char *txt)
 {
@@ -636,7 +588,7 @@ void LogInfo(char *fmt, ...)
     fflush(gOutFile);
 }
 
-static void PrintUsageAndExit(int argc, char **argv)
+static void printUsageAndExit(int argc, char **argv)
 {
     printf("Usage: pdftest [-preview] [-slowpreview] [-timings] [-text] [-resolution NxM] [-recursive] [-page N] [-out out.txt] pdf-files-to-process\n");
     for (int i=0; i < argc; i++) {
@@ -650,14 +602,14 @@ void *StandardSecurityHandler::getAuthData()
     return NULL;
 }
 
-int ShowPreview(void)
+static int ShowPreview(void)
 {
     if (gfPreview || gfSlowPreview)
         return TRUE;
     return FALSE;
 }
 
-int DoPDiff(void)
+static int DoPDiff(void)
 {
     return gfPDiff;
 }
@@ -727,7 +679,7 @@ static void DumpLinks(PDFDoc *doc)
     delete links;
 }
 
-static void RenderPdfFileAsText(const char *fileName)
+static void renderPdfAsText(const char *fileName)
 {
     GooString *         fileNameStr = NULL;
     PDFDoc *            pdfDoc = NULL;
@@ -790,164 +742,12 @@ Exit:
     delete pdfDoc;
 }
 
-fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
-{
-    fz_matrix ctm;
-    ctm = fz_identity();
-    ctm = fz_concat(ctm, fz_translate(0, -page->mediabox.y1));
-    ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
-    ctm = fz_concat(ctm, fz_rotate(rotate + page->rotate));
-    return ctm;
-}
-
 extern "C" fz_error *initfontlibs_ms(void);
 
 #define FITZ_TMP_NAME "c:\\fitz_tmp.pdf"
 #define POPPLER_TMP_NAME "c:\\poppler_tmp.pdf"
 
-class FitzRender
-{
-public:
-    FitzRender(const char *_fileName);
-    ~FitzRender();
-    bool load();
-    void RenderPage(int pageNo);
-    void FreePage(void);
-
-    PdfEngineFitz *     pdfEngine;
-    const char *        fileName;
-#ifdef FITZ_HEAD
-    fz_graphics *       rast;
-#else
-    fz_renderer *       rast;
-#endif
-    fz_pixmap *         image;
-    pdf_page *          page;
-};
-
-FitzRender::FitzRender(const char *_fileName)
-{
-    fz_error *error;
-    fileName = _fileName;
-    pdfEngine = NULL;
-    rast = NULL;
-    image = NULL;
-    page = NULL;
-#ifdef FITZ_HEAD
-    error = fz_newgraphics(&rast, 1024 * 512);
-#else
-    error = fz_newrenderer(&rast, pdf_devicergb, 0, 1024 * 512);
-#endif
-}
-
-void FitzRender::FreePage(void)
-{
-    if (page) {
-        pdf_droppage(page);
-        page = NULL;
-    }
-
-    if (image) {
-        fz_droppixmap(image);
-        image = NULL;
-    }
-}
-
-void FitzRender::RenderPage(int pageNo)
-{
-    fz_matrix           ctm;
-    fz_rect             bbox;
-    fz_obj *            obj;
-    fz_error *          error;
-
-    FreePage();
-    obj = pdf_getpageobject(pdfEngine->pages(), pageNo - 1);
-    error = pdf_loadpage(&page, pdfEngine->xref(), obj);
-    if (error)
-        return;
-    ctm = pdfapp_viewctm(page, 1.f, 0);
-    bbox = fz_transformaabb(ctm, page->mediabox);
-#ifdef FITZ_HEAD
-    error = fz_drawtree(&image, rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);
-#else
-    error = fz_rendertree(&image, rast, page->tree, ctm, fz_roundrect(bbox), 1);
-#endif
-}
-
-bool FitzRender::load()
-{
-    pdfEngine = new PdfEngineFitz();
-    if (!pdfEngine) return false;
-    return pdfEngine->load(fileName);
-}
-
-FitzRender::~FitzRender()
-{
-    FreePage();
-    delete pdfEngine;
-
-    if (rast)
-#ifdef FITZ_HEAD
-        fz_dropgraphics(rast);
-#else
-        fz_droprenderer(rast);
-#endif
-}
-
-class SplashRender
-{
-public:
-    SplashRender(const char *_fileName);
-    ~SplashRender();
-    bool load();
-    void RenderPage(int pageNo);
-    void FreePage(void);
-    SplashBitmap* Bitmap(void);
-
-    const char *        fileName;
-    int                 pageDx, pageDy;
-    int                 renderDx, renderDy;
-    double              scaleX, scaleY;
-    double              hDPI, vDPI;
-    int                 rotate;
-    GBool               useMediaBox;
-    GBool               crop;
-    GBool               doLinks;
-    SplashOutputDev *   outputDevice;
-    SplashBitmap *      bitmap;
-    PdfEnginePoppler *  pdfEngine;
-
-};
-
-SplashRender::SplashRender(const char *_fileName)
-{
-    fileName = _fileName;
-    pdfEngine = NULL;
-    outputDevice = NULL;
-    bitmap = NULL;
-    outputDevice = new SplashOutputDev(gSplashColorMode, 4, gFalse, gBgColor);
-    if (!outputDevice) {
-        error(-1, "renderPdfFile(): failed to create outputDev\n");
-    }
-}
-
-SplashRender::~SplashRender()
-{
-    FreePage();
-    delete outputDevice;
-    delete pdfEngine;
-}
-
-bool SplashRender::load()
-{
-    pdfEngine = new PdfEnginePoppler();
-    if (!pdfEngine) return false;
-    if (!pdfEngine->load(fileName))
-        return false;
-    outputDevice->startDoc(pdfEngine->pdfDoc()->getXRef());
-    return true;
-}
-
+#if 0
 void SplashRender::RenderPage(int pageNo)
 {
     pageDx = (int)pdfEngine->pdfDoc()->getPageCropWidth(pageNo);
@@ -974,93 +774,127 @@ void SplashRender::RenderPage(int pageNo)
     pdfEngine->pdfDoc()->displayPage(outputDevice, pageNo, hDPI, vDPI, rotate, useMediaBox, crop, doLinks);
     FreePage();
 }
+#endif
 
-void SplashRender::FreePage(void)
+enum RenderType {
+    renderFitz,
+    renderSplash,
+    renderBoth
+};
+
+static void renderPdf(const char *fileName, RenderType renderType)
 {
-    if (bitmap) {
-        delete bitmap;
-        bitmap = NULL;
+    const char *fileNameFitz = NULL;
+    PdfEngine * engineFitz = NULL;
+    int         pageCountFitz;
+
+    const char *fileNameSplash = NULL;
+    PdfEngine * engineSplash = NULL;
+    int         pageCountSplash;
+
+    switch (renderType) {
+        case renderBoth:            
+            // TODO: fails if file already exists and has read-only attribute
+            CopyFile(fileName, FITZ_TMP_NAME, FALSE);
+            CopyFile(fileName, POPPLER_TMP_NAME, FALSE);
+            fileNameSplash = POPPLER_TMP_NAME;
+            fileNameFitz = FITZ_TMP_NAME;
+            break;
+       case renderFitz:
+            fileNameFitz = fileName;
+            break;
+       case renderSplash:
+            fileNameSplash = fileName;
+            break;
     }
-}
 
-SplashBitmap* SplashRender::Bitmap(void)
-{
-    FreePage();
-
-    bitmap = outputDevice->takeBitmap();
-    return bitmap;
-}
-
-/* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfxWithBoth(const char *fileName)
-{
-    int                 pageCountFitz, pageCountSplash, pageCount;
-    FitzRender *        renderFitz = NULL;
-    SplashRender *      renderSplash = NULL;
-
-    CopyFile(fileName, FITZ_TMP_NAME, FALSE);
-    CopyFile(fileName, POPPLER_TMP_NAME, FALSE);
-
-    LogInfo("started both: %s\n", fileName);
+    LogInfo("started: %s\n", fileName);
     initfontlibs_ms();
 
-    renderFitz = new FitzRender(FITZ_TMP_NAME);
-    renderSplash = new SplashRender(POPPLER_TMP_NAME);
+    if (fileNameFitz) {
+        engineFitz = new PdfEngineFitz();
 
-    MsTimer msTimer;
-    if (!renderFitz->load()) {
-        LogInfo("failed to load fitz\n");
-        goto Error;
-    }
-    msTimer.stop();
-    double timeInMs = msTimer.timeInMs();
-    LogInfo("load fitz  : %.2f ms\n", timeInMs);
-
-    msTimer.start();
-    if (!renderSplash->load()) {
-        LogInfo("failed to load splash\n");
-        goto Error;
+        MsTimer msTimer;
+        if (!engineFitz->load(FITZ_TMP_NAME)) {
+            LogInfo("failed to load fitz\n");
+            goto Error;
+        }
+        msTimer.stop();
+        double timeInMs = msTimer.timeInMs();
+        LogInfo("load fitz  : %.2f ms\n", timeInMs);
+        pageCountFitz = engineFitz->pageCount();
     }
 
-    msTimer.stop();
-    timeInMs = msTimer.timeInMs();
-    LogInfo("load splash: %.2f ms\n", timeInMs);
+    if (fileNameSplash) {
+        engineSplash = new PdfEnginePoppler();
 
-    pageCountFitz = renderFitz->pdfEngine->pageCount();
-    pageCountSplash = renderSplash->pdfEngine->pageCount();
-    pageCount = pageCountFitz;
-    if (pageCountSplash < pageCount)
-        pageCount = pageCountSplash;
+        MsTimer msTimer;
+        if (!engineSplash->load(POPPLER_TMP_NAME)) {
+            LogInfo("failed to load splash\n");
+            goto Error;
+        }
+        msTimer.stop();
+        double timeInMs = msTimer.timeInMs();
+        LogInfo("load splash: %.2f ms\n", timeInMs);
+        pageCountSplash = engineSplash->pageCount();
+    }
+
+    int pageCount;
+    switch (renderType) {
+        case renderBoth:            
+            pageCount = pageCountFitz;
+            if (pageCountSplash < pageCount)
+                pageCount = pageCountSplash;
+            break;
+       case renderFitz:
+            pageCount = pageCountFitz;
+            break;
+       case renderSplash:
+            pageCount = pageCountSplash;
+            break;
+    }
     LogInfo("page count: %d\n", pageCount);
 
     for (int curPage = 1; curPage <= pageCount; curPage++) {
         if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
             continue;
-        msTimer.start();
-        renderFitz->RenderPage(curPage);
-        msTimer.stop();
-        timeInMs = msTimer.timeInMs();
 
-        if (gfTimings)
-            if (!renderFitz || !renderFitz->image)
-                LogInfo("page fitz   %d: failed to render\n", curPage);
-            else
-                LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, renderFitz->image->w, renderFitz->image->h, timeInMs);
+        RenderedBitmap *bmpFitz = NULL;
+        RenderedBitmap *bmpSplash = NULL;
 
-        msTimer.start();
-        renderSplash->RenderPage(curPage);
-        msTimer.stop();
-        timeInMs = msTimer.timeInMs();
-        SplashBitmap *splashBmp = renderSplash->Bitmap();
-        if (gfTimings)
-            LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, splashBmp->getWidth(), splashBmp->getHeight(), timeInMs);
+        if (fileNameFitz) {
+            MsTimer msTimer;
+            bmpFitz = engineFitz->renderBitmap(curPage, 100.0, 0, NULL, NULL);
+            msTimer.stop();
+            double timeInMs = msTimer.timeInMs();
+
+            if (gfTimings)
+                if (!bmpFitz)
+                    LogInfo("page fitz   %d: failed to render\n", curPage);
+                else
+                    LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, bmpFitz->dx(), bmpFitz->dy(), timeInMs);
+        }
+
+        if (fileNameSplash) {
+            MsTimer msTimer;
+            bmpSplash = engineSplash->renderBitmap(curPage, 100.0, 0, NULL, NULL);
+            msTimer.stop();
+            double timeInMs = msTimer.timeInMs();
+            if (gfTimings)
+                LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, bmpSplash->dx(), bmpSplash->dy(), timeInMs);
+#if 0
+            if (gfDumpLinks)
+                DumpLinks(render->pdfEngine->pdfDoc());
+#endif
+        }
 
         if (ShowPreview()) {
-            PreviewBitmapSplashFitz(splashBmp, renderFitz->image);
+            PreviewBitmapSplashFitz(bmpSplash, bmpFitz);
             if (gfSlowPreview)
                 sleep_milliseconds(SLOW_PREVIEW_TIME);
         }
 
+#if 0
         if (DoPDiff()) {
             CompareArgs compareArgs;
             compareArgs.ImgA = new RGBAImageFitz(renderFitz->image);
@@ -1069,126 +903,35 @@ static void RenderPdfFileAsGfxWithBoth(const char *fileName)
             unsigned long pixelDiffCount = Yee_Compare(compareArgs);
             LogInfo("pixels different: %d\n", (int)pixelDiffCount);
         }
+#endif
     }
 
 Error:
-    delete renderFitz;
-    delete renderSplash;
-    LogInfo("finished both: %s\n", fileName);
+    delete engineFitz;
+    delete engineSplash;
+    LogInfo("finished: %s\n", fileName);
 }
 
-/* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfxWithFitz(const char *fileName)
-{
-    LogInfo("started fitz: %s\n", fileName);
-
-    initfontlibs_ms();
-    FitzRender * render = new FitzRender(fileName);
-
-    MsTimer msTimer;
-    bool fOk = render->load();
-    msTimer.stop();
-    if (!fOk) {
-        LogInfo("failed to load\n");
-        goto Error;
-    }
-    double timeInMs = msTimer.timeInMs();
-    LogInfo("load: %.2f ms\n", timeInMs);
-
-    int pageCount = render->pdfEngine->pageCount();
-    LogInfo("page count: %d\n", pageCount);
-
-    if (gfLoadOnly)
-        goto Error;
-
-    for (int curPage = 1; curPage <= pageCount; curPage++) {
-        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
-            continue;
-
-        msTimer.start();
-        render->RenderPage(curPage);
-        msTimer.stop();
-        timeInMs = timeInMs = msTimer.timeInMs();
-
-        if (gfTimings)
-            LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
-
-        if (ShowPreview()) {
-            PreviewBitmapFitz(render->image);
-            if (gfSlowPreview)
-                sleep_milliseconds(SLOW_PREVIEW_TIME);
-        }
-
-    }
-
-Error:
-    delete render;
-    LogInfo("finished fitz: %s\n", fileName);
-}
-
-/* Render one pdf file with a given 'fileName'. Log apropriate info. */
-static void RenderPdfFileAsGfxWithPoppler(const char *fileName)
-{
-    LogInfo("started poppler: %s\n", fileName);
-
-    SplashRender * render = new SplashRender(fileName);
-
-    MsTimer msTimer;
-    render->load();
-    msTimer.stop();
-    double timeInMs = msTimer.timeInMs();
-    LogInfo("load: %.2f ms\n", timeInMs);
-
-    int pageCount = render->pdfEngine->pageCount();
-    LogInfo("page count: %d\n", pageCount);
-
-    if (gfLoadOnly)
-        goto DumpLinks;
-
-    for (int curPage = 1; curPage <= pageCount; curPage++) {
-        if ((gPageNo != PAGE_NO_NOT_GIVEN) && (gPageNo != curPage))
-            continue;
-
-        msTimer.start();
-        render->RenderPage(curPage);
-        msTimer.stop();
-        timeInMs = msTimer.timeInMs();
-        if (gfTimings)
-            LogInfo("page %d: %.2f ms\n", curPage, timeInMs);
-
-        if (ShowPreview()) {
-            PreviewBitmapSplash(render->Bitmap());
-            if (gfSlowPreview)
-                sleep_milliseconds(SLOW_PREVIEW_TIME);
-        }
-    }
-DumpLinks:
-    if (gfDumpLinks)
-        DumpLinks(render->pdfEngine->pdfDoc());
-    LogInfo("finished poppler: %s\n", fileName);
-    delete render;
-}
-
-static void RenderPdfFile(const char *fileName)
+static void renderFile(const char *fileName)
 {
     if (gfTextOnly) {
         /* TODO: right not rendering as text is only supported with poppler, not fitz */
-        RenderPdfFileAsText(fileName);
+        renderPdfAsText(fileName);
         return;
     }
 
-    if (gfBoth) {
-        RenderPdfFileAsGfxWithBoth(fileName);
-        return;
+    RenderType renderType;
+    if (gfBoth)
+        renderType = renderBoth;
+    else {
+        renderType = renderSplash;
+        if (gfFitzRendering)
+            renderType = renderFitz;
     }
-
-    if (gfFitzRendering)
-        RenderPdfFileAsGfxWithFitz(fileName);
-    else
-        RenderPdfFileAsGfxWithPoppler(fileName);
+    renderPdf(fileName, renderBoth);
 }
 
-int ParseInteger(const char *start, const char *end, int *intOut)
+static int ParseInteger(const char *start, const char *end, int *intOut)
 {
     char            numBuf[16];
     int             digitsCount;
@@ -1222,7 +965,7 @@ int ParseInteger(const char *start, const char *end, int *intOut)
 /* Given 'resolutionString' in format NxM (e.g. "100x200"), parse the string and put N
    into 'resolutionXOut' and M into 'resolutionYOut'.
    Return FALSE if there was an error (e.g. string is not in the right format */
-int ParseResolutionString(const char *resolutionString, int *resolutionXOut, int *resolutionYOut)
+static int ParseResolutionString(const char *resolutionString, int *resolutionXOut, int *resolutionYOut)
 {
     const char *    posOfX;
 
@@ -1248,7 +991,7 @@ int ParseResolutionString(const char *resolutionString, int *resolutionXOut, int
 }
 
 #ifdef DEBUG
-void u_ParseResolutionString(void)
+static void u_ParseResolutionString(void)
 {
     int i;
     int result, resX, resY;
@@ -1287,19 +1030,19 @@ void u_ParseResolutionString(void)
 }
 #endif
 
-void RunAllUnitTests(void)
+static void runAllUnitTests(void)
 {
 #ifdef DEBUG
     u_ParseResolutionString();
 #endif
 }
 
-void ParseCommandLine(int argc, char **argv)
+static void parseCommandLine(int argc, char **argv)
 {
     char *      arg;
 
     if (argc < 2)
-        PrintUsageAndExit(argc, argv);
+        printUsageAndExit(argc, argv);
 
     for (int i=1; i < argc; i++) {
         arg = argv[i];
@@ -1310,9 +1053,9 @@ void ParseCommandLine(int argc, char **argv)
             } else if (str_ieq(arg, RESOLUTION_ARG)) {
                 ++i;
                 if (i == argc)
-                    PrintUsageAndExit(argc, argv); /* expect a file name after that */
+                    printUsageAndExit(argc, argv); /* expect a file name after that */
                 if (!ParseResolutionString(argv[i], &gResolutionX, &gResolutionY))
-                    PrintUsageAndExit(argc, argv);
+                    printUsageAndExit(argc, argv);
                 gfForceResolution = TRUE;
             } else if (str_ieq(arg, RECURSIVE_ARG)) {
                 gfRecursive = TRUE;
@@ -1320,7 +1063,7 @@ void ParseCommandLine(int argc, char **argv)
                 /* expect a file name after that */
                 ++i;
                 if (i == argc)
-                    PrintUsageAndExit(argc, argv);
+                    printUsageAndExit(argc, argv);
                 gOutFileName = str_dup(argv[i]);
             } else if (str_ieq(arg, PREVIEW_ARG)) {
                 gfPreview = TRUE;
@@ -1340,15 +1083,15 @@ void ParseCommandLine(int argc, char **argv)
                 /* expect an integer after that */
                 ++i;
                 if (i == argc)
-                    PrintUsageAndExit(argc, argv);
+                    printUsageAndExit(argc, argv);
                 gPageNo = atoi(argv[i]);
                 if (gPageNo < 1)
-                    PrintUsageAndExit(argc, argv);
+                    printUsageAndExit(argc, argv);
             } else if (str_ieq(arg, DUMP_LINKS_ARG)) {
                 gfDumpLinks = TRUE;
             } else {
                 /* unknown option */
-                PrintUsageAndExit(argc, argv);
+                printUsageAndExit(argc, argv);
             }
         } else {
             /* we assume that this is not an option hence it must be
@@ -1358,10 +1101,7 @@ void ParseCommandLine(int argc, char **argv)
     }
 }
 
-#define UNIX_NEWLINE "\x0a"
-#define UNIX_NEWLINE_C 0xa
-
-void RenderPdfFileList(char *pdfFileList)
+void renderFileList(char *pdfFileList)
 {
     char *data = NULL;
     char *dataNormalized = NULL;
@@ -1390,7 +1130,7 @@ void RenderPdfFileList(char *pdfFileList)
             free((void*)pdfFileName);
             continue;
         }
-        RenderPdfFile(pdfFileName);
+        renderFile(pdfFileName);
         free((void*)pdfFileName);
     }
 Exit:
@@ -1452,7 +1192,7 @@ int IsPdfFileName(char *path)
     return FALSE;
 }
 
-void RenderDirectory(char *path)
+void renderDirectory(char *path)
 {
     FindFileState * ffs;
     char            filename[MAX_FILENAME_SIZE];
@@ -1471,7 +1211,7 @@ void RenderDirectory(char *path)
                 }
             } else if (IsFileName(filename)) {
                 if (IsPdfFileName(filename)) {
-                    RenderPdfFile(filename);
+                    renderFile(filename);
                 }
             }
         }
@@ -1486,18 +1226,18 @@ void RenderDirectory(char *path)
    - name of PDF file
    - name of text file with names of PDF files
 */
-void RenderCmdLineArg(char *cmdLineArg)
+static void renderCmdLineArg(char *cmdLineArg)
 {
     assert(cmdLineArg);
     if (!cmdLineArg)
         return;
     if (IsDirectoryName(cmdLineArg)) {
-        RenderDirectory(cmdLineArg);
+        renderDirectory(cmdLineArg);
     } else if (IsFileName(cmdLineArg)) {
         if (IsPdfFileName(cmdLineArg))
-            RenderPdfFile(cmdLineArg);
+            renderFile(cmdLineArg);
         else
-            RenderPdfFileList(cmdLineArg);
+            renderFileList(cmdLineArg);
     } else {
         error(-1, "unexpected argument '%s'", cmdLineArg);
     }
@@ -1510,14 +1250,14 @@ int main(int argc, char **argv)
     StrList *       curr;
     FILE *          outFile = NULL;
 
-    RunAllUnitTests();
+    runAllUnitTests();
 
-    ParseCommandLine(argc, argv);
+    parseCommandLine(argc, argv);
     if (0 == StrList_Len(&gArgsListRoot))
-        PrintUsageAndExit(argc, argv);
+        printUsageAndExit(argc, argv);
     assert(gArgsListRoot);
 
-    ColorsInit();
+    SplashColorsInit();
     globalParams = new GlobalParams("");
     if (!globalParams)
         return 1;
@@ -1543,7 +1283,7 @@ int main(int argc, char **argv)
 
     curr = gArgsListRoot;
     while (curr) {
-        RenderCmdLineArg(curr->str);
+        renderCmdLineArg(curr->str);
         curr = curr->next;
     }
     if (outFile)

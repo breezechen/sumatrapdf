@@ -1,26 +1,19 @@
 #include "win_util.h"
 #include "PdfEngine.h"
-#include "SplashBitmap.h"
 
 #include <assert.h>
-#include <windows.h>
 
 #define WIN_CLASS_NAME  "PDFTEST_PDF_WIN"
 #define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 
-static HWND             gHwndSplash = NULL;
-static HWND             gHwndFitz = NULL;
+static HWND             gHwndSplash;
+static HWND             gHwndFitz;
 static HBRUSH           gBrushBg;
-static BITMAPINFO *     gDibInfo = NULL;
-static SplashBitmap *   gCurrBitmapSplash = NULL;
-static fz_pixmap *      gCurrBitmapFitz = NULL;
-static int              gBitmapSplashDx = -1;
-static int              gBitmapSplashDy = -1;
-static int              gBitmapFitzDx = -1;
-static int              gBitmapFitzDy = -1;
+
+static RenderedBitmap *gBmpSplash, *gBmpFitz;
 
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
-void WinResizeClientArea(HWND hwnd, int x, int dx, int dy, int *dx_out)
+static void resizeClientArea(HWND hwnd, int x, int dx, int dy, int *dx_out)
 {
     RECT rc;
     GetClientRect(hwnd, &rc);
@@ -32,135 +25,55 @@ void WinResizeClientArea(HWND hwnd, int x, int dx, int dy, int *dx_out)
     int win_dx = rect_dx(&rw) + (dx - rect_dx(&rc));
     int win_dy = rect_dy(&rw) + (dy - rect_dy(&rc));
     SetWindowPos(hwnd, NULL, x, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
-    *dx_out = win_dx;
+    if (dx_out)
+        *dx_out = win_dx;
 }
 
-void DrawSplash(HWND hwnd, SplashBitmap *bmp)
+static void resizeClientAreaToRenderedBitmap(HWND hwnd, RenderedBitmap *bmp, int x, int *dxOut)
 {
-    HDC             hdc;
+    int dx = bmp->dx();
+    int dy = bmp->dy();
+    resizeClientArea(hwnd, x, dx, dy, dxOut);
+}
+
+static void drawBitmap(HWND hwnd, RenderedBitmap *bmp)
+{
     PAINTSTRUCT     ps;
-    RECT            rc;
-    int             bmpRowSize;
-    SplashColorPtr  bmpData;
 
-    hdc = BeginPaint(hwnd, &ps);
+    HDC hdc = BeginPaint(hwnd, &ps);
     SetBkMode(hdc, TRANSPARENT);
-    GetClientRect(hwnd, &rc);
-
-    bmpRowSize = bmp->getRowSize();
-    bmpData = bmp->getDataPtr();
-
-    gDibInfo->bmiHeader.biWidth = gBitmapSplashDx;
-    gDibInfo->bmiHeader.biHeight = -gBitmapSplashDy;
-    gDibInfo->bmiHeader.biSizeImage = gBitmapSplashDy * bmpRowSize;
-
     FillRect(hdc, &ps.rcPaint, gBrushBg);
 
-    SetDIBitsToDevice(hdc,
-        0, /* destx */
-        0, /* desty */
-        gBitmapSplashDx, /* destw */
-        gBitmapSplashDy, /* desth */
-        0, /* srcx */
-        0, /* srcy */
-        0, /* startscan */
-        gBitmapSplashDy, /* numscans */
-        bmpData, /* pBits */
-        gDibInfo, /* pInfo */
-        DIB_RGB_COLORS /* color use flag */
-    );
-
-    EndPaint(hwnd, &ps);
-}
-
-static int bmpstride = 0;
-static unsigned char *bmpdata = NULL;
-
-void winconvert(fz_pixmap *image)
-{
-    int y, x;
-
-    if (bmpdata) {
-        fz_free(bmpdata);
-        bmpdata = NULL;
-    }
-
-    bmpstride = ((image->w * 3 + 3) / 4) * 4;
-    bmpdata = (unsigned char*)fz_malloc(image->h * bmpstride);
-    if (!bmpdata)
-        return;
-
-    for (y = 0; y < image->h; y++)
-    {
-        unsigned char *p = bmpdata + y * bmpstride;
-#ifdef FITZ_HEAD
-        unsigned char *s = image->p + y * image->w * 4;
-#else
-        unsigned char *s = image->samples + y * image->w * 4;
-#endif
-
-        for (x = 0; x < image->w; x++)
-        {
-            p[x * 3 + 0] = s[x * 4 + 3];
-            p[x * 3 + 1] = s[x * 4 + 2];
-            p[x * 3 + 2] = s[x * 4 + 1];
+    HBITMAP hbmp = bmp->createDIBitmap(hdc);
+    if (hbmp) {
+        HDC bmpDC = CreateCompatibleDC(hdc);
+        if (bmpDC) {
+            SelectObject(bmpDC, hbmp);
+            int xSrc = 0, ySrc = 0;
+            int xDest = 0, yDest = 0;
+            int bmpDx = bmp->dx();
+            int bmpDy = bmp->dy();
+            BitBlt(hdc, xDest, yDest, bmpDx, bmpDy, bmpDC, xSrc, ySrc, SRCCOPY);
+            DeleteDC(bmpDC);
+            bmpDC = NULL;
         }
+        DeleteObject(hbmp);
+        hbmp = NULL;
     }
-}
-
-void winblit(HDC hdc, fz_pixmap *image)
-{
-    if (!bmpdata)
-        return;
-
-    gDibInfo->bmiHeader.biWidth = image->w;
-    gDibInfo->bmiHeader.biHeight = -image->h;
-    gDibInfo->bmiHeader.biSizeImage = image->h * bmpstride;
-    SetDIBitsToDevice(hdc,
-        0, /* destx */
-        0, /* desty */
-        image->w, /* destw */
-        image->h, /* desth */
-        0, /* srcx */
-        0, /* srcy */
-        0, /* startscan */
-        image->h, /* numscans */
-        bmpdata, /* pBits */
-        gDibInfo, /* pInfo */
-        DIB_RGB_COLORS /* color use flag */
-    );
-
-    if (bmpdata) {
-        fz_free(bmpdata);
-        bmpdata = NULL;
-    }
-}
-
-void DrawFitz(HWND hwnd, fz_pixmap *bmp)
-{
-    HDC             hdc;
-    PAINTSTRUCT     ps;
-    RECT            rc;
-
-    hdc = BeginPaint(hwnd, &ps);
-    SetBkMode(hdc, TRANSPARENT);
-    GetClientRect(hwnd, &rc);
-
-    winconvert(bmp);
-    winblit(hdc, bmp);
-
     EndPaint(hwnd, &ps);
 }
 
-void OnPaint(HWND hwnd)
+static void onPaint(HWND hwnd)
 {
-    if (gCurrBitmapSplash)
-        DrawSplash(hwnd, gCurrBitmapSplash);
-    if (gCurrBitmapFitz)
-        DrawFitz(hwnd, gCurrBitmapFitz);
+    if (hwnd == gHwndSplash)
+        if (gBmpSplash)
+            drawBitmap(hwnd, gBmpSplash);
+    if (hwnd == gHwndFitz)
+        if (gBmpFitz)
+            drawBitmap(hwnd, gBmpFitz);
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -173,7 +86,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         case WM_PAINT:
             /* it might happen that we get WM_PAINT after destroying a window */
-            OnPaint(hwnd);
+            onPaint(hwnd);
             break;
 
         case WM_DESTROY:
@@ -186,7 +99,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-BOOL RegisterWinClass(void)
+static BOOL registerWinClass(void)
 {
     WNDCLASSEX  wcex;
     ATOM        atom;
@@ -211,13 +124,13 @@ BOOL RegisterWinClass(void)
     return FALSE;
 }
 
-int InitWinIfNecessary(void)
+static bool initWinIfNecessary(void)
 {
     if (gHwndSplash)
-        return TRUE;
+        return true;
 
-    if (!RegisterWinClass())
-        return FALSE;
+    if (!registerWinClass())
+        return false;
 
     gBrushBg = CreateSolidBrush(COL_WINDOW_BG);
 
@@ -230,7 +143,7 @@ int InitWinIfNecessary(void)
         NULL, NULL);
 
     if (!gHwndSplash)
-        return FALSE;
+        return false;
 
     gHwndFitz = CreateWindow(
         WIN_CLASS_NAME, "Fitz",
@@ -241,27 +154,14 @@ int InitWinIfNecessary(void)
         NULL, NULL);
 
     if (!gHwndFitz)
-        return FALSE;
-
-    assert(!gDibInfo);
-    gDibInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 12);
-    if (!gDibInfo)
-        return FALSE;
-    gDibInfo->bmiHeader.biSize = sizeof(gDibInfo->bmiHeader);
-    gDibInfo->bmiHeader.biPlanes = 1;
-    gDibInfo->bmiHeader.biBitCount = 24;
-    gDibInfo->bmiHeader.biCompression = BI_RGB;
-    gDibInfo->bmiHeader.biXPelsPerMeter = 2834;
-    gDibInfo->bmiHeader.biYPelsPerMeter = 2834;
-    gDibInfo->bmiHeader.biClrUsed = 0;
-    gDibInfo->bmiHeader.biClrImportant = 0;
+        return false;
 
     ShowWindow(gHwndSplash, SW_HIDE);
     ShowWindow(gHwndFitz, SW_HIDE);
-    return TRUE;
+    return true;
 }
 
-void PumpMessages(void)
+static void pumpMessages(void)
 {
     BOOL    isMessage;
     MSG     msg;
@@ -280,91 +180,49 @@ void PreviewBitmapInit(void)
     /* no need to do anything */
 }
 
+static void deleteRenderedBitmaps()
+{
+    delete gBmpSplash;
+    delete gBmpFitz;
+}
+
 void PreviewBitmapDestroy(void)
 {
     PostQuitMessage(0);
-    PumpMessages();
-    free(gDibInfo);
-    gDibInfo = NULL;
+    pumpMessages();
+    deleteRenderedBitmaps();
     DeleteObject(gBrushBg);
-}
-
-static void SetSplash(SplashBitmap *bitmap)
-{
-    if (!InitWinIfNecessary())
-        return;
-
-    gCurrBitmapSplash = bitmap;
-    if (!bitmap)
-        return;
-
-    if ( (bitmap->getWidth() != gBitmapSplashDx) ||
-        (bitmap->getHeight() != gBitmapSplashDy) ) {
-        gBitmapSplashDx = bitmap->getWidth();
-        gBitmapSplashDy = bitmap->getHeight();
-    }
-}
-
-static void SetFitz(fz_pixmap *bitmap)
-{
-    if (!InitWinIfNecessary())
-        return;
-
-    gCurrBitmapFitz = bitmap;
-    if (!bitmap)
-        return;
-
-    if ( (bitmap->w != gBitmapFitzDx) ||
-        (bitmap->h != gBitmapFitzDy) ) {
-        gBitmapFitzDx = bitmap->w;
-        gBitmapFitzDy = bitmap->h;
-    }
 }
 
 static void UpdateWindows(void)
 {
-    int dx = 0;
+    int fitzDx = 0;
 
-    if (gCurrBitmapFitz) {
-        WinResizeClientArea(gHwndFitz, 0, gBitmapFitzDx, gBitmapFitzDy, &dx);
+    if (gBmpFitz) {
+        resizeClientAreaToRenderedBitmap(gHwndFitz, gBmpFitz, 0, &fitzDx);
         ShowWindow(gHwndFitz, SW_SHOW);
         InvalidateRect(gHwndFitz, NULL, FALSE);
         UpdateWindow(gHwndFitz);
     }
 
-    if (gCurrBitmapSplash) {
-        WinResizeClientArea(gHwndSplash, dx, gBitmapSplashDx, gBitmapSplashDy, &dx);
+    if (gBmpSplash) {
+        resizeClientAreaToRenderedBitmap(gHwndSplash, gBmpSplash, fitzDx, NULL);
         ShowWindow(gHwndSplash, SW_SHOW);
         InvalidateRect(gHwndSplash, NULL, FALSE);
         UpdateWindow(gHwndSplash);
     }
 
-    PumpMessages();
+    pumpMessages();
 }
 
-void PreviewBitmaps(RenderedBitmap *bmpOne, RenderedBitmap *bmpTwo)
+void PreviewBitmapSplashFitz(RenderedBitmap *bmpSplash, RenderedBitmap *bmpFitz)
 {
+    if (!initWinIfNecessary())
+        return;
 
-}
-
-void PreviewBitmapSplashFitz(SplashBitmap *splash, fz_pixmap *fitz)
-{
-    SetSplash(splash);
-    SetFitz(fitz);
-    UpdateWindows();
-}
-
-void PreviewBitmapFitz(fz_pixmap *bitmap)
-{
-    SetSplash(NULL);
-    SetFitz(bitmap);
-    UpdateWindows();
-}
-
-void PreviewBitmapSplash(SplashBitmap *bitmap)
-{
-    SetFitz(NULL);
-    SetSplash(bitmap);
+    deleteRenderedBitmaps();
+    gBmpSplash = bmpSplash;
+    gBmpFitz = bmpFitz;
     UpdateWindows();
 }
 
