@@ -71,41 +71,48 @@ static void srow1(byte *src, byte *dst, int w, int denom)
 	srown(src, dst, w, denom, 1);
 }
 
-static void srow2(byte *src, byte *dst, int w, int denom)
+static FORCEINLINE void srow2d3(byte *src, byte *dst, int w)
 {
-#if 0
-    srown(src, dst, w, denom, 2);
-#else
-    unsigned left;
-    unsigned sum[2];
-    byte *srcend;
+    int left;
+    int runs;
+    unsigned sum0, sum1;
 
-    left = 0;
-    sum[0] = 0;
-    sum[1] = 0;
+    left = w % 3;
+    runs = w / 3;
 
-    srcend = src + (2 * w);
-    while (src < srcend)
+    while (runs-- > 0)
     {
-        sum[0] += *src++;
-        sum[1] += *src++;
-        if (++left == denom)
-        {
-            left = 0;
-            *dst++ = sum[0] / denom;
-            *dst++ = sum[1] / denom;
-            sum[0] = 0;
-            sum[1] = 0;
-        }
+        sum0 = *src++;
+        sum1 = *src++;
+        sum0 += *src++;
+        sum1 += *src++;
+        sum0 += *src++;
+        sum1 += *src++;
+        *dst++ = sum0 / 3;
+        *dst++ = sum1 / 3;
     }
 
     /* left overs */
     if (left)
     {
-        dst[0] = sum[0] / left;
-        dst[1] = sum[1] / left;
+        sum0 = *src++;
+        sum1 = *src++;
+        if (2 == left)
+        {
+            sum0 += *src++;
+            sum1 += *src++;
+        }
+        *dst++ = sum0 / left;
+        *dst   = sum1 / left;
     }
-#endif
+}
+
+static void srow2(byte *src, byte *dst, int w, int denom)
+{
+    if (3 == denom)
+        srow2d3(src, dst, w);
+    else
+        srown(src, dst, w, denom, 2);
 }
 
 static void srow4(byte *src, byte *dst, int w, int denom)
@@ -168,29 +175,34 @@ static void scol1(byte *src, byte *dst, int w, int denom)
 	scoln(src, dst, w, denom, 1);
 }
 
-static void scol2(byte *src, byte *dst, int w, int denom)
+static FORCEINLINE void scol2d3(byte *src, byte *dst, int w)
 {
-#if 0
-    scoln(src, dst, w, denom, 2);
-#else
-    int y;
     byte *srcend;
-    int sum[2];
+    int sum0, sum1;
+    int w2 = w * 2;
 
-    srcend = src + w * 2;
+    srcend = src + w2;
     while (src < srcend)
     {
-        sum[0] = 0;
-        sum[1] = 0;
-        for (y = 0; y < denom; y++) {
-            sum[0] += src[y * w * 2];
-            sum[1] += src[y * w * 2 + 1];
-        }
-        *dst++ = sum[0] / denom;
-        *dst++ = sum[1] / denom;
+        sum0 = src[0];
+        sum1 = src[1];
+        sum0 += src[w2];
+        sum1 += src[w2 + 1];
+        sum0 += src[2 * w2];
+        sum1 += src[2 * w2 + 1];
+
+        *dst++ = sum0 / 3;
+        *dst++ = sum1 / 3;
         src += 2;
     }
-#endif
+}
+
+static void scol2(byte *src, byte *dst, int w, int denom)
+{
+    if (3 == denom)
+        scol2d3(src, dst, w);
+    else
+        scoln(src, dst, w, denom, 2);
 }
 
 static void scol4(byte *src, byte *dst, int w, int denom)
