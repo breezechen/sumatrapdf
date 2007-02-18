@@ -30,7 +30,7 @@ static SplashColor splashColBlack;
 
 static SplashColorPtr  gBgColor = SPLASH_COL_WHITE_PTR;
 
-static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
+static void splashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar blue, Guchar alpha)
 {
     switch (gSplashColorMode)
     {
@@ -52,29 +52,18 @@ static void SplashColorSet(SplashColorPtr col, Guchar red, Guchar green, Guchar 
 
 void SplashColorsInit(void)
 {
-    SplashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
-    SplashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
-    SplashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
-    SplashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
+    splashColorSet(SPLASH_COL_RED_PTR, 0xff, 0, 0, 0);
+    splashColorSet(SPLASH_COL_GREEN_PTR, 0, 0xff, 0, 0);
+    splashColorSet(SPLASH_COL_BLUE_PTR, 0, 0, 0xff, 0);
+    splashColorSet(SPLASH_COL_BLACK_PTR, 0, 0, 0, 0);
+    splashColorSet(SPLASH_COL_WHITE_PTR, 0xff, 0xff, 0xff, 0);
 }
 
-RenderedBitmapFitz::RenderedBitmapFitz(fz_pixmap *image)
+static HBITMAP createDIBitmapCommon(RenderedBitmap *bmp, HDC hdc)
 {
-    _image = image;
-}
-
-RenderedBitmapFitz::~RenderedBitmapFitz()
-{
-    if (_image)
-        fz_droppixmap(_image);
-}
-
-HBITMAP RenderedBitmapFitz::createDIBitmap(HDC hdc)
-{
-    int bmpDx = _image->w;
-    int bmpDy = _image->h;
-    int bmpRowSize = ((_image->w * 3 + 3) / 4) * 4;
+    int bmpDx = bmp->dx();
+    int bmpDy = bmp->dy();
+    int bmpRowSize = bmp->rowSize();
 
     BITMAPINFOHEADER bmih;
     bmih.biSize = sizeof(bmih);
@@ -87,87 +76,16 @@ HBITMAP RenderedBitmapFitz::createDIBitmap(HDC hdc)
     bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
     bmih.biClrUsed = bmih.biClrImportant = 0;
 
-#ifdef FITZ_HEAD
-    unsigned char* bmpData = _image->p;
-#else
-    unsigned char* bmpData = _image->samples;
-#endif
+    unsigned char* bmpData = bmp->data();
     HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
     return hbmp;
 }
 
-void RenderedBitmapFitz::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
+static void stretchDIBitsCommon(RenderedBitmap *bmp, HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
 {
-    int bmpDx = _image->w;
-    int bmpDy = _image->h;
-    int bmpRowSize = ((_image->w * 3 + 3) / 4) * 4;
-
-    BITMAPINFOHEADER bmih;
-    bmih.biSize = sizeof(bmih);
-    bmih.biHeight = -bmpDy;
-    bmih.biWidth = bmpDx;
-    bmih.biPlanes = 1;
-    // we could create this dibsection in monochrome
-    // if the printer is monochrome, to reduce memory consumption
-    // but fitz is currently setup to return a full colour bitmap
-    bmih.biBitCount = 24;
-    bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = bmpDy * bmpRowSize;;
-    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-    bmih.biClrUsed = bmih.biClrImportant = 0;
-
-#ifdef FITZ_HEAD
-    unsigned char* bmpData = _image->p;
-#else
-    unsigned char* bmpData = _image->samples;
-#endif
-    ::StretchDIBits(hdc,
-        // destination rectangle
-        -leftMargin, -topMargin, pageDx, pageDy,
-        // source rectangle
-        0, 0, bmpDx, bmpDy,
-        bmpData,
-        (BITMAPINFO *)&bmih ,
-        DIB_RGB_COLORS,
-        SRCCOPY);
-}
-
-RenderedBitmapSplash::RenderedBitmapSplash(SplashBitmap *bitmap)
-{
-    _bitmap = bitmap;
-}
-
-RenderedBitmapSplash::~RenderedBitmapSplash() {
-    delete _bitmap;
-}
-
-HBITMAP RenderedBitmapSplash::createDIBitmap(HDC hdc)
-{
-    int bmpDx = _bitmap->getWidth();
-    int bmpDy = _bitmap->getHeight();
-    int bmpRowSize = _bitmap->getRowSize();
-
-    BITMAPINFOHEADER bmih;
-    bmih.biSize = sizeof(bmih);
-    bmih.biHeight = -bmpDy;
-    bmih.biWidth = bmpDx;
-    bmih.biPlanes = 1;
-    bmih.biBitCount = 24;
-    bmih.biCompression = BI_RGB;
-    bmih.biSizeImage = bmpDy * bmpRowSize;;
-    bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
-    bmih.biClrUsed = bmih.biClrImportant = 0;
-
-    SplashColorPtr bmpData = _bitmap->getDataPtr();
-    HBITMAP hbmp = ::CreateDIBitmap(hdc, &bmih, CBM_INIT, bmpData, (BITMAPINFO *)&bmih , DIB_RGB_COLORS);
-    return hbmp;
-}
-
-void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
-{
-    int bmpDx = _bitmap->getWidth();
-    int bmpDy = _bitmap->getHeight();
-    int bmpRowSize = _bitmap->getRowSize();
+    int bmpDx = bmp->dx();
+    int bmpDy = bmp->dy();
+    int bmpRowSize = bmp->rowSize();
 
     BITMAPINFOHEADER bmih;
     bmih.biSize = sizeof(bmih);
@@ -182,7 +100,7 @@ void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin,
     bmih.biSizeImage = bmpDy * bmpRowSize;;
     bmih.biXPelsPerMeter = bmih.biYPelsPerMeter = 0;
     bmih.biClrUsed = bmih.biClrImportant = 0;
-    SplashColorPtr bmpData = _bitmap->getDataPtr();
+    SplashColorPtr bmpData = bmp->data();
 
     ::StretchDIBits(hdc,
         // destination rectangle
@@ -193,6 +111,82 @@ void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin,
         (BITMAPINFO *)&bmih ,
         DIB_RGB_COLORS,
         SRCCOPY);
+}
+
+RenderedBitmapFitz::RenderedBitmapFitz(fz_pixmap *bitmap)
+{
+    _bitmap = bitmap;
+}
+
+RenderedBitmapFitz::~RenderedBitmapFitz()
+{
+    if (_bitmap)
+        fz_droppixmap(_bitmap);
+}
+
+int RenderedBitmapFitz::rowSize()
+{
+    int rowSize = ((_bitmap->w * 3 + 3) / 4) * 4;
+    return rowSize;
+}
+
+unsigned char *RenderedBitmapFitz::data()
+{
+#ifdef FITZ_HEAD
+    unsigned char* bmpData = _bitmap->p;
+#else
+    unsigned char* bmpData = _bitmap->samples;
+#endif
+    return bmpData;
+}
+
+HBITMAP RenderedBitmapFitz::createDIBitmap(HDC hdc)
+{
+    return createDIBitmapCommon(this, hdc);
+}
+
+void RenderedBitmapFitz::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
+{
+    stretchDIBitsCommon(this, hdc, leftMargin, topMargin, pageDx, pageDy);
+}
+
+RenderedBitmapSplash::RenderedBitmapSplash(SplashBitmap *bitmap)
+{
+    _bitmap = bitmap;
+}
+
+RenderedBitmapSplash::~RenderedBitmapSplash() {
+    delete _bitmap;
+}
+
+int RenderedBitmapSplash::dx()
+{ 
+    return _bitmap->getWidth();
+}
+
+int RenderedBitmapSplash::dy()
+{ 
+    return _bitmap->getHeight();
+}
+
+int RenderedBitmapSplash::rowSize() 
+{ 
+    return _bitmap->getRowSize(); 
+}
+    
+unsigned char *RenderedBitmapSplash::data()
+{
+    return _bitmap->getDataPtr();
+}
+
+HBITMAP RenderedBitmapSplash::createDIBitmap(HDC hdc)
+{
+    return createDIBitmapCommon(this, hdc);
+}
+
+void RenderedBitmapSplash::stretchDIBits(HDC hdc, int leftMargin, int topMargin, int pageDx, int pageDy)
+{
+    stretchDIBitsCommon(this, hdc, leftMargin, topMargin, pageDx, pageDy);
 }
 
 PdfEnginePoppler::PdfEnginePoppler() : 

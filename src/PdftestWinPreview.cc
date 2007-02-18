@@ -1,8 +1,9 @@
+#include "win_util.h"
+#include "PdfEngine.h"
+#include "SplashBitmap.h"
+
 #include <assert.h>
 #include <windows.h>
-#include "SplashBitmap.h"
-#include <fitz.h>
-#include <mupdf.h>
 
 #define WIN_CLASS_NAME  "PDFTEST_PDF_WIN"
 #define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
@@ -18,33 +19,18 @@ static int              gBitmapSplashDy = -1;
 static int              gBitmapFitzDx = -1;
 static int              gBitmapFitzDy = -1;
 
-int RectDx(RECT *r)
-{
-    int dx = r->right - r->left;
-    assert(dx >= 0);
-    return dx;
-}
-
-int RectDy(RECT *r)
-{
-    int dy = r->bottom - r->top;
-    assert(dy >= 0);
-    return dy;
-}
-
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
 void WinResizeClientArea(HWND hwnd, int x, int dx, int dy, int *dx_out)
 {
     RECT rc;
-    RECT rw;
-    int  win_dx, win_dy;
-
     GetClientRect(hwnd, &rc);
-    if ((RectDx(&rc) == dx) && (RectDy(&rc) == dy))
+    if ((rect_dx(&rc) == dx) && (rect_dy(&rc) == dy))
         return;
+
+    RECT rw;
     GetWindowRect(hwnd, &rw);
-    win_dx = RectDx(&rw) + (dx - RectDx(&rc));
-    win_dy = RectDy(&rw) + (dy - RectDy(&rc));
+    int win_dx = rect_dx(&rw) + (dx - rect_dx(&rc));
+    int win_dy = rect_dy(&rw) + (dy - rect_dy(&rc));
     SetWindowPos(hwnd, NULL, x, 0, win_dx, win_dy, SWP_NOACTIVATE | SWP_NOREPOSITION | SWP_NOZORDER);
     *dx_out = win_dx;
 }
@@ -168,7 +154,6 @@ void DrawFitz(HWND hwnd, fz_pixmap *bmp)
 
 void OnPaint(HWND hwnd)
 {
-
     if (gCurrBitmapSplash)
         DrawSplash(hwnd, gCurrBitmapSplash);
     if (gCurrBitmapFitz)
@@ -355,6 +340,11 @@ static void UpdateWindows(void)
     }
 
     PumpMessages();
+}
+
+void PreviewBitmaps(RenderedBitmap *bmpOne, RenderedBitmap *bmpTwo)
+{
+
 }
 
 void PreviewBitmapSplashFitz(SplashBitmap *splash, fz_pixmap *fitz)

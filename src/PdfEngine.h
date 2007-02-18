@@ -33,6 +33,11 @@ void SplashColorsInit(void);
 class RenderedBitmap {
 public:
     virtual ~RenderedBitmap() {};
+    virtual int dx() = 0;
+    virtual int dy() = 0;
+    virtual int rowSize() = 0;
+    virtual unsigned char *data() = 0;
+
     // TODO: this is for WINDOWS only
     virtual HBITMAP createDIBitmap(HDC) = 0;
     virtual void stretchDIBits(HDC, int, int, int, int) = 0;
@@ -40,19 +45,30 @@ public:
 
 class RenderedBitmapFitz : public RenderedBitmap {
 public:
-    RenderedBitmapFitz(fz_pixmap *image);
+    RenderedBitmapFitz(fz_pixmap *);
     virtual ~RenderedBitmapFitz();
+
+    virtual int dx() { return _bitmap->w; }
+    virtual int dy() { return _bitmap->h; }
+    virtual int rowSize();
+    virtual unsigned char *data();
+
     virtual HBITMAP createDIBitmap(HDC);
     virtual void stretchDIBits(HDC, int, int, int, int);
 protected:
-    fz_pixmap *_image;
+    fz_pixmap *_bitmap;
 };
 
 class RenderedBitmapSplash : public RenderedBitmap {
 public:
     RenderedBitmapSplash(SplashBitmap *);
-
     virtual ~RenderedBitmapSplash();
+
+    virtual int dx();
+    virtual int dy();
+    virtual int rowSize();
+    virtual unsigned char *data();
+
     virtual HBITMAP createDIBitmap(HDC);
     virtual void stretchDIBits(HDC, int, int, int, int);
 

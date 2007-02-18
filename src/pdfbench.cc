@@ -45,7 +45,6 @@
 #endif
 
 extern void PreviewBitmapInit(void);
-extern void PreviewBitmap(SplashBitmap *);
 extern void PreviewBitmapSplash(SplashBitmap *);
 extern void PreviewBitmapFitz(fz_pixmap *);
 extern void PreviewBitmapSplashFitz(SplashBitmap *, fz_pixmap *);

@@ -231,6 +231,10 @@
 				RelativePath=".\baseutils\str_util.c"
 				>
 			</File>
+			<File
+				RelativePath=".\baseutils\win_util.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -259,6 +263,10 @@
 			</File>
 			<File
 				RelativePath=".\baseutils\strlist_util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\win_util.h"
 				>
 			</File>
 		</Filter>
