@@ -33,6 +33,9 @@
 
 #include <windowsx.h>
 
+// this sucks but I don't know any other way
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 //#define FANCY_UI 1
 
 /* Define if you want to conserve memory by always freeing cached bitmaps

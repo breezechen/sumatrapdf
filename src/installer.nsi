@@ -9,6 +9,8 @@ Name "SumatraPDF"
 OutFile "SumatraPDF-install.exe"
 InstallDir $PROGRAMFILES\SumatraPDF
 
+SetCompress off
+
 ; Registry key to check for directory (so if you install again, it will  overwrite the old one automatically)
 InstallDirRegKey HKLM "Software\SumatraPDF" "Install_Dir"
 
