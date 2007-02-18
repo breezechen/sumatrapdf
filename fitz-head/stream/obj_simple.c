@@ -4,6 +4,10 @@
 extern void fz_droparray(fz_obj *array);
 extern void fz_dropdict(fz_obj *dict);
 
+void dump_type_stats(void)
+{
+}
+
 #define NEWOBJ(KIND,SIZE) \
     fz_obj *o; \
     o = *op = fz_malloc(SIZE); \
