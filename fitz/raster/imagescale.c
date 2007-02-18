@@ -92,11 +92,10 @@ static void srow2(byte *src, byte *dst, int w, int denom)
         if (++left == denom)
         {
             left = 0;
-            dst[0] = sum[0] / denom;
-            dst[1] = sum[1] / denom;
+            *dst++ = sum[0] / denom;
+            *dst++ = sum[1] / denom;
             sum[0] = 0;
             sum[1] = 0;
-            dst += 2;
         }
     }
 
@@ -171,7 +170,27 @@ static void scol1(byte *src, byte *dst, int w, int denom)
 
 static void scol2(byte *src, byte *dst, int w, int denom)
 {
-	scoln(src, dst, w, denom, 2);
+#if 0
+    scoln(src, dst, w, denom, 2);
+#else
+    int y;
+    byte *srcend;
+    int sum[2];
+
+    srcend = src + w * 2;
+    while (src < srcend)
+    {
+        sum[0] = 0;
+        sum[1] = 0;
+        for (y = 0; y < denom; y++) {
+            sum[0] += src[y * w * 2];
+            sum[1] += src[y * w * 2 + 1];
+        }
+        *dst++ = sum[0] / denom;
+        *dst++ = sum[1] / denom;
+        src += 2;
+    }
+#endif
 }
 
 static void scol4(byte *src, byte *dst, int w, int denom)
