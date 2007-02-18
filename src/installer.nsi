@@ -1,30 +1,17 @@
 ; TODO: 
-; - the *.exe and installation directory doesn't seem to be deleted
-;   during uninstall
 ; - assign myself with PDF via registry, possibly a checkbox to enable/disable this
 ; - a way to run the app after installation is done
 ; - restore PDF association on uninstall. How to do it? Just assume acrobat?
 ;   execute an app (e.g. myself with -uninstall switch) that would restore
 ;   PDF associations?
 
-; The name of the installer
 Name "SumatraPDF"
-
-; The file to write
 OutFile "SumatraPDF-install.exe"
-
-SetCompressor /SOLID lzma
-
-; The default installation directory
 InstallDir $PROGRAMFILES\SumatraPDF
 
-; Registry key to check for directory (so if you install again, it will
-; overwrite the old one automatically)
+; Registry key to check for directory (so if you install again, it will  overwrite the old one automatically)
 InstallDirRegKey HKLM "Software\SumatraPDF" "Install_Dir"
 
-; Pages
-
-;Page license
 Page components
 Page directory
 Page instfiles
@@ -71,6 +58,7 @@ Section "Uninstall"
 
   ; Remove files and uninstaller
   Delete $INSTDIR\Uninstall.exe
+  Delete $INSTDIR\SumatraPDF.exe
 
   ; Remove shortcuts, if any
   Delete "$SMPROGRAMS\SumatraPDF\*.*"

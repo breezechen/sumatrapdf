@@ -12,6 +12,9 @@
 devenv ..\sumatrapdf.sln /Rebuild "Release|Win32"
 @IF ERRORLEVEL 1 goto BUILD_FAILED
 echo Compilation ok!
+upx --best ..\Release\SumatraPDF.exe
+@IF ERRORLEVEL 1 goto PACK_FAILED
+
 @makensis installer
 @IF ERRORLEVEL 1 goto INSTALLER_FAILED
 
@@ -19,7 +22,8 @@ move SumatraPDF-install.exe ..\Release\SumatraPDF-%VERSION%-install.exe
 copy ..\Release\SumatraPDF-%VERSION%-install.exe %FASTDL_PATH%\SumatraPDF-%VERSION%-install.exe
 
 @cd ..\Release
-zip -9 SumatraPDF-%VERSION%.zip SumatraPDF.exe
+@rem don't bother compressing since our *.exe has already been packed
+zip -0 SumatraPDF-%VERSION%.zip SumatraPDF.exe
 copy SumatraPDF-%VERSION%.zip %FASTDL_PATH%\SumatraPDF-%VERSION%.zip
 @goto END
 
@@ -27,8 +31,12 @@ copy SumatraPDF-%VERSION%.zip %FASTDL_PATH%\SumatraPDF-%VERSION%.zip
 echo Installer script failed
 @goto END
 
+:PACK_FAILED
+echo Failed to pack executable with upx. Do you have upx installed?
+@goto END
+
 :BUILD_FAILED
-echo Something failed!
+echo Build failed!
 @goto END
 
 :VERSION_NEEDED
