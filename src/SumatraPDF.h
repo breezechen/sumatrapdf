@@ -67,10 +67,7 @@ typedef struct WindowInfo {
     WinState        state;
     WinState        prevState;
 
-    /* TODO: ultimately it should be just one DisplayModel *dm */
-    DisplayModel *        dm;
-    DisplayModelSplash *  dmSplash;
-    DisplayModelFitz *    dmFitz;
+    DisplayModel *  dm;
     HWND            hwndFrame;
     HWND            hwndCanvas;
     HWND            hwndToolbar;
@@ -98,9 +95,7 @@ typedef struct WindowInfo {
     AnimState       animState;
 } WindowInfo;
 
-void    WinSetText(HWND hwnd, const TCHAR *txt);
 void    WinEditSelectAll(HWND hwnd);
 void    WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd);
-TCHAR * WinGetText(HWND hwnd);
 
 #endif

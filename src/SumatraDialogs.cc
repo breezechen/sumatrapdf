@@ -1,8 +1,10 @@
 #include "SumatraDialogs.h"
-#include <assert.h>
+
 #include "DisplayModel.h"
 #include "dstring.h"
 #include "Resource.h"
+#include "win_util.h"
+#include <assert.h>
 
 static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -23,10 +25,10 @@ static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wPa
             DStringInit(&ds);
             DStringSprintf(&ds, "Enter password for %s", data->fileName);
             label = GetDlgItem(hDlg, IDC_GET_PASSWORD_LABEL);
-            WinSetText(label, ds.pString);
+            win_set_text(label, ds.pString);
             DStringFree(&ds);
             edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
-            WinSetText(edit, "");
+            win_set_text(edit, "");
             SetFocus(edit);
             return FALSE;
 
@@ -37,7 +39,7 @@ static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wPa
                     data = (Dialog_GetPassword_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
                     assert(data);
                     edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
-                    data->pwdOut = WinGetText(edit);
+                    data->pwdOut = win_get_text(edit);
                     EndDialog(hDlg, DIALOG_OK_PRESSED);
                     return TRUE;
 
@@ -93,11 +95,11 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
             DStringInit(&ds);
             DStringSprintf(&ds, "%d", data->currPageNo);
             editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
-            WinSetText(editPageNo, ds.pString);
+            win_set_text(editPageNo, ds.pString);
             DStringFree(&ds);
             DStringSprintf(&ds, "(of %d)", data->pageCount);
             labelOfPages = GetDlgItem(hDlg, IDC_GOTO_PAGE_LABEL_OF);
-            WinSetText(labelOfPages, ds.pString);
+            win_set_text(labelOfPages, ds.pString);
             DStringFree(&ds);
             WinEditSelectAll(editPageNo);
             SetFocus(editPageNo);
@@ -111,7 +113,7 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
                     assert(data);
                     data->pageEnteredOut = INVALID_PAGE_NO;
                     editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
-                    newPageNoTxt = WinGetText(editPageNo);
+                    newPageNoTxt = win_get_text(editPageNo);
                     if (newPageNoTxt) {
                         data->pageEnteredOut = atoi(newPageNoTxt);
                         free((void*)newPageNoTxt);

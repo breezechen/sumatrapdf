@@ -10,6 +10,7 @@ public:
     virtual ~DisplayModelFitz();
 
     PdfEngineFitz *pdfEngineFitz(void) { return (PdfEngineFitz*)_pdfEngine; }
+    virtual void   handleLink(PdfLink *pdfLink);
 
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y);

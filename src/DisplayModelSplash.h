@@ -75,15 +75,17 @@ public:
 
     PdfEnginePoppler * pdfEnginePoppler() { return (PdfEnginePoppler*)pdfEngine(); }
 
+    virtual void  handleLink(PdfLink *pdfLink);
+
     TextPage *    GetTextPage(int pageNo);
 
     void          EnsureSearchHitVisible();
 
-    void          HandleLinkGoTo(LinkGoTo *linkGoTo);
-    void          HandleLinkGoToR(LinkGoToR *linkGoToR);
-    void          HandleLinkURI(LinkURI *linkURI);
-    void          HandleLinkLaunch(LinkLaunch* linkLaunch);
-    void          HandleLinkNamed(LinkNamed *linkNamed);
+    void          handleLinkGoTo(LinkGoTo *linkGoTo);
+    void          handleLinkGoToR(LinkGoToR *linkGoToR);
+    void          handleLinkURI(LinkURI *linkURI);
+    void          handleLinkLaunch(LinkLaunch* linkLaunch);
+    void          handleLinkNamed(LinkNamed *linkNamed);
     BOOL          CanGoToNextPage();
     BOOL          CanGoToPrevPage();
 

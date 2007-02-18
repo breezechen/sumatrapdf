@@ -44,3 +44,8 @@ void DisplayModelFitz::cvtUserToScreen(int pageNo, double *x, double *y)
     // TODO: implement me
 }
 
+void DisplayModelFitz::handleLink(PdfLink *pdfLink)
+{
+    // TODO: implement me
+}
+

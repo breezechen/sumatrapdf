@@ -36,17 +36,6 @@ bool validZoomReal(double zoomReal)
     return true;
 }
 
-#if 0  // FIXME:: remove me
-bool validDisplayMode(DisplayMode dm)
-{
-    if ((int)dm < (int)DM_FIRST)
-        return false;
-    if ((int)dm > (int)DM_LAST)
-        return false;
-    return true;
-}
-#endif
-
 bool displayModeFacing(DisplayMode displayMode)
 {
     if ((DM_SINGLE_PAGE == displayMode) || (DM_CONTINUOUS == displayMode))

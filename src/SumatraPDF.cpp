@@ -571,32 +571,6 @@ void WinEditSelectAll(HWND hwnd)
     WinEditSetSel(hwnd, 0, -1);
 }
 
-static int WinGetTextLen(HWND hwnd)
-{
-    return (int)SendMessage(hwnd, WM_GETTEXTLENGTH, 0, 0);
-}
-
-void WinSetText(HWND hwnd, const TCHAR *txt)
-{
-    SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)txt);
-}
-
-/* return a text in edit control represented by hwnd
-   return NULL in case of error (couldn't allocate memory)
-   caller needs to free() the text */
-TCHAR *WinGetText(HWND hwnd)
-{
-    int     cchTxtLen = WinGetTextLen(hwnd);
-    TCHAR * txt = (TCHAR*)malloc((cchTxtLen+1)*sizeof(TCHAR));
-
-    if (NULL == txt)
-        return NULL;
-
-    SendMessage(hwnd, WM_GETTEXT, cchTxtLen + 1, (LPARAM)txt);
-    txt[cchTxtLen] = 0;
-    return txt;
-}
-
 static void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
 {
     if (scrollbarYDxOut)
@@ -1233,7 +1207,7 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
         ShowScrollBar(win->hwndCanvas, SB_BOTH, TRUE);
     else {
         ShowScrollBar(win->hwndCanvas, SB_BOTH, FALSE);
-        WinSetText(win->hwndFrame, APP_NAME);
+        win_set_text(win->hwndFrame, APP_NAME);
     }
 }
 
@@ -1398,15 +1372,11 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     }
 
     if (gUseFitz) {
-        win->dmFitz = DisplayModelFitz_CreateFromFileName(fileName, 
+        win->dm = DisplayModelFitz_CreateFromFileName(fileName, 
             totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
-        win->dm = win->dmFitz;
-        win->dmSplash = NULL;
     } else {
-        win->dmSplash = DisplayModelSplash_CreateFromFileName(fileName, 
+        win->dm = DisplayModelSplash_CreateFromFileName(fileName, 
             totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
-        win->dm = win->dmSplash;
-        win->dmFitz = NULL;
     }
 
     if (!win->dm) {
@@ -1517,11 +1487,11 @@ void DisplayModel::pageChanged(void)
     int pageCount = win->dm->pageCount();
     const char *baseName = FilePath_GetBaseName(win->dm->fileName());
     if (pageCount <= 0)
-        WinSetText(win->hwndFrame, baseName);
+        win_set_text(win->hwndFrame, baseName);
     else {
         char titleBuf[256];
         HRESULT hr = StringCchPrintfA(titleBuf, dimof(titleBuf), "%s page %d of %d", baseName, currPageNo, pageCount);
-        WinSetText(win->hwndFrame, titleBuf);
+        win_set_text(win->hwndFrame, titleBuf);
     }
 }
 
@@ -2349,47 +2319,6 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     DeleteObject(penRectBorder);
 }
 
-static void HandleLink(DisplayModelSplash *dm, PdfLink *pdfLink)
-{
-    Link *          link;
-    LinkAction *    action;
-    LinkActionKind  actionKind;
-
-    assert(dm);
-    if (!dm) return;
-
-    assert(pdfLink);
-    if (!pdfLink) return;
-
-    link = pdfLink->link;
-    assert(link);
-    if (!link) return;
-
-    action = link->getAction();
-    actionKind = action->getKind();
-
-    switch (actionKind) {
-        case actionGoTo:
-            dm->HandleLinkGoTo((LinkGoTo*)action);
-            break;
-        case actionGoToR:
-            dm->HandleLinkGoToR((LinkGoToR*)action);
-            break;
-        case actionLaunch:
-            dm->HandleLinkLaunch((LinkLaunch*)action);
-            break;
-        case actionURI:
-            dm->HandleLinkURI((LinkURI*)action);
-            break;
-        case actionNamed:
-            dm->HandleLinkNamed((LinkNamed *)action);
-            break;
-        default:
-            /* other kinds are not supported */
-            break;
-    }
-}
-
 static void WinMoveDocBy(WindowInfo *win, int dx, int dy)
 {
     assert(win);
@@ -2443,37 +2372,42 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
     assert(win);
     if (!win) return;
 
-    if (WS_SHOWING_PDF == win->state) {
-        assert(win->dm);
-        if (!win->dm) return;
-        if (win->dragging && (GetCapture() == win->hwndCanvas)) {
-            dragDx = 0; dragDy = 0;
-            dragDx = x - win->dragPrevPosX;
-            dragDy = y - win->dragPrevPosY;
-            DBG_OUT(" dragging ends, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
-            assert(!win->linkOnLastButtonDown);
-            WinMoveDocBy(win, dragDx, -dragDy*2);
-            win->dragPrevPosX = x;
-            win->dragPrevPosY = y;
-            win->dragging = FALSE;
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
-            ReleaseCapture();            
-            return;
-        }
-
-        if (!win->linkOnLastButtonDown)
-            return;
-
-        link = win->dm->linkAtPosition(x, y);
-        if (link && (link == win->linkOnLastButtonDown))
-            HandleLink(win->dmSplash, link);
-        win->linkOnLastButtonDown = NULL;
-    } else if (WS_ABOUT_ANIM == win->state) {
+    if (WS_ABOUT_ANIM == win->state) {
         url = AboutGetLink(win, x, y);
         if (url == win->url)
             LaunchBrowser(url);
         win->url = NULL;
+        return;
     }
+
+    if (WS_SHOWING_PDF != win->state)
+        return;
+
+    assert(win->dm);
+    if (!win->dm) return;
+
+    if (win->dragging && (GetCapture() == win->hwndCanvas)) {
+        dragDx = 0; dragDy = 0;
+        dragDx = x - win->dragPrevPosX;
+        dragDy = y - win->dragPrevPosY;
+        DBG_OUT(" dragging ends, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
+        assert(!win->linkOnLastButtonDown);
+        WinMoveDocBy(win, dragDx, -dragDy*2);
+        win->dragPrevPosX = x;
+        win->dragPrevPosY = y;
+        win->dragging = FALSE;
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
+        ReleaseCapture();            
+        return;
+    }
+
+    if (!win->linkOnLastButtonDown)
+        return;
+
+    link = win->dm->linkAtPosition(x, y);
+    if (link && (link == win->linkOnLastButtonDown))
+        win->dm->handleLink(link);
+    win->linkOnLastButtonDown = NULL;
 }
 
 static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)

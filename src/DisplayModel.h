@@ -254,6 +254,7 @@ public:
     PdfLink *       link(int linkNo) const { return &(_links[linkNo]); }
     PdfLink *       linkAtPosition(int x, int y);
 
+    virtual void    handleLink(PdfLink *pdfLink) = 0;
 protected:
     virtual void cvtUserToScreen(int pageNo, double *x, double *y) = 0;
 

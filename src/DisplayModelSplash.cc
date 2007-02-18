@@ -463,7 +463,7 @@ void DisplayModelSplash::GoToNamedDest(UGooString *dest)
     delete d;
 }
 
-void DisplayModelSplash::HandleLinkGoTo(LinkGoTo *linkGoTo)
+void DisplayModelSplash::handleLinkGoTo(LinkGoTo *linkGoTo)
 {
     LinkDest *      linkDest;
     UGooString *    linkNamedDest;
@@ -482,7 +482,7 @@ void DisplayModelSplash::HandleLinkGoTo(LinkGoTo *linkGoTo)
     }
 }
 
-void DisplayModelSplash::HandleLinkGoToR(LinkGoToR *linkGoToR)
+void DisplayModelSplash::handleLinkGoToR(LinkGoToR *linkGoToR)
 {
     LinkDest *      linkDest;
     UGooString *    linkNamedDest;
@@ -501,7 +501,7 @@ void DisplayModelSplash::HandleLinkGoToR(LinkGoToR *linkGoToR)
     /* Test file: C:\kjk\test_pdfs\pda\palm\dev tools\sdk\user_interface.pdf, page 633 */
 }
 
-void DisplayModelSplash::HandleLinkURI(LinkURI *linkURI)
+void DisplayModelSplash::handleLinkURI(LinkURI *linkURI)
 {
     const char *uri;
 
@@ -511,7 +511,7 @@ void DisplayModelSplash::HandleLinkURI(LinkURI *linkURI)
     LaunchBrowser(uri);
 }
 
-void DisplayModelSplash::HandleLinkLaunch(LinkLaunch* linkLaunch)
+void DisplayModelSplash::handleLinkLaunch(LinkLaunch* linkLaunch)
 {
     assert(linkLaunch);
     if (!linkLaunch) return;
@@ -520,7 +520,7 @@ void DisplayModelSplash::HandleLinkLaunch(LinkLaunch* linkLaunch)
        due to security and portability reasons */
 }
 
-void DisplayModelSplash::HandleLinkNamed(LinkNamed *linkNamed)
+void DisplayModelSplash::handleLinkNamed(LinkNamed *linkNamed)
 {
     GooString * name;
     char *      nameTxt;
@@ -772,4 +772,43 @@ Exit:
     showNormalCursor();
     return found;
 }
+
+void DisplayModelSplash::handleLink(PdfLink *pdfLink)
+{
+    Link *          link;
+    LinkAction *    action;
+    LinkActionKind  actionKind;
+
+    assert(pdfLink);
+    if (!pdfLink) return;
+
+    link = pdfLink->link;
+    assert(link);
+    if (!link) return;
+
+    action = link->getAction();
+    actionKind = action->getKind();
+
+    switch (actionKind) {
+        case actionGoTo:
+            handleLinkGoTo((LinkGoTo*)action);
+            break;
+        case actionGoToR:
+            handleLinkGoToR((LinkGoToR*)action);
+            break;
+        case actionLaunch:
+            handleLinkLaunch((LinkLaunch*)action);
+            break;
+        case actionURI:
+            handleLinkURI((LinkURI*)action);
+            break;
+        case actionNamed:
+            handleLinkNamed((LinkNamed *)action);
+            break;
+        default:
+            /* other kinds are not supported */
+            break;
+    }
+}
+
 
