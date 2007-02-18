@@ -815,7 +815,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
         engineFitz = new PdfEngineFitz();
 
         MsTimer msTimer;
-        if (!engineFitz->load(FITZ_TMP_NAME)) {
+        if (!engineFitz->load(fileNameFitz)) {
             LogInfo("failed to load fitz\n");
             goto Error;
         }
@@ -829,7 +829,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
         engineSplash = new PdfEnginePoppler();
 
         MsTimer msTimer;
-        if (!engineSplash->load(POPPLER_TMP_NAME)) {
+        if (!engineSplash->load(fileNameSplash)) {
             LogInfo("failed to load splash\n");
             goto Error;
         }
@@ -1245,6 +1245,8 @@ static void renderCmdLineArg(char *cmdLineArg)
 
 extern "C" void deinitfontlibs_ms(void);
 
+extern "C" void dump_type_stats(void);
+
 int main(int argc, char **argv)
 {
     StrList *       curr;
@@ -1291,6 +1293,7 @@ int main(int argc, char **argv)
     PreviewBitmapDestroy();
     deinitfontlibs_ms();
     StrList_Destroy(&gArgsListRoot);
+    dump_type_stats();
     delete globalParams;
     return 0;
 }
