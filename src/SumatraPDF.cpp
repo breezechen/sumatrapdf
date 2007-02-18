@@ -97,7 +97,7 @@ static BOOL             gDebugShowLinks = FALSE;
 #define APP_NAME        _T("SumatraPDF")
 #define PDF_DOC_NAME    _T("Adobe PDF Document")
 
-#define PREFS_FILE_NAME _T("prefs.txt")
+#define PREFS_FILE_NAME _T("sumatrapdfprefs.txt")
 #define APP_SUB_DIR     _T("SumatraPDF")
 
 #define BENCH_ARG_TXT             "-bench"
@@ -676,23 +676,23 @@ void *StandardSecurityHandler::getAuthData()
 
 /* Return true if this program has been started from "Program Files" directory
    (which is an indicator that it has been installed */
-static bool IsRunningFromProgramFiles(void)
+static bool runningFromProgramFiles(void)
 {
-    char dir[MAX_PATH];
-    BOOL fOk = SHGetSpecialFolderPath(NULL, dir, CSIDL_PROGRAM_FILES, FALSE);
+    char programFilesDir[MAX_PATH];
+    BOOL fOk = SHGetSpecialFolderPath(NULL, programFilesDir, CSIDL_PROGRAM_FILES, FALSE);
     if (!fOk) return true; // assume it is
     char *exePath = ExePathGet();
     if (!exePath) return true; // again, assume it is
     bool fromProgramFiles = false;
-    if (str_startswithi(dir, exePath))
+    if (str_startswithi(exePath, programFilesDir))
         fromProgramFiles = true;
-    free((void*)exePath);
+    free(exePath);
     return fromProgramFiles;
 }
 
 static bool IsRunningInPortableMode(void)
 {
-    return !IsRunningFromProgramFiles();
+    return !runningFromProgramFiles();
 }
 
 static void AppGetAppDir(DString* pDs)
