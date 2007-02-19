@@ -272,13 +272,18 @@ RenderedBitmap *PdfEnginePoppler::renderBitmap(
     return renderedBitmap;
 }
 
+int PdfEnginePoppler::linkCount(int pageNo) {
+    return 0;
+}
+
+const char* PdfEnginePoppler::linkType(int pageNo, int linkNo) {
+    return NULL;
+}
 
 PdfEngineFitz::PdfEngineFitz() : 
         PdfEngine()
         , _xref(NULL)
-#if 0
         , _outline(NULL)
-#endif
         , _pages(NULL)
         , _rast(NULL)
 {
@@ -289,10 +294,8 @@ PdfEngineFitz::~PdfEngineFitz()
     if (_pages)
         pdf_droppagetree(_pages);
 
-#if 0
     if (_outline)
         pdf_dropoutline(_outline);
-#endif
 
     if (_xref) {
         if (_xref->store)
@@ -343,6 +346,11 @@ bool PdfEngineFitz::load(const char *fileName)
     }
 
     error = pdf_loadpagetree(&_pages, _xref);
+    if (error)
+        goto Error;
+
+    error = pdf_loadoutline(&_outline, _xref);
+    // TODO: can I ignore this error?
     if (error)
         goto Error;
 
@@ -456,4 +464,11 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
     return new RenderedBitmapFitz(image);
 }
 
+int PdfEngineFitz::linkCount(int pageNo) {
+    return 0;
+}
+
+const char* PdfEngineFitz::linkType(int pageNo, int linkNo) {
+    return NULL;
+}
 

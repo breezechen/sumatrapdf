@@ -106,6 +106,10 @@ public:
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA) = 0;
+
+    virtual int linkCount(int pageNo) = 0;
+    virtual const char* linkType(int pageNo, int linkNo) = 0;
+
 protected:
     const char *_fileName;
     int _pageCount;
@@ -121,6 +125,9 @@ public:
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA);
+
+    virtual int linkCount(int pageNo);
+    virtual const char* linkType(int pageNo, int linkNo);
 
     PDFDoc* pdfDoc() { return _pdfDoc; }
     SplashOutputDev *   outputDevice();
@@ -139,14 +146,14 @@ public:
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA);
+    virtual int linkCount(int pageNo);
+    virtual const char* linkType(int pageNo, int linkNo);
 
     pdf_xref * xref() { return _xref; }
     pdf_pagetree * pages() { return _pages; }
 private:
     pdf_xref *      _xref;
-#if 0
     pdf_outline *   _outline;
-#endif
     pdf_pagetree *  _pages;
 #ifdef FITZ_HEAD
     fz_graphics *   _rast;

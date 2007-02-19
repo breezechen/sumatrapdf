@@ -356,7 +356,7 @@ static StrList *gArgsListRoot = NULL;
 #define SLOW_PREVIEW_ARG    "-slowpreview"
 #define LOAD_ONLY_ARG       "-loadonly"
 #define PAGE_ARG            "-page"
-#define DUMP_LINKS_ARG      "-dump-links"
+#define DUMP_LINKS_ARG      "-links"
 #define TEXT_ARG            "-text"
 #define FITZ_ARG            "-fitz"
 #define BOTH_ARG            "-both"
@@ -418,7 +418,7 @@ static int  gPageNo = PAGE_NO_NOT_GIVEN;
 static BOOL gfLoadOnly = FALSE;
 
 /* if TRUE, will dump information about links */
-static BOOL gfDumpLinks = FALSE;
+static BOOL gfLinks = FALSE;
 
 /* if TRUE, will timer, render and preview both fitz and poppler backends */
 static BOOL gfBoth = FALSE;
@@ -646,8 +646,20 @@ static const char * GetLinkActionKindName(LinkActionKind kind) {
     }
 }
 
-static void DumpLinks(PDFDoc *doc)
+static void DumpLinks(PdfEngine *engine)
 {
+    assert(engine);
+    if (!engine) return;
+
+    int pageCount = engine->pageCount();
+    for (int pageNo = 1; pageNo < pageCount; ++pageNo) {
+        int linkCount = engine->linkCount(pageNo);
+        for (int linkNo = 0; linkNo < linkCount; ++linkNo) {
+
+        }
+    }
+
+#if 0
     Links *     links = NULL;
     int         pagesCount, linkCount;
     Link *      link;
@@ -655,7 +667,7 @@ static void DumpLinks(PDFDoc *doc)
     if (!doc)
         return;
 
-    pagesCount = doc->getNumPages();
+    pagesCount = engine->pageCount();
     for (int pageNo = 1; pageNo < pagesCount; ++pageNo) {
         delete links;
         links = GetLinksForPage(doc, pageNo);
@@ -677,6 +689,7 @@ static void DumpLinks(PDFDoc *doc)
         }
     }
     delete links;
+#endif
 }
 
 static void renderPdfAsText(const char *fileName)
@@ -873,6 +886,8 @@ static void renderPdf(const char *fileName, RenderType renderType)
                     LogInfo("page fitz   %d: failed to render\n", curPage);
                 else
                     LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, bmpFitz->dx(), bmpFitz->dy(), timeInMs);
+            if (gfLinks)
+                DumpLinks(engineFitz);
         }
 
         if (fileNameSplash) {
@@ -881,11 +896,12 @@ static void renderPdf(const char *fileName, RenderType renderType)
             msTimer.stop();
             double timeInMs = msTimer.timeInMs();
             if (gfTimings)
-                LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, bmpSplash->dx(), bmpSplash->dy(), timeInMs);
-#if 0
-            if (gfDumpLinks)
-                DumpLinks(render->pdfEngine->pdfDoc());
-#endif
+                if (!bmpSplash)
+                    LogInfo("page splash %d: failed to render\n", curPage);
+                else
+                    LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, bmpSplash->dx(), bmpSplash->dy(), timeInMs);
+            if (gfLinks)
+                DumpLinks(engineSplash);
         }
 
         if (ShowPreview()) {
@@ -1088,7 +1104,7 @@ static void parseCommandLine(int argc, char **argv)
                 if (gPageNo < 1)
                     printUsageAndExit(argc, argv);
             } else if (str_ieq(arg, DUMP_LINKS_ARG)) {
-                gfDumpLinks = TRUE;
+                gfLinks = TRUE;
             } else {
                 /* unknown option */
                 printUsageAndExit(argc, argv);
@@ -1249,9 +1265,6 @@ extern "C" void dump_type_stats(void);
 
 int main(int argc, char **argv)
 {
-    StrList *       curr;
-    FILE *          outFile = NULL;
-
     runAllUnitTests();
 
     parseCommandLine(argc, argv);
@@ -1265,6 +1278,7 @@ int main(int argc, char **argv)
         return 1;
     globalParams->setErrQuiet(gFalse);
 
+    FILE * outFile = NULL;
     if (gOutFileName) {
         outFile = fopen(gOutFileName, "wb");
         if (!outFile) {
@@ -1283,7 +1297,7 @@ int main(int argc, char **argv)
 
     PreviewBitmapInit();
 
-    curr = gArgsListRoot;
+    StrList * curr = gArgsListRoot;
     while (curr) {
         renderCmdLineArg(curr->str);
         curr = curr->next;
