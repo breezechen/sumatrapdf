@@ -74,6 +74,7 @@
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
+				StackReserveSize="2097152"
 				TargetMachine="1"
 			/>
 			<Tool
