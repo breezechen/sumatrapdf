@@ -17,6 +17,14 @@
 class SplashBitmap;
 class SplashOutputDev;
 class PDFDoc;
+class Links;
+
+extern const char* const LINK_ACTION_GOTO;
+extern const char* const LINK_ACTION_GOTOR;
+extern const char* const LINK_ACTION_LAUNCH;
+extern const char* const LINK_ACTION_URI;
+extern const char* const LINK_ACTION_NAMED;
+extern const char* const LINK_ACTION_MOVIE;
 
 /* For simplicity, all in one file. Would be cleaner if they were
    in separate files PdfEngineFitz.h and PdfEnginePoppler.h */
@@ -132,8 +140,11 @@ public:
     PDFDoc* pdfDoc() { return _pdfDoc; }
     SplashOutputDev *   outputDevice();
 private:
+    Links* getLinksForPage(int pageNo);
+
     PDFDoc *            _pdfDoc;
     SplashOutputDev *   _outputDev;
+    Links **            _linksForPage;
 };
 
 class PdfEngineFitz : public  PdfEngine {
@@ -150,11 +161,14 @@ public:
     virtual const char* linkType(int pageNo, int linkNo);
 
     pdf_xref * xref() { return _xref; }
-    pdf_pagetree * pages() { return _pages; }
+    pdf_pagetree * pages() { return _pageTree; }
 private:
+    pdf_page * getPdfPage(int pageNo);
+
     pdf_xref *      _xref;
     pdf_outline *   _outline;
-    pdf_pagetree *  _pages;
+    pdf_pagetree *  _pageTree;
+    pdf_page **     _pages;
 #ifdef FITZ_HEAD
     fz_graphics *   _rast;
 #else

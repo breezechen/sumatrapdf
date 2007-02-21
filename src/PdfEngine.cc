@@ -14,6 +14,14 @@
 #include "SecurityHandler.h"
 #include "Link.h"
 
+const char* const LINK_ACTION_GOTO = "linkActionGoTo";
+const char* const LINK_ACTION_GOTOR = "linkActionGoToR";
+const char* const LINK_ACTION_LAUNCH = "linkActionLaunch";
+const char* const LINK_ACTION_URI = "linkActionUri";
+const char* const LINK_ACTION_NAMED = "linkActionNamed";
+const char* const LINK_ACTION_MOVIE = "linkActionMovie";
+const char* const LINK_ACTION_UNKNOWN = "linkActionUnknown";
+
 static SplashColorMode gSplashColorMode = splashModeBGR8;
 
 static SplashColor splashColRed;
@@ -193,6 +201,7 @@ PdfEnginePoppler::PdfEnginePoppler() :
     PdfEngine()
    , _pdfDoc(NULL)
    , _outputDev(NULL)
+   , _linksForPage(NULL)
 {
 }
 
@@ -200,6 +209,9 @@ PdfEnginePoppler::~PdfEnginePoppler()
 {
     delete _outputDev;
     delete _pdfDoc;
+    for (int i = 0; (i < _pageCount) && _linksForPage; i++)
+        delete _linksForPage[i];
+    free(_linksForPage);
 }
 
 bool PdfEnginePoppler::load(const char *fileName)
@@ -214,6 +226,10 @@ bool PdfEnginePoppler::load(const char *fileName)
         return false;
     }
     _pageCount = _pdfDoc->getNumPages();
+    _linksForPage = (Links**)malloc(_pageCount * sizeof(Links));
+    if (!_linksForPage) return false;
+    for (int i=0; i < _pageCount; i++)
+        _linksForPage[i] = NULL;
     return true;
 }
 
@@ -272,18 +288,76 @@ RenderedBitmap *PdfEnginePoppler::renderBitmap(
     return renderedBitmap;
 }
 
+Links* PdfEnginePoppler::getLinksForPage(int pageNo)
+{
+    if (!_linksForPage)
+        return NULL;
+    if (_linksForPage[pageNo-1])
+        return NULL;
+
+    Object obj;
+    Catalog *catalog = _pdfDoc->getCatalog();
+    Page *page = catalog->getPage(pageNo);
+    Links *links = new Links(page->getAnnots(&obj), catalog->getBaseURI());
+    obj.free();
+    _linksForPage[pageNo-1] = links;
+    return _linksForPage[pageNo-1];
+}
+
 int PdfEnginePoppler::linkCount(int pageNo) {
-    return 0;
+    Links *links = getLinksForPage(pageNo);
+    if (!links) return 0;
+    return links->getNumLinks();
+}
+
+const char* linkActionKindToLinkType(LinkActionKind kind) {
+    switch (kind) {
+        case (actionGoTo):
+            return LINK_ACTION_GOTO;
+        case actionGoToR:
+            return LINK_ACTION_GOTOR;
+        case actionLaunch:
+            return LINK_ACTION_LAUNCH;
+        case actionURI:
+            return LINK_ACTION_URI;
+        case actionNamed:
+            return LINK_ACTION_NAMED;
+        case actionMovie:
+            return LINK_ACTION_MOVIE;
+        case actionUnknown:
+            return LINK_ACTION_UNKNOWN;
+        default:
+            assert(0);
+            return LINK_ACTION_UNKNOWN;
+    }
 }
 
 const char* PdfEnginePoppler::linkType(int pageNo, int linkNo) {
-    return NULL;
+    Links *links = getLinksForPage(pageNo);
+    if (!links) return 0;
+    int linkCount = links->getNumLinks();
+    assert(linkNo < linkCount);
+    Link *link = links->getLink(linkNo-1);
+    LinkAction *    action = link->getAction();
+    LinkActionKind  actionKind = action->getKind();
+    return linkActionKindToLinkType(actionKind);
+}
+
+static fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
+{
+    fz_matrix ctm;
+    ctm = fz_identity();
+    ctm = fz_concat(ctm, fz_translate(0, -page->mediabox.y1));
+    ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
+    ctm = fz_concat(ctm, fz_rotate(rotate + page->rotate));
+    return ctm;
 }
 
 PdfEngineFitz::PdfEngineFitz() : 
         PdfEngine()
         , _xref(NULL)
         , _outline(NULL)
+        , _pageTree(NULL)
         , _pages(NULL)
         , _rast(NULL)
 {
@@ -291,8 +365,15 @@ PdfEngineFitz::PdfEngineFitz() :
 
 PdfEngineFitz::~PdfEngineFitz()
 {
-    if (_pages)
-        pdf_droppagetree(_pages);
+    if (_pages) {
+        for (int i=0; i < _pageCount; i++) {
+                pdf_droppage(_pages[i]);
+        }
+        free(_pages);
+    }
+
+    if (_pageTree)
+        pdf_droppagetree(_pageTree);
 
     if (_outline)
         pdf_dropoutline(_outline);
@@ -345,7 +426,7 @@ bool PdfEngineFitz::load(const char *fileName)
 #endif
     }
 
-    error = pdf_loadpagetree(&_pages, _xref);
+    error = pdf_loadpagetree(&_pageTree, _xref);
     if (error)
         goto Error;
 
@@ -354,10 +435,30 @@ bool PdfEngineFitz::load(const char *fileName)
     if (error)
         goto Error;
 
-    _pageCount = _pages->count;
+    _pageCount = _pageTree->count;
+    _pages = (pdf_page**)malloc(sizeof(pdf_page) * _pageCount);
+    for (int i = 0; i < _pageCount; i++)
+        _pages[i] = NULL;
     return true;
 Error:
     return false;
+}
+
+pdf_page *PdfEngineFitz::getPdfPage(int pageNo)
+{
+    pdf_page * page;
+    if (!_pages)
+        return NULL;
+    page = _pages[pageNo-1];
+    if (page)
+        return page;
+    // TODO: should check for error from pdf_getpageobject?
+    fz_obj * obj = pdf_getpageobject(_pageTree, pageNo - 1);
+    fz_error * error = pdf_loadpage(&page, _xref, obj);
+    if (error)
+        return NULL;
+    _pages[pageNo-1] = page;
+    return page;
 }
 
 int PdfEngineFitz::pageRotation(int pageNo)
@@ -413,16 +514,6 @@ static void ConvertPixmapForWindows(fz_pixmap *image)
 #endif
 }
 
-static fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
-{
-    fz_matrix ctm;
-    ctm = fz_identity();
-    ctm = fz_concat(ctm, fz_translate(0, -page->mediabox.y1));
-    ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
-    ctm = fz_concat(ctm, fz_rotate(rotate + page->rotate));
-    return ctm;
-}
-
 RenderedBitmap *PdfEngineFitz::renderBitmap(
                            int pageNo, double zoomReal, int rotation,
                            BOOL (*abortCheckCbkA)(void *data),
@@ -431,8 +522,6 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
     fz_error *          error;
     fz_matrix           ctm;
     fz_rect             bbox;
-    fz_obj *            obj;
-    pdf_page *          page;
     fz_pixmap *         image;
 
     if (!_rast) {
@@ -443,10 +532,8 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
 #endif
     }
 
-    // TODO: should check for error from pdf_getpageobject?
-    obj = pdf_getpageobject(_pages, pageNo - 1);
-    error = pdf_loadpage(&page, _xref, obj);
-    if (error)
+    pdf_page * page = getPdfPage(pageNo);
+    if (!page)
         return NULL;
     zoomReal = zoomReal / 100.0;
     ctm = pdfapp_viewctm(page, zoomReal, rotation);
@@ -459,16 +546,47 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
     if (error)
         return NULL;
 
-    pdf_droppage(page);
     ConvertPixmapForWindows(image);
     return new RenderedBitmapFitz(image);
 }
 
+static int getLinkCount(pdf_link *currLink) {
+    if (!currLink)
+        return 0;
+    int count = 1;
+    while (currLink->next) {
+        ++count;
+        currLink = currLink->next;
+    }
+    return count;
+}
+
 int PdfEngineFitz::linkCount(int pageNo) {
-    return 0;
+    pdf_page* page = getPdfPage(pageNo);
+    if (!page)
+        return 0;
+    return getLinkCount(page->links);
+}
+
+static const char *linkToLinkType(pdf_link *link) {
+    switch (link->kind) {
+        case PDF_LGOTO:
+            return LINK_ACTION_GOTO;
+        case PDF_LURI:
+            return LINK_ACTION_URI;
+    }
+    return LINK_ACTION_UNKNOWN;
 }
 
 const char* PdfEngineFitz::linkType(int pageNo, int linkNo) {
-    return NULL;
+    pdf_page* page = getPdfPage(pageNo);
+    pdf_link* currLink = page->links;
+    for (int i = 0; i < linkNo; i++) {
+        assert(currLink);
+        if (!currLink)
+            return NULL;
+        currLink = currLink->next;
+    }
+    return linkToLinkType(currLink);
 }
 

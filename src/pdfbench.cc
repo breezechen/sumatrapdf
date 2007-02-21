@@ -614,82 +614,15 @@ static int DoPDiff(void)
     return gfPDiff;
 }
 
-static Links *GetLinksForPage(PDFDoc *doc, int pageNo)
-{
-    Object obj;
-    Catalog *catalog = doc->getCatalog();
-    Page *page = catalog->getPage(pageNo);
-    Links *links = new Links(page->getAnnots(&obj), catalog->getBaseURI());
-    obj.free();
-    return links;
-}
-
-static const char * GetLinkActionKindName(LinkActionKind kind) {
-    switch (kind) {
-        case (actionGoTo):
-            return "actionGoTo";
-        case actionGoToR:
-            return "actionGoToR";
-        case actionLaunch:
-            return "actionLaunch";
-        case actionURI:
-            return "actionURI";
-        case actionNamed:
-            return "actionNamed";
-        case actionMovie:
-            return "actionMovie";
-        case actionUnknown:
-            return "actionUnknown";
-        default:
-            assert(0);
-            return "unknown action";
-    }
-}
-
-static void DumpLinks(PdfEngine *engine)
+static void DumpLinks(int pageNo, PdfEngine *engine)
 {
     assert(engine);
     if (!engine) return;
-
-    int pageCount = engine->pageCount();
-    for (int pageNo = 1; pageNo < pageCount; ++pageNo) {
-        int linkCount = engine->linkCount(pageNo);
-        for (int linkNo = 0; linkNo < linkCount; ++linkNo) {
-
-        }
+    int linkCount = engine->linkCount(pageNo);
+    for (int linkNo = 0; linkNo < linkCount; ++linkNo) {
+        const char *linkType = engine->linkType(pageNo, linkNo);
+        LogInfo("Link: page %d, type=%s\n", pageNo, linkType);
     }
-
-#if 0
-    Links *     links = NULL;
-    int         pagesCount, linkCount;
-    Link *      link;
-
-    if (!doc)
-        return;
-
-    pagesCount = engine->pageCount();
-    for (int pageNo = 1; pageNo < pagesCount; ++pageNo) {
-        delete links;
-        links = GetLinksForPage(doc, pageNo);
-        if (!links)
-            continue;
-        linkCount = links->getNumLinks();
-        for (int i=0; i<linkCount; i++) {
-            link = links->getLink(i);
-            LinkAction *    action = link->getAction();
-            LinkActionKind  actionKind = action->getKind();
-            LogInfo("Link: page %d, type=%d (%s)\n", pageNo, actionKind, GetLinkActionKindName(actionKind));
-#if 0 /* TODO: maybe print the uri (and more) ? */
-            if (actionURI == actionKind) {
-                LinkURI *   linkUri;
-                linkUri = (LinkURI*)action;
-                DBG_OUT("   uri=%s\n", linkUri->getURI()->getCString());
-            }
-#endif
-        }
-    }
-    delete links;
-#endif
 }
 
 static void renderPdfAsText(const char *fileName)
@@ -887,7 +820,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
                 else
                     LogInfo("page fitz   %d (%dx%d): %.2f ms\n", curPage, bmpFitz->dx(), bmpFitz->dy(), timeInMs);
             if (gfLinks)
-                DumpLinks(engineFitz);
+                DumpLinks(curPage, engineFitz);
         }
 
         if (fileNameSplash) {
@@ -901,7 +834,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
                 else
                     LogInfo("page splash %d (%dx%d): %.2f ms\n", curPage, bmpSplash->dx(), bmpSplash->dy(), timeInMs);
             if (gfLinks)
-                DumpLinks(engineSplash);
+                DumpLinks(curPage, engineSplash);
         }
 
         if (ShowPreview()) {
