@@ -5,6 +5,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_XFREE86_H
 
 static char *basefontnames[14][7] =
 {
@@ -44,21 +45,17 @@ enum { UNKNOWN, TYPE1, TRUETYPE, CID };
 
 static int ftkind(FT_Face face)
 {
-#ifdef WIN32
-    return TRUETYPE;
-#else
     const char *kind = FT_Get_X11_Font_Format(face);
     pdf_logfont("ft font format %s\n", kind);
     if (!strcmp(kind, "TrueType"))
-	return TRUETYPE;
+        return TRUETYPE;
     if (!strcmp(kind, "Type 1"))
-	return TYPE1;
+        return TYPE1;
     if (!strcmp(kind, "CFF"))
-	return TYPE1;
+        return TYPE1;
     if (!strcmp(kind, "CID Type 1"))
-	return TYPE1;
+        return TYPE1;
     return UNKNOWN;
-#endif
 }
 
 static inline int ftcidtogid(pdf_font *font, int cid)
