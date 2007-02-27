@@ -9,6 +9,7 @@ typedef struct pdf_outline_s pdf_outline;
 
 typedef enum pdf_linkkind_e
 {
+    PDF_LUNKNOWN,
 	PDF_LGOTO,
 	PDF_LURI
 } pdf_linkkind;
@@ -56,7 +57,7 @@ struct pdf_outline_s
 fz_error *pdf_loadnametree(fz_obj **dictp, pdf_xref *xref, fz_obj *root);
 fz_error *pdf_loadnametrees(pdf_xref *xref);
 
-fz_error *pdf_newlink(pdf_link**, fz_rect rect, fz_obj *dest);
+fz_error *pdf_newlink(pdf_link**, fz_rect rect, fz_obj *dest, pdf_linkkind kind);
 fz_error *pdf_loadlink(pdf_link **linkp, pdf_xref *xref, fz_obj *dict);
 void pdf_droplink(pdf_link *link);
 

@@ -587,12 +587,12 @@ pdf_createfontlistMS()
 			if (szFile[strlen(szFile)-1] == 'c' || szFile[strlen(szFile)-1] == 'C')
 			{
 				err = parseTTCs(szFile);
-                // ignore errors parsing a given font file
+                // ignore error parsing a given font file
 			}
 			else if (szFile[strlen(szFile)-1] == 'f'|| szFile[strlen(szFile)-1] == 'F')
 			{
 				err = parseTTFs(szFile);
-                // ignore errors parsing a given font file
+                // ignore error parsing a given font file
 			}
 		}
 

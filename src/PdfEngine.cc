@@ -367,6 +367,7 @@ PdfEngineFitz::~PdfEngineFitz()
 {
     if (_pages) {
         for (int i=0; i < _pageCount; i++) {
+            if (_pages[i])
                 pdf_droppage(_pages[i]);
         }
         free(_pages);

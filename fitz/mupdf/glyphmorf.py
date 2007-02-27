@@ -1,4 +1,7 @@
-# python
+#!/usr/bin/env python
+#
+# Dump the output of this script into pdf_fontagl.c
+#
 
 import sys
 
