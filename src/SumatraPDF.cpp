@@ -239,13 +239,13 @@ void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
 /* TODO: this might take some time, would be good to show a dialog to let the
    user know he has to wait until we finish */
 void CancelRenderingForDisplayModel(DisplayModel *dm) {
-    BOOL renderingFinished = FALSE;
 
     DBG_OUT("CancelRenderingForDisplayModel()\n");
+    bool renderingFinished = false;;
     for (;;) {
         LockCache();
         if (!gCurPageRenderReq || (gCurPageRenderReq->dm != dm))
-            renderingFinished = TRUE;
+            renderingFinished = true;
         else
             gCurPageRenderReq->abort = TRUE;
         UnlockCache();
@@ -1044,12 +1044,10 @@ static void WindowInfo_DoubleBuffer_Show(WindowInfo *win, HDC hdc)
 
 static void WindowInfo_Delete(WindowInfo *win)
 {
-    LockCache();
-    if (gCurPageRenderReq && (gCurPageRenderReq->dm == win->dm)) {
-        /* TODO: should somehow wait for for the page to finish rendering */
-        gCurPageRenderReq->abort = TRUE;
+    if (win->dm) {
+        RenderQueue_RemoveForDisplayModel(win->dm);
+        CancelRenderingForDisplayModel(win->dm);
     }
-    UnlockCache();
     delete win->dm;
     win->dm = NULL;
     WindowInfo_Dib_Deinit(win);
@@ -1372,7 +1370,7 @@ void IntelligentWindowResize(WindowInfo *win)
     WindowInfo_ResizeToWindow(win);
 }
 
-static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL ignoreHistorySizePos = TRUE, BOOL ignoreHistory = FALSE)
+static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = true, bool ignoreHistory = false)
 {
     assert(fileName);
     if (!fileName) return NULL;
@@ -1869,7 +1867,7 @@ static void OnDropFiles(WindowInfo *win, HDROP hDrop)
     for (i = 0; i < files_count; i++)
     {
         DragQueryFile(hDrop, i, filename, MAX_PATH);
-        LoadPdf(filename, TRUE);
+        LoadPdf(filename);
     }
     DragFinish(hDrop);
 
@@ -2653,17 +2651,15 @@ static void OnMenuExit(void)
    Closes the window unless this is the last window in which
    case it switches to empty window and disables the "File\Close"
    menu item. */
-static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
+static void CloseWindow(WindowInfo *win, bool quitIfLast)
 {
-    BOOL    lastWindow = FALSE;
-    HWND    hwndToDestroy;
-
     assert(win);
     if (!win)
         return;
 
+    bool lastWindow = false;
     if (1 == WindowInfoList_Len())
-        lastWindow = TRUE;
+        lastWindow = true;
 
     if (lastWindow)
         Prefs_Save();
@@ -2678,7 +2674,7 @@ static void CloseWindow(WindowInfo *win, BOOL quitIfLast)
         win->dm = NULL;
         WindowInfo_RedrawAll(win);
     } else {
-        hwndToDestroy = win->hwndFrame;
+        HWND hwndToDestroy = win->hwndFrame;
         WindowInfoList_Remove(win);
         WindowInfo_Delete(win);
         DragAcceptFiles(hwndToDestroy, FALSE);
@@ -2736,6 +2732,8 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int from
         return;
 
     // rendering for the same DisplayModel is not thread-safe
+    // TODO: in fitz, propably rendering anything might not be thread-safe
+    RenderQueue_RemoveForDisplayModel(dm);
     CancelRenderingForDisplayModel(dm);
 
     // print all the pages the user requested unless
@@ -2867,7 +2865,7 @@ static void OnMenuOpen(WindowInfo *win)
     if (FALSE == GetOpenFileName(&ofn))
         return;
 
-    win = LoadPdf(fileName, TRUE);
+    win = LoadPdf(fileName);
     if (!win)
         return;
 }
@@ -3163,27 +3161,47 @@ static void OnMenuViewRotateRight(WindowInfo *win)
     RotateRight(win);
 }
 
-static BOOL IsCtrlLeftPressed(void)
+static bool IsKeyPressed(int virtKey)
 {
-    int state = GetKeyState(VK_LCONTROL);
+    int state = GetAsyncKeyState(virtKey);
     if (0 != state)
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-static BOOL  IsCtrlRightPressed(void)
+static bool IsLeftCtrlPressed(void)
 {
-    int state = GetKeyState(VK_RCONTROL);
-    if (0 != state)
-        return TRUE;
-    return FALSE;
+    return IsKeyPressed(VK_LCONTROL);
 }
 
-static BOOL  IsCtrlPressed(void)
+static bool IsRightCtrlPressed(void)
 {
-    if (IsCtrlLeftPressed() || IsCtrlRightPressed())
-        return TRUE;
-    return FALSE;
+    return IsKeyPressed(VK_RCONTROL);
+}
+
+static bool IsCtrlPressed(void)
+{
+    return IsLeftCtrlPressed() || IsRightCtrlPressed();
+}
+
+static bool IsLeftShiftPressed(void)
+{
+    return IsKeyPressed(VK_LSHIFT);
+}
+
+static bool IsRightShiftPressed(void)
+{
+    return IsKeyPressed(VK_RSHIFT);
+}
+
+static bool IsShiftPressed(void)
+{
+    return IsLeftShiftPressed() || IsRightShiftPressed();
+}
+
+static bool IsShiftCtrlPressed()
+{
+    return IsShiftPressed() && IsCtrlPressed();
 }
 
 static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
@@ -3214,8 +3232,33 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
     } else if (VK_END == key) {
         win->dm->goToLastPage();    
     } else if (('g' == key) || ('G' == key)) {
-        if (IsCtrlLeftPressed())
+        if (IsCtrlPressed())
             OnMenuGoToPage(win);
+    } else if ('+' == key) {
+        // TODO: ensure it's rotating in the right direction
+        // Emulate acrobat: "Shift Ctrl +" is rotate clockwise
+        if (IsShiftCtrlPressed())
+            RotateLeft(win);
+    } else if ('-' == key) {
+        // Emulate acrobat: "Shift Ctrl -" is rotate counter-clockwise
+        if (IsShiftCtrlPressed())
+            RotateRight(win);
+    } 
+}
+
+static void ReloadPdfDocument(WindowInfo *win)
+{
+    if (WS_SHOWING_PDF != win->state)
+        return;
+    // TODO: write me
+    // check the name of the current file and reload it
+    const char *fileName = NULL;
+    if (win->dm)
+        fileName = (const char*)str_dup(win->dm->fileName());
+    CloseWindow(win, false);
+    if (fileName) {
+        LoadPdf(fileName);
+        free((void*)fileName);
     }
 }
 
@@ -3246,13 +3289,21 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('q' == key) {
         DestroyWindow(win->hwndFrame);
     } else if ('+' == key) {
-        win->dm->zoomBy(ZOOM_IN_FACTOR);
+        // Emulate acrobat: <Shift Ctrl +> is rotate clockwise
+        bool shiftCtrlPressed = IsShiftCtrlPressed();
+        if (shiftCtrlPressed)
+            RotateLeft(win);
+        else
+            win->dm->zoomBy(ZOOM_IN_FACTOR);
     } else if ('-' == key) {
-        win->dm->zoomBy(ZOOM_OUT_FACTOR);
-    } else if ('l' == key) {
-        RotateLeft(win);
+        // Emulate acrobat: <Shift Ctrl -> is rotate counter-clockwise
+        bool shiftCtrlPressed = IsShiftCtrlPressed();
+        if (shiftCtrlPressed)
+            RotateRight(win);
+        else
+            win->dm->zoomBy(ZOOM_OUT_FACTOR);
     } else if ('r' == key) {
-        RotateRight(win);
+        ReloadPdfDocument(win);
     }
 }
 
@@ -3600,7 +3651,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
             fileName = RecentFileNameFromMenuItemId(wmId);
             if (fileName) {
-                LoadPdf(fileName, TRUE);
+                LoadPdf(fileName);
                 free((void*)fileName);
                 break;
             }
@@ -4246,12 +4297,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     CreatePageRenderThread();
     /* remaining arguments are names of PDF files */
     if (NULL != gBenchFileName) {
-            win = LoadPdf(gBenchFileName, FALSE);
+            win = LoadPdf(gBenchFileName);
             if (win)
                 ++pdfOpened;
     } else {
         while (currArg) {
-            win = LoadPdf(currArg->str, FALSE);
+            win = LoadPdf(currArg->str);
             if (!win || !win->dm)
                 goto Exit;
 
@@ -4277,7 +4328,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
         currFile = gFileHistoryRoot;
         while (currFile) {
             if (currFile->state.visible) {
-                win = LoadPdf(currFile->state.filePath, TRUE, FALSE);
+                win = LoadPdf(currFile->state.filePath, false);
                 if (win)
                     ++pdfOpened;
             }
