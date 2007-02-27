@@ -103,6 +103,7 @@ static BOOL             gDebugShowLinks = FALSE;
 #define PRINT_TO_ARG_TXT          "-print-to"
 #define NO_REGISTER_EXT_ARG_TXT   "-no-register-ext"
 #define EXIT_ON_PRINT_ARG_TXT     "-exit-on-print"
+#define ENUM_PRINTERS_ARG_TXT     "-enum-printers"
 
 /* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_WIN_DX 612
@@ -3255,39 +3256,46 @@ static void OnChar(WindowInfo *win, int key)
     }
 }
 
-static inline BOOL IsDontRegisterExtArg(char *txt)
+static inline bool IsEnumPrintersArg(const char *txt)
+{
+    if (str_ieq(txt, ENUM_PRINTERS_ARG_TXT))
+        return true;
+    return false;
+}
+
+static inline bool IsDontRegisterExtArg(const char *txt)
 {
     if (str_ieq(txt, NO_REGISTER_EXT_ARG_TXT))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-static inline BOOL IsPrintToArg(char *txt)
+static inline bool IsPrintToArg(const char *txt)
 {
     if (str_ieq(txt, PRINT_TO_ARG_TXT))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-static inline BOOL IsExitOnPrintArg(char *txt)
+static inline bool IsExitOnPrintArg(const char *txt)
 {
     if (str_ieq(txt, EXIT_ON_PRINT_ARG_TXT))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-static inline BOOL IsBenchArg(char *txt)
+static inline bool IsBenchArg(const char *txt)
 {
     if (str_ieq(txt, BENCH_ARG_TXT))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
-static BOOL IsBenchMode(void)
+static bool IsBenchMode(void)
 {
     if (NULL != gBenchFileName)
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 
 /* Find a file in a file history list that has a given 'menuId'.
@@ -4108,6 +4116,38 @@ Exit:
     DeleteDC(hdcPrint);
 }
 
+static void EnumeratePrinters()
+{
+    PRINTER_INFO_5 *info5Arr = NULL;
+    DWORD bufSize = 0, printersCount;
+    BOOL fOk = EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 
+        5, (LPBYTE)info5Arr, bufSize, &bufSize, &printersCount);
+    if (!fOk) {
+        info5Arr = (PRINTER_INFO_5*)malloc(bufSize);
+        fOk = EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 
+        5, (LPBYTE)info5Arr, bufSize, &bufSize, &printersCount);
+    }
+    assert(fOk);
+    if (!fOk) return;
+    printf("Printers: %d\n", printersCount);
+    for (DWORD i=0; i < printersCount; i++) {
+        const char *printerName = info5Arr[i].pPrinterName;
+        const char *printerPort = info5Arr[i].pPortName;
+        bool fDefault = false;
+        if (info5Arr[i].Attributes & PRINTER_ATTRIBUTE_DEFAULT)
+            fDefault = true;
+        printf("Name: %s, port: %s, default: %d\n", printerName, printerPort, (int)fDefault);
+    }
+    TCHAR buf[512];
+    bufSize = sizeof(buf);
+    fOk = GetDefaultPrinter(buf, &bufSize);
+    if (!fOk) {
+        if (ERROR_FILE_NOT_FOUND == GetLastError())
+            printf("No default printer\n");
+    }
+    free(info5Arr);
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *           argListRoot;
@@ -4143,6 +4183,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     currArg = argListRoot->next;
     char *printerName = NULL;
     while (currArg) {
+        if (IsEnumPrintersArg(currArg->str)) {
+            EnumeratePrinters();
+            /* this is for testing only, exit immediately */
+            goto Exit;
+        }
+
         if (IsDontRegisterExtArg(currArg->str)) {
             registerForPdfExtentions = false;
             currArg = currArg->next;
@@ -4274,7 +4320,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 Exit:
     WindowInfoList_DeleteAll();
-    FileHistoryList_Free(&gFileHistoryRoot);
+        FileHistoryList_Free(&gFileHistoryRoot);
     CaptionPens_Destroy();
     DeleteObject(gBrushBg);
     DeleteObject(gBrushWhite);
