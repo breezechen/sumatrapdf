@@ -10,16 +10,11 @@
 #include "AppPrefs.h"
 #include "DisplayModelSplash.h"
 
-#include "ErrorCodes.h"
-#include "GooString.h"
-#include "GooList.h"
-#include "GlobalParams.h"
-#include "SplashBitmap.h"
+/* TODO: this and StandardSecurityHandler::getAuthData() and new GlobalParams
+   should be moved to another file (PopplerInit(), PopplerDeinit() */
 #include "PDFDoc.h"
-#include "Object.h" /* must be included before SplashOutputDev.h because of sloppiness in SplashOutputDev.h */
-#include "SplashOutputDev.h"
-#include "Link.h"
 #include "SecurityHandler.h"
+#include "GlobalParams.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -80,6 +75,9 @@ static BOOL             gDebugShowLinks = FALSE;
 #define WM_VSCROLL_HANDLED 0
 #define WM_HSCROLL_HANDLED 0
 
+#define ABOUT_WIN_DX 440
+#define ABOUT_WIN_DY 300
+
 #define WM_APP_MSG_REFRESH (WM_APP + 2)
 
 /* A caption is 4 white/blue 2 pixel line and a 3 pixel white line */
@@ -92,13 +90,14 @@ static BOOL             gDebugShowLinks = FALSE;
 //#define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 #define COL_WINDOW_SHADOW RGB(0x40, 0x40, 0x40)
 
-#define FRAME_CLASS_NAME   _T("SUMATRA_PDF_FRAME")
-#define CANVAS_CLASS_NAME  _T("SUMATRA_PDF_CANVAS")
-#define APP_NAME        _T("SumatraPDF")
-#define PDF_DOC_NAME    _T("Adobe PDF Document")
-
-#define PREFS_FILE_NAME _T("sumatrapdfprefs.txt")
-#define APP_SUB_DIR     _T("SumatraPDF")
+#define FRAME_CLASS_NAME    _T("SUMATRA_PDF_FRAME")
+#define CANVAS_CLASS_NAME   _T("SUMATRA_PDF_CANVAS")
+#define ABOUT_CLASS_NAME    _T("SUMATRA_PDF_ABOUT")
+#define APP_NAME            _T("SumatraPDF")
+#define PDF_DOC_NAME        _T("Adobe PDF Document")
+#define ABOUT_WIN_TITLE     _T("About SumatraPDF")
+#define PREFS_FILE_NAME     _T("sumatrapdfprefs.txt")
+#define APP_SUB_DIR         _T("SumatraPDF")
 
 #define BENCH_ARG_TXT             "-bench"
 #define PRINT_TO_ARG_TXT          "-print-to"
@@ -129,12 +128,6 @@ typedef struct StrList {
 } StrList;
 
 static FileHistoryList *            gFileHistoryRoot = NULL;
-
-static SplashColor                  splashColRed;
-static SplashColor                  splashColGreen;
-static SplashColor                  splashColBlue;
-static SplashColor                  splashColWhite;
-static SplashColor                  splashColBlack;
 
 static HINSTANCE                    ghinst = NULL;
 TCHAR                               windowTitle[MAX_LOADSTRING];
@@ -178,6 +171,7 @@ static PageRenderRequest *          gCurPageRenderReq = NULL;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
+static bool                         gfShowingAbout = false;
 
 typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
@@ -1092,7 +1086,7 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame)
         goto Error;
 
 #if START_WITH_ABOUT
-    win->state = WS_ABOUT_ANIM;
+    win->state = WS_ABOUT;
 #else
     win->state = WS_EMPTY;
 #endif
@@ -1382,11 +1376,11 @@ static WindowInfo* LoadPdf(const TCHAR *fileName, BOOL closeInvalidFiles, BOOL i
     assert(fileName);
     if (!fileName) return NULL;
 
-    WindowInfo *        win;
     FileHistoryList *   fileFromHistory = NULL;
     if (!ignoreHistory)
         fileFromHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
 
+    WindowInfo *        win;
     bool reuseExistingWindow = false;
     if ((1 == WindowInfoList_Len()) && (WS_SHOWING_PDF != gWindowList->state)) {
         win = gWindowList;
@@ -2116,7 +2110,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta v0.4"
+#define BETA_TXT                "Beta v0.5"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"
@@ -2192,27 +2186,15 @@ static const char *AboutGetLink(WindowInfo *win, int x, int y)
     return NULL;
 }
 
-static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+static void DrawAbout(HWND hwnd, HDC hdc, PAINTSTRUCT *ps)
 {
-    AnimState *     state = &(win->animState);
-    DString         str;
-    RECT            rc;
     RECT            rcTmp;
-    HFONT           origFont = NULL;
-    HFONT           fontSumatraTxt = NULL;
-    HFONT           fontBetaTxt = NULL;
-    HFONT           fontLeftTxt = NULL;
-    HFONT           fontRightTxt = NULL;
-    int             i;
     SIZE            txtSize;
-    const char *    txt;
     int             totalDx, totalDy;
     int             leftDy, rightDy;
     int             leftLargestDx, rightLargestDx;
     int             sumatraPdfTxtDx, sumatraPdfTxtDy;
     int             betaTxtDx, betaTxtDy;
-    HBRUSH          brushBg = NULL, brushRectBg = NULL;
-    HPEN            penRectBorder = NULL, penBorder = NULL, penDivideLine = NULL;
     int             linePosX, linePosY, lineDy;
     int             currY;
     int             fontDyDiff;
@@ -2220,31 +2202,33 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     int             x, y;
     int             boxDy;
 
-    brushBg = CreateSolidBrush(ABOUT_BG_COLOR);
-    brushRectBg = CreateSolidBrush(ABOUT_RECT_BG_COLOR);
-
-    penRectBorder = CreatePen(PS_SOLID, ABOUT_RECT_BORDER_DX_DY, COL_BLACK);
-    penBorder = CreatePen(PS_SOLID, ABOUT_LINE_OUTER_SIZE, COL_BLACK);
-    penDivideLine = CreatePen(PS_SOLID, ABOUT_LINE_SEP_SIZE, COL_BLACK);
-
-    GetClientRect(win->hwndCanvas, &rc);
-
+    DString         str;
     DStringInit(&str);
+
+    HBRUSH brushBg = CreateSolidBrush(ABOUT_BG_COLOR);
+    HBRUSH brushRectBg = CreateSolidBrush(ABOUT_RECT_BG_COLOR);
+
+    HPEN penRectBorder = CreatePen(PS_SOLID, ABOUT_RECT_BORDER_DX_DY, COL_BLACK);
+    HPEN penBorder = CreatePen(PS_SOLID, ABOUT_LINE_OUTER_SIZE, COL_BLACK);
+    HPEN penDivideLine = CreatePen(PS_SOLID, ABOUT_LINE_SEP_SIZE, COL_BLACK);
+
+    RECT rc;
+    GetClientRect(hwnd, &rc);
 
     int areaDx = rect_dx(&rc);
     int areaDy = rect_dy(&rc);
 
-    fontSumatraTxt = Win32_Font_GetSimple(hdc, SUMATRA_TXT_FONT, SUMATRA_TXT_FONT_SIZE);
-    fontBetaTxt = Win32_Font_GetSimple(hdc, BETA_TXT_FONT, BETA_TXT_FONT_SIZE);
-    fontLeftTxt = Win32_Font_GetSimple(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE);
-    fontRightTxt = Win32_Font_GetSimple(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE);
+    HFONT fontSumatraTxt = Win32_Font_GetSimple(hdc, SUMATRA_TXT_FONT, SUMATRA_TXT_FONT_SIZE);
+    HFONT fontBetaTxt = Win32_Font_GetSimple(hdc, BETA_TXT_FONT, BETA_TXT_FONT_SIZE);
+    HFONT fontLeftTxt = Win32_Font_GetSimple(hdc, LEFT_TXT_FONT, LEFT_TXT_FONT_SIZE);
+    HFONT fontRightTxt = Win32_Font_GetSimple(hdc, RIGHT_TXT_FONT, RIGHT_TXT_FONT_SIZE);
 
-    origFont = (HFONT)SelectObject(hdc, fontSumatraTxt); /* Just to remember the orig font */
+    HFONT origFont = (HFONT)SelectObject(hdc, fontSumatraTxt); /* Just to remember the orig font */
 
     SetBkMode(hdc, TRANSPARENT);
 
     /* Layout stuff */
-    txt = SUMATRA_TXT;
+    const char *txt = SUMATRA_TXT;
     GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
     sumatraPdfTxtDx = txtSize.cx;
     sumatraPdfTxtDy = txtSize.cy;
@@ -2258,7 +2242,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     (HFONT)SelectObject(hdc, fontLeftTxt);
     leftLargestDx = 0;
     leftDy = 0;
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+    for (int i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
         txt = gAboutLayoutInfo[i].leftTxt;
         GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
         gAboutLayoutInfo[i].leftTxtDx = (int)txtSize.cx;
@@ -2274,7 +2258,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     (HFONT)SelectObject(hdc, fontRightTxt);
     rightLargestDx = 0;
     rightDy = 0;
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+    for (int i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
         txt = gAboutLayoutInfo[i].rightTxt;
         GetTextExtentPoint32(hdc, txt, strlen(txt), &txtSize);
         gAboutLayoutInfo[i].rightTxtDx = (int)txtSize.cx;
@@ -2341,7 +2325,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     /* render text on the left*/
     currY = linePosY;
     (HFONT)SelectObject(hdc, fontLeftTxt);
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+    for (int i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
         txt = gAboutLayoutInfo[i].leftTxt;
         x = linePosX + offX - ABOUT_LEFT_RIGHT_SPACE_DX - gAboutLayoutInfo[i].leftTxtDx;
         y = currY + fontDyDiff + offY;
@@ -2354,7 +2338,7 @@ static void DrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     /* render text on the rigth */
     currY = linePosY;
     (HFONT)SelectObject(hdc, fontRightTxt);
-    for (i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
+    for (int i = 0; gAboutLayoutInfo[i].leftTxt != NULL; i++) {
         txt = gAboutLayoutInfo[i].rightTxt;
         x = linePosX + offX + ABOUT_LEFT_RIGHT_SPACE_DX;
         y = currY + offY;
@@ -2416,7 +2400,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
             SetCursor(LoadCursor(NULL, IDC_HAND));
             DBG_OUT(" dragging start, x=%d, y=%d\n", x, y);
         }
-    } else if (WS_ABOUT_ANIM == win->state) {
+    } else if (WS_ABOUT == win->state) {
         win->url = AboutGetLink(win, x, y);
     }
 }
@@ -2436,7 +2420,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
     assert(win);
     if (!win) return;
 
-    if (WS_ABOUT_ANIM == win->state) {
+    if (WS_ABOUT == win->state) {
         url = AboutGetLink(win, x, y);
         if (url == win->url)
             LaunchBrowser(url);
@@ -2502,7 +2486,7 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         } else {
             SetCursor(LoadCursor(NULL, IDC_ARROW));
         }
-    } else if (WS_ABOUT_ANIM == win->state) {
+    } else if (WS_ABOUT == win->state) {
         url = AboutGetLink(win, x, y);
         if (url) {
             SetCursor(LoadCursor(NULL, IDC_HAND));
@@ -2616,26 +2600,28 @@ static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
     WindowInfo_DoubleBuffer_New(win);
 }
 
-static void OnPaintDrawAnim(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
+static void OnPaintAbout(HWND hwnd)
 {
-    WindowInfo_DoubleBuffer_Resize_IfNeeded(win);
-    DrawAnim(win, win->hdcToDraw, ps);
-    WindowInfo_DoubleBuffer_Show(win, hdc);
+    PAINTSTRUCT ps;
+    HDC hdc = BeginPaint(hwnd, &ps);
+    SetBkMode(hdc, TRANSPARENT);
+    DrawAbout(hwnd, hdc, &ps);
+    EndPaint(hwnd, &ps);
 }
 
 static void OnPaint(WindowInfo *win)
 {
-    HDC         hdc;
     PAINTSTRUCT ps;
-    RECT        rc;
-
-    hdc = BeginPaint(win->hwndCanvas, &ps);
+    HDC hdc = BeginPaint(win->hwndCanvas, &ps);
 
     SetBkMode(hdc, TRANSPARENT);
+    RECT rc;
     GetClientRect(win->hwndCanvas, &rc);
 
-    if (WS_ABOUT_ANIM == win->state) {
-        OnPaintDrawAnim(win, hdc, &ps);
+    if (WS_ABOUT == win->state) {
+        WindowInfo_DoubleBuffer_Resize_IfNeeded(win);
+        DrawAbout(win->hwndCanvas, win->hdcToDraw, &ps);
+        WindowInfo_DoubleBuffer_Show(win, hdc);
     } else if (WS_EMPTY == win->state) {
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "No PDF file opened. Open a new PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
@@ -3328,16 +3314,19 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
 #define FRAMES_PER_SECS 60
 #define ANIM_FREQ_IN_MS  1000 / FRAMES_PER_SECS
 
-static void OnMenuAbout(WindowInfo *win)
+static void OnMenuAbout()
 {
-    if (WS_ABOUT_ANIM != win->state) {
-        win->prevState = win->state;
-        win->state = WS_ABOUT_ANIM;
-        AnimState_AnimStart(&(win->animState), win->hwndCanvas, ANIM_FREQ_IN_MS);
-    } else {
-        AnimState_AnimStop(&(win->animState));
-        win->state = win->prevState;
-    }
+    if (gfShowingAbout) return;
+    HWND hwndAbout = CreateWindow(
+            ABOUT_CLASS_NAME, ABOUT_WIN_TITLE,
+            WS_OVERLAPPEDWINDOW,
+            CW_USEDEFAULT, CW_USEDEFAULT,
+            ABOUT_WIN_DX, ABOUT_WIN_DY,
+            NULL, NULL,
+            ghinst, NULL);
+    if (!hwndAbout)
+        return;
+    ShowWindow(hwndAbout, SW_SHOW);
 }
 
 BOOL PrivateIsAppThemed()
@@ -3346,7 +3335,7 @@ BOOL PrivateIsAppThemed()
     HMODULE hDll = LoadLibrary("uxtheme.dll");
     if (!hDll) return FALSE;
 
-    FARPROC fp = GetProcAddress(hDll,"IsAppThemed");
+    FARPROC fp = GetProcAddress(hDll, "IsAppThemed");
     if (fp)
         isThemed = fp();
 
@@ -3463,6 +3452,34 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     GetWindowRect(win->hwndReBar, &rc);
     gReBarDy = rc.bottom - rc.top;
     gReBarDyFrame = bIsAppThemed ? 0 : 2;
+}
+
+static LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        case WM_CREATE:
+            assert(!gfShowingAbout);
+            gfShowingAbout = true;
+            break;
+
+        case WM_ERASEBKGND:
+            // do nothing, helps to avoid flicker
+            return TRUE;
+
+        case WM_PAINT:
+            OnPaintAbout(hwnd);
+            break;
+
+        case WM_DESTROY:
+            assert(gfShowingAbout);
+            gfShowingAbout = false;
+            break;
+
+        default:
+            return DefWindowProc(hwnd, message, wParam, lParam);
+    }
+    return 0;
 }
 
 /* TODO: gAccumDelta must be per WindowInfo */
@@ -3693,13 +3710,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                 case IDM_VISIT_WEBSITE:
                     LaunchBrowser(_T("http://blog.kowalczyk.info/software/sumatrapdf/"));
                     break;
-#if 0
                 case IDM_ABOUT:
-                    assert(win);
-                    if (win)
-                        OnMenuAbout(win);
+                    OnMenuAbout();
                     break;
-#endif
                 default:
                     return DefWindowProc(hwnd, message, wParam, lParam);
             }
@@ -3781,8 +3794,7 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     WNDCLASSEX  wcex;
     ATOM        atom;
 
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
+    wcex.cbSize         = sizeof(WNDCLASSEX);
     wcex.style          = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc    = WndProcFrame;
     wcex.cbClsExtra     = 0;
@@ -3794,11 +3806,11 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_SUMATRAPDF);
     wcex.lpszClassName  = FRAME_CLASS_NAME;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
     atom = RegisterClassEx(&wcex);
     if (!atom)
         return FALSE;
 
+    wcex.cbSize         = sizeof(WNDCLASSEX);
     wcex.style          = CS_HREDRAW | CS_VREDRAW;
     wcex.lpfnWndProc    = WndProcCanvas;
     wcex.cbClsExtra     = 0;
@@ -3810,12 +3822,27 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.lpszMenuName   = NULL;
     wcex.lpszClassName  = CANVAS_CLASS_NAME;
     wcex.hIconSm        = 0;
-
     atom = RegisterClassEx(&wcex);
-    if (atom)
-        return TRUE;
+    if (!atom)
+        return FALSE;
 
-    return FALSE;
+    wcex.cbSize         = sizeof(WNDCLASSEX);
+    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc    = WndProcAbout;
+    wcex.cbClsExtra     = 0;
+    wcex.cbWndExtra     = 0;
+    wcex.hInstance      = hInstance;
+    wcex.hIcon          = 0;
+    wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
+    wcex.hbrBackground  = NULL;
+    wcex.lpszMenuName   = NULL;
+    wcex.lpszClassName  = ABOUT_CLASS_NAME;
+    wcex.hIconSm        = 0;
+    atom = RegisterClassEx(&wcex);
+    if (!atom)
+        return FALSE;
+
+    return TRUE;
 }
 
 static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)

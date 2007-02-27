@@ -94,9 +94,7 @@ BEGIN
     POPUP "&Help"
     BEGIN
         MENUITEM "&Visit website",              IDM_VISIT_WEBSITE
-#if 0
-        MENUITEM "&About ...",                  IDM_ABOUT
-#endif
+        MENUITEM "&About",                      IDM_ABOUT
     END
 END
 
