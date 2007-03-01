@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)poppler&quot;;&quot;$(ProjectDir)poppler\goo&quot;;&quot;$(ProjectDir)poppler\poppler&quot;;&quot;$(ProjectDir)poppler\splash&quot;;&quot;$(ProjectDir)ext\freetype230\include&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)fitz\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)poppler&quot;;&quot;$(ProjectDir)poppler\goo&quot;;&quot;$(ProjectDir)poppler\poppler&quot;;&quot;$(ProjectDir)poppler\splash&quot;;&quot;$(ProjectDir)ext\freetype231\include&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)fitz\include&quot;"
 				PreprocessorDefinitions="_WIN32;WIN32;_DEBUG;_WINDOWS;DEBUG;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1;ENABLE_LIBJPEG=1"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -67,9 +67,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype230MT_D.lib  zlib_ds.lib jpeg_ds.lib"
+				AdditionalDependencies="freetype231mt_d.lib  zlib_ds.lib jpeg_ds.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(ProjectDir)\ext\jpeg&quot;;&quot;$(ProjectDir)\ext\zlib&quot;;&quot;$(ProjectDir)\ext\freetype230&quot;"
+				AdditionalLibraryDirectories="&quot;$(ProjectDir)\ext\jpeg&quot;;&quot;$(ProjectDir)\ext\zlib&quot;;&quot;$(ProjectDir)\ext\freetype231&quot;"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -131,7 +131,7 @@
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)poppler&quot;;&quot;$(ProjectDir)poppler\goo&quot;;&quot;$(ProjectDir)poppler\poppler&quot;;&quot;$(ProjectDir)poppler\splash&quot;;&quot;$(ProjectDir)ext\freetype230\include&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)fitz\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)poppler&quot;;&quot;$(ProjectDir)poppler\goo&quot;;&quot;$(ProjectDir)poppler\poppler&quot;;&quot;$(ProjectDir)poppler\splash&quot;;&quot;$(ProjectDir)ext\freetype231\include&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)fitz\include&quot;"
 				PreprocessorDefinitions="_WIN32;WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1;ENABLE_LIBJPEG=1"
 				ExceptionHandling="0"
 				RuntimeLibrary="0"
@@ -155,9 +155,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype230MT.lib zlib_s.lib jpeg_s.lib"
+				AdditionalDependencies="freetype231mt.lib zlib_s.lib jpeg_s.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(ProjectDir)\ext\jpeg&quot;;&quot;$(ProjectDir)\ext\zlib&quot;;&quot;$(ProjectDir)\ext\freetype230&quot;"
+				AdditionalLibraryDirectories="&quot;$(ProjectDir)\ext\jpeg&quot;;&quot;$(ProjectDir)\ext\zlib&quot;;&quot;$(ProjectDir)\ext\freetype231&quot;"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="1"
