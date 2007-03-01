@@ -295,7 +295,9 @@ pdf_repairxref(pdf_xref *xref, char *filename)
 	return nil;
 
 cleanup:
+	assert(1 == file->refs);
 	fz_dropstream(file);
+	xref->file = NULL;
 	fz_free(list);
 	return error;
 }
