@@ -10,7 +10,7 @@ DisplayModelFitz::~DisplayModelFitz()
 {
     RenderQueue_RemoveForDisplayModel(this);
     BitmapCache_FreeForDisplayModel(this);
-    CancelRenderingForDisplayModel(this);
+    cancelRenderingForDisplayModel(this);
 }
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(

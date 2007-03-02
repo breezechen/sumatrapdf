@@ -238,9 +238,9 @@ void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
 /* Wait until rendering of a page beloging to <dm> has finished. */
 /* TODO: this might take some time, would be good to show a dialog to let the
    user know he has to wait until we finish */
-void CancelRenderingForDisplayModel(DisplayModel *dm) {
+void cancelRenderingForDisplayModel(DisplayModel *dm) {
 
-    DBG_OUT("CancelRenderingForDisplayModel()\n");
+    DBG_OUT("cancelRenderingForDisplayModel()\n");
     bool renderingFinished = false;;
     for (;;) {
         LockCache();
@@ -556,14 +556,6 @@ static void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
 void WinEditSelectAll(HWND hwnd)
 {
     WinEditSetSel(hwnd, 0, -1);
-}
-
-static void Win32_GetScrollbarSize(int *scrollbarYDxOut, int *scrollbarXDyOut)
-{
-    if (scrollbarYDxOut)
-        *scrollbarYDxOut = GetSystemMetrics(SM_CXHSCROLL);
-    if (scrollbarXDyOut)
-        *scrollbarXDyOut = GetSystemMetrics(SM_CYHSCROLL);
 }
 
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */
@@ -1046,7 +1038,7 @@ static void WindowInfo_Delete(WindowInfo *win)
 {
     if (win->dm) {
         RenderQueue_RemoveForDisplayModel(win->dm);
-        CancelRenderingForDisplayModel(win->dm);
+        cancelRenderingForDisplayModel(win->dm);
     }
     delete win->dm;
     win->dm = NULL;
@@ -2416,12 +2408,6 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
     }
 }
 
-void DisplayModelSplash::cancelBackgroundRendering(void)
-{
-    // TODO: implement me!
-    return;
-}
-
 static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
 {
     PdfLink *       link;
@@ -2749,7 +2735,7 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int from
     // rendering for the same DisplayModel is not thread-safe
     // TODO: in fitz, propably rendering anything might not be thread-safe
     RenderQueue_RemoveForDisplayModel(dm);
-    CancelRenderingForDisplayModel(dm);
+    cancelRenderingForDisplayModel(dm);
 
     // print all the pages the user requested unless
     // bContinue flags there is a problem.
@@ -3620,7 +3606,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
     WindowInfo *    win;
     ULONG           ulScrollLines;                   // for mouse wheel logic
     const char *    fileName;
-    int             dx, dy;
 
     win = WindowInfo_FindByHwnd(hwnd);
 
@@ -3632,8 +3617,8 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
         case WM_SIZE:
             if (win) {
-                dx = LOWORD(lParam);
-                dy = HIWORD(lParam);
+                int dx = LOWORD(lParam);
+                int dy = HIWORD(lParam);
                 OnSize(win, dx, dy);
             }
             break;

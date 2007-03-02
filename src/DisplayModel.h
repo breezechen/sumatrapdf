@@ -13,10 +13,6 @@ class TextPage;
 class UGooString;
 class SplashBitmap;
 
-// TODO: remove those when dependency on Link and TextPage are gone
-//#include "Link.h"
-//#include "TextOutputDev.h"
-
 #define INVALID_ZOOM        -99
 #define INVALID_BIG_ZOOM    999999.0   /* arbitrary but big */
 
@@ -314,7 +310,6 @@ protected:
 };
 
 bool                validZoomReal(double zoomReal);
-//bool                validDisplayMode(DisplayMode dm);
 bool                displayModeContinuous(DisplayMode displayMode);
 bool                displayModeFacing(DisplayMode displayMode);
 DisplaySettings *   globalDisplaySettings(void);
@@ -354,7 +349,7 @@ void              UnlockCache();
 
 void              RenderQueue_Add(DisplayModel *dm, int pageNo);
 extern void       RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
-extern void       CancelRenderingForDisplayModel(DisplayModel *dm);
+extern void       cancelRenderingForDisplayModel(DisplayModel *dm);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 bool              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);

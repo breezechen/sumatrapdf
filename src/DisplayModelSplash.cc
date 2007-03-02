@@ -202,7 +202,7 @@ DisplayModelSplash::~DisplayModelSplash()
 {
     RenderQueue_RemoveForDisplayModel(this);
     BitmapCache_FreeForDisplayModel(this);
-    CancelRenderingForDisplayModel(this);
+    cancelRenderingForDisplayModel(this);
     FreeLinks();
     FreeTextPages();
 
@@ -594,7 +594,7 @@ BOOL DisplayModelSplash::FindNextBackward(void)
 
     // searching uses the same code as rendering and that code is not
     // thread safe, so we have to cancel all background rendering
-    cancelBackgroundRendering();
+    cancelRenderingForDisplayModel(this);
 
     showBusyCursor();
 
@@ -695,7 +695,7 @@ BOOL DisplayModelSplash::FindNextForward(void)
 
     // searching uses the same code as rendering and that code is not
     // thread safe, so we have to cancel all background rendering
-    cancelBackgroundRendering();
+    cancelRenderingForDisplayModel(this);
 
     backward = gFalse;
     caseSensitive =searchState.caseSensitive;

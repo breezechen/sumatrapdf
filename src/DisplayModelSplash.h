@@ -95,8 +95,6 @@ public:
 
     GooString *   GetTextInRegion(int pageNo, RectD *region);
 
-    void        cancelBackgroundRendering();
-
     void        FreeTextPages(void);
     void        RecalcLinks(void);
     void        GoToDest(LinkDest *linkDest);
