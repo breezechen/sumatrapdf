@@ -17,10 +17,6 @@
 #include <assert.h>
 #include <stdlib.h> /* malloc etc. */
 
-#ifdef _WIN32
-#define PREDICTIVE_RENDER 1
-#endif
-
 #define ACTION_NEXT_PAGE    "NextPage"
 #define ACTION_PREV_PAGE    "PrevPage"
 #define ACTION_FIRST_PAGE   "FirstPage"

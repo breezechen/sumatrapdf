@@ -11,6 +11,10 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#define PREDICTIVE_RENDER 1
+#endif
+
 #define MAX_BITMAPS_CACHED 256
 static GooMutex             cacheMutex;
 static BitmapCacheEntry *   gBitmapCache[MAX_BITMAPS_CACHED] = {0};

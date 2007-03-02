@@ -3161,53 +3161,33 @@ static void OnMenuViewRotateRight(WindowInfo *win)
     RotateRight(win);
 }
 
-static bool IsKeyPressed(int virtKey)
+#define KEY_PRESSED_MASK 0x8000
+static bool WasKeyDown(int virtKey)
 {
-    int state = GetAsyncKeyState(virtKey);
-    if (0 != state)
+    SHORT state = GetKeyState(virtKey);
+    if (KEY_PRESSED_MASK & state)
         return true;
     return false;
 }
 
-static bool IsLeftCtrlPressed(void)
+static bool WasShiftPressed()
 {
-    return IsKeyPressed(VK_LCONTROL);
+    return WasKeyDown(VK_LSHIFT) || WasKeyDown(VK_RSHIFT);
 }
 
-static bool IsRightCtrlPressed(void)
+static bool WasCtrlPressed()
 {
-    return IsKeyPressed(VK_RCONTROL);
-}
-
-static bool IsCtrlPressed(void)
-{
-    return IsLeftCtrlPressed() || IsRightCtrlPressed();
-}
-
-static bool IsLeftShiftPressed(void)
-{
-    return IsKeyPressed(VK_LSHIFT);
-}
-
-static bool IsRightShiftPressed(void)
-{
-    return IsKeyPressed(VK_RSHIFT);
-}
-
-static bool IsShiftPressed(void)
-{
-    return IsLeftShiftPressed() || IsRightShiftPressed();
-}
-
-static bool IsShiftCtrlPressed()
-{
-    return IsShiftPressed() && IsCtrlPressed();
+    return WasKeyDown(VK_LCONTROL) || WasKeyDown(VK_RCONTROL);
 }
 
 static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 {
     if (!win->dm)
         return;
+
+    bool shiftPressed = WasShiftPressed();
+    bool ctrlPressed = WasCtrlPressed();
+    //DBG_OUT("key=%d,%c,shift=%d,ctrl=%d\n", key, (char)key, (int)shiftPressed, (int)ctrlPressed);
 
     if (VK_PRIOR == key) {
         /* TODO: more intelligence (see VK_NEXT comment). Also, probably
@@ -3231,19 +3211,18 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         win->dm->goToFirstPage();
     } else if (VK_END == key) {
         win->dm->goToLastPage();    
-    } else if (('g' == key) || ('G' == key)) {
-        if (IsCtrlPressed())
+    } else if ('g' == key) {
+        if (ctrlPressed)
             OnMenuGoToPage(win);
-    } else if ('+' == key) {
-        // TODO: ensure it's rotating in the right direction
+    } else if (VK_OEM_PLUS == key) {
         // Emulate acrobat: "Shift Ctrl +" is rotate clockwise
-        if (IsShiftCtrlPressed())
-            RotateLeft(win);
-    } else if ('-' == key) {
-        // Emulate acrobat: "Shift Ctrl -" is rotate counter-clockwise
-        if (IsShiftCtrlPressed())
+        if (shiftPressed & ctrlPressed)
             RotateRight(win);
-    } 
+    } else if (VK_OEM_MINUS == key) {
+        // Emulate acrobat: "Shift Ctrl -" is rotate counter-clockwise
+        if (shiftPressed & ctrlPressed)
+            RotateLeft(win);
+    }
 }
 
 static void ReloadPdfDocument(WindowInfo *win)
@@ -3267,6 +3246,8 @@ static void OnChar(WindowInfo *win, int key)
     if (!win->dm)
         return;
 
+//    DBG_OUT("char=%d,%c\n", key, (char)key);
+
     if (VK_SPACE == key) {
         win->dm->scrollYByAreaDy(true, true);
     } else if (VK_BACK == key) {
@@ -3289,18 +3270,8 @@ static void OnChar(WindowInfo *win, int key)
     } else if ('q' == key) {
         DestroyWindow(win->hwndFrame);
     } else if ('+' == key) {
-        // Emulate acrobat: <Shift Ctrl +> is rotate clockwise
-        bool shiftCtrlPressed = IsShiftCtrlPressed();
-        if (shiftCtrlPressed)
-            RotateLeft(win);
-        else
             win->dm->zoomBy(ZOOM_IN_FACTOR);
     } else if ('-' == key) {
-        // Emulate acrobat: <Shift Ctrl -> is rotate counter-clockwise
-        bool shiftCtrlPressed = IsShiftCtrlPressed();
-        if (shiftCtrlPressed)
-            RotateRight(win);
-        else
             win->dm->zoomBy(ZOOM_OUT_FACTOR);
     } else if ('r' == key) {
         ReloadPdfDocument(win);
