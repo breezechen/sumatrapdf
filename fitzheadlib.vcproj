@@ -434,7 +434,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\fitz-head\mupdf\pdf_fontfilems.c"
+				RelativePath=".\fitz-head\mupdf\pdf_fontfile.c"
 				>
 			</File>
 			<File
@@ -737,6 +737,70 @@
 			</File>
 			<File
 				RelativePath=".\fitz-head\include\mupdf\xref.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Fonts"
+			>
+			<File
+				RelativePath=".\fitz\fonts\Dingbats.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusMonL-Bold.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusMonL-BoldObli.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusMonL-Regu.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusMonL-ReguObli.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusRomNo9L-Medi.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusRomNo9L-MediItal.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusRomNo9L-Regu.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusRomNo9L-ReguItal.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusSanL-Bold.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusSanL-BoldItal.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusSanL-Regu.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\NimbusSanL-ReguItal.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\StandardSymL.cff.c"
+				>
+			</File>
+			<File
+				RelativePath=".\fitz\fonts\URWChanceryL-MediItal.cff.c"
 				>
 			</File>
 		</Filter>

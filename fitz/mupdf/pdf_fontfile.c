@@ -6,6 +6,31 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#ifdef WIN32
+#include <io.h>
+static int path_exists(const char *path)
+{
+    if (0 == _access(path, 04))
+        return 1;
+    return 0;
+}
+
+fz_error *initfontlibs_ms(void)
+{
+    return nil;
+}
+void deinitfontlibs_ms(void)
+{
+}
+#else
+static int path_exists(const char *path)
+{
+    if (access(path, R_OK) == 0)
+        return 1;
+    return 0;
+}
+#endif
+
 static FT_Library ftlib = nil;
 
 enum
@@ -189,7 +214,7 @@ findcidfont(char *filename, char *path, int pathlen)
 		strlcpy(path, dir, pathlen);
 		strlcat(path, "/", pathlen);
 		strlcat(path, filename, pathlen);
-		if (access(path, R_OK) == 0)
+		if (path_exists(path))
 			return 1;
 	}
 
@@ -199,7 +224,7 @@ findcidfont(char *filename, char *path, int pathlen)
 		strlcpy(path, dir, pathlen);
 		strlcat(path, "/Fonts/", pathlen);
 		strlcat(path, filename, pathlen);
-		if (access(path, R_OK) == 0)
+		if (path_exists(path))
 			return 1;
 	}
 
@@ -222,7 +247,7 @@ findcidfont(char *filename, char *path, int pathlen)
 		}
 		strlcat(path, "/", pathlen);
 		strlcat(path, filename, pathlen);
-		if (access(path, R_OK) == 0)
+		if (path_exists(path))
 			return 1;
 	}
 
