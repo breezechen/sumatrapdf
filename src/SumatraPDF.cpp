@@ -1084,11 +1084,7 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame)
     if (!WindowInfo_Dib_Init(win))
         goto Error;
 
-#if START_WITH_ABOUT
     win->state = WS_ABOUT;
-#else
-    win->state = WS_EMPTY;
-#endif
     win->hwndFrame = hwndFrame;
     win->dragging = FALSE;
     AddRecentFilesToMenu(win);
@@ -2032,13 +2028,18 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         if (!entry) {
             /* TODO: assert is queued for rendering ? */
+            HFONT fontRightTxt = Win32_Font_GetSimple(hdc, "Tahoma", 14);
+            HFONT origFont = (HFONT)SelectObject(hdc, fontRightTxt); /* Just to remember the orig font */
             bounds.left = xDest;
             bounds.top = yDest;
             bounds.right = xDest + bmpDx;
             bounds.bottom = yDest + bmpDy;
             FillRect(hdc, &bounds, gBrushWhite);
             DrawCenteredText(hdc, &bounds, "Please wait - rendering...");
-            DBG_OUT("   drawing empty for %d\n", pageNo);
+            DBG_OUT("drawing empty %d ", pageNo);
+            if (origFont)
+                SelectObject(hdc, origFont);
+            Win32_Font_Delete(fontRightTxt);
             continue;
         }
 
@@ -2632,12 +2633,14 @@ static void OnPaint(WindowInfo *win)
         WindowInfo_DoubleBuffer_Resize_IfNeeded(win);
         DrawAbout(win->hwndCanvas, win->hdcToDraw, &ps);
         WindowInfo_DoubleBuffer_Show(win, hdc);
-    } else if (WS_EMPTY == win->state) {
-        FillRect(hdc, &ps.rcPaint, gBrushBg);
-        DrawText (hdc, "No PDF file opened. Open a new PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
     } else if (WS_ERROR_LOADING_PDF == win->state) {
+        HFONT fontRightTxt = Win32_Font_GetSimple(hdc, "Tahoma", 14);
+        HFONT origFont = (HFONT)SelectObject(hdc, fontRightTxt); /* Just to remember the orig font */
         FillRect(hdc, &ps.rcPaint, gBrushBg);
         DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
+        if (origFont)
+            SelectObject(hdc, origFont);
+        Win32_Font_Delete(fontRightTxt);
     } else if (WS_SHOWING_PDF == win->state) {
         //TODO: it might cause infinite loop due to showing/hiding scrollbars
         WinResizeIfNeeded(win);
@@ -2649,6 +2652,7 @@ static void OnPaint(WindowInfo *win)
         WindowInfo_DoubleBuffer_Show(win, hdc);
     } else
         assert(0);
+
     EndPaint(win->hwndCanvas, &ps);
 }
 
@@ -2677,7 +2681,7 @@ static void CloseWindow(WindowInfo *win, bool quitIfLast)
     else
         UpdateCurrentFileDisplayStateForWin(win);
 
-    win->state = WS_EMPTY;
+    win->state = WS_ABOUT;
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */

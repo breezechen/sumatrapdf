@@ -40,15 +40,13 @@ enum AppVisualStyle {
 };
 
 /* Current state of a window:
-  - WS_EMPTY - an empty window with no PDF opened
   - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
   - WS_SHOWING_PDF - showing a PDF file
   - WS_ABOUT - showing "about" screen */
 enum WinState {
-    WS_EMPTY = 1,
-    WS_ERROR_LOADING_PDF,
+    WS_ERROR_LOADING_PDF = 1,
     WS_SHOWING_PDF,
-    WS_ABOUT = WS_EMPTY
+    WS_ABOUT
 };
 
 /* When doing "about" animation, remembers the current animation state */
