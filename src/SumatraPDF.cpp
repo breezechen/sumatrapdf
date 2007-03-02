@@ -172,7 +172,7 @@ static PageRenderRequest *          gCurPageRenderReq = NULL;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
-static bool                         gfShowingAbout = false;
+static HWND                         gHwndAbout = NULL;
 
 typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
@@ -3357,17 +3357,20 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
 
 static void OnMenuAbout()
 {
-    if (gfShowingAbout) return;
-    HWND hwndAbout = CreateWindow(
+    if (gHwndAbout) {
+        SetActiveWindow(gHwndAbout);
+        return;
+    }
+    gHwndAbout = CreateWindow(
             ABOUT_CLASS_NAME, ABOUT_WIN_TITLE,
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT,
             ABOUT_WIN_DX, ABOUT_WIN_DY,
             NULL, NULL,
             ghinst, NULL);
-    if (!hwndAbout)
+    if (!gHwndAbout)
         return;
-    ShowWindow(hwndAbout, SW_SHOW);
+    ShowWindow(gHwndAbout, SW_SHOW);
 }
 
 BOOL PrivateIsAppThemed()
@@ -3500,8 +3503,7 @@ static LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPA
     switch (message)
     {
         case WM_CREATE:
-            assert(!gfShowingAbout);
-            gfShowingAbout = true;
+            assert(!gHwndAbout);
             break;
 
         case WM_ERASEBKGND:
@@ -3513,8 +3515,8 @@ static LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPA
             break;
 
         case WM_DESTROY:
-            assert(gfShowingAbout);
-            gfShowingAbout = false;
+            assert(gHwndAbout);
+            gHwndAbout = NULL;
             break;
 
         default:
@@ -3630,6 +3632,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                 dy = HIWORD(lParam);
                 OnSize(win, dx, dy);
             }
+            break;
 
         case WM_COMMAND:
             wmId    = LOWORD(wParam);
