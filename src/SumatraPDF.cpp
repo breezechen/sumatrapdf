@@ -111,8 +111,6 @@ static BOOL             gDebugShowLinks = FALSE;
 
 #define REPAINT_TIMER_ID    1
 #define REPAINT_DELAY_IN_MS 400
-#define RESIZE_TIMER_ID     2
-#define RESIZE_DELAY_IN_MS  200
 
 /* A special "pointer" vlaue indicating that we tried to render this bitmap
    but couldn't (e.g. due to lack of memory) */
@@ -157,9 +155,9 @@ BOOL                                gPdfAssociateDontAskAgain = FALSE;
    or not */
 BOOL                                gPdfAssociateShouldAssociate = TRUE;
 #ifdef DOUBLE_BUFFER
-static BOOL                         gUseDoubleBuffer = TRUE;
+static bool                         gUseDoubleBuffer = true;
 #else
-static BOOL                         gUseDoubleBuffer = FALSE;
+static bool                         gUseDoubleBuffer = false;
 #endif
 
 #define MAX_PAGE_REQUESTS 8
@@ -258,9 +256,6 @@ void cancelRenderingForDisplayModel(DisplayModel *dm) {
 
 /* Render a bitmap for page <pageNo> in <dm>. */
 void RenderQueue_Add(DisplayModel *dm, int pageNo) {
-    PageRenderRequest *   newRequest = NULL;
-    PageRenderRequest *   req = NULL;
-
     DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
     assert(dm);
     if (!dm) goto Exit;
@@ -289,8 +284,8 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
         }
     }
 
-    for (int i=0; i  < gPageRenderRequestsCount; i++) {
-        req = &(gPageRenderRequests[i]);
+    for (int i=0; i < gPageRenderRequestsCount; i++) {
+        PageRenderRequest* req = &(gPageRenderRequests[i]);
         if ((req->pageNo == pageNo) && (req->dm == dm)) {
             if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
                 /* Request with exactly the same parameters already queued for
@@ -314,6 +309,7 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
         }
     }
 
+    PageRenderRequest* newRequest;
     /* add request to the queue */
     if (gPageRenderRequestsCount == MAX_PAGE_REQUESTS) {
         /* queue is full -> remove the oldest items on the queue */
@@ -951,20 +947,18 @@ Exit:
         fclose(pFile);
 }
 
-static void WindowInfo_GetCanvasSize(WindowInfo *win)
-{
+static void WindowInfo_GetCanvasSize(WindowInfo *win) {
     RECT  rc;
     GetClientRect(win->hwndCanvas, &rc);
     win->winDx = rect_dx(&rc);
     win->winDy = rect_dy(&rc);
 }
 
-static BOOL WindowInfo_Dib_Init(WindowInfo *win)
-{
+static bool WindowInfo_Dib_Init(WindowInfo *win) {
     assert(NULL == win->dibInfo);
     win->dibInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 12);
     if (!win->dibInfo)
-        return FALSE;
+        return false;
     win->dibInfo->bmiHeader.biSize = sizeof(win->dibInfo->bmiHeader);
     win->dibInfo->bmiHeader.biPlanes = 1;
     win->dibInfo->bmiHeader.biBitCount = 24;
@@ -973,17 +967,15 @@ static BOOL WindowInfo_Dib_Init(WindowInfo *win)
     win->dibInfo->bmiHeader.biYPelsPerMeter = 2834;
     win->dibInfo->bmiHeader.biClrUsed = 0;
     win->dibInfo->bmiHeader.biClrImportant = 0;
-    return TRUE;
+    return true;
 }
 
-static void WindowInfo_Dib_Deinit(WindowInfo *win)
-{
+static void WindowInfo_Dib_Deinit(WindowInfo *win) {
     free((void*)win->dibInfo);
     win->dibInfo = NULL;
 }
 
-static void WindowInfo_DoubleBuffer_Delete(WindowInfo *win)
-{
+static void WindowInfo_DoubleBuffer_Delete(WindowInfo *win) {
     if (win->bmpDoubleBuffer) {
         DeleteObject(win->bmpDoubleBuffer);
         win->bmpDoubleBuffer = NULL;
@@ -996,29 +988,29 @@ static void WindowInfo_DoubleBuffer_Delete(WindowInfo *win)
     win->hdcToDraw = NULL;
 }
 
-static BOOL WindowInfo_DoubleBuffer_New(WindowInfo *win)
+static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
 {
-    RECT r = {0};
     WindowInfo_DoubleBuffer_Delete(win);
 
     win->hdc = GetDC(win->hwndCanvas);
     win->hdcToDraw = win->hdc;
     WindowInfo_GetCanvasSize(win);
     if (!gUseDoubleBuffer || (0 == win->winDx) || (0 == win->winDy))
-        return TRUE;
+        return true;
 
     win->hdcDoubleBuffer = CreateCompatibleDC(win->hdc);
     if (!win->hdcDoubleBuffer)
-        return FALSE;
+        return false;
 
     win->bmpDoubleBuffer = CreateCompatibleBitmap(win->hdc, win->winDx, win->winDy);
     if (!win->bmpDoubleBuffer) {
         WindowInfo_DoubleBuffer_Delete(win);
-        return FALSE;
+        return false;
     }
     /* TODO: do I need this ? */
     SelectObject(win->hdcDoubleBuffer, win->bmpDoubleBuffer);
     /* fill out everything with background color */
+    RECT r = {0};
     r.bottom = win->winDy;
     r.right = win->winDx;
     FillRect(win->hdcDoubleBuffer, &r, gBrushBg);
@@ -1062,11 +1054,8 @@ static WindowInfo* WindowInfo_FindByHwnd(HWND hwnd)
     return NULL;
 }
 
-static WindowInfo *WindowInfo_New(HWND hwndFrame)
-{
-    WindowInfo  *win;
-
-    win = WindowInfo_FindByHwnd(hwndFrame);
+static WindowInfo *WindowInfo_New(HWND hwndFrame) {
+    WindowInfo * win = WindowInfo_FindByHwnd(hwndFrame);
     assert(!win);
 
     win = (WindowInfo*)calloc(sizeof(WindowInfo), 1);
@@ -1086,59 +1075,50 @@ Error:
     return NULL;
 }
 
-static void WindowInfoList_Add(WindowInfo *win)
-{
+static void WindowInfoList_Add(WindowInfo *win) {
     win->next = gWindowList;
     gWindowList = win;
 }
 
-static BOOL WindowInfoList_ExistsWithError(void)
-{
+static bool WindowInfoList_ExistsWithError(void) {
     WindowInfo *cur = gWindowList;
     while (cur) {
         if (WS_ERROR_LOADING_PDF == cur->state)
-            return TRUE;
+            return true;
         cur = cur->next;
     }
-    return FALSE;
+    return false;
 }
 
-static void WindowInfoList_Remove(WindowInfo *to_remove)
-{
-    WindowInfo *curr = gWindowList;
-
+static void WindowInfoList_Remove(WindowInfo *to_remove) {
     assert(to_remove);
-
     if (gWindowList == to_remove) {
         gWindowList = to_remove->next;
-    } else {
-        while (curr) {
-            if (to_remove == curr->next) {
-                curr->next = to_remove->next;
-            }
-            curr = curr->next;
+        return;
+    }
+    WindowInfo* curr = gWindowList;
+    while (curr) {
+        if (to_remove == curr->next) {
+            curr->next = to_remove->next;
+            return;
         }
+        curr = curr->next;
     }
 }
 
-static void WindowInfoList_DeleteAll(void)
-{
-    WindowInfo *curr = gWindowList;
-    WindowInfo *next;
-
+static void WindowInfoList_DeleteAll(void) {
+    WindowInfo* curr = gWindowList;
     while (curr) {
-        next = curr->next;
+        WindowInfo* next = curr->next;
         WindowInfo_Delete(curr);
         curr = next;
     }
     gWindowList = NULL;
 }
 
-static int WindowInfoList_Len(void)
-{
-    WindowInfo * curr = gWindowList;
-    int          len = 0;
-
+static int WindowInfoList_Len(void) {
+    int len = 0;
+    WindowInfo* curr = gWindowList;
     while (curr) {
         ++len;
         curr = curr->next;
@@ -1146,37 +1126,31 @@ static int WindowInfoList_Len(void)
     return len;
 }
 
-static void WindowInfo_RedrawAll(WindowInfo *win, BOOL update=FALSE)
-{
-    InvalidateRect(win->hwndCanvas, NULL, FALSE);
+static void WindowInfo_RedrawAll(WindowInfo *win, bool update=false) {
+    InvalidateRect(win->hwndCanvas, NULL, false);
     if (update)
         UpdateWindow(win->hwndCanvas);
 }
 
-static BOOL FileCloseMenuEnabled(void)
-{
-    WindowInfo *    win;
-    win = gWindowList;
+static bool FileCloseMenuEnabled(void) {
+    WindowInfo* win = gWindowList;
     while (win) {
         if (win->state == WS_SHOWING_PDF)
-            return TRUE;
+            return true;
         win = win->next;
     }
-    return FALSE;
+    return false;
 }
 
-static void ToolbarUpdateStateForWindow(WindowInfo *win)
-{
-    int     cmdId;
-    LPARAM  enable = (LPARAM)MAKELONG(1,0);
-    LPARAM  disable = (LPARAM)MAKELONG(0,0);
-    LPARAM buttonState;
+static void ToolbarUpdateStateForWindow(WindowInfo *win) {
+    LPARAM enable = (LPARAM)MAKELONG(1,0);
+    LPARAM disable = (LPARAM)MAKELONG(0,0);
 
     for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
-        cmdId = gToolbarButtons[i].cmdId;
+        int cmdId = gToolbarButtons[i].cmdId;
         if (IDB_SEPARATOR == cmdId)
             continue;
-        buttonState = enable;
+        LPARAM buttonState = enable;
         if (IDM_OPEN != cmdId) {
             if (WS_SHOWING_PDF != win->state)
                 buttonState = disable;
@@ -1185,33 +1159,23 @@ static void ToolbarUpdateStateForWindow(WindowInfo *win)
     }
 }
 
-static void MenuUpdateShowToolbarStateForWindow(WindowInfo *win)
-{
+static void MenuUpdateShowToolbarStateForWindow(WindowInfo *win) {
     HMENU hmenu = GetMenu(win->hwndFrame);
-
     if (gShowToolbar)
         CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_CHECKED);
     else
         CheckMenuItem(hmenu, IDM_VIEW_SHOW_HIDE_TOOLBAR, MF_BYCOMMAND | MF_UNCHECKED);
 }
 
-static void MenuUpdateUseFitzStateForWindow(WindowInfo *win)
-{
+static void MenuUpdateUseFitzStateForWindow(WindowInfo *win) {
     HMENU hmenu = GetMenu(win->hwndFrame);
-
     if (gUseFitz)
         CheckMenuItem(hmenu, IDM_VIEW_USE_FITZ, MF_BYCOMMAND | MF_CHECKED);
     else
         CheckMenuItem(hmenu, IDM_VIEW_USE_FITZ, MF_BYCOMMAND | MF_UNCHECKED);
 }
 
-static void MenuUpdateStateForWindow(WindowInfo *win)
-{
-    HMENU     hmenu;
-    BOOL      fileCloseEnabled;
-    UINT      menuId;
-    SCROLLINFO      si = {0};
-
+static void MenuUpdateStateForWindow(WindowInfo *win) {
     static UINT menusToDisableIfNoPdf[] = {
         IDM_VIEW_SINGLE_PAGE, IDM_VIEW_FACING, IDM_VIEW_CONTINUOUS, IDM_VIEW_CONTINUOUS_FACING,
         IDM_VIEW_ROTATE_LEFT, IDM_VIEW_ROTATE_RIGHT, IDM_GOTO_NEXT_PAGE, IDM_GOTO_PREV_PAGE,
@@ -1221,9 +1185,8 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
         IDM_ZOOM_125, IDM_ZOOM_100, IDM_ZOOM_50, IDM_ZOOM_25, IDM_ZOOM_12_5,
         IDM_ZOOM_8_33 };
 
-    fileCloseEnabled = FileCloseMenuEnabled();
-
-    hmenu = GetMenu(win->hwndFrame);
+    bool fileCloseEnabled = FileCloseMenuEnabled();
+    HMENU hmenu = GetMenu(win->hwndFrame);
     if (fileCloseEnabled)
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_ENABLED);
     else
@@ -1233,7 +1196,7 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
     MenuUpdateUseFitzStateForWindow(win);
 
     for (int i = 0; i < dimof(menusToDisableIfNoPdf); i++) {
-        menuId = menusToDisableIfNoPdf[i];
+        UINT menuId = menusToDisableIfNoPdf[i];
         if (WS_SHOWING_PDF == win->state)
             EnableMenuItem(hmenu, menuId, MF_BYCOMMAND | MF_ENABLED);
         else
@@ -1251,10 +1214,8 @@ static void MenuUpdateStateForWindow(WindowInfo *win)
 
 /* Disable/enable menu items and toolbar buttons depending on wheter a
    given window shows a PDF file or not. */
-static void MenuToolbarUpdateStateForAllWindows(void)
-{
-    WindowInfo *    win = gWindowList;
-
+static void MenuToolbarUpdateStateForAllWindows(void) {
+    WindowInfo* win = gWindowList;
     while (win) {
         MenuUpdateStateForWindow(win);
         ToolbarUpdateStateForWindow(win);
@@ -1262,8 +1223,7 @@ static void MenuToolbarUpdateStateForAllWindows(void)
     }
 }
 
-static WindowInfo* WindowInfo_CreateEmpty(void)
-{
+static WindowInfo* WindowInfo_CreateEmpty(void) {
     HWND        hwndFrame, hwndCanvas;
     WindowInfo* win;
 
@@ -1973,13 +1933,12 @@ static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
 
 static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
-    DisplayModel *      dm;
     RECT                bounds;
     RenderedBitmap *    renderedBmp = NULL;
 
     assert(win);
     if (!win) return;
-    dm = win->dm;
+    DisplayModel* dm = win->dm;
     assert(dm);
     if (!dm) return;
 #if 0 // TODO: write the equivalent dm->isOk() ?
@@ -1990,7 +1949,6 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     assert(win->hdcToDraw);
     hdc = win->hdcToDraw;
 
-    //TODO: FillRect() ps->rcPaint - bounds
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
     DBG_OUT("WindowInfo_Paint() ");
@@ -2002,14 +1960,17 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         if (!pageInfo->shown)
             continue;
 
-        BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, dm->zoomReal(), dm->rotation());
-        if (entry)
-            renderedBmp = entry->bitmap;
+        //BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, dm->zoomReal(), dm->rotation());
+        BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo);
+        if (entry) {
+            if ((dm->rotation() != entry->rotation) || (dm->zoomReal() != entry->zoomLevel))
+                entry = NULL;
+            else
+                renderedBmp = entry->bitmap;
+        }
 
         if (!renderedBmp)
             DBG_OUT("   missing bitmap on visible page %d\n", pageNo);
-
-        //TODO: FillRect() ps->rcPaint - bounds
 
         int xSrc = (int)pageInfo->bitmapX;
         int ySrc = (int)pageInfo->bitmapY;
@@ -2047,18 +2008,26 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
         DBG_OUT("page %d ", pageNo);
 
+        int renderedBmpDx = renderedBmp->dx();
+        int renderedBmpDy = renderedBmp->dy();
+        int currPageDx = pageInfo->currDx;
+        int currPageDy = pageInfo->currDy;
         HBITMAP hbmp = renderedBmp->createDIBitmap(hdc);
-        if (hbmp) {
-            HDC bmpDC = CreateCompatibleDC(hdc);
-            if (bmpDC) {
-                SelectObject(bmpDC, hbmp);
+        if (!hbmp)
+            continue;
+
+        HDC bmpDC = CreateCompatibleDC(hdc);
+        if (bmpDC) {
+            SelectObject(bmpDC, hbmp);
+#if 0
+            if ((currPageDx != renderedBmpDx) || (currPageDy != renderedBmpDy))
+                StretchBlt(hdc, xDest, yDest, bmpDx, bmpDy, bmpDC, xSrc, ySrc, renderedBmpDx, renderedBmpDy, SRCCOPY);
+            else
+#endif
                 BitBlt(hdc, xDest, yDest, bmpDx, bmpDy, bmpDC, xSrc, ySrc, SRCCOPY);
-                DeleteDC(bmpDC);
-                bmpDC = NULL;
-            }
-            DeleteObject(hbmp);
-            hbmp = NULL;
+            DeleteDC(bmpDC);
         }
+        DeleteObject(hbmp);
     }
 
     DBG_OUT("\n");
@@ -3038,7 +3007,6 @@ static void OnSize(WindowInfo *win, int dx, int dy)
         rebBarDy = gReBarDy + gReBarDyFrame;
     }
     SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy-rebBarDy, SWP_NOZORDER);
-    //SetTimer(win->hwndCanvas, RESIZE_TIMER_ID, RESIZE_DELAY_IN_MS, sNULL);
 }
 
 static void OnMenuViewUseFitz(WindowInfo *win)
@@ -3057,17 +3025,14 @@ static void OnMenuViewUseFitz(WindowInfo *win)
     }
 }
 
-static void OnMenuViewShowHideToolbar(WindowInfo *win)
+static void OnMenuViewShowHideToolbar()
 {
-    assert(win);
-    DBG_OUT("OnMenuViewShowHideToolbar()\n");
-
     if (gShowToolbar)
         gShowToolbar = FALSE;
     else
         gShowToolbar = TRUE;
 
-    win = gWindowList;
+    WindowInfo* win = gWindowList;
     while (win) {
         if (gShowToolbar)
             ShowWindow(win->hwndReBar, SW_SHOW);
@@ -3230,8 +3195,6 @@ static void ReloadPdfDocument(WindowInfo *win)
 {
     if (WS_SHOWING_PDF != win->state)
         return;
-    // TODO: write me
-    // check the name of the current file and reload it
     const char *fileName = NULL;
     if (win->dm)
         fileName = (const char*)str_dup(win->dm->fileName());
@@ -3327,14 +3290,9 @@ static bool IsBenchMode(void)
    is one of the "recent files" menu items in File menu.
    Caller needs to free() the memory.
    */
-static const char *RecentFileNameFromMenuItemId(UINT  menuId)
-{
-    FileHistoryList *   curr;
-
-    DBG_OUT("RecentFileNameFromMenuItemId() looking for %d\n", (int)menuId);
-    curr = gFileHistoryRoot;
+static const char *RecentFileNameFromMenuItemId(UINT  menuId) {
+    FileHistoryList* curr = gFileHistoryRoot;
     while (curr) {
-        DBG_OUT("  id=%d for '%s'\n", (int)curr->menuId, curr->state.filePath);
         if (curr->menuId == menuId)
             return str_dup(curr->state.filePath);
         curr = curr->next;
@@ -3345,8 +3303,7 @@ static const char *RecentFileNameFromMenuItemId(UINT  menuId)
 #define FRAMES_PER_SECS 60
 #define ANIM_FREQ_IN_MS  1000 / FRAMES_PER_SECS
 
-static void OnMenuAbout()
-{
+static void OnMenuAbout() {
     if (gHwndAbout) {
         SetActiveWindow(gHwndAbout);
         return;
@@ -3363,8 +3320,7 @@ static void OnMenuAbout()
     ShowWindow(gHwndAbout, SW_SHOW);
 }
 
-BOOL PrivateIsAppThemed()
-{
+BOOL PrivateIsAppThemed() {
     BOOL isThemed = FALSE;
     HMODULE hDll = LoadLibrary("uxtheme.dll");
     if (!hDll) return FALSE;
@@ -3377,10 +3333,8 @@ BOOL PrivateIsAppThemed()
     return isThemed;
 }
 
-static TBBUTTON TbButtonFromButtonInfo(int i)
-{
+static TBBUTTON TbButtonFromButtonInfo(int i) {
     TBBUTTON tbButton = {0};
-
     if (IDB_SEPARATOR == gToolbarButtons[i].cmdId) {
         tbButton.fsStyle = TBSTYLE_SEP;
     } else {
@@ -3393,8 +3347,7 @@ static TBBUTTON TbButtonFromButtonInfo(int i)
     return tbButton;
 }
 
-static void SeeLastError(void)
-{
+static void SeeLastError(void) {
     char *msgBuf = NULL;
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -3409,31 +3362,23 @@ static void SeeLastError(void)
                     TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | \
                     TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN )
 
-static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
-{
-    TBBUTTON        tbButtons[TOOLBAR_BUTTONS_COUNT];
-    HWND            hwndToolbar;
-    HIMAGELIST      himl = 0;
-    HBITMAP         hbmp;
-    BITMAP          bmp;
-    RECT            rc;
-    REBARINFO       rbi;
-    REBARBANDINFO   rbBand;
+static void CreateToolbar(WindowInfo *win, HINSTANCE hInst) {
     BOOL            bIsAppThemed = PrivateIsAppThemed();
-    LRESULT         lres;
 
-    HWND            hwndOwner = win->hwndFrame;
-
-    hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, WS_TOOLBAR,
+    HWND hwndOwner = win->hwndFrame;
+    HWND hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, WS_TOOLBAR,
                                  0,0,0,0, hwndOwner,(HMENU)IDC_TOOLBAR, hInst,NULL);
     win->hwndToolbar = hwndToolbar;
-    lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+    LRESULT lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
     ShowWindow(hwndToolbar, SW_SHOW);
+    HIMAGELIST himl = 0;
+    TBBUTTON tbButtons[TOOLBAR_BUTTONS_COUNT];
     for (int i=0; i < TOOLBAR_BUTTONS_COUNT; i++) {
         if (IDB_SEPARATOR != gToolbarButtons[i].bitmapResourceId) {
-            hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarButtons[i].bitmapResourceId));
+            HBITMAP hbmp = LoadBitmap(hInst, MAKEINTRESOURCE(gToolbarButtons[i].bitmapResourceId));
             if (!himl) {
+                BITMAP bmp;
                 GetObject(hbmp, sizeof(BITMAP), &bmp);
                 int dx = bmp.bmWidth;
                 int dy = bmp.bmHeight;
@@ -3455,6 +3400,7 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, exstyle);
 
     lres = SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
+    RECT rc;
     lres = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
     DWORD  reBarStyle = WS_REBAR | WS_VISIBLE;
@@ -3463,11 +3409,13 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst)
     if (!win->hwndReBar)
         SeeLastError();
 
+    REBARINFO rbi;
     rbi.cbSize = sizeof(REBARINFO);
     rbi.fMask  = 0;
     rbi.himl   = (HIMAGELIST)NULL;
     lres = SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
 
+    REBARBANDINFO rbBand;
     rbBand.cbSize  = sizeof(REBARBANDINFO);
     rbBand.fMask   = /*RBBIM_COLORS | RBBIM_TEXT | RBBIM_BACKGROUND | */
                    RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE /*| RBBIM_SIZE*/;
@@ -3568,8 +3516,6 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             assert(win);
             if (win) {
                 if (REPAINT_TIMER_ID == wParam)
-                    WindowInfo_RedrawAll(win);
-                else if (RESIZE_TIMER_ID == wParam)
                     WindowInfo_RedrawAll(win);
                 else
                     AnimState_NextFrame(&win->animState);
@@ -3705,7 +3651,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     break;
 
                 case IDM_VIEW_SHOW_HIDE_TOOLBAR:
-                    OnMenuViewShowHideToolbar(win);
+                    OnMenuViewShowHideToolbar();
                     break;
 
                 case IDM_VIEW_USE_FITZ:

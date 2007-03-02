@@ -352,6 +352,7 @@ extern void       RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
 extern void       cancelRenderingForDisplayModel(DisplayModel *dm);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
+BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo);
 bool              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, 
                                   RenderedBitmap *bitmap, double renderTime);
