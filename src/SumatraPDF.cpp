@@ -78,7 +78,8 @@ static BOOL             gDebugShowLinks = FALSE;
 #define ABOUT_WIN_DX 440
 #define ABOUT_WIN_DY 300
 
-#define WM_APP_MSG_REFRESH (WM_APP + 2)
+#define WM_APP_REPAINT_DELAYED (WM_APP + 10)
+#define WM_APP_REPAINT_NOW     (WM_APP + 11)
 
 /* A caption is 4 white/blue 2 pixel line and a 3 pixel white line */
 #define CAPTION_DY 2*(2*4)+3
@@ -87,7 +88,6 @@ static BOOL             gDebugShowLinks = FALSE;
 #define COL_WHITE RGB(0xff,0xff,0xff)
 #define COL_BLACK RGB(0,0,0)
 #define COL_WINDOW_BG RGB(0xcc, 0xcc, 0xcc)
-//#define COL_WINDOW_BG RGB(0xff, 0xff, 0xff)
 #define COL_WINDOW_SHADOW RGB(0x40, 0x40, 0x40)
 
 #define FRAME_CLASS_NAME    _T("SUMATRA_PDF_FRAME")
@@ -260,7 +260,6 @@ void CancelRenderingForDisplayModel(DisplayModel *dm) {
 void RenderQueue_Add(DisplayModel *dm, int pageNo) {
     PageRenderRequest *   newRequest = NULL;
     PageRenderRequest *   req = NULL;
-    LONG                  prevCount;
 
     DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
     assert(dm);
@@ -333,6 +332,7 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
 
     UnlockCache();
     /* tell rendering thread there's a new request to render */
+    LONG  prevCount;
     ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
 Exit:
     return;
@@ -1549,15 +1549,26 @@ void DisplayModel::pageChanged(void)
     }
 }
 
-void DisplayModel::repaintDisplay(bool delayed)
+/* Call from non-UI thread to cause repainting of the display */
+static void triggerRepaintDisplayPotentiallyDelayed(WindowInfo *win, bool delayed)
 {
-    WindowInfo *win;
-
-    win = (WindowInfo*)appData();
     assert(win);
     if (!win) return;
+    if (delayed)
+        PostMessage(win->hwndCanvas, WM_APP_REPAINT_DELAYED, 0, 0);
+    else
+        PostMessage(win->hwndCanvas, WM_APP_REPAINT_NOW, 0, 0);
+}
 
-    WindowInfo_RedrawAll(win);
+static void triggerRepaintDisplayNow(WindowInfo* win)
+{
+    triggerRepaintDisplayPotentiallyDelayed(win, false);
+}
+
+void DisplayModel::repaintDisplay(bool delayed)
+{
+    WindowInfo* win = (WindowInfo*)appData();
+    triggerRepaintDisplayPotentiallyDelayed(win, delayed);
 }
 
 void DisplayModel::setScrollbarsState(void)
@@ -1994,7 +2005,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     //TODO: FillRect() ps->rcPaint - bounds
     FillRect(hdc, &(ps->rcPaint), gBrushBg);
 
-    DBG_OUT("WindowInfo_Paint() start\n");
+    DBG_OUT("WindowInfo_Paint() ");
     for (int pageNo = 1; pageNo <= dm->pageCount(); ++pageNo) {
         PdfPageInfo *pageInfo = dm->getPageInfo(pageNo);
         if (!pageInfo->visible)
@@ -2041,7 +2052,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             continue;
         }
 
-        DBG_OUT("   drawing bitmap for %d\n", pageNo);
+        DBG_OUT("page %d ", pageNo);
 
         HBITMAP hbmp = renderedBmp->createDIBitmap(hdc);
         if (hbmp) {
@@ -2057,7 +2068,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         }
     }
 
-    DBG_OUT("WindowInfo_Paint() finish\n");
+    DBG_OUT("\n");
     if (!gDebugShowLinks)
         return;
 
@@ -3521,10 +3532,14 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
     win = WindowInfo_FindByHwnd(hwnd);
     switch (message)
     {
-        case WM_APP_MSG_REFRESH:
-            if (win) {
+        case WM_APP_REPAINT_DELAYED:
+            if (win)
                 SetTimer(win->hwndCanvas, REPAINT_TIMER_ID, REPAINT_DELAY_IN_MS, NULL);
-            }
+            break;
+
+        case WM_APP_REPAINT_NOW:
+            if (win)
+                WindowInfo_RedrawAll(win);
             break;
 
         case WM_VSCROLL:
@@ -3985,6 +4000,8 @@ static void u_DoAllTests(void)
 #endif
 }
 
+#define CONSERVE_MEMORY 1
+
 static DWORD WINAPI PageRenderThread(PVOID data)
 {
     PageRenderRequest   req;
@@ -3992,7 +4009,7 @@ static DWORD WINAPI PageRenderThread(PVOID data)
 
     DBG_OUT("PageRenderThread() started\n");
     while (1) {
-        DBG_OUT("Worker: wait\n");
+        //DBG_OUT("Worker: wait\n");
         LockCache();
         gCurPageRenderReq = NULL;
         int count = gPageRenderRequestsCount;
@@ -4012,6 +4029,10 @@ static DWORD WINAPI PageRenderThread(PVOID data)
         gCurPageRenderReq = &req;
         UnlockCache();
         DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
+        if (!req.dm->pageVisibleNearby(req.pageNo)) {
+            DBG_OUT("PageRenderThread(): not rendering because not visible\n");
+            continue;
+        }
         assert(!req.abort);
         MsTimer renderTimer;
         bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, pageRenderAbortCb, (void*)&req);
@@ -4031,9 +4052,8 @@ static DWORD WINAPI PageRenderThread(PVOID data)
 #ifdef CONSERVE_MEMORY
         BitmapCache_FreeNotVisible();
 #endif
-        WindowInfo * win = NULL;
-        win = (WindowInfo*)req.dm->appData();
-        BOOL fOk = PostMessage(win->hwndCanvas, WM_APP_MSG_REFRESH, 0, 0);
+        WindowInfo* win = (WindowInfo*)req.dm->appData();
+        triggerRepaintDisplayNow(win);
     }
     DBG_OUT("PageRenderThread() finished\n");
     return 0;

@@ -220,6 +220,27 @@ bool DisplayModel::pageShown(int pageNo)
     return pageInfo->shown;
 }
 
+bool DisplayModel::pageVisible(int pageNo)
+{
+    PdfPageInfo *pageInfo = getPageInfo(pageNo);
+    if (!pageInfo)
+        return false;
+    return pageInfo->visible;
+}
+
+/* Return true if a page is visible or a page below or above is visible */
+bool DisplayModel::pageVisibleNearby(int pageNo)
+{
+    /* TODO: should it check 2 pages above and below in facing mode? */
+    if (pageVisible(pageNo))
+        return true;
+    if (validPageNo(pageNo-1) && pageVisible(pageNo-1))
+        return true;
+    if (validPageNo(pageNo+1) && pageVisible(pageNo+1))
+        return true;
+    return false;
+}
+
 /* Given a zoom level that can include a "virtual" zoom levels like ZOOM_FIT_WIDTH
    and ZOOM_FIT_PAGE, calculate an absolute zoom level */
 double DisplayModel::zoomRealFromFirtualForPage(double zoomVirtual, int pageNo)
@@ -256,7 +277,6 @@ double DisplayModel::zoomRealFromFirtualForPage(double zoomVirtual, int pageNo)
     } else
         _zoomReal = zoomVirtual;
 
-    assert(validZoomReal(_zoomReal));
     return _zoomReal;
 }
 
@@ -1065,7 +1085,6 @@ void UnlockCache(void) {
 static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     assert(entry);
     if (!entry) return;
-    DBG_OUT("BitmapCacheEntry_Free() page=%d\n", entry->pageNo);
     assert(entry->bitmap);
     delete entry->bitmap;
     free((void*)entry);
@@ -1081,32 +1100,22 @@ void BitmapCache_FreeAll(void) {
     UnlockCache();
 }
 
-/* Free all bitmaps in the cache that are not visible. Returns TRUE if freed
+/* Free all bitmaps in the cache that are not visible. Returns true if freed
    at least one item. */
-BOOL BitmapCache_FreeNotVisible(void)
+bool BitmapCache_FreeNotVisible(void)
 {
-    int                 curPos = 0;
-    int                 i;
-    BOOL                shouldFree;
-    BitmapCacheEntry *  entry;
-    DisplayModel *      dm;
-    PdfPageInfo *       pageInfo;
-    BOOL                freedSomething = FALSE;
-    int                 cacheCount;
-
-    DBG_OUT("BitmapCache_FreeNotVisible()\n");
     LockCache();
-    cacheCount = gBitmapCacheCount;
-    for (i = 0; i < cacheCount; i++) {
-        entry = gBitmapCache[i];
-        dm = entry->dm;
-        pageInfo = dm->getPageInfo(entry->pageNo);
-        shouldFree = FALSE;
-        if (!pageInfo->visible)
-            shouldFree = TRUE;
-        
-        if (shouldFree) {
-            freedSomething = TRUE;
+    bool freedSomething = false;
+    int cacheCount = gBitmapCacheCount;
+    int                 curPos = 0;
+    for (int i = 0; i < cacheCount; i++) {
+        BitmapCacheEntry* entry = gBitmapCache[i];
+        bool shouldFree = !entry->dm->pageVisibleNearby(entry->pageNo);
+         if (shouldFree) {
+            if (!freedSomething)
+                DBG_OUT("BitmapCache_FreeNotVisible() ");
+            DBG_OUT("freed %d ", entry->pageNo);
+            freedSomething = true;
             BitmapCacheEntry_Free(gBitmapCache[i]);
             gBitmapCache[i] = NULL;
             --gBitmapCacheCount;
@@ -1116,29 +1125,29 @@ BOOL BitmapCache_FreeNotVisible(void)
             gBitmapCache[curPos] = gBitmapCache[i];
 
         if (!shouldFree)
-            ++curPos;
+             ++curPos;
     }
     UnlockCache();
+    if (freedSomething)
+        DBG_OUT("\n");
     return freedSomething;
 }
 
 /* Free all bitmaps cached for a given <dm>. Returns TRUE if freed
    at least one item. */
-BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
+bool BitmapCache_FreeForDisplayModel(DisplayModel *dm)
 {
-    int     curPos = 0;
-    int     i;
-    BOOL    shouldFree;
-    BOOL    freedSomething = FALSE;
-    int     cacheCount;
-
-    DBG_OUT("BitmapCache_FreeForDisplayModel()\n");
     LockCache();
-    cacheCount = gBitmapCacheCount;
-    for (i = 0; i < cacheCount; i++) {
-        shouldFree = (gBitmapCache[i]->dm == dm);
+    int cacheCount = gBitmapCacheCount;
+    bool freedSomething = false;
+    int curPos = 0;
+    for (int i = 0; i < cacheCount; i++) {
+        bool shouldFree = (gBitmapCache[i]->dm == dm);
         if (shouldFree) {
-            freedSomething = TRUE;
+            if (!freedSomething)
+                DBG_OUT("BitmapCache_FreeForDisplayModel() ");
+            DBG_OUT("freed %d ", gBitmapCache[i]->pageNo);
+            freedSomething = true;
             BitmapCacheEntry_Free(gBitmapCache[i]);
             gBitmapCache[i] = NULL;
             --gBitmapCacheCount;
@@ -1151,6 +1160,8 @@ BOOL BitmapCache_FreeForDisplayModel(DisplayModel *dm)
             ++curPos;
     }
     UnlockCache();
+    if (freedSomething)
+        DBG_OUT("\n");
     return freedSomething;
 }
 
@@ -1162,7 +1173,6 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     assert(dm);
     assert(bitmap);
     assert(validRotation(rotation));
-    assert(validZoomReal(zoomLevel));
 
     normalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Add(pageNo=%d, zoomLevel=%.2f%%, rotation=%d)\n", pageNo, zoomLevel, rotation);
@@ -1209,13 +1219,13 @@ Exit:
     return entry;
 }
 
-/* Return TRUE if a bitmap for a page defined by <dm>, <pageNo>, <zoomLevel>
+/* Return true if a bitmap for a page defined by <dm>, <pageNo>, <zoomLevel>
    and <rotation> exists in the cache */
-BOOL BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation) {
+bool BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation) {
     BitmapCacheEntry *entry;
     entry = BitmapCache_Find(dm, pageNo, zoomLevel, rotation);
     if (entry)
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 

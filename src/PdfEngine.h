@@ -93,20 +93,20 @@ public:
 
     virtual ~PdfEngine() { free((void*)_fileName); }
 
-    const char *fileName(void) { return _fileName; };
+    const char *fileName(void) const { return _fileName; };
 
     void setFileName(const char *fileName) {
         assert(!_fileName);
         _fileName = (const char*)strdup(fileName);
     }
 
-    bool validPageNo(int pageNo) {
+    bool validPageNo(int pageNo) const {
         if ((pageNo >= 1) && (pageNo <= pageCount()))
             return true;
         return false;
     }
 
-    int pageCount(void) { return _pageCount; }
+    int pageCount(void) const { return _pageCount; }
 
     virtual bool load(const char *fileName) = 0;
     virtual int pageRotation(int pageNo) = 0;
@@ -163,6 +163,8 @@ public:
     pdf_xref * xref() { return _xref; }
     pdf_pagetree * pages() { return _pageTree; }
 private:
+    void dropPdfPage(int pageNo);
+
     pdf_page * getPdfPage(int pageNo);
 
     pdf_xref *      _xref;

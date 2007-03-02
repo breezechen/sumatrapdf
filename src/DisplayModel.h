@@ -227,6 +227,8 @@ public:
     void            changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
 
     bool            pageShown(int pageNo);
+    bool            pageVisible(int pageNo);
+    bool            pageVisibleNearby(int pageNo);
     void            relayout(double zoomVirtual, int rotation);
 
     void            goToPage(int pageNo, int scrollY, int scrollX=-1);
@@ -355,11 +357,11 @@ extern void       RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
 extern void       CancelRenderingForDisplayModel(DisplayModel *dm);
 
 BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
-BOOL              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
+bool              BitmapCache_Exists(DisplayModel *dm, int pageNo, double zoomLevel, int rotation);
 void              BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotation, 
                                   RenderedBitmap *bitmap, double renderTime);
 void              BitmapCache_FreeAll(void);
-BOOL              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
-BOOL              BitmapCache_FreeNotVisible(void);
+bool              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
+bool              BitmapCache_FreeNotVisible(void);
 
 #endif

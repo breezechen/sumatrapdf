@@ -447,10 +447,9 @@ Error:
 
 pdf_page *PdfEngineFitz::getPdfPage(int pageNo)
 {
-    pdf_page * page;
     if (!_pages)
         return NULL;
-    page = _pages[pageNo-1];
+    pdf_page* page = _pages[pageNo-1];
     if (page)
         return page;
     // TODO: should check for error from pdf_getpageobject?
@@ -460,6 +459,17 @@ pdf_page *PdfEngineFitz::getPdfPage(int pageNo)
         return NULL;
     _pages[pageNo-1] = page;
     return page;
+}
+
+void PdfEngineFitz::dropPdfPage(int pageNo)
+{
+    assert(_pages);
+    if (!_pages) return;
+    pdf_page* page = _pages[pageNo-1];
+    assert(page);
+    if (!page) return;
+    pdf_droppage(page);
+    _pages[pageNo-1] = NULL;
 }
 
 int PdfEngineFitz::pageRotation(int pageNo)
@@ -520,10 +530,7 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA)
 {
-    fz_error *          error;
-    fz_matrix           ctm;
-    fz_rect             bbox;
-    fz_pixmap *         image;
+    fz_error* error;
 
     if (!_rast) {
 #ifdef FITZ_HEAD
@@ -533,20 +540,23 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
 #endif
     }
 
-    pdf_page * page = getPdfPage(pageNo);
+    pdf_page* page = getPdfPage(pageNo);
     if (!page)
         return NULL;
     zoomReal = zoomReal / 100.0;
-    ctm = pdfapp_viewctm(page, zoomReal, rotation);
-    bbox = fz_transformaabb(ctm, page->mediabox);
+    fz_matrix ctm = pdfapp_viewctm(page, zoomReal, rotation);
+    fz_rect bbox = fz_transformaabb(ctm, page->mediabox);
+    fz_pixmap* image = NULL;
 #ifdef FITZ_HEAD
     error = fz_drawtree(&image, _rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);
 #else
     error = fz_rendertree(&image, _rast, page->tree, ctm, fz_roundrect(bbox), 1);
 #endif
+#if CONSERVE_MEMORY
+    dropPdfPage(pageNo);
+#endif
     if (error)
         return NULL;
-
     ConvertPixmapForWindows(image);
     return new RenderedBitmapFitz(image);
 }
