@@ -226,7 +226,7 @@ bool PdfEnginePoppler::load(const char *fileName)
         return false;
     }
     _pageCount = _pdfDoc->getNumPages();
-    _linksForPage = (Links**)malloc(_pageCount * sizeof(Links));
+    _linksForPage = (Links**)malloc(_pageCount * sizeof(Links*));
     if (!_linksForPage) return false;
     for (int i=0; i < _pageCount; i++)
         _linksForPage[i] = NULL;
@@ -437,7 +437,7 @@ bool PdfEngineFitz::load(const char *fileName)
         goto Error;
 
     _pageCount = _pageTree->count;
-    _pages = (pdf_page**)malloc(sizeof(pdf_page) * _pageCount);
+    _pages = (pdf_page**)malloc(sizeof(pdf_page*) * _pageCount);
     for (int i = 0; i < _pageCount; i++)
         _pages[i] = NULL;
     return true;
