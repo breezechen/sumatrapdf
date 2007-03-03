@@ -1393,9 +1393,6 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
     if (!fileFromHistory)
         AddFileToHistory(fileName);
 
-    if (!reuseExistingWindow)
-        WindowInfoList_Add(win);
-
     /* TODO: if fileFromHistory, set the state based on gFileHistoryList node for
        this entry */
     win->state = WS_SHOWING_PDF;
@@ -1432,6 +1429,8 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
         WindowInfo_RedrawAll(win);
 
 Exit:
+    if (!reuseExistingWindow)
+        WindowInfoList_Add(win);
     MenuToolbarUpdateStateForAllWindows();
     assert(win);
     DragAcceptFiles(win->hwndFrame, TRUE);
@@ -2459,6 +2458,9 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         } else {
             SetCursor(LoadCursor(NULL, IDC_ARROW));
         }
+    } else {
+        // TODO: be more efficient, this only needs to be set once (I think)
+        SetCursor(LoadCursor(NULL, IDC_ARROW));
     }
 }
 
@@ -4232,7 +4234,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     } else {
         while (currArg) {
             win = LoadPdf(currArg->str);
-            if (!win || !win->dm)
+            if (!win)
                 goto Exit;
 
             if (exitOnPrint)
