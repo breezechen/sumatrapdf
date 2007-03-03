@@ -85,9 +85,18 @@ loadpagetree(pdf_xref *xref, pdf_pagetree *pages,
 			error = pdf_loadindirect(&kobj, xref, kref);
 			if (error) { fz_dropobj(kids); return error; }
 
-			error = loadpagetree(xref, pages, inherit, kobj, kref);
-			fz_dropobj(kobj);
-			if (error) { fz_dropobj(kids); return error; }
+            if (kobj == obj)
+            {
+                /* prevent infinite recursion possible in maliciously crafted PDFs */
+                fz_dropobj(kids);
+                return fz_throw("corrupted pdf file");
+            }
+            else
+            {
+			    error = loadpagetree(xref, pages, inherit, kobj, kref);
+			    fz_dropobj(kobj);
+			    if (error) { fz_dropobj(kids); return error; }
+            }
 		}
 
 		fz_dropobj(kids);
@@ -177,7 +186,7 @@ cleanup:
 		fz_free(p->pobj);
 		fz_free(p);
 	}
-	return nil;
+	return error;
 }
 
 int
