@@ -255,7 +255,7 @@ insertael(fz_ael *ael, fz_gel *gel, int y, int *e)
 	/* insert edges that start here */
 	while (*e < gel->len && gel->edges[*e].y == y) {
 		if (ael->len + 1 == ael->cap) {
-			int newcap = ael->cap + 64;
+			int newcap = ael->cap + 256;
 			fz_edge **newedges = fz_realloc(ael->edges, sizeof(fz_edge*) * newcap);
 			if (!newedges)
 				return fz_outofmem;

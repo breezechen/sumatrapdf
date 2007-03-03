@@ -66,9 +66,44 @@ static inline void srownp2(byte * restrict src, byte * restrict dst, unsigned w,
 			dst[k] = sum[k] / left;
 }
 
+static FORCEINLINE void srow1d9(byte * restrict src, byte * restrict dst, unsigned w)
+{
+    int left, runs;
+    unsigned sum;
+
+    left = w % 9;
+    runs = w / 9;
+    while (runs-- > 0)
+    {
+        sum = *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        sum += *src++;
+        *dst++ = sum / 9;
+    }
+
+    /* left overs */
+    if (left)
+    {
+        runs = left;
+        sum = *src++;
+        while (--runs > 0)
+            sum += *src++;
+        *dst = sum / left;
+    }
+}
+
 static void srow1(byte *src, byte *dst, int w, int denom)
 {
-	srown(src, dst, w, denom, 1);
+    if (9 == denom)
+        srow1d9(src, dst, w);
+    else
+        srown(src, dst, w, denom, 1);
 }
 
 static FORCEINLINE void srow2d3(byte *src, byte *dst, int w)
