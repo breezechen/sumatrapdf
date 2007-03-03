@@ -30,7 +30,11 @@
 #	define FZ_FLEX 1
 #	define restrict
 #ifdef _MSC_VER
-#   define inline __inline
+#ifndef NDEBUG
+#	define inline __inline
+#else
+#	define inline __forceinline
+#endif
 #   define FORCEINLINE __forceinline
 #else
 #	define inline __inline__

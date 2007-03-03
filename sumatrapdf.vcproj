@@ -129,6 +129,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="true"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				WholeProgramOptimization="true"

@@ -253,7 +253,8 @@ static fz_error *
 insertael(fz_ael *ael, fz_gel *gel, int y, int *e)
 {
 	/* insert edges that start here */
-	while (*e < gel->len && gel->edges[*e].y == y) {
+	int e2 = *e;
+	while (e2 < gel->len && gel->edges[e2].y == y) {
 		if (ael->len + 1 == ael->cap) {
 			int newcap = ael->cap + 256;
 			fz_edge **newedges = fz_realloc(ael->edges, sizeof(fz_edge*) * newcap);
@@ -262,9 +263,9 @@ insertael(fz_ael *ael, fz_gel *gel, int y, int *e)
 			ael->edges = newedges;
 			ael->cap = newcap;
 		}
-		ael->edges[ael->len++] = &gel->edges[(*e)++];
+		ael->edges[ael->len++] = &gel->edges[e2++];
 	}
-
+	*e = e2;
 	/* shell-sort the edges by increasing x */
 	sortael(ael->edges, ael->len);
 
