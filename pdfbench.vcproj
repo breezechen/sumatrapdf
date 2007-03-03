@@ -80,6 +80,8 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="false"
+				UpdateFileHashes="false"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"

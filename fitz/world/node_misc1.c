@@ -30,13 +30,29 @@ fz_initnode(fz_node *node, fz_nodekind kind)
 	node->next = nil;
 }
 
+#define TAILRECURSION 1
+
+/* Naive implementation uses so much stack that some PDFs can blow default
+   1MB stack on Windows. A partially tail-recursive version (enabled
+   when TAILRECURSION is defined) doesn't have this problem (at least I
+   don't know of a PDF that can blow stack with this version although I'm
+   sure it's possible to artificially create one) */
 void
 fz_dropnode(fz_node *node)
 {
-	if (node->first)
+#ifdef TAILRECURSION
+    fz_node *next;
+tailrecursion:
+#endif
+    if (node->first)
 		fz_dropnode(node->first);
-	if (node->next)
+
+#ifdef TAILRECURSION
+    next = node->next;
+#else
+    if (node->next)
 		fz_dropnode(node->next);
+#endif
 
 	switch (node->kind)
 	{
@@ -67,6 +83,13 @@ fz_dropnode(fz_node *node)
 	}
 
 	fz_free(node);
+#ifdef TAILRECURSION
+    if (next)
+    {
+        node = next;
+        goto tailrecursion;
+    }
+#endif
 }
 
 fz_rect

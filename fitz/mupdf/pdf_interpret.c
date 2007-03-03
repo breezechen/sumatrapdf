@@ -179,7 +179,7 @@ static fz_error *
 runinlineimage(pdf_csi *csi, pdf_xref *xref, fz_obj *rdb, fz_stream *file, fz_obj *dict)
 {
 	fz_error *error;
-	pdf_image *img;
+	pdf_image *img = NULL;
 	char buf[256];
 	int token;
 	int len;
@@ -193,13 +193,8 @@ runinlineimage(pdf_csi *csi, pdf_xref *xref, fz_obj *rdb, fz_stream *file, fz_ob
 		fz_warn("syntaxerror: corrupt inline image");
 
 	error = pdf_showimage(csi, img);
-	if (error)
-	{
-		fz_dropimage((fz_image*)img);
-		return error;
-	}
-
-	return nil;
+	fz_dropimage((fz_image*)img);
+	return error;
 }
 
 /*
@@ -337,7 +332,11 @@ runkeyword(pdf_csi *csi, pdf_xref *xref, fz_obj *rdb, char *buf)
 			error = fz_newtransformnode(&transform, m);
 			if (error) return error;
 			error = pdf_addtransform(gstate, transform);
-			if (error) return error;
+			if (error)
+			{
+				fz_dropnode(transform);
+				return error;
+			}
 		}
 
 		else if (!strcmp(buf, "ri"))

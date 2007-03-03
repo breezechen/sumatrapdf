@@ -56,6 +56,8 @@ pdf_closexref(pdf_xref *xref)
 	if (xref->file)
 		fz_dropstream(xref->file);
 
+	if (xref->crypt)
+		pdf_dropcrypt(xref->crypt);
 	if (xref->trailer)
 		fz_dropobj(xref->trailer);
 	if (xref->root)

@@ -71,10 +71,10 @@
 				AdditionalDependencies="freetype231mt_d.lib comctl32.lib zlib_ds.lib jpeg_ds.lib winspool.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(ProjectDir)ext\freetype231&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)ext\jpeg&quot;"
+				GenerateManifest="true"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				StackReserveSize="2097152"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -82,6 +82,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				EmbedManifest="true"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -162,7 +163,6 @@
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				StackReserveSize="2097152"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				LinkTimeCodeGeneration="1"

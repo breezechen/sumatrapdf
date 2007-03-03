@@ -11,6 +11,9 @@
      of a previous run.
 */
 
+// this sucks but I don't know any other way
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
+
 #include "str_util.h"
 #include "base_util.h"
 #include "file_util.h"
@@ -1204,6 +1207,8 @@ int main(int argc, char **argv)
     if (0 == StrList_Len(&gArgsListRoot))
         printUsageAndExit(argc, argv);
     assert(gArgsListRoot);
+
+    void *leak = malloc(20);
 
     SplashColorsInit();
     globalParams = new GlobalParams("");

@@ -6,6 +6,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+static FT_Library ftlib = nil;
+
 #ifdef WIN32
 #include <io.h>
 static int path_exists(const char *path)
@@ -21,6 +23,10 @@ fz_error *initfontlibs_ms(void)
 }
 void deinitfontlibs_ms(void)
 {
+    if (!ftlib)
+        return;
+    FT_Done_FreeType(ftlib);
+    ftlib = nil;
 }
 #else
 static int path_exists(const char *path)
@@ -30,8 +36,6 @@ static int path_exists(const char *path)
     return 0;
 }
 #endif
-
-static FT_Library ftlib = nil;
 
 enum
 {
