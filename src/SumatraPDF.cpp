@@ -1649,41 +1649,6 @@ static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
     return TRUE;
 }
 
-static void RefreshIcons(void)
-{
-    DString ds;
-    BYTE    buff[256];
-    HKEY    hKey;
-    DWORD   keySize;
-    DWORD   typ = REG_SZ;
-    LONG    result;
-    int     origIconSize;
-
-    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_READ, &hKey);
-
-    keySize = sizeof(buff);
-    RegQueryValueEx(hKey, "Shell Icon Size", 0, &typ, buff, &keySize);
-    RegCloseKey(hKey);
-
-    origIconSize = atoi((const char*)buff);
-
-    DStringInit(&ds);
-    DStringSprintf(&ds, "%d", origIconSize+1);
-
-    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_WRITE, &hKey);
-
-    RegSetValueEx(hKey,"Shell Icon Size", 0, REG_SZ, (const BYTE*)ds.pString, ds.length);
-    RegCloseKey(hKey);
-
-    ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
-
-    result = ::RegOpenKeyEx(HKEY_CURRENT_USER, "Control Panel\\Desktop\\WindowMetrics", 0, KEY_WRITE, &hKey);
-    RegSetValueEx(hKey,"Shell Icon Size",0,REG_SZ, (const BYTE*)buff,strlen((const char*)buff));
-    RegCloseKey(hKey);
-
-    ::SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE,SPI_SETNONCLIENTMETRICS,NULL);
-}
-
 static bool AlreadyRegisteredForPdfExtentions(void)
 {
     bool    registered = false;
@@ -1779,6 +1744,8 @@ static void AssociateExeWithPdfExtentions()
     hr = StringCchPrintfA(tmp,  dimof(tmp), "\"%s\" \"%%1\"", exePath);
     if (RegSetValueEx(kcmd, "", 0, REG_SZ, (const BYTE*)tmp, strlen(tmp)+1))
         goto Exit;
+
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
 
 Exit:
     if (kcmd)
@@ -2132,6 +2099,9 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { "forums", "http://blog.kowalczyk.info/forum_sumatra", "http://blog.kowalczyk.info/forum_sumatra",
+    0, 0, 0, 0, 0, 0, 0, 0 },
+
+    { "program icon", "Goce Mitevski", "http://monsteer.deviantart.com",
     0, 0, 0, 0, 0, 0, 0, 0 },
 
     { "toolbar icons", "Mark James", "http://www.famfamfam.com/lab/icons/silk/",
