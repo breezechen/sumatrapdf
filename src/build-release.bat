@@ -3,7 +3,7 @@
 @set PATH=%PATH%;C:\Program Files\NSIS
 @set FASTDL_PATH=C:\kjk\src\web\fastdl\www
 
-@pushd
+@pushd .
 @set VERSION=%1
 @IF NOT DEFINED VERSION GOTO VERSION_NEEDED
 
@@ -12,6 +12,7 @@
 devenv ..\sumatrapdf.sln /Rebuild "Release|Win32"
 @IF ERRORLEVEL 1 goto BUILD_FAILED
 echo Compilation ok!
+copy ..\Release\SumatraPDF.exe ..\Release\SumatraPDF-uncomp.exe
 upx --best ..\Release\SumatraPDF.exe
 @IF ERRORLEVEL 1 goto PACK_FAILED
 

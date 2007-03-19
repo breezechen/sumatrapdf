@@ -109,7 +109,7 @@
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="0"
-			WholeProgramOptimization="1"
+			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -132,8 +132,8 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
-				WholeProgramOptimization="true"
+				OmitFramePointers="false"
+				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir).\baseutils&quot;;&quot;$(ProjectDir).\src&quot;;&quot;$(ProjectDir).\poppler&quot;;&quot;$(ProjectDir).\poppler\goo&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)ext\freetype231\include&quot;;&quot;$(ProjectDir).\poppler\poppler&quot;;&quot;$(ProjectDir).\poppler\splash&quot;;&quot;$(ProjectDir)fitz\include&quot;"
 				PreprocessorDefinitions="WIN32;_WIN32;NDEBUG;_WINDOWS;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1;ENABLE_LIBJPEG=1"
 				StringPooling="true"
@@ -167,7 +167,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				LinkTimeCodeGeneration="1"
+				LinkTimeCodeGeneration="0"
 				ProfileGuidedDatabase=""
 				TargetMachine="1"
 			/>
@@ -188,6 +188,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+				HeapVerification="0"
+				HandleVerification="0"
+				LocksVerification="0"
 			/>
 			<Tool
 				Name="VCWebDeploymentTool"

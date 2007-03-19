@@ -107,7 +107,7 @@
 			IntermediateDirectory="$(ConfigurationName)-pdfbenchhead"
 			ConfigurationType="1"
 			CharacterSet="2"
-			WholeProgramOptimization="1"
+			WholeProgramOptimization="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -130,7 +130,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				OmitFramePointers="true"
+				OmitFramePointers="false"
 				WholeProgramOptimization="false"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)baseutils&quot;;&quot;$(ProjectDir)src&quot;;&quot;$(ProjectDir)poppler&quot;;&quot;$(ProjectDir)poppler\goo&quot;;&quot;$(ProjectDir)poppler\poppler&quot;;&quot;$(ProjectDir)poppler\splash&quot;;&quot;$(ProjectDir)ext\freetype231\include&quot;;&quot;$(ProjectDir)ext\jpeg&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)fitz-head\include&quot;"
 				PreprocessorDefinitions="_WIN32;WIN32;_WINDOWS;NDEBUG;USE_OWN_GET_AUTH_DATA;POPPLER_DATADIR=\&quot;\&quot;;ENABLE_ZLIB=1;ENABLE_LIBJPEG=1;FITZ_HEAD=1"
@@ -164,7 +164,7 @@
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				LinkTimeCodeGeneration="1"
+				LinkTimeCodeGeneration="0"
 				TargetMachine="1"
 				Profile="true"
 			/>
