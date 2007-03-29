@@ -25,21 +25,22 @@
 #endif
 
 #ifdef HAVE_C99
-#	define FZ_FLEX
+  #define FZ_FLEX
 #else
-#	define FZ_FLEX 1
-#	define restrict
-#ifdef _MSC_VER
-#ifndef NDEBUG
-#	define inline __inline
-#else
-#	define inline __forceinline
-#endif
-#   define FORCEINLINE __forceinline
-#else
-#	define inline __inline__
-#   define FORCEINLINE __inline__
-#endif
+  #define FZ_FLEX 1
+  #define restrict
+  #ifdef _MSC_VER
+    #ifndef NDEBUG
+      #define inline __inline
+    #else
+      #//define inline __forceinline
+      #define inline __inline
+    #endif
+    #define FORCEINLINE __forceinline
+  #else
+    #define inline __inline__
+    #define FORCEINLINE __inline__
+  #endif
 #endif
 
 #ifndef va_copy

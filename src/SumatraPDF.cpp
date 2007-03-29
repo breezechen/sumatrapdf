@@ -1413,8 +1413,7 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
        remembered for continuous mode breaks things (makes all pages invisible) */
     offsetY = 0;
     /* TODO: make sure offsetX isn't bogus */
-    win->dm->goToPage(startPage, offsetY);
-    win->dm->scrollXTo(offsetX);
+    win->dm->goToPage(startPage, offsetY, offsetX);
 
 #if 0  // TODO: not good enough yet
     if (!fileFromHistory || ignoreHistorySizePos)
