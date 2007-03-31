@@ -327,6 +327,7 @@ void DisplayModelSplash::EnsureSearchHitVisible()
 
     //DBG_OUT("DisplayModelSplash::EnsureSearchHitVisible(), (yStart=%d, yEnd=%d)\n", yStart, yEnd);
 
+    // TODO: this logic is flawed
     yNewPos = (int)areaOffset.y;
 
     if (yStart < (int)areaOffset.y) {
@@ -349,7 +350,8 @@ void DisplayModelSplash::EnsureSearchHitVisible()
     }
 
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
-    if (!pageInfo->visible || needScroll)
+    bool pageRendered = BitmapCache_Exists(this, pageNo, _zoomReal, _rotation);
+    if (!pageInfo->visible || needScroll || !pageRendered)
         goToPage(pageNo, yNewPos, xNewPos);
 }
 

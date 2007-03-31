@@ -83,6 +83,7 @@ DisplaySettings *globalDisplaySettings(void)
 bool rotationFlipped(int rotation)
 {
     assert(validRotation(rotation));
+    normalizeRotation(&rotation);
     if ((90 == rotation) || (270 == rotation))
         return true;
     return false;
@@ -643,10 +644,28 @@ void DisplayModel::recalcLinksCanvasPos(void)
 
         rect = pdfLink->rectPage;
         rectCvtUserToScreen(pdfLink->pageNo, &rect);
+
+#if 0 // this version is correct but needs to be made generic, not specific to poppler
+        /* hack: in PDFs that have a crop-box (like treo700psprint_UG.pdf)
+           we need to shift links by the offset of crop-box. Since we do it
+           after conversion involving ctm, we need to apply current zoom and
+           rotation. This is probably not the best place to be doing this
+           but it's the only one we managed to make work */
+        double offX = dm->pdfDoc->getCatalog()->getPage(pdfLink->pageNo)->getCropBox()->x1;
+        double offY = dm->pdfDoc->getCatalog()->getPage(pdfLink->pageNo)->getCropBox()->y1;
+        if (flippedRotation(dm->rotation)) {
+            double tmp = offX;
+            offX = offY;
+            offY = tmp;
+        }
+        offX = offX * dm->zoomReal * 0.01;
+        offY = offY * dm->zoomReal * 0.01;
+#else
         pdfLink->rectCanvas.x = (int)rect.x;
         pdfLink->rectCanvas.y = (int)rect.y;
         pdfLink->rectCanvas.dx = (int)rect.dx;
         pdfLink->rectCanvas.dy = (int)rect.dy;
+#endif
 #if 0
         DBG_OUT("  link on page (x=%d, y=%d, dx=%d, dy=%d),\n",
             (int)pdfLink->rectPage.x, (int)pdfLink->rectPage.y,
