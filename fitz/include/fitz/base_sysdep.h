@@ -29,12 +29,13 @@
 #else
   #define FZ_FLEX 1
   #define restrict
+
   #ifdef _MSC_VER
     #ifndef NDEBUG
-      #define inline __inline
+      /*#define inline __inline*/
+      /*#define inline*/
     #else
-      #//define inline __forceinline
-      #define inline __inline
+      /*#define inline __inline*/
     #endif
     #define FORCEINLINE __forceinline
   #else
