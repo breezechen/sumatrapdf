@@ -160,9 +160,12 @@ public:
     virtual int linkCount(int pageNo);
     virtual const char* linkType(int pageNo, int linkNo);
 
+private:
+    PdfEnginePoppler* _popplerEngine;
+
     pdf_xref * xref() { return _xref; }
     pdf_pagetree * pages() { return _pageTree; }
-private:
+
     void dropPdfPage(int pageNo);
 
     pdf_page * getPdfPage(int pageNo);

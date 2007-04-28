@@ -3953,9 +3953,10 @@ static DWORD WINAPI PageRenderThread(PVOID data)
             delete bmp;
             continue;
         }
-        /* TODO: can bmp be NULL ? */
-        assert(bmp);
-        DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
+        if (bmp)
+            DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
+        else
+            DBG_OUT("PageRenderThread(): failed to render a bitmap of page %d\n", req.pageNo);
         double renderTime = renderTimer.timeInMs();
         BitmapCache_Add(req.dm, req.pageNo, req.zoomLevel, req.rotation, bmp, renderTime);
 #ifdef CONSERVE_MEMORY

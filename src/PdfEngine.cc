@@ -284,8 +284,11 @@ RenderedBitmap *PdfEnginePoppler::renderBitmap(
             RecalcLinks();
     }
 #endif
-    RenderedBitmapSplash *renderedBitmap = new RenderedBitmapSplash(_outputDev->takeBitmap());
-    return renderedBitmap;
+    SplashBitmap* bmp = _outputDev->takeBitmap();
+    if (bmp)
+        return new RenderedBitmapSplash(bmp);
+
+    return NULL;
 }
 
 Links* PdfEnginePoppler::getLinksForPage(int pageNo)
@@ -355,6 +358,7 @@ static fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
 
 PdfEngineFitz::PdfEngineFitz() : 
         PdfEngine()
+        , _popplerEngine(NULL)
         , _xref(NULL)
         , _outline(NULL)
         , _pageTree(NULL)
@@ -393,10 +397,13 @@ PdfEngineFitz::~PdfEngineFitz()
         fz_droprenderer(_rast);
 #endif
     }
+
+    delete _popplerEngine;        
 }
 
 bool PdfEngineFitz::load(const char *fileName)
 {
+    assert(!_popplerEngine);
     setFileName(fileName);
     fz_error *error = pdf_newxref(&_xref);
     if (error)
@@ -408,7 +415,7 @@ bool PdfEngineFitz::load(const char *fileName)
             goto Error;
         error = pdf_repairxref(_xref, (char*)fileName);
         if (error)
-            goto Error;
+            goto TryPoppler;
     }
 
     error = pdf_decryptxref(_xref);
@@ -443,6 +450,18 @@ bool PdfEngineFitz::load(const char *fileName)
     return true;
 Error:
     return false;
+TryPoppler:
+    _popplerEngine = new PdfEnginePoppler();
+    if (!_popplerEngine)
+        return false;
+    bool fok = _popplerEngine->load(fileName);
+    if (!fok)
+        goto ErrorPoppler;
+    return true;
+
+ErrorPoppler:
+    delete _popplerEngine;
+    return false;
 }
 
 pdf_page *PdfEngineFitz::getPdfPage(int pageNo)
@@ -474,6 +493,9 @@ void PdfEngineFitz::dropPdfPage(int pageNo)
 
 int PdfEngineFitz::pageRotation(int pageNo)
 {
+    if (_popplerEngine)
+        return _popplerEngine->pageRotation(pageNo);
+
     assert(validPageNo(pageNo));
     fz_obj *dict = pdf_getpageobject(pages(), pageNo - 1);
     int rotation;
@@ -485,6 +507,9 @@ int PdfEngineFitz::pageRotation(int pageNo)
 
 SizeD PdfEngineFitz::pageSize(int pageNo)
 {
+    if (_popplerEngine)
+        return _popplerEngine->pageSize(pageNo);
+
     assert(validPageNo(pageNo));
     fz_obj *dict = pdf_getpageobject(pages(), pageNo - 1);
     fz_rect bbox;
@@ -531,6 +556,11 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
                            void *abortCheckCbkDataA)
 {
     fz_error* error;
+    fz_matrix ctm;
+    fz_rect bbox;
+
+    if (_popplerEngine)
+        return _popplerEngine->renderBitmap(pageNo, zoomReal, rotation, abortCheckCbkA, abortCheckCbkDataA);
 
     if (!_rast) {
 #ifdef FITZ_HEAD
@@ -542,10 +572,10 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
 
     pdf_page* page = getPdfPage(pageNo);
     if (!page)
-        return NULL;
+        goto TryPoppler;
     zoomReal = zoomReal / 100.0;
-    fz_matrix ctm = pdfapp_viewctm(page, zoomReal, rotation);
-    fz_rect bbox = fz_transformaabb(ctm, page->mediabox);
+    ctm = pdfapp_viewctm(page, zoomReal, rotation);
+    bbox = fz_transformaabb(ctm, page->mediabox);
     fz_pixmap* image = NULL;
 #ifdef FITZ_HEAD
     error = fz_drawtree(&image, _rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);
@@ -556,9 +586,19 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
     dropPdfPage(pageNo);
 #endif
     if (error)
-        return NULL;
+        goto TryPoppler;
     ConvertPixmapForWindows(image);
     return new RenderedBitmapFitz(image);
+TryPoppler:
+    _popplerEngine = new PdfEnginePoppler();
+    if (!_popplerEngine)
+        return false;
+    bool fok = _popplerEngine->load(fileName());
+    if (!fok)
+        goto ErrorPoppler;
+    return _popplerEngine->renderBitmap(pageNo, zoomReal, rotation, abortCheckCbkA, abortCheckCbkDataA);
+ErrorPoppler:
+    return NULL;
 }
 
 static int getLinkCount(pdf_link *currLink) {

@@ -1091,7 +1091,6 @@ void UnlockCache(void) {
 static void BitmapCacheEntry_Free(BitmapCacheEntry *entry) {
     assert(entry);
     if (!entry) return;
-    assert(entry->bitmap);
     delete entry->bitmap;
     free((void*)entry);
 }
@@ -1202,7 +1201,6 @@ void BitmapCache_Add(DisplayModel *dm, int pageNo, double zoomLevel, int rotatio
     RenderedBitmap *bitmap, double renderTime) {
     assert(gBitmapCacheCount <= MAX_BITMAPS_CACHED);
     assert(dm);
-    assert(bitmap);
     assert(validRotation(rotation));
 
     normalizeRotation(&rotation);
