@@ -32,6 +32,7 @@ pdf_loadinlineimage(pdf_image **imgp, pdf_xref *xref,
 
 	pdf_logimage("load inline image %p {\n", img);
 
+	img->super.refs = 1;
 	img->super.loadtile = pdf_loadtile;
 	img->super.drop = pdf_dropimage;
 	img->super.n = 0;
