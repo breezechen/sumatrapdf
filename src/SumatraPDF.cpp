@@ -131,21 +131,22 @@ static FileHistoryList *            gFileHistoryRoot = NULL;
 static HINSTANCE                    ghinst = NULL;
 TCHAR                               windowTitle[MAX_LOADSTRING];
 
-static WindowInfo*                  gWindowList = NULL;
+static WindowInfo*                  gWindowList;
 
-static HCURSOR                      gCursorArrow = NULL;
-static HCURSOR                      gCursorWait = NULL;
+static HCURSOR                      gCursorArrow;
+static HCURSOR                      gCursorHand;
+static HCURSOR                      gCursorDrag;
 static HBRUSH                       gBrushBg;
 static HBRUSH                       gBrushWhite;
 static HBRUSH                       gBrushShadow;
 static HBRUSH                       gBrushLinkDebug;
 
-static HPEN                         ghpenWhite = NULL;
-static HPEN                         ghpenBlue = NULL;
+static HPEN                         ghpenWhite;
+static HPEN                         ghpenBlue;
 
 //static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
-static char *                       gBenchFileName = NULL;
+static char *                       gBenchFileName;
 static int                          gBenchPageNum = INVALID_PAGE_NO;
 BOOL                                gShowToolbar = TRUE;
 BOOL                                gUseFitz = TRUE;
@@ -164,13 +165,13 @@ static bool                         gUseDoubleBuffer = false;
 static PageRenderRequest            gPageRenderRequests[MAX_PAGE_REQUESTS];
 static int                          gPageRenderRequestsCount = 0;
 
-static HANDLE                       gPageRenderThreadHandle = NULL;
-static HANDLE                       gPageRenderSem = NULL;
-static PageRenderRequest *          gCurPageRenderReq = NULL;
+static HANDLE                       gPageRenderThreadHandle;
+static HANDLE                       gPageRenderSem;
+static PageRenderRequest *          gCurPageRenderReq;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
-static HWND                         gHwndAbout = NULL;
+static HWND                         gHwndAbout;
 
 typedef struct ToolbarButtonInfo {
     /* information provided at compile time */
@@ -2260,7 +2261,7 @@ static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
             win->dragging = TRUE;
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
-            SetCursor(LoadCursor(NULL, IDC_HAND));
+            SetCursor(gCursorDrag);
             DBG_OUT(" dragging start, x=%d, y=%d\n", x, y);
         }
     } else if (WS_ABOUT == win->state) {
@@ -2301,7 +2302,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
         win->dragPrevPosX = x;
         win->dragPrevPosY = y;
         win->dragging = FALSE;
-        SetCursor(LoadCursor(NULL, IDC_ARROW));
+        SetCursor(gCursorArrow);
         ReleaseCapture();            
         return;
     }
@@ -2339,20 +2340,20 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         }
         link = win->dm->linkAtPosition(x, y);
         if (link) {
-            SetCursor(LoadCursor(NULL, IDC_HAND));
+            SetCursor(gCursorHand);
         } else {
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
+            SetCursor(gCursorArrow);
         }
     } else if (WS_ABOUT == win->state) {
         url = AboutGetLink(win, x, y);
         if (url) {
-            SetCursor(LoadCursor(NULL, IDC_HAND));
+            SetCursor(gCursorHand);
         } else {
-            SetCursor(LoadCursor(NULL, IDC_ARROW));
+            SetCursor(gCursorArrow);
         }
     } else {
         // TODO: be more efficient, this only needs to be set once (I think)
-        SetCursor(LoadCursor(NULL, IDC_ARROW));
+        SetCursor(gCursorArrow);
     }
 }
 
@@ -3404,7 +3405,7 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
 
         case WM_SETCURSOR:
             if (win && win->dragging) {
-                SetCursor(LoadCursor(NULL, IDC_HAND));
+                SetCursor(gCursorDrag);
                 return TRUE;
             }
             break;
@@ -3735,8 +3736,8 @@ static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
 
     SplashColorsInit();
     gCursorArrow = LoadCursor(NULL, IDC_ARROW);
-    gCursorWait  = LoadCursor(NULL, IDC_WAIT);
-
+    gCursorHand  = LoadCursor(NULL, IDC_HAND);
+    gCursorDrag  = LoadCursor(ghinst, MAKEINTRESOURCE(IDC_CURSORDRAG));
     gBrushBg     = CreateSolidBrush(COL_WINDOW_BG);
     gBrushWhite  = CreateSolidBrush(COL_WHITE);
     gBrushShadow = CreateSolidBrush(COL_WINDOW_SHADOW);

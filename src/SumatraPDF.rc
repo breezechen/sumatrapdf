@@ -43,9 +43,9 @@ BEGIN
     BEGIN
         MENUITEM "&Open\tCtrl-O",               IDM_OPEN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
-        MENUITEM "&Print",						IDM_PRINT
+        MENUITEM "&Print",                      IDM_PRINT
         MENUITEM SEPARATOR
-        MENUITEM "Make SumatraPDf a default PDF reader"      IDM_MAKE_DEFAULT_READER
+        MENUITEM "Make SumatraPDf a default PDF reader", IDM_MAKE_DEFAULT_READER
         MENUITEM SEPARATOR
         MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
     END
@@ -59,9 +59,9 @@ BEGIN
         MENUITEM "Rotate left",                 IDM_VIEW_ROTATE_LEFT
         MENUITEM "Rotate right",                IDM_VIEW_ROTATE_RIGHT
         MENUITEM SEPARATOR
-        MENUITEM "Show toolbar"                 IDM_VIEW_SHOW_HIDE_TOOLBAR
+        MENUITEM "Show toolbar",                IDM_VIEW_SHOW_HIDE_TOOLBAR
         MENUITEM SEPARATOR
-        MENUITEM "Use MuPDF rendering engine"   IDM_VIEW_USE_FITZ
+        MENUITEM "Use MuPDF rendering engine",  IDM_VIEW_USE_FITZ
     END
     POPUP "&Go To"
     BEGIN
@@ -124,12 +124,11 @@ END
 
 IDB_TOOLBAR             BITMAP                  "toolbar.bmp"
 IDB_TOOLBAR_DISABLED    BITMAP                  "toolbar-disabled.bmp"
-
-IDB_SILK_OPEN			BITMAP					"icons-silk\\folder.bmp"
-IDB_SILK_NEXT			BITMAP					"icons-silk\\next.bmp"
-IDB_SILK_PREV			BITMAP					"icons-silk\\previous.bmp"
-IDB_SILK_ZOOM_IN		BITMAP					"icons-silk\\zoom_in.bmp"
-IDB_SILK_ZOOM_OUT		BITMAP					"icons-silk\\zoom_out.bmp"
+IDB_SILK_OPEN           BITMAP                  "icons-silk\\folder.bmp"
+IDB_SILK_NEXT           BITMAP                  "icons-silk\\next.bmp"
+IDB_SILK_PREV           BITMAP                  "icons-silk\\previous.bmp"
+IDB_SILK_ZOOM_IN        BITMAP                  "icons-silk\\zoom_in.bmp"
+IDB_SILK_ZOOM_OUT       BITMAP                  "icons-silk\\zoom_out.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -153,10 +152,10 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Associate with PDF files?"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Make SumatraPDF default application for PDF files?", IDC_STATIC, 8, 10, 200-16,8
-    AUTOCHECKBOX    "Don't ask me again", IDC_DONT_ASK_ME_AGAIN, 8, 24, 200-16, 8
-    DEFPUSHBUTTON   "Yes",IDOK,           7, 40, 32, 14
-    PUSHBUTTON      "No",IDCANCEL, 200-8-32, 40, 32, 14
+    LTEXT           "Make SumatraPDF default application for PDF files?",IDC_STATIC,8,10,184,8
+    CONTROL         "Don't ask me again",IDC_DONT_ASK_ME_AGAIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,24,184,8
+    DEFPUSHBUTTON   "Yes",IDOK,7,40,32,14
+    PUSHBUTTON      "No",IDCANCEL,160,40,32,14
 END
 
 IDD_DIALOG_GET_PASSWORD DIALOGEX 0, 0, 176, 70
@@ -226,6 +225,13 @@ BEGIN
 END
 #endif    // APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursor
+//
+
+IDC_CURSORDRAG          CURSOR                  "dragcursor.cur"
 
 /////////////////////////////////////////////////////////////////////////////
 //

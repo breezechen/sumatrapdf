@@ -2,11 +2,13 @@
 // Microsoft Visual C++ generated include file.
 // Used by SumatraPDF.rc
 //
+#define IDI_SUMATRAPDF                  1
 #define IDS_APP_TITLE                   100
 #define IDD_DIALOG1                     129
 #define IDD_DIALOG_GOTO_PAGE            129
 #define IDD_DIALOG_GET_PASSWORD         130
 #define IDD_DIALOG_PDF_ASSOCIATE        131
+#define IDC_CURSORDRAG                  132
 #define IDR_MAINFRAME                   200
 #define IDD_XPDFWIN_DIALOG              300
 #define IDD_ABOUTBOX                    301
@@ -48,9 +50,8 @@
 #define IDM_MAKE_DEFAULT_READER         435
 #define IDM_VISIT_WEBSITE               436
 #define IDM_VIEW_USE_FITZ               437
-#define IDI_SUMATRAPDF                  1
-#define IDI_SMALL                       601
 #define IDC_SUMATRAPDF                  600
+#define IDI_SMALL                       601
 #define IDC_GOTO_PAGE_EDIT              1000
 #define IDC_GOTO_PAGE_GO                1001
 #define IDC_BUTTON2                     1002
@@ -70,7 +71,6 @@
 #define IDB_SILK_PREV                   2004
 #define IDB_SILK_ZOOM_IN                2005
 #define IDB_SILK_ZOOM_OUT               2006
-
 #define IDT_FILE_NEW                    3000
 #define IDT_FILE_OPEN                   3001
 #define IDT_FILE_METAPATH               3002
@@ -97,7 +97,6 @@
 #define IDT_FILE_PRINT                  3023
 #define IDT_FILE_OPENFAV                3024
 #define IDT_FILE_ADDTOFAV               3025
-
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -105,7 +104,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        131
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           110
