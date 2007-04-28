@@ -319,6 +319,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\Resource.h"
+				>
+			</File>
+			<File
 				RelativePath=".\baseutils\str_util.h"
 				>
 			</File>
@@ -341,6 +345,34 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
+				RelativePath=".\src\icons-silk\cursor1.cur"
+				>
+			</File>
+			<File
+				RelativePath=".\src\cursordrag.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\cursordrag.png"
+				>
+			</File>
+			<File
+				RelativePath=".\src\dragcursor.cur"
+				>
+			</File>
+			<File
+				RelativePath=".\src\icons-silk\folder.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\icons-silk\next.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\icons-silk\previous.bmp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\SumatraPDf.ico"
 				>
 			</File>
@@ -350,6 +382,22 @@
 			</File>
 			<File
 				RelativePath=".\src\SumatraPDFSmall.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\src\toolbar-disabled.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\toolbar.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\icons-silk\zoom_in.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\icons-silk\zoom_out.bmp"
 				>
 			</File>
 		</Filter>
