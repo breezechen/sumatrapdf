@@ -469,89 +469,12 @@ static void AddRecentFilesToMenu(WindowInfo *win)
     }
 }
 
-
-/* 'txt' is path that can be:
-  - escaped, in which case it starts with '"', ends with '"' and each '"' that is part of the name is escaped
-    with '\'
-  - unescaped, in which case it start with != '"' and ends with ' ' or eol (0)
-  This function extracts escaped or unescaped path from 'txt'. Returns NULL in case of error.
-  Caller needs to free() the result. */
-static char *PossiblyUnescapePath(char *txt)
-{
-    char   *exePathStart, *exePathEnd;
-    char   *exePath, *src, *dst;
-    char   c;
-    int     exePathLen;
-    BOOL    escaped;
-
-    if (!txt)
-        return NULL;
-
-    /* exe path is the first string in command line. It's an escaped string */
-    exePathStart = txt;
-    escaped = FALSE;
-    if ('"' == *exePathStart) {
-        ++exePathStart;
-        escaped = TRUE;
-    }
-    exePathEnd = exePathStart;
-    for (;;) {
-        c = *exePathEnd;
-        if (!escaped && ((0 == c) || (' ' == c)))
-            break;
-        assert(0 != c);
-        if (0 == c)
-            return NULL;
-        if (escaped && ('"' == c))
-            break;
-        if (escaped && ('\\' == c) && ('"' == exePathEnd[1]))
-            ++exePathEnd;
-        ++exePathEnd;
-    }
-    /* might be a bit bigger due to un-escaping, but that's ok */
-    exePathLen = (exePathEnd - exePathStart);
-    exePath = (char*)malloc(sizeof(char)*exePathLen+1);
-    if (!exePath)
-        return NULL;
-    src = exePathStart;
-    dst = exePath;
-    while (src < exePathEnd) {
-        c = *src;
-        if (!escaped && ((0 == *src) || (' ' == *src)))
-            break;
-        assert(0 != *src);
-        if (('\\' == c) && ('"' == src[1])) {
-            /* unescaping */
-            ++src;
-            c = *src;
-            assert(0 != *src);
-        }
-        *dst++ = c;
-        ++src;
-    }
-    if (escaped)
-        assert('"' == *src);
-    else
-        assert((' ' == *src) || (0 == *src));
-    *dst = 0;
-    return exePath;
-}
-
 /* Return the full exe path of my own executable.
    Caller needs to free() the result. */
 static char *ExePathGet(void)
 {
-    return PossiblyUnescapePath(GetCommandLine());
-}
-
-static void WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd)
-{
-   ::SendMessage(hwnd, EM_SETSEL, (WPARAM)selStart, (WPARAM)selEnd);
-}
-
-void WinEditSelectAll(HWND hwnd)
-{
-    WinEditSetSel(hwnd, 0, -1);
+    char *cmdline = GetCommandLineA();
+    return str_parse_possibly_quoted(&cmdline);
 }
 
 /* Set the client area size of the window 'hwnd' to 'dx'/'dy'. */

@@ -101,7 +101,7 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
             labelOfPages = GetDlgItem(hDlg, IDC_GOTO_PAGE_LABEL_OF);
             win_set_text(labelOfPages, ds.pString);
             DStringFree(&ds);
-            WinEditSelectAll(editPageNo);
+            win_edit_select_all(editPageNo);
             SetFocus(editPageNo);
             return FALSE;
 

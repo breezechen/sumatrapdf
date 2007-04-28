@@ -93,7 +93,4 @@ typedef struct WindowInfo {
     AnimState       animState;
 } WindowInfo;
 
-void    WinEditSelectAll(HWND hwnd);
-void    WinEditSetSel(HWND hwnd, DWORD selStart, DWORD selEnd);
-
 #endif
