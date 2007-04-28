@@ -2904,6 +2904,20 @@ static void OnSize(WindowInfo *win, int dx, int dy)
     SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy-rebBarDy, SWP_NOZORDER);
 }
 
+static void ReloadPdfDocument(WindowInfo *win)
+{
+    if (WS_SHOWING_PDF != win->state)
+        return;
+    const char *fileName = NULL;
+    if (win->dm)
+        fileName = (const char*)str_dup(win->dm->fileName());
+    CloseWindow(win, false);
+    if (fileName) {
+        LoadPdf(fileName);
+        free((void*)fileName);
+    }
+}
+
 static void OnMenuViewUseFitz(WindowInfo *win)
 {
     assert(win);
@@ -2913,6 +2927,7 @@ static void OnMenuViewUseFitz(WindowInfo *win)
     else
         gUseFitz = TRUE;
 
+    ReloadPdfDocument(win);
     win = gWindowList;
     while (win) {
         MenuUpdateUseFitzStateForWindow(win);
@@ -3083,20 +3098,6 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         // Emulate acrobat: "Shift Ctrl -" is rotate counter-clockwise
         if (shiftPressed & ctrlPressed)
             RotateLeft(win);
-    }
-}
-
-static void ReloadPdfDocument(WindowInfo *win)
-{
-    if (WS_SHOWING_PDF != win->state)
-        return;
-    const char *fileName = NULL;
-    if (win->dm)
-        fileName = (const char*)str_dup(win->dm->fileName());
-    CloseWindow(win, false);
-    if (fileName) {
-        LoadPdf(fileName);
-        free((void*)fileName);
     }
 }
 
