@@ -3404,7 +3404,10 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst) {
     SetWindowPos(win->hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
     GetWindowRect(win->hwndReBar, &rc);
     gReBarDy = rc.bottom - rc.top;
-    gReBarDyFrame = bIsAppThemed ? 0 : 2;
+    //TODO: this was inherited but doesn't seem to be right (makes toolbar
+    // partially unpainted if using classic scheme on xp or vista
+    //gReBarDyFrame = bIsAppThemed ? 0 : 2;
+    gReBarDyFrame = 0;
 }
 
 static LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
