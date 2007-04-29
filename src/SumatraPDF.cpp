@@ -1120,6 +1120,14 @@ static void MenuUpdateStateForWindow(WindowInfo *win) {
     else
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_GRAYED);
 
+    bool filePrintEnabled = false;
+    if (win->dm && win->dm->pdfEngine() && win->dm->pdfEngine()->printingAllowed())
+        filePrintEnabled = true;
+    if (filePrintEnabled)
+        EnableMenuItem(hmenu, IDM_PRINT, MF_BYCOMMAND | MF_ENABLED);
+    else
+        EnableMenuItem(hmenu, IDM_PRINT, MF_BYCOMMAND | MF_GRAYED);
+
     MenuUpdateShowToolbarStateForWindow(win);
     MenuUpdateUseFitzStateForWindow(win);
 
@@ -3918,6 +3926,11 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
     HANDLE      printer;
     LPDEVMODE   devMode = NULL;
     DWORD       structSize, returnCode;
+
+    if (!win->dm->pdfEngine()->printingAllowed()) {
+        MessageBox(win->hwndFrame, "Cannot print this file", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        return;
+    }
 
     // Retrieve the printer, printer driver, and 
     // output-port names from WIN.INI. 

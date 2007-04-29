@@ -117,6 +117,7 @@ public:
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA) = 0;
 
+    virtual bool printingAllowed() = 0;
     virtual int linkCount(int pageNo) = 0;
     virtual const char* linkType(int pageNo, int linkNo) = 0;
 
@@ -137,6 +138,7 @@ public:
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA);
 
+    virtual bool printingAllowed();
     virtual int linkCount(int pageNo);
     virtual const char* linkType(int pageNo, int linkNo);
 
@@ -160,6 +162,8 @@ public:
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA);
+
+    virtual bool printingAllowed();
     virtual int linkCount(int pageNo);
     virtual const char* linkType(int pageNo, int linkNo);
 

@@ -295,6 +295,13 @@ RenderedBitmap *PdfEnginePoppler::renderBitmap(
     return NULL;
 }
 
+bool PdfEnginePoppler::printingAllowed()
+{
+    if (_pdfDoc->okToPrint())
+        return true;
+    return false;
+}
+
 Links* PdfEnginePoppler::getLinksForPage(int pageNo)
 {
     if (!_linksForPage)
@@ -547,6 +554,17 @@ SizeD PdfEngineFitz::pageSize(int pageNo)
     if (error)
         return SizeD(0,0);
     return SizeD(fabs(bbox.x1 - bbox.x0), fabs(bbox.y1 - bbox.y0));
+}
+
+bool PdfEngineFitz::printingAllowed()
+{
+    assert(_xref);
+    int permissionFlags = PDF_DEFAULT_PERM_FLAGS;
+    if (_xref && _xref->crypt)
+        permissionFlags = _xref->crypt->p;
+    if (permissionFlags & PDF_PERM_PRINT)
+        return true;
+    return false;
 }
 
 static void ConvertPixmapForWindows(fz_pixmap *image)
