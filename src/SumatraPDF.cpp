@@ -4040,7 +4040,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     MSG                 msg = {0};
     HACCEL              hAccelTable;
     WindowInfo*         win;
-    FileHistoryList *   currFile;
     int                 pdfOpened = 0;
     bool                exitOnPrint = false;
 
@@ -4158,7 +4157,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     if (0 == pdfOpened) {
         /* disable benchmark mode if we couldn't open file to benchmark */
         gBenchFileName = 0;
-        currFile = gFileHistoryRoot;
+#ifdef REOPEN_FILES_AT_STARTUP
+            FileHistoryList * currFile = gFileHistoryRoot;
         while (currFile) {
             if (currFile->state.visible) {
                 win = LoadPdf(currFile->state.filePath, false);
@@ -4167,6 +4167,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             }
             currFile = currFile->next;
         }
+#endif
         if (0 == pdfOpened) {
             win = WindowInfo_CreateEmpty();
             if (!win)
