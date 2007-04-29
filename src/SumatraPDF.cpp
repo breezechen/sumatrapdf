@@ -555,7 +555,11 @@ static void AddFileToHistory(const char *filePath)
     FileHistoryList_Node_InsertHead(&gFileHistoryRoot, node);
 }
 
-static char *GetPasswordForFile(WindowInfo *win, const char *fileName)
+extern "C" char *GetPasswordForFile(WindowInfo *win, const char *fileName);
+
+/* Get password for a given 'fileName'.
+   Caller needs to free() the result. */
+char *GetPasswordForFile(WindowInfo *win, const char *fileName)
 {
     fileName = FilePath_GetBaseName(fileName);
     return Dialog_GetPassword(win, fileName);
@@ -1295,10 +1299,10 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
 
     if (gUseFitz) {
         win->dm = DisplayModelFitz_CreateFromFileName(fileName, 
-            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, win);
     } else {
         win->dm = DisplayModelSplash_CreateFromFileName(fileName, 
-            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage);
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, win);
     }
 
     if (!win->dm) {

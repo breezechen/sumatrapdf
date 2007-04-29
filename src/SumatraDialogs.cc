@@ -56,7 +56,7 @@ static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wPa
    Returns a password entered by user as a newly allocated string or
    NULL if user cancelled the dialog or there was an error.
    Caller needs to free() the result.
-   TODO: should I get rid of fileName and get it from win? */
+*/
 char *Dialog_GetPassword(WindowInfo *win, const char *fileName)
 {
     int                     dialogResult;

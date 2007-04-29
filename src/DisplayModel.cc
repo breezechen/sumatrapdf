@@ -165,9 +165,10 @@ PdfPageInfo *DisplayModel::getPageInfo(int pageNo) const
     return &(pagesInfo[pageNo-1]);
 }
 
-bool DisplayModel::load(const char *fileName, int startPage) 
+bool DisplayModel::load(const char *fileName, int startPage, WindowInfo *win) 
 { 
-    if (!_pdfEngine->load(fileName))
+    assert(fileName);
+    if (!_pdfEngine->load(fileName, win))
         return false;
 
     if (validPageNo(startPage))

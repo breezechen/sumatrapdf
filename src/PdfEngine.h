@@ -14,6 +14,8 @@
 
 #include <windows.h>
 
+struct WindowInfo;
+
 class SplashBitmap;
 class SplashOutputDev;
 class PDFDoc;
@@ -108,7 +110,7 @@ public:
 
     int pageCount(void) const { return _pageCount; }
 
-    virtual bool load(const char *fileName) = 0;
+    virtual bool load(const char *fileName, WindowInfo *windowInfo) = 0;
     virtual int pageRotation(int pageNo) = 0;
     virtual SizeD pageSize(int pageNo) = 0;
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
@@ -121,13 +123,14 @@ public:
 protected:
     const char *_fileName;
     int _pageCount;
+    WindowInfo *_windowInfo;
 };
 
 class PdfEnginePoppler : public PdfEngine {
 public:
     PdfEnginePoppler();
     virtual ~PdfEnginePoppler();
-    virtual bool load(const char *fileName);
+    virtual bool load(const char *fileName, WindowInfo* windowInfo);
     virtual int pageRotation(int pageNo);
     virtual SizeD pageSize(int pageNo);
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
@@ -151,7 +154,7 @@ class PdfEngineFitz : public  PdfEngine {
 public:
     PdfEngineFitz();
     virtual ~PdfEngineFitz();
-    virtual bool load(const char *fileName);
+    virtual bool load(const char *fileName, WindowInfo* windowInfo);
     virtual int pageRotation(int pageNo);
     virtual SizeD pageSize(int pageNo);
     virtual RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,

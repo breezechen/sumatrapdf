@@ -17,7 +17,8 @@ DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
   const char *fileName,
   SizeD totalDrawAreaSize,
   int scrollbarXDy, int scrollbarYDx,
-  DisplayMode displayMode, int startPage)
+  DisplayMode displayMode, int startPage,
+  WindowInfo *win)
 {
     DisplayModelFitz *    dm = NULL;
 
@@ -25,7 +26,7 @@ DisplayModelFitz *DisplayModelFitz_CreateFromFileName(
     if (!dm)
         goto Error;
 
-    if (!dm->load(fileName, startPage))
+    if (!dm->load(fileName, startPage, win))
         goto Error;
 
     dm->setScrollbarsSize(scrollbarXDy, scrollbarYDx);

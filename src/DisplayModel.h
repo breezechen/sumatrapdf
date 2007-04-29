@@ -154,7 +154,7 @@ public:
 
     /* number of pages in PDF document */
     int  pageCount() const { return _pdfEngine->pageCount(); }
-    bool load(const char *fileName, int startPage);
+    bool load(const char *fileName, int startPage, WindowInfo *win);
     bool validPageNo(int pageNo) const { return _pdfEngine->validPageNo(pageNo); }
 
     /* current rotation selected by user */

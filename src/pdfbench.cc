@@ -50,6 +50,12 @@
 extern void PreviewBitmapInit(void);
 extern void PreviewBitmapDestroy(void);
 extern void PreviewBitmapSplashFitz(RenderedBitmap *bmpSplash, RenderedBitmap *bmpFitz);
+extern "C" char *GetPasswordForFile(WindowInfo *win, const char *fileName);
+
+char *GetPasswordForFile(WindowInfo *win, const char *fileName)
+{
+    return strdup("");
+}
 
 static void PreviewBitmapFitz(RenderedBitmap *bmpFitz)
 {
@@ -764,7 +770,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
         engineFitz = new PdfEngineFitz();
 
         MsTimer msTimer;
-        if (!engineFitz->load(fileNameFitz)) {
+        if (!engineFitz->load(fileNameFitz, NULL)) {
             LogInfo("failed to load fitz\n");
             goto Error;
         }
@@ -778,7 +784,7 @@ static void renderPdf(const char *fileName, RenderType renderType)
         engineSplash = new PdfEnginePoppler();
 
         MsTimer msTimer;
-        if (!engineSplash->load(fileNameSplash)) {
+        if (!engineSplash->load(fileNameSplash, NULL)) {
             LogInfo("failed to load splash\n");
             goto Error;
         }

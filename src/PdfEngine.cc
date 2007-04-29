@@ -14,6 +14,9 @@
 #include "SecurityHandler.h"
 #include "Link.h"
 
+// in SumatraPDF.cpp
+extern "C" char *GetPasswordForFile(WindowInfo *win, const char *fileName);
+
 const char* const LINK_ACTION_GOTO = "linkActionGoTo";
 const char* const LINK_ACTION_GOTOR = "linkActionGoToR";
 const char* const LINK_ACTION_LAUNCH = "linkActionLaunch";
@@ -214,14 +217,15 @@ PdfEnginePoppler::~PdfEnginePoppler()
     free(_linksForPage);
 }
 
-bool PdfEnginePoppler::load(const char *fileName)
+bool PdfEnginePoppler::load(const char *fileName, WindowInfo *win)
 {
     setFileName(fileName);
+    _windowInfo = win;
     /* note: don't delete fileNameStr since PDFDoc takes ownership and deletes them itself */
     GooString *fileNameStr = new GooString(fileName);
     if (!fileNameStr) return false;
 
-    _pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, NULL);
+    _pdfDoc = new PDFDoc(fileNameStr, NULL, NULL, (void*)win);
     if (!_pdfDoc->isOk()) {
         return false;
     }
@@ -401,9 +405,10 @@ PdfEngineFitz::~PdfEngineFitz()
     delete _popplerEngine;        
 }
 
-bool PdfEngineFitz::load(const char *fileName)
+bool PdfEngineFitz::load(const char *fileName, WindowInfo *win)
 {
     assert(!_popplerEngine);
+    _windowInfo = win;
     setFileName(fileName);
     fz_error *error = pdf_newxref(&_xref);
     if (error)
@@ -427,13 +432,38 @@ bool PdfEngineFitz::load(const char *fileName)
         int okay = pdf_setpassword(_xref->crypt, "");
         if (!okay)
             goto Error;
+        if (!win) {
+            // win might not be given if called from pdfbench.cc
+            goto Error;
+        }
+        for (int i=0; i<3; i++) {
+            char *pwd = GetPasswordForFile(win, fileName);
+            okay = pdf_setpassword(_xref->crypt, pwd);
+            free(pwd);
+            if (okay)
+                goto DecryptedOk;
+        }
+        goto Error;
 #else
         error = pdf_setpassword(_xref->crypt, "");
-        if (error)
+        if (!error)
+            goto DecryptedOk;
+        if (!win) {
+            // win might not be given if called from pdfbench.cc
             goto Error;
+        }
+        for (int i=0; i<3; i++) {
+            char *pwd = GetPasswordForFile(win, fileName);
+            error = pdf_setpassword(_xref->crypt, pwd);
+            free(pwd);
+            if (!error)
+                goto DecryptedOk;
+        }
+        goto Error;
 #endif
     }
 
+DecryptedOk:
     error = pdf_loadpagetree(&_pageTree, _xref);
     if (error)
         goto Error;
@@ -454,7 +484,7 @@ TryPoppler:
     _popplerEngine = new PdfEnginePoppler();
     if (!_popplerEngine)
         return false;
-    bool fok = _popplerEngine->load(fileName);
+    bool fok = _popplerEngine->load(fileName, win);
     if (!fok)
         goto ErrorPoppler;
     return true;
@@ -593,7 +623,7 @@ TryPoppler:
     _popplerEngine = new PdfEnginePoppler();
     if (!_popplerEngine)
         return false;
-    bool fok = _popplerEngine->load(fileName());
+    bool fok = _popplerEngine->load(fileName(), _windowInfo);
     if (!fok)
         goto ErrorPoppler;
     return _popplerEngine->renderBitmap(pageNo, zoomReal, rotation, abortCheckCbkA, abortCheckCbkDataA);
