@@ -1395,7 +1395,8 @@ static HFONT Win32_Font_GetSimple(HDC hdc, char *fontName, int fontSize)
     lf.lfStrikeOut = FALSE;
     lf.lfCharSet = DEFAULT_CHARSET;
     lf.lfOutPrecision = OUT_TT_PRECIS;
-    lf.lfQuality = CLEARTYPE_QUALITY;
+    lf.lfQuality = DEFAULT_QUALITY;
+    //lf.lfQuality = CLEARTYPE_QUALITY;
     lf.lfPitchAndFamily = DEFAULT_PITCH;    
     strcpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
     lf.lfWeight = FW_DONTCARE;
@@ -3739,6 +3740,7 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     return TRUE;
 }
 
+#define IDC_HAND            MAKEINTRESOURCE(32649)
 static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
 {
     ghinst = hInstance;
@@ -3749,7 +3751,9 @@ static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
 
     SplashColorsInit();
     gCursorArrow = LoadCursor(NULL, IDC_ARROW);
-    gCursorHand  = LoadCursor(NULL, IDC_HAND);
+    gCursorHand  = LoadCursor(NULL, IDC_HAND); // apparently only available if WINVER >= 0x0500
+    if (!gCursorHand)
+        gCursorHand = LoadCursor(ghinst, MAKEINTRESOURCE(IDC_CURSORDRAG));
     gCursorDrag  = LoadCursor(ghinst, MAKEINTRESOURCE(IDC_CURSORDRAG));
     gBrushBg     = CreateSolidBrush(COL_WINDOW_BG);
     gBrushWhite  = CreateSolidBrush(COL_WHITE);
