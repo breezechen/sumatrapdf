@@ -345,14 +345,6 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\src\icons-silk\cursor1.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\src\cursordrag.bmp"
-				>
-			</File>
-			<File
 				RelativePath=".\src\cursordrag.png"
 				>
 			</File>
