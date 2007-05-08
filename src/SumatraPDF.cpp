@@ -102,6 +102,7 @@ static BOOL             gDebugShowLinks = FALSE;
 #define BENCH_ARG_TXT             "-bench"
 #define PRINT_TO_ARG_TXT          "-print-to"
 #define NO_REGISTER_EXT_ARG_TXT   "-no-register-ext"
+#define PRINT_TO_DEFAULT_ARG_TXT  "-print-to-default"
 #define EXIT_ON_PRINT_ARG_TXT     "-exit-on-print"
 #define ENUM_PRINTERS_ARG_TXT     "-enum-printers"
 
@@ -3172,6 +3173,13 @@ static inline bool IsPrintToArg(const char *txt)
     return false;
 }
 
+static inline bool IsPrintToDefaultArg(const char *txt)
+{
+    if (str_ieq(txt, PRINT_TO_ARG_TXT))
+        return true;
+    return false;
+}
+
 static inline bool IsExitOnPrintArg(const char *txt)
 {
     if (str_ieq(txt, EXIT_ON_PRINT_ARG_TXT))
@@ -4049,6 +4057,17 @@ static void EnumeratePrinters()
     free(info5Arr);
 }
 
+/* Get the name of default printer or NULL if not exists.
+   The caller needs to free() the result */
+char *GetDefaultPrinterName()
+{
+    char buf[512];
+    DWORD bufSize = sizeof(buf);
+    if (GetDefaultPrinterA(buf, &bufSize))
+        return str_dup(buf);
+    return NULL;
+}     
+
 int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow)
 {
     StrList *           argListRoot;
@@ -4059,6 +4078,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     WindowInfo*         win;
     int                 pdfOpened = 0;
     bool                exitOnPrint = false;
+    bool                printToDefaultPrinter = false;
 
     UNREFERENCED_PARAMETER(hPrevInstance);
 
@@ -4111,6 +4131,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             continue;
         }
 
+        if (IsPrintToDefaultArg(currArg->str)) {
+            printToDefaultPrinter = true;
+            continue;
+        }
+
         if (IsPrintToArg(currArg->str)) {
             currArg = currArg->next;
             if (currArg) {
@@ -4158,7 +4183,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
             if (exitOnPrint)
                 ShowWindow(win->hwndFrame, SW_HIDE);
 
-             if (printerName) {
+            if (printToDefaultPrinter) {
+                printerName = GetDefaultPrinterName();
+                if (printerName)
+                    PrintFile(win, currArg->str, printerName);
+                free(printerName);
+            } else if (printerName) {
                 // note: this prints all of PDF files. Another option would be to
                 // print only the first one
                 PrintFile(win, currArg->str, printerName);

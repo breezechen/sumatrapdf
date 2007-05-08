@@ -45,7 +45,7 @@ BEGIN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
         MENUITEM "&Print",                      IDM_PRINT
         MENUITEM SEPARATOR
-        MENUITEM "Make SumatraPDf a default PDF reader", IDM_MAKE_DEFAULT_READER
+        MENUITEM "Make SumatraPDF a default PDF reader", IDM_MAKE_DEFAULT_READER
         MENUITEM SEPARATOR
         MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
     END
