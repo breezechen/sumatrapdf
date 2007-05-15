@@ -1615,7 +1615,7 @@ Exit:
     return registered;
 }
 
-static void AssociateExeWithPdfExtentions()
+static void AssociateExeWithPdfExtensions()
 {
     char        tmp[256];
     HKEY        key = NULL, kicon = NULL, kshell = NULL, kopen = NULL, kcmd = NULL;
@@ -1717,7 +1717,7 @@ static void RegisterForPdfExtentions(HWND hwnd)
     }
 
     if (gPdfAssociateShouldAssociate)
-        AssociateExeWithPdfExtentions();
+        AssociateExeWithPdfExtensions();
 }
 
 static void OnDropFiles(WindowInfo *win, HDROP hDrop)
@@ -2904,7 +2904,7 @@ static void OnMenuViewFacing(WindowInfo *win)
 
 static void OneMenuMakeDefaultReader(void)
 {
-    AssociateExeWithPdfExtentions();
+    AssociateExeWithPdfExtensions();
     MessageBox(NULL, "SumatraPDF is now a default reader for PDF files.", "Information", MB_OK);
 }
 
