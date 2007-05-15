@@ -1,6 +1,6 @@
-@set PATH=%PATH%;C:\Program Files\Microsoft Visual Studio 8\Common7\IDE
-@set NSIS_EXE=C:\Program Files\NSIS\makensis.exe
-@set PATH=%PATH%;C:\Program Files\NSIS
+@set PATH=%PATH%;%ProgramFiles%\Microsoft Visual Studio 8\Common7\IDE
+@set NSIS_EXE=%ProgramFiles%\NSIS\makensis.exe
+@set PATH=%PATH%;%ProgramFiles%\NSIS
 @set FASTDL_PATH=C:\kjk\src\web\fastdl\www
 
 @pushd .
