@@ -7,7 +7,7 @@
 void fzd_ainboverc(fz_pixmap *src, fz_pixmap *msk, fz_pixmap *dst)
 {
 	unsigned char *sp0, *dp0, *mp0;
-	int x, y, h, w0, k;
+	int x, y, h, w0;
 	int sn = src->n + src->a;
 	int mn = msk->n + msk->a;
 	int dn = dst->n + dst->a;
@@ -49,6 +49,7 @@ void fzd_ainboverc(fz_pixmap *src, fz_pixmap *msk, fz_pixmap *dst)
 				dp[3] = 0xff;
 #if 0
 			/* TODO: validate this */
+			int k;
 			unsigned char ma = mp[0];
 			unsigned char sa = ma; // fz_mul255(sp[0], ma);
 			unsigned char ssa = 255 - sa;
