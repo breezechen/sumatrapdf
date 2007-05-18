@@ -461,6 +461,9 @@ bool PdfEngineFitz::load(const char *fileName, WindowInfo *win)
         }
         for (int i=0; i<3; i++) {
             char *pwd = GetPasswordForFile(win, fileName);
+            // dialog box was cancelled
+            if (!pwd)
+                goto Error;
             error = pdf_setpassword(_xref->crypt, pwd);
             free(pwd);
             if (!error)
