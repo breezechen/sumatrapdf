@@ -14,7 +14,7 @@
 
 #include <windows.h>
 
-struct WindowInfo;
+class WindowInfo;
 
 class SplashBitmap;
 class SplashOutputDev;

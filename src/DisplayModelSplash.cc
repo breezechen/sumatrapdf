@@ -335,8 +335,8 @@ void DisplayModelSplash::EnsureSearchHitVisible()
         yNewPos -= ((int)areaOffset.y - yStart);
         needScroll = TRUE;
     }
-    if (yEnd > (int)(areaOffset.y + drawAreaSize.dy)) {
-        yNewPos -= ((int)(areaOffset.y + drawAreaSize.dy) - yEnd);  
+    if (yEnd > (int)(areaOffset.y + drawAreaSize.dy())) {
+        yNewPos -= ((int)(areaOffset.y + drawAreaSize.dy()) - yEnd);  
         needScroll = TRUE;
     }
 
@@ -345,8 +345,8 @@ void DisplayModelSplash::EnsureSearchHitVisible()
         xNewPos -= ((int)areaOffset.x - xStart);
         needScroll = TRUE;
     }
-    if (xEnd > (int)(areaOffset.x + drawAreaSize.dx)) {
-        xNewPos -= ((int)(areaOffset.x + drawAreaSize.dx) - xEnd);  
+    if (xEnd > (int)(areaOffset.x + drawAreaSize.dx())) {
+        xNewPos -= ((int)(areaOffset.x + drawAreaSize.dx()) - xEnd);  
         needScroll = TRUE;
     }
 

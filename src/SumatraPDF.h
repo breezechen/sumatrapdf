@@ -29,6 +29,7 @@
 #include <tchar.h>
 #include "resource.h"
 
+#include "win_util.h"
 #include "DisplayModelSplash.h"
 #include "DisplayModelFitz.h"
 
@@ -58,7 +59,18 @@ typedef struct {
 
 /* Describes information related to one window with (optional) pdf document
    on the screen */
-typedef struct WindowInfo {
+class WindowInfo {
+public:
+    WindowInfo() {
+        memzero(this, sizeof(*this)); // TODO: this might not be valid
+    }
+    void GetCanvasSize() { 
+        GetClientRect(hwndCanvas, &m_canvasRc);
+    }
+    int winDx() { return rect_dx(&m_canvasRc); }
+    int winDy() { return rect_dy(&m_canvasRc); }
+    SizeI winSize() { return SizeI(rect_dx(&m_canvasRc), rect_dy(&m_canvasRc)); }
+
     /* points to the next element in the list or the first element if
        this is the first element */
     WindowInfo *    next;
@@ -73,9 +85,6 @@ typedef struct WindowInfo {
 
     HDC             hdc;
     BITMAPINFO *    dibInfo;
-    /* TODO: get rid of winDx, winDy, query it every time you need it */
-    int             winDx;
-    int             winDy;
 
     /* bitmap and hdc for (optional) double-buffering */
     HDC             hdcToDraw;
@@ -91,6 +100,9 @@ typedef struct WindowInfo {
     BOOL            dragging;
     int             dragPrevPosX, dragPrevPosY;
     AnimState       animState;
-} WindowInfo;
+
+private:
+    RECT m_canvasRc;
+};
 
 #endif

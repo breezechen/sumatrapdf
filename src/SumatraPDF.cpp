@@ -200,7 +200,6 @@ ToolbarButtonInfo gToolbarButtons[] = {
 
 void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
-static void WindowInfo_ResizeToWindow(WindowInfo *win);
 
 void LaunchBrowser(const TCHAR *url)
 {
@@ -877,13 +876,6 @@ Exit:
         fclose(pFile);
 }
 
-static void WindowInfo_GetCanvasSize(WindowInfo *win) {
-    RECT  rc;
-    GetClientRect(win->hwndCanvas, &rc);
-    win->winDx = rect_dx(&rc);
-    win->winDy = rect_dy(&rc);
-}
-
 static bool WindowInfo_Dib_Init(WindowInfo *win) {
     assert(NULL == win->dibInfo);
     win->dibInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 12);
@@ -924,15 +916,15 @@ static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
 
     win->hdc = GetDC(win->hwndCanvas);
     win->hdcToDraw = win->hdc;
-    WindowInfo_GetCanvasSize(win);
-    if (!gUseDoubleBuffer || (0 == win->winDx) || (0 == win->winDy))
+    win->GetCanvasSize();
+    if (!gUseDoubleBuffer || (0 == win->winDx()) || (0 == win->winDy()))
         return true;
 
     win->hdcDoubleBuffer = CreateCompatibleDC(win->hdc);
     if (!win->hdcDoubleBuffer)
         return false;
 
-    win->bmpDoubleBuffer = CreateCompatibleBitmap(win->hdc, win->winDx, win->winDy);
+    win->bmpDoubleBuffer = CreateCompatibleBitmap(win->hdc, win->winDx(), win->winDy());
     if (!win->bmpDoubleBuffer) {
         WindowInfo_DoubleBuffer_Delete(win);
         return false;
@@ -941,8 +933,8 @@ static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
     SelectObject(win->hdcDoubleBuffer, win->bmpDoubleBuffer);
     /* fill out everything with background color */
     RECT r = {0};
-    r.bottom = win->winDy;
-    r.right = win->winDx;
+    r.bottom = win->winDy();
+    r.right = win->winDx();
     FillRect(win->hdcDoubleBuffer, &r, gBrushBg);
     win->hdcToDraw = win->hdcDoubleBuffer;
     return TRUE;
@@ -952,7 +944,7 @@ static void WindowInfo_DoubleBuffer_Show(WindowInfo *win, HDC hdc)
 {
     if (win->hdc != win->hdcToDraw) {
         assert(win->hdcToDraw == win->hdcDoubleBuffer);
-        BitBlt(hdc, 0, 0, win->winDx, win->winDy, win->hdcDoubleBuffer, 0, 0, SRCCOPY);
+        BitBlt(hdc, 0, 0, win->winDx(), win->winDy(), win->hdcDoubleBuffer, 0, 0, SRCCOPY);
     }
 }
 
@@ -966,7 +958,7 @@ static void WindowInfo_Delete(WindowInfo *win)
     win->dm = NULL;
     WindowInfo_Dib_Deinit(win);
     WindowInfo_DoubleBuffer_Delete(win);
-    free((void*)win);
+    delete win;
 }
 
 static WindowInfo* WindowInfo_FindByHwnd(HWND hwnd)
@@ -988,7 +980,7 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     WindowInfo * win = WindowInfo_FindByHwnd(hwndFrame);
     assert(!win);
 
-    win = (WindowInfo*)calloc(sizeof(WindowInfo), 1);
+    win = new WindowInfo();;
     if (!win)
         return NULL;
 
@@ -1214,16 +1206,6 @@ BOOL GetDesktopWindowClientRect(RECT *r)
     return GetClientRect(hwnd, r);
 }
 
-void GetTaskBarSize(int *dxOut, int *dyOut)
-{
-    APPBARDATA abd = { sizeof(abd) };
-    *dxOut = *dyOut = 0;
-    if (SHAppBarMessage(ABM_GETTASKBARPOS, &abd)) {
-        *dxOut = rect_dx(&abd.rc);
-        *dyOut = rect_dy(&abd.rc);
-    }
-}
-
 void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
 {
     RECT canvasRect;
@@ -1236,24 +1218,25 @@ void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
     assert(*dyOut >= 0);
 }
 
-void IntelligentWindowResize(WindowInfo *win)
+SizeI GetMaxCanvasSize(WindowInfo *win)
 {
+    AppBarData abd;
     RECT r;
     GetDesktopWindowClientRect(&r);
-
+    // substract the area of the window not used for canvas
     int dx, dy;
-    GetCanvasDxDyDiff(win, &dx, &dy);
+    GetCanvasDxDyDiff(win, &dx, &dy);  // TODO: lame name
     int maxCanvasDx = rect_dx(&r) - dx;
     int maxCanvasDy = rect_dy(&r) - dy;
-    GetTaskBarSize(&dx, &dy);
-    if (dx < maxCanvasDx)
-        maxCanvasDx -= dx;
-    if (dy < maxCanvasDy)
-       maxCanvasDy -= dy;
-    // TODO: resize proportionally to the smaller dimention using
-    // first page ratio
-    SetCanvasSizeToDxDy(win, maxCanvasDx, maxCanvasDy);
-    WindowInfo_ResizeToWindow(win);
+    if (abd.isHorizontal()) {
+        assert(maxCanvasDx >= abd.dx());
+        maxCanvasDx -= abd.dx();
+    } else {
+        assert(abd.isVertical());
+        assert(maxCanvasDy >= abd.dy());
+        maxCanvasDy -= abd.dy();
+    }
+    return SizeI(maxCanvasDx, maxCanvasDy);
 }
 
 static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = true, bool ignoreHistory = false)
@@ -1276,17 +1259,30 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
             return NULL;
      }
 
-    WindowInfo_GetCanvasSize(win);
-
-    SizeD totalDrawAreaSize((double)win->winDx, (double)win->winDy);
+    win->GetCanvasSize();
+    SizeI maxCanvasSize = GetMaxCanvasSize(win);
+    SizeD totalDrawAreaSize(win->winSize());
     if (fileFromHistory && !ignoreHistorySizePos) {
         WinResizeClientArea(win->hwndCanvas, fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
-        totalDrawAreaSize.dx = (double)fileFromHistory->state.windowDx;
-        totalDrawAreaSize.dy = (double)fileFromHistory->state.windowDy;
-        /* TODO: make sure it doesn't have a stupid position like 
-           outside of the screen etc. */
+        totalDrawAreaSize.setDxDy(fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
         Win32_Win_SetPos(win->hwndFrame, fileFromHistory->state.windowX, fileFromHistory->state.windowY);
     }
+#if 0 // not ready yet
+    else {
+        IntelligentWindowResize(win);
+    }
+#endif
+
+    /* TODO: make sure it doesn't have a stupid position like 
+       outside of the screen etc. */
+#if 0
+    if (totalDrawAreaSize.dxI() > maxCanvasSize.dx)
+        totalDrawAreaSize.setDx(maxCanvasSize.dx);
+    if (totalDrawAreaSize.dyI() > maxCanvasSize.dy)
+        totalDrawAreaSize.setDy(maxCanvasSize.dy);
+
+    WinResizeClientArea(win->hwndCanvas, totalDrawAreaSize.dxI(), totalDrawAreaSize.dyI());
+#endif
 
     /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
        but scrollbars are not part of the client area on windows so it's better
@@ -1352,11 +1348,6 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
     offsetY = 0;
     /* TODO: make sure offsetX isn't bogus */
     win->dm->goToPage(startPage, offsetY, offsetX);
-
-#if 0  // TODO: not good enough yet
-    if (!fileFromHistory || ignoreHistorySizePos)
-        IntelligentWindowResize(win);
-#endif
 
     /* only resize the window if it's a newly opened window */
     if (!reuseExistingWindow && !fileFromHistory)
@@ -1458,25 +1449,18 @@ void DisplayModel::repaintDisplay(bool delayed)
 
 void DisplayModel::setScrollbarsState(void)
 {
-    WindowInfo *    win;
-    SCROLLINFO      si = {0};
-    int             canvasDx, canvasDy;
-    int             drawAreaDx, drawAreaDy;
-    int             offsetX, offsetY;
-
-    win = (WindowInfo*)this->appData();
+    WindowInfo *win = (WindowInfo*)this->appData();
     assert(win);
     if (!win) return;
 
+    SCROLLINFO      si = {0};
     si.cbSize = sizeof(si);
     si.fMask = SIF_ALL;
 
-    canvasDx = (int)_canvasSize.dx;
-    canvasDy = (int)_canvasSize.dy;
-    drawAreaDx = (int)drawAreaSize.dx;
-    drawAreaDy = (int)drawAreaSize.dy;
-    offsetX = (int)areaOffset.x;
-    offsetY = (int)areaOffset.y;
+    int canvasDx = _canvasSize.dxI();
+    int canvasDy = _canvasSize.dyI();
+    int drawAreaDx = drawAreaSize.dxI();
+    int drawAreaDy = drawAreaSize.dyI();
 
     if (drawAreaDx >= canvasDx) {
         si.nPos = 0;
@@ -1484,7 +1468,7 @@ void DisplayModel::setScrollbarsState(void)
         si.nMax = 99;
         si.nPage = 100;
     } else {
-        si.nPos = offsetX;
+        si.nPos = (int)areaOffset.x;
         si.nMin = 0;
         si.nMax = canvasDx-1;
         si.nPage = drawAreaDx;
@@ -1497,7 +1481,7 @@ void DisplayModel::setScrollbarsState(void)
         si.nMax = 99;
         si.nPage = 100;
     } else {
-        si.nPos = offsetY;
+        si.nPos = (int)areaOffset.y;
         si.nMin = 0;
         si.nMax = canvasDy-1;
         si.nPage = drawAreaDy;
@@ -1512,9 +1496,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
     assert(win->dm);
     if (!win->dm) return;
 
-    WindowInfo_GetCanvasSize(win);
-    SizeD totalDrawAreaSize((double)win->winDx, (double)win->winDy);
-    win->dm->changeTotalDrawAreaSize(totalDrawAreaSize);
+    win->dm->changeTotalDrawAreaSize(win->winSize());
 }
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
@@ -1805,8 +1787,8 @@ static void WinResizeIfNeeded(WindowInfo *win)
     int win_dx = rect_dx(&rc);
     int win_dy = rect_dy(&rc);
 
-    if ((win_dx == win->winDx) &&
-        (win_dy == win->winDy) && win->hdcToDraw)
+    if ((win_dx == win->winDx()) &&
+        (win_dy == win->winDy()) && win->hdcToDraw)
     {
         return;
     }
@@ -1942,8 +1924,8 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
     /* debug code to visualize links */
     drawAreaRect.x = (int)dm->areaOffset.x;
     drawAreaRect.y = (int)dm->areaOffset.y;
-    drawAreaRect.dx = (int)dm->drawAreaSize.dx;
-    drawAreaRect.dy = (int)dm->drawAreaSize.dy;
+    drawAreaRect.dx = dm->drawAreaSize.dxI();
+    drawAreaRect.dy = dm->drawAreaSize.dyI();
 
     for (int linkNo = 0; linkNo < dm->linkCount(); ++linkNo) {
         PdfLink *pdfLink = dm->link(linkNo);
@@ -2467,8 +2449,8 @@ static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
     int win_dx = rect_dx(&rc);
     int win_dy = rect_dy(&rc);
 
-    if ((win_dx == win->winDx) &&
-        (win_dy == win->winDy) && win->hdcToDraw)
+    if ((win_dx == win->winDx()) &&
+        (win_dy == win->winDy()) && win->hdcToDraw)
     {
         return;
     }

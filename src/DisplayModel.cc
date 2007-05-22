@@ -106,8 +106,8 @@ bool displayStateFromDisplayModel(DisplayState *ds, DisplayModel *dm)
     } else {
         ds->scrollY = (int)dm->areaOffset.y;
     }
-    ds->windowDx = (int)dm->drawAreaSize.dx;
-    ds->windowDy = (int)dm->drawAreaSize.dy;
+    ds->windowDx = dm->drawAreaSize.dxI();
+    ds->windowDy = dm->drawAreaSize.dyI();
     ds->windowX = 0;
     ds->windowY = 0;
     return TRUE;
@@ -193,8 +193,8 @@ bool DisplayModel::buildPagesInfo(void)
     for (int pageNo = 1; pageNo <= _pageCount; pageNo++) {
         PdfPageInfo *pageInfo = getPageInfo(pageNo);
         SizeD pageSize = pdfEngine()->pageSize(pageNo);
-        pageInfo->pageDx = pageSize.dx;
-        pageInfo->pageDy = pageSize.dy;
+        pageInfo->pageDx = pageSize.dx();
+        pageInfo->pageDy = pageSize.dy();
         pageInfo->rotation = pdfEngine()->pageRotation(pageNo);
 
         pageInfo->links = NULL;
@@ -252,8 +252,8 @@ double DisplayModel::zoomRealFromFirtualForPage(double zoomVirtual, int pageNo)
     int             areaForPageDxInt;
     int             columns;
 
-    assert(0 != (int)drawAreaSize.dx);
-    assert(0 != (int)drawAreaSize.dy);
+    assert(0 != drawAreaSize.dxI());
+    assert(0 != drawAreaSize.dy());
 
     pageSizeAfterRotation(getPageInfo(pageNo), rotation(), &pageDx, &pageDy);
 
@@ -261,11 +261,11 @@ double DisplayModel::zoomRealFromFirtualForPage(double zoomVirtual, int pageNo)
     assert(0 != (int)pageDy);
 
     columns = columnsFromDisplayMode(displayMode());
-    areaForPageDx = (drawAreaSize.dx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT);
+    areaForPageDx = (drawAreaSize.dx() - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT);
     areaForPageDx -= (PADDING_BETWEEN_PAGES_X * (columns - 1));
     areaForPageDxInt = (int)(areaForPageDx / columns);
     areaForPageDx = (double)areaForPageDxInt;
-    areaForPageDy = (double)drawAreaSize.dy - PADDING_PAGE_BORDER_TOP - PADDING_PAGE_BORDER_BOTTOM;
+    areaForPageDy = drawAreaSize.dy() - PADDING_PAGE_BORDER_TOP - PADDING_PAGE_BORDER_BOTTOM;
     if (ZOOM_FIT_WIDTH == zoomVirtual) {
         /* TODO: should use gWinDx if we don't show scrollbarY */
         _zoomReal = (areaForPageDx * 100.0) / (double)pageDx;
@@ -433,15 +433,15 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
     }
 
     /* since pages can be smaller than the drawing area, center them in x axis */
-    if (totalAreaDx < drawAreaSize.dx) {
+    if (totalAreaDx < drawAreaSize.dx()) {
         areaOffset.x = 0.0;
-        offX = (drawAreaSize.dx - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
+        offX = (drawAreaSize.dx() - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
         assert(offX >= 0.0);
         areaPerPageDx = totalAreaDx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT;
         areaPerPageDx = areaPerPageDx - (PADDING_BETWEEN_PAGES_X * (columns - 1));
         areaPerPageDxInt = (int)(areaPerPageDx / (double)columns);
         areaPerPageDx = (double)areaPerPageDxInt;
-        totalAreaDx = drawAreaSize.dx;
+        totalAreaDx = drawAreaSize.dx();
         pageInARow = 0;
         for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
             pageInfo = getPageInfo(pageNo);
@@ -461,18 +461,18 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
 
     /* if after resizing we would have blank space on the right due to x offset
        being too much, make x offset smaller so that there's no blank space */
-    if (drawAreaSize.dx - (totalAreaDx - newAreaOffsetX) > 0) {
-        newAreaOffsetX = totalAreaDx - drawAreaSize.dx;
+    if (drawAreaSize.dx() - (totalAreaDx - newAreaOffsetX) > 0) {
+        newAreaOffsetX = totalAreaDx - drawAreaSize.dx();
         areaOffset.x = newAreaOffsetX;
     }
 
     /* if a page is smaller than drawing area in y axis, y-center the page */
     totalAreaDy = currPosY + PADDING_PAGE_BORDER_BOTTOM - PADDING_BETWEEN_PAGES_Y;
-    if (totalAreaDy < drawAreaSize.dy) {
-        offY = PADDING_PAGE_BORDER_TOP + (drawAreaSize.dy - totalAreaDy) / 2;
+    if (totalAreaDy < drawAreaSize.dy()) {
+        offY = PADDING_PAGE_BORDER_TOP + (drawAreaSize.dy() - totalAreaDy) / 2;
         DBG_OUT("  offY = %.2f\n", offY);
         assert(offY >= 0.0);
-        totalAreaDy = drawAreaSize.dy;
+        totalAreaDy = drawAreaSize.dy();
         for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
             pageInfo = getPageInfo(pageNo);
             if (!pageInfo->shown) {
@@ -487,8 +487,7 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
         }
     }
 
-    _canvasSize.dx = totalAreaDx;
-    _canvasSize.dy = totalAreaDy;
+    _canvasSize.setDxDy(totalAreaDx, totalAreaDy);
 }
 
 void DisplayModel::changeStartPage(int startPage)
@@ -532,8 +531,8 @@ void DisplayModel::recalcVisibleParts(void)
 
     drawAreaRect.x = (int)areaOffset.x;
     drawAreaRect.y = (int)areaOffset.y;
-    drawAreaRect.dx = (int)drawAreaSize.dx;
-    drawAreaRect.dy = (int)drawAreaSize.dy;
+    drawAreaRect.dx = drawAreaSize.dxI();
+    drawAreaRect.dy = drawAreaSize.dyI();
 
 //    DBG_OUT("DisplayModel::recalcVisibleParts() draw area         (x=%3d,y=%3d,dx=%4d,dy=%4d)\n",
 //        drawAreaRect.x, drawAreaRect.y, drawAreaRect.dx, drawAreaRect.dy);
@@ -560,10 +559,10 @@ void DisplayModel::recalcVisibleParts(void)
             pageInfo->bitmapDy = intersect.dy;
             pageInfo->screenX = (int) ((double)intersect.x - areaOffset.x);
             assert(pageInfo->screenX >= 0);
-            assert(pageInfo->screenX <= drawAreaSize.dx);
+            assert(pageInfo->screenX <= drawAreaSize.dx());
             pageInfo->screenY = (int) ((double)intersect.y - areaOffset.y);
             assert(pageInfo->screenX >= 0);
-            assert(pageInfo->screenY <= drawAreaSize.dy);
+            assert(pageInfo->screenY <= drawAreaSize.dy());
 /*            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
                 pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
                           pageInfo->bitmapDx, pageInfo->bitmapDy,
@@ -929,7 +928,7 @@ void DisplayModel::scrollXBy(int dx)
 {
     DBG_OUT("DisplayModel::scrollXBy(dx=%d)\n", dx);
 
-    double maxX = _canvasSize.dx - drawAreaSize.dx;
+    double maxX = _canvasSize.dx() - drawAreaSize.dx();
     assert(maxX >= 0.0);
     double prevX = areaOffset.x;
     double newX = prevX + (double)dx;
@@ -983,7 +982,7 @@ void DisplayModel::scrollYBy(int dy, bool changePage)
                 newPageNo = _startPage-1;
                 assert(validPageNo(newPageNo));
                 pageInfo = getPageInfo(newPageNo);
-                newYOff = (int)pageInfo->currDy - (int)drawAreaSize.dy;
+                newYOff = (int)pageInfo->currDy - drawAreaSize.dyI();
                 if (newYOff < 0)
                     newYOff = 0; /* TODO: center instead? */
                 goToPrevPage(newYOff);
@@ -993,7 +992,7 @@ void DisplayModel::scrollYBy(int dy, bool changePage)
 
         /* see if we have to change page when scrolling forward */
         if ((dy > 0) && (_startPage < pageCount())) {
-            if ((int)areaOffset.y + (int)drawAreaSize.dy >= (int)_canvasSize.dy) {
+            if ((int)areaOffset.y + drawAreaSize.dyI() >= _canvasSize.dyI()) {
                 goToNextPage(0);
                 return;
             }
@@ -1003,8 +1002,8 @@ void DisplayModel::scrollYBy(int dy, bool changePage)
     newYOff += dy;
     if (newYOff < 0) {
         newYOff = 0;
-    } else if (newYOff + (int)drawAreaSize.dy > (int)_canvasSize.dy) {
-        newYOff = (int)_canvasSize.dy - (int)drawAreaSize.dy;
+    } else if (newYOff + drawAreaSize.dyI() > _canvasSize.dyI()) {
+        newYOff = _canvasSize.dyI() - drawAreaSize.dyI();
     }
 
     if (newYOff == currYOff)
@@ -1024,7 +1023,7 @@ void DisplayModel::scrollYBy(int dy, bool changePage)
 
 void DisplayModel::scrollYByAreaDy(bool forward, bool changePage)
 {
-    int toScroll = (int)drawAreaSize.dy;
+    int toScroll = drawAreaSize.dyI();
     if (forward)
         scrollYBy(toScroll, changePage);
     else
