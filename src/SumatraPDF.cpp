@@ -1780,21 +1780,23 @@ static void AmigaCaptionDraw(WindowInfo *win)
 }
 #endif
 
-static void WinResizeIfNeeded(WindowInfo *win)
+static void WinResizeIfNeeded(WindowInfo *win, bool resizeWindow=true)
 {
     RECT    rc;
     GetClientRect(win->hwndCanvas, &rc);
     int win_dx = rect_dx(&rc);
     int win_dy = rect_dy(&rc);
 
-    if ((win_dx == win->winDx()) &&
-        (win_dy == win->winDy()) && win->hdcToDraw)
+    if (win->hdcToDraw &&
+        (win_dx == win->winDx()) &&
+        (win_dy == win->winDy()))
     {
         return;
     }
 
     WindowInfo_DoubleBuffer_New(win);
-    WindowInfo_ResizeToWindow(win);
+    if (resizeWindow)
+        WindowInfo_ResizeToWindow(win);
 }
 
 static void PostBenchNextAction(HWND hwnd)
@@ -2444,18 +2446,7 @@ static void DrawAnim2(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 
 static void WindowInfo_DoubleBuffer_Resize_IfNeeded(WindowInfo *win)
 {
-    RECT    rc;
-    GetClientRect(win->hwndCanvas, &rc);
-    int win_dx = rect_dx(&rc);
-    int win_dy = rect_dy(&rc);
-
-    if ((win_dx == win->winDx()) &&
-        (win_dy == win->winDy()) && win->hdcToDraw)
-    {
-        return;
-    }
-
-    WindowInfo_DoubleBuffer_New(win);
+    WinResizeIfNeeded(win, false);
 }
 
 static void OnPaintAbout(HWND hwnd)
