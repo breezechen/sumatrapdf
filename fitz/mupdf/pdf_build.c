@@ -427,7 +427,12 @@ pdf_addfillshape(pdf_gstate *gs, fz_node *shape)
 	case PDF_MINDEXED:
 		return addcolorshape(gs, shape, gs->fill.cs, gs->fill.v);
 	case PDF_MPATTERN:
-		return addpatternshape(gs, shape, gs->fill.pattern, gs->fill.cs, gs->fill.v);
+		// this is a work-around to make http://kpdf.kde.org/stuff/nytimes-firefox-final.pdf
+		// not crash see http://blog.kowalczyk.info/forum_sumatra/topic.php?TopicId=287&Posts=0
+		if (gs->fill.pattern)
+			return addpatternshape(gs, shape, gs->fill.pattern, gs->fill.cs, gs->fill.v);
+		else
+			return nil;
 	case PDF_MSHADE:
 		return addshadeshape(gs, shape, gs->fill.shade);
 	default:
