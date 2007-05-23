@@ -1264,7 +1264,7 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
     SizeD totalDrawAreaSize(win->winSize());
     if (fileFromHistory && !ignoreHistorySizePos) {
         WinResizeClientArea(win->hwndCanvas, fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
-        totalDrawAreaSize.setDxDy(fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
+        totalDrawAreaSize = SizeD(fileFromHistory->state.windowDx, fileFromHistory->state.windowDy);
         Win32_Win_SetPos(win->hwndFrame, fileFromHistory->state.windowX, fileFromHistory->state.windowY);
     }
 #if 0 // not ready yet

@@ -487,7 +487,7 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
         }
     }
 
-    _canvasSize.setDxDy(totalAreaDx, totalAreaDy);
+    _canvasSize = SizeD(totalAreaDx, totalAreaDy);
 }
 
 void DisplayModel::changeStartPage(int startPage)

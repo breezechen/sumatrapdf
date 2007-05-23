@@ -216,7 +216,7 @@ public:
 
     void            setTotalDrawAreaSize(SizeD size) {
         _totalDrawAreaSize = size;
-        drawAreaSize.setDxDy(size.dx() - _scrollbarYDx, size.dy() - _scrollbarXDy);
+        drawAreaSize = SizeD(size.dx() - _scrollbarYDx, size.dy() - _scrollbarXDy);
     }
 
     void            changeTotalDrawAreaSize(SizeD totalDrawAreaSize);
