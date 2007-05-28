@@ -1569,6 +1569,25 @@ static BOOL WindowInfo_PdfLoaded(WindowInfo *win)
     return TRUE;
 }
 
+int WindowsVerMajor()
+{
+    DWORD version = GetVersion();
+    return (int)(version & 0xFF);
+}
+
+int WindowsVerMinor()
+{
+    DWORD version = GetVersion();
+    return (int)((version & 0xFF00) >> 8);    
+}
+
+bool WindowsVer2000OrGreater()
+{
+    if (WindowsVerMajor() >= 5)
+        return true;
+    return false;
+}
+
 static bool AlreadyRegisteredForPdfExtentions(void)
 {
     bool    registered = false;
@@ -1609,8 +1628,12 @@ static void AssociateExeWithPdfExtensions()
     assert(exePath);
     if (!exePath) return;
 
-    /* HKEY_CLASSES_ROOT\.pdf */
-    if (RegCreateKeyEx(HKEY_CLASSES_ROOT,
+    HKEY    hkeyToUse = HKEY_CURRENT_USER;
+    if (WindowsVer2000OrGreater())
+        hkeyToUse = HKEY_LOCAL_MACHINE;
+
+    /* key\.pdf */
+    if (RegCreateKeyEx(hkeyToUse,
                 ".pdf", 0, NULL, REG_OPTION_NON_VOLATILE,
                 KEY_WRITE, NULL, &key, &disp))
         goto Exit;
@@ -1621,8 +1644,8 @@ static void AssociateExeWithPdfExtensions()
     RegCloseKey(key);
     key = NULL;
 
-    /* HKEY_CLASSES_ROOT\APP_NAME */
-    if (RegCreateKeyEx(HKEY_CLASSES_ROOT,
+    /* key\APP_NAME */
+    if (RegCreateKeyEx(hkeyToUse,
                 APP_NAME, 0, NULL, REG_OPTION_NON_VOLATILE,
                 KEY_WRITE, NULL, &key, &disp))
         goto Exit;
@@ -1630,7 +1653,7 @@ static void AssociateExeWithPdfExtensions()
     if (RegSetValueEx(key, "", 0, REG_SZ, (const BYTE*)PDF_DOC_NAME, sizeof(PDF_DOC_NAME)))
         goto Exit;
 
-    /* HKEY_CLASSES_ROOT\APP_NAME\DefaultIcon */
+    /* key\APP_NAME\DefaultIcon */
     if (RegCreateKeyEx(key,
                 "DefaultIcon", 0, NULL, REG_OPTION_NON_VOLATILE,
                 KEY_WRITE, NULL, &kicon, &disp))
@@ -1645,7 +1668,6 @@ static void AssociateExeWithPdfExtensions()
     kicon = NULL;
 
     /* HKEY_CLASSES_ROOT\APP_NAME\Shell\Open\Command */
-
     if (RegCreateKeyEx(key,
                 "shell", 0, NULL, REG_OPTION_NON_VOLATILE,
                 KEY_WRITE, NULL, &kshell, &disp))
@@ -1665,7 +1687,7 @@ static void AssociateExeWithPdfExtensions()
     if (RegSetValueEx(kcmd, "", 0, REG_SZ, (const BYTE*)tmp, strlen(tmp)+1))
         goto Exit;
 
-    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST | SHCNF_FLUSHNOWAIT, 0, 0);
 
 Exit:
     if (kcmd)
@@ -1676,7 +1698,7 @@ Exit:
         RegCloseKey(kshell);
     if (key)
         RegCloseKey(key);
-    free((void*)exePath);
+    free(exePath);
 }
 
 static void RegisterForPdfExtentions(HWND hwnd)
