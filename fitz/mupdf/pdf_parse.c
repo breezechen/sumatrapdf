@@ -235,7 +235,8 @@ skip:
 			goto cleanup;
 
 		error = fz_newname(&key, buf);
-		if (error) goto cleanup;
+		if (error) 
+            goto cleanup;
 
 		tok = pdf_lex(file, buf, cap, &len);
 
@@ -258,7 +259,8 @@ skip:
 				error = fz_newint(&val, a);
 				if (error) goto cleanup;
 				error = fz_dictput(dict, key, val);
-				if (error) goto cleanup;
+				if (error) 
+                    goto cleanup;
 				fz_dropobj(val);
 				fz_dropobj(key);
 				key = val = nil;
@@ -279,10 +281,12 @@ skip:
 			goto cleanup;
 		}
 
-		if (error) goto cleanup;
+		if (error) 
+            goto cleanup;
 
 		error = fz_dictput(dict, key, val);
-		if (error) goto cleanup;
+		if (error) 
+            goto cleanup;
 
 		fz_dropobj(val);
 		fz_dropobj(key);
@@ -290,10 +294,14 @@ skip:
 	}
 
 cleanup:
-	if (key) fz_dropobj(key);
-	if (val) fz_dropobj(val);
-	if (dict) fz_dropobj(dict);
-	if (error) return error;
+	if (key) 
+        fz_dropobj(key);
+	if (val)
+        fz_dropobj(val);
+	if (dict) 
+        fz_dropobj(dict);
+    *op = nil;
+    if (error) return error;
 	return fz_throw("syntaxerror: corrupt dictionary");
 }
 
