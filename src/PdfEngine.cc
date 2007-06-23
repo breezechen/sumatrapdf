@@ -623,13 +623,13 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
 #endif
     }
 
+    fz_pixmap* image = NULL;
     pdf_page* page = getPdfPage(pageNo);
     if (!page)
         goto TryPoppler;
     zoomReal = zoomReal / 100.0;
     ctm = pdfapp_viewctm(page, zoomReal, rotation);
     bbox = fz_transformaabb(ctm, page->mediabox);
-    fz_pixmap* image = NULL;
 #ifdef FITZ_HEAD
     error = fz_drawtree(&image, _rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);
 #else

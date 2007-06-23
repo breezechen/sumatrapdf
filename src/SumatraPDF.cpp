@@ -1,3 +1,11 @@
+// WTF, have to undef _WIN32_IE here to use TB_* constants
+// (_WIN32_IE was defined in *.cbp - codeblocks project file)
+// ==> we have to use a stable API instead of MinGW 5.1.3 :-\
+
+#ifdef __GNUC__
+#undef _WIN32_IE
+#endif
+
 #include "SumatraPDF.h"
 
 #include "str_util.h"
@@ -24,9 +32,26 @@
 
 #include <shellapi.h>
 #include <shlobj.h>
-#include <strsafe.h>
+
+#include "str_strsafe.h"
 
 #include <windowsx.h>
+
+// Fsck again, some stupid things are in headers of MinGW 5.1.3 :-\
+// why we have to define these constants & prototypes again (?!)
+#ifdef __GNUC__
+#ifndef	VK_OEM_PLUS
+#define	VK_OEM_PLUS		0xBB
+#endif
+#ifndef	VK_OEM_MINUS
+#define	VK_OEM_MINUS	0xBD
+#endif
+
+extern "C" {
+extern BOOL WINAPI GetDefaultPrinterA(LPSTR,LPDWORD);
+extern BOOL WINAPI GetDefaultPrinterW(LPWSTR,LPDWORD);
+}
+#endif
 
 // this sucks but I don't know any other way
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -198,7 +223,7 @@ ToolbarButtonInfo gToolbarButtons[] = {
 
 #define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
 
-void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
+static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
 
 void LaunchBrowser(const TCHAR *url)
@@ -1311,6 +1336,8 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
             totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, win);
     }
 
+    double zoomVirtual = DEFAULT_ZOOM;
+    int rotation = DEFAULT_ROTATION;
     if (!win->dm) {
         if (!reuseExistingWindow && WindowInfoList_ExistsWithError()) {
                 /* don't create more than one window with errors */
@@ -1330,8 +1357,6 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
     /* TODO: if fileFromHistory, set the state based on gFileHistoryList node for
        this entry */
     win->state = WS_SHOWING_PDF;
-    double zoomVirtual = DEFAULT_ZOOM;
-    int rotation = DEFAULT_ROTATION;
     if (fileFromHistory) {
         zoomVirtual = fileFromHistory->state.zoomVirtual;
         rotation = fileFromHistory->state.rotation;
@@ -1499,7 +1524,7 @@ static void WindowInfo_ResizeToWindow(WindowInfo *win)
     win->dm->changeTotalDrawAreaSize(win->winSize());
 }
 
-static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
+void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo)
 {
     bool fullScreen = false;
 

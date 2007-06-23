@@ -14,6 +14,10 @@
 #include "SplashOutputDev.h"
 #include "TextOutputDev.h"
 
+#ifdef __GNUC__
+#include <ctype.h>
+#endif
+
 #include <assert.h>
 #include <stdlib.h> /* malloc etc. */
 
