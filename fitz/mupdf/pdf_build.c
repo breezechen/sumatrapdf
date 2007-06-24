@@ -128,29 +128,37 @@ Lindexed:
 fz_error *
 pdf_setpattern(pdf_csi *csi, int what, pdf_pattern *pat, float *v)
 {
-	pdf_gstate *gs = csi->gstate + csi->gtop;
-	fz_error *error;
-	pdf_material *mat;
+    pdf_gstate *gs = csi->gstate + csi->gtop;
+    fz_error *error;
+    pdf_material *mat;
 
-	error = pdf_flushtext(csi);
-	if (error)
-		return error;
+    error = pdf_flushtext(csi);
+    if (error)
+        return error;
 
-	mat = what == PDF_MFILL ? &gs->fill : &gs->stroke;
+    if (what == PDF_MFILL)
+        mat = &gs->fill;
+    else
+        mat = &gs->stroke;
 
-	if (mat->pattern)
-		pdf_droppattern(mat->pattern);
+    // TODO: this possibly drops a pattern too many times resulting in droping pattern
+    // used in other places, so don't drop it (better leak than crash).
+    // It's possible that overzeleaus dropping happens in some other place
+#if 0
+    if (mat->pattern)
+        pdf_droppattern(mat->pattern);
+#endif
 
-	mat->kind = PDF_MPATTERN;
-	if (pat)
-		mat->pattern = pdf_keeppattern(pat);
-	else
-		mat->pattern = nil;
+    mat->kind = PDF_MPATTERN;
+    if (pat)
+        mat->pattern = pdf_keeppattern(pat);
+    else
+        mat->pattern = nil;
 
-	if (v)
-		return pdf_setcolor(csi, what, v);
+    if (v)
+        return pdf_setcolor(csi, what, v);
 
-	return nil;
+    return nil;
 }
 
 fz_error *

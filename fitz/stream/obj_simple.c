@@ -146,32 +146,34 @@ fz_newindirect(fz_obj **op, int objid, int genid)
 fz_error *
 fz_newpointer(fz_obj **op, void *p)
 {
-	NEWOBJ(FZ_POINTER, sizeof (fz_obj));
-	o->u.p = p;
-	return nil;
+    NEWOBJ(FZ_POINTER, sizeof (fz_obj));
+    o->u.p = p;
+    return nil;
 }
 
 fz_obj *
 fz_keepobj(fz_obj *o)
 {
-	assert(o != nil);
-	o->refs ++;
-	return o;
+    assert(o != nil);
+    assert(o->refs > 0);
+    o->refs ++;
+    return o;
 }
 
 void
 fz_dropobj(fz_obj *o)
 {
-	assert(o != nil);
-	if (--o->refs == 0)
-	{
-		if (o->kind == FZ_ARRAY)
-			fz_droparray(o);
-		else if (o->kind == FZ_DICT)
-			fz_dropdict(o);
-		else
-			fz_free(o);
-	}
+    assert(o != nil);
+    assert(o->refs > 0);
+    if (--o->refs == 0)
+    {
+        if (o->kind == FZ_ARRAY)
+            fz_droparray(o);
+        else if (o->kind == FZ_DICT)
+            fz_dropdict(o);
+        else
+            fz_free(o);
+    }
 }
 
 int

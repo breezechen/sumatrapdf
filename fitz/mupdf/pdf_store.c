@@ -49,17 +49,17 @@ pdf_newstore(pdf_store **storep)
 
 static void dropitem(pdf_itemkind kind, void *val)
 {
-	switch (kind)
-	{
-	case PDF_KCOLORSPACE: fz_dropcolorspace(val); break;
-	case PDF_KFUNCTION: pdf_dropfunction(val); break;
-	case PDF_KXOBJECT: pdf_dropxobject(val); break;
-	case PDF_KIMAGE: fz_dropimage(val); break;
-	case PDF_KPATTERN: pdf_droppattern(val); break;
-	case PDF_KSHADE: fz_dropshade(val); break;
-	case PDF_KCMAP: pdf_dropcmap(val); break;
-	case PDF_KFONT: fz_dropfont(val); break;
-	}
+    switch (kind)
+    {
+    case PDF_KCOLORSPACE: fz_dropcolorspace(val); break;
+    case PDF_KFUNCTION: pdf_dropfunction(val); break;
+    case PDF_KXOBJECT: pdf_dropxobject(val); break;
+    case PDF_KIMAGE: fz_dropimage(val); break;
+    case PDF_KPATTERN: pdf_droppattern(val); break;
+    case PDF_KSHADE: fz_dropshade(val); break;
+    case PDF_KCMAP: pdf_dropcmap(val); break;
+    case PDF_KFONT: fz_dropfont(val); break;
+    }
 }
 
 void
@@ -102,54 +102,56 @@ pdf_dropstore(pdf_store *store)
 fz_error *
 pdf_storeitem(pdf_store *store, pdf_itemkind kind, fz_obj *key, void *val)
 {
-	fz_error *error;
+    fz_error *error;
 
-	switch (kind)
-	{
-	case PDF_KCOLORSPACE: fz_keepcolorspace(val); break;
-	case PDF_KFUNCTION: pdf_keepfunction(val); break;
-	case PDF_KXOBJECT: pdf_keepxobject(val); break;
-	case PDF_KIMAGE: fz_keepimage(val); break;
-	case PDF_KPATTERN: pdf_keeppattern(val); break;
-	case PDF_KSHADE: fz_keepshade(val); break;
-	case PDF_KCMAP: pdf_keepcmap(val); break;
-	case PDF_KFONT: fz_keepfont(val); break;
-	}
+    switch (kind)
+    {
+    case PDF_KCOLORSPACE: fz_keepcolorspace(val); break;
+    case PDF_KFUNCTION: pdf_keepfunction(val); break;
+    case PDF_KXOBJECT: pdf_keepxobject(val); break;
+    case PDF_KIMAGE: fz_keepimage(val); break;
+    case PDF_KPATTERN: 
+        pdf_keeppattern(val); 
+        break;
+    case PDF_KSHADE: fz_keepshade(val); break;
+    case PDF_KCMAP: pdf_keepcmap(val); break;
+    case PDF_KFONT: fz_keepfont(val); break;
+    }
 
-	if (fz_isindirect(key))
-	{
-		struct refkey item;
+    if (fz_isindirect(key))
+    {
+        struct refkey item;
 
-		pdf_logrsrc("store item %d: %d %d R = %p\n", kind, fz_tonum(key), fz_togen(key), val);
+        pdf_logrsrc("store item %d: %d %d R = %p\n", kind, fz_tonum(key), fz_togen(key), val);
 
-		item.kind = kind;
-		item.oid = fz_tonum(key);
-		item.gen = fz_togen(key);
+        item.kind = kind;
+        item.oid = fz_tonum(key);
+        item.gen = fz_togen(key);
 
-		error = fz_hashinsert(store->hash, &item, val);
-		if (error)
-			return error;
-	}
+        error = fz_hashinsert(store->hash, &item, val);
+        if (error)
+            return error;
+    }
 
-	else
-	{
-		pdf_item *item;
+    else
+    {
+        pdf_item *item;
 
-		item = fz_malloc(sizeof(pdf_item));
-		if (!item)
-			return fz_outofmem;
+        item = fz_malloc(sizeof(pdf_item));
+        if (!item)
+            return fz_outofmem;
 
-		pdf_logrsrc("store item %d: ... = %p\n", kind, val);
+        pdf_logrsrc("store item %d: ... = %p\n", kind, val);
 
-		item->kind = kind;
-		item->key = fz_keepobj(key);
-		item->val = val;
+        item->kind = kind;
+        item->key = fz_keepobj(key);
+        item->val = val;
 
-		item->next = store->root;
-		store->root = item;
-	}
+        item->next = store->root;
+        store->root = item;
+    }
 
-	return nil;
+    return nil;
 }
 
 void *
