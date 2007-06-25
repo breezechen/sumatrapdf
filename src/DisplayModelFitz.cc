@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #include "DisplayModelFitz.h"
 
 DisplayModelFitz::DisplayModelFitz(DisplayMode displayMode) :

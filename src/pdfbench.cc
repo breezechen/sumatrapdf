@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 /*
   A tool to stress-test poppler rendering and measure rendering times for
   very simplistic performance measuring.

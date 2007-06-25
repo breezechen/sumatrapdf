@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef SUMATRAPDF_H_
 #define SUMATRAPDF_H_
 

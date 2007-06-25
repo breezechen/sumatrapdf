@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef _PDF_ENGINE_H_
 #define _PDF_ENGINE_H_
 

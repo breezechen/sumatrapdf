@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef FILE_HISTORY_H_
 #define FILE_HISTORY_H_
 

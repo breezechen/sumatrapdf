@@ -1,8 +1,7 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef _DISPLAY_MODEL_SPLASH_H_
 #define _DISPLAY_MODEL_SPLASH_H_
-/* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
-   License: GPLv2 */
-
 /* How to think of display logic: physical screen of size
    drawAreaSize is a window into (possibly much larger)
    total area (canvas) of size canvasSize.

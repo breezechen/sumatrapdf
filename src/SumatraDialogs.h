@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef SUMATRA_PDF_DIALOGS_H_
 #define SUMATRA_PDF_DIALOGS_H_
 

@@ -1,4 +1,5 @@
-
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #include "DisplayState.h"
 #include "str_util.h"
 #include "dstring.h"

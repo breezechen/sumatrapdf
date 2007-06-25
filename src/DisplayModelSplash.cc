@@ -1,6 +1,5 @@
-/* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
+/* Copyright Krzysztof Kowalczyk 2006-2007
    License: GPLv2 */
-
 #include "DisplayModelSplash.h"
 #include "str_util.h"
 

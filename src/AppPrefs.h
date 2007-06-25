@@ -1,3 +1,5 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
 #ifndef APP_PREFS_H_
 #define APP_PREFS_H_
 

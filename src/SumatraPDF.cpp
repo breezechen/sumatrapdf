@@ -1,3 +1,6 @@
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
+
 // WTF, have to undef _WIN32_IE here to use TB_* constants
 // (_WIN32_IE was defined in *.cbp - codeblocks project file)
 // ==> we have to use a stable API instead of MinGW 5.1.3 :-\
