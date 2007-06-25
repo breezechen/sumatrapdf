@@ -43,6 +43,7 @@ BEGIN
     BEGIN
         MENUITEM "&Open\tCtrl-O",               IDM_OPEN
         MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
+        MENUITEM "&Save as",					IDM_SAVEAS
         MENUITEM "&Print",                      IDM_PRINT
         MENUITEM SEPARATOR
         MENUITEM "Make SumatraPDF a default PDF reader", IDM_MAKE_DEFAULT_READER

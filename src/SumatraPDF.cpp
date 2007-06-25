@@ -1133,7 +1133,7 @@ static void MenuUpdateStateForWindow(WindowInfo *win) {
         IDM_ZOOM_ACTUAL_SIZE, IDM_ZOOM_FIT_WIDTH, IDM_ZOOM_6400, IDM_ZOOM_3200,
         IDM_ZOOM_1600, IDM_ZOOM_800, IDM_ZOOM_400, IDM_ZOOM_200, IDM_ZOOM_150,
         IDM_ZOOM_125, IDM_ZOOM_100, IDM_ZOOM_50, IDM_ZOOM_25, IDM_ZOOM_12_5,
-        IDM_ZOOM_8_33 };
+        IDM_ZOOM_8_33, IDM_SAVEAS };
 
     bool fileCloseEnabled = FileCloseMenuEnabled();
     HMENU hmenu = GetMenu(win->hwndFrame);
@@ -1867,6 +1867,17 @@ static void DrawCenteredText(HDC hdc, RECT *r, char *txt)
 {    
     SetBkMode(hdc, TRANSPARENT);
     DrawText(hdc, txt, strlen(txt), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
+static void SeeLastError(void) {
+    char *msgBuf = NULL;
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR) &msgBuf, 0, NULL);
+    if (!msgBuf) return;
+    printf("SeeLastError(): %s\n", msgBuf);
+    OutputDebugStringA(msgBuf);
+    LocalFree(msgBuf);
 }
 
 static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
@@ -2743,11 +2754,57 @@ static void OnMenuPrint(WindowInfo *win)
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
 }
 
+static void OnMenuSaveAs(WindowInfo *win)
+{
+    OPENFILENAME ofn = {0};
+    char         dstFileName[MAX_PATH] = {0};
+    const char*  srcFileName = NULL;
+
+    assert(win);
+    assert(win->dm);
+    if (!win->dm) return;
+
+    srcFileName = win->dm->fileName();
+    assert(srcFileName);
+    if (!srcFileName) return;
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = win->hwndFrame;
+    ofn.lpstrFile = dstFileName;
+
+    // Set lpstrFile[0] to '\0' so that GetOpenFileName does not
+    // use the contents of szFile to initialize itself.
+    ofn.lpstrFile[0] = '\0';
+    ofn.nMaxFile = dimof(dstFileName);
+    ofn.lpstrFilter = "PDF\0*.pdf\0All\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
+    ofn.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT;
+
+    // Display the Open dialog box.
+    if (FALSE == GetSaveFileName(&ofn))
+        return;
+
+    char* realDstFileName = dstFileName;
+    if (!str_endswithi(dstFileName, ".pdf")) {
+        realDstFileName = str_cat(dstFileName, ".pdf");
+    }
+    BOOL cancelled = FALSE;
+    BOOL ok = CopyFileEx(srcFileName, realDstFileName, NULL, NULL, &cancelled, COPY_FILE_FAIL_IF_EXISTS);
+    if (!ok) {
+        SeeLastError();
+        MessageBox(win->hwndFrame, "Failed to save a file", "Information", MB_OK);
+    }
+    if (realDstFileName != dstFileName)
+        free(realDstFileName);
+}
+
 static void OnMenuOpen(WindowInfo *win)
 {
     OPENFILENAME ofn = {0};
     char         fileName[260];
-    GooString    fileNameStr;
 
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = win->hwndFrame;
@@ -3288,17 +3345,6 @@ static TBBUTTON TbButtonFromButtonInfo(int i) {
     return tbButton;
 }
 
-static void SeeLastError(void) {
-    char *msgBuf = NULL;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR) &msgBuf, 0, NULL);
-    if (!msgBuf) return;
-    printf("SeeLastError(): %s\n", msgBuf);
-    OutputDebugStringA(msgBuf);
-    LocalFree(msgBuf);
-}
-
 #define WS_TOOLBAR (WS_CHILD | WS_CLIPSIBLINGS | \
                     TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | \
                     TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN )
@@ -3529,6 +3575,9 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                 case IDM_OPEN:
                 case IDT_FILE_OPEN:
                     OnMenuOpen(win);
+                    break;
+                case IDM_SAVEAS:
+                    OnMenuSaveAs(win);
                     break;
 
                 case IDT_FILE_PRINT:

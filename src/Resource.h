@@ -50,6 +50,7 @@
 #define IDM_MAKE_DEFAULT_READER         435
 #define IDM_VISIT_WEBSITE               436
 #define IDM_VIEW_USE_FITZ               437
+#define IDM_SAVEAS                      438
 #define IDC_SUMATRAPDF                  600
 #define IDI_SMALL                       601
 #define IDC_GOTO_PAGE_EDIT              1000
