@@ -135,35 +135,43 @@ cleanup:
 	return error;
 }
 
-fz_error *pdf_getpageinfo(fz_obj *dict, fz_rect *bboxp, int *rotatep)
+fz_error *pdf_getpageinfo(pdf_xref *xref, fz_obj *dict, fz_rect *bboxp, int *rotatep)
 {
-	fz_rect bbox;
-	int rotate;
-	fz_obj *obj;
+    fz_rect bbox;
+    int rotate;
+    fz_obj *obj;
+    fz_error *error;
 
-	obj = fz_dictgets(dict, "CropBox");
-	if (!obj)
-		obj = fz_dictgets(dict, "MediaBox");
-	if (!fz_isarray(obj))
-		return fz_throw("syntaxerror: Page missing MediaBox");
-	bbox = pdf_torect(obj);
+    obj = fz_dictgets(dict, "CropBox");
+    if (!obj)
+        obj = fz_dictgets(dict, "MediaBox");
 
-	pdf_logpage("bbox [%g %g %g %g]\n",
-		bbox.x0, bbox.y0, bbox.x1, bbox.y1);
+    if (fz_isindirect(obj)) {
+        fz_obj* obj2;
+        error = pdf_loadindirect(&obj2, xref, obj);
+        if (error)
+            return error;
+        obj = obj2;
+    }
 
-	obj = fz_dictgets(dict, "Rotate");
-	if (fz_isint(obj))
-		rotate = fz_toint(obj);
-	else
-		rotate = 0;
+    if (!fz_isarray(obj))
+        return fz_throw("syntaxerror: Page missing MediaBox");
+    bbox = pdf_torect(obj);
 
-	pdf_logpage("rotate %d\n", rotate);
+    pdf_logpage("bbox [%g %g %g %g]\n", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
 
-	if (bboxp)
-		*bboxp = bbox;
-	if (rotatep)
-		*rotatep = rotate;
-	return nil;
+    obj = fz_dictgets(dict, "Rotate");
+    rotate = 0;
+    if (fz_isint(obj))
+        rotate = fz_toint(obj);
+
+    pdf_logpage("rotate %d\n", rotate);
+
+    if (bboxp)
+        *bboxp = bbox;
+    if (rotatep)
+        *rotatep = rotate;
+    return nil;
 }
 
 fz_error *
@@ -184,7 +192,7 @@ pdf_loadpage(pdf_page **pagep, pdf_xref *xref, fz_obj *dict)
 	/*
 	 * Sort out page media
 	 */
-	error = pdf_getpageinfo(dict, &bbox, &rotate);
+	error = pdf_getpageinfo(xref, dict, &bbox, &rotate);
 	if (error)
 		return error;
 

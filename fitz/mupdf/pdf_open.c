@@ -66,6 +66,56 @@ readstartxref(pdf_xref *xref)
 	return fz_throw("syntaxerror: could not find startxref");
 }
 
+#define WHITE_SPACE_CHARS " \n\t\r"
+
+static const char *str_find_char(const char *txt, char c)
+{
+    while (*txt != c) {
+        if (0 == *txt)
+            return NULL;
+        ++txt;
+    }
+    return txt;
+}
+
+static int str_contains(const char *str, char c)
+{
+    const char *pos = str_find_char(str, c);
+    if (!pos)
+        return 0;
+    return 1;
+}
+
+static void str_strip_right(char *txt, const char *to_strip)
+{
+    char * new_end;
+    char   c;
+    if (!txt || !to_strip)
+        return;
+    if (0 == *txt)
+        return;
+    /* point at the last character in the string */
+    new_end = txt + strlen(txt) - 1;
+    for (;;) {
+        c = *new_end;
+        if (!str_contains(to_strip, c))
+            break;
+        if (txt == new_end)
+            break;
+        --new_end;
+    }
+    if (str_contains(to_strip, *new_end))
+        new_end[0] = 0;
+    else
+        new_end[1] = 0;
+}
+
+static void str_strip_ws_right(char *txt)
+{
+    str_strip_right(txt, WHITE_SPACE_CHARS);
+}
+
+
 /*
  * trailer dictionary
  */
@@ -82,6 +132,7 @@ readoldtrailer(pdf_xref *xref, char *buf, int cap)
 	pdf_logxref("load old xref format trailer\n");
 
 	fz_readline(xref->file, buf, cap);
+    str_strip_ws_right(buf);
 	if (strcmp(buf, "xref") != 0)
 		return fz_throw("ioerror: missing xref");
 
@@ -166,6 +217,7 @@ readoldxref(fz_obj **trailerp, pdf_xref *xref, char *buf, int cap)
 	pdf_logxref("load old xref format\n");
 
 	fz_readline(xref->file, buf, cap);
+    str_strip_ws_right(buf);
 	if (strcmp(buf, "xref") != 0)
 		return fz_throw("syntaxerror: expected xref");
 

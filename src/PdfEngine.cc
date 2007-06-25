@@ -543,7 +543,7 @@ int PdfEngineFitz::pageRotation(int pageNo)
     assert(validPageNo(pageNo));
     fz_obj *dict = pdf_getpageobject(pages(), pageNo - 1);
     int rotation;
-    fz_error *error = pdf_getpageinfo(dict, NULL, &rotation);
+    fz_error *error = pdf_getpageinfo(_xref, dict, NULL, &rotation);
     if (error)
         return INVALID_ROTATION;
     return rotation;
@@ -557,7 +557,7 @@ SizeD PdfEngineFitz::pageSize(int pageNo)
     assert(validPageNo(pageNo));
     fz_obj *dict = pdf_getpageobject(pages(), pageNo - 1);
     fz_rect bbox;
-    fz_error *error = pdf_getpageinfo(dict, &bbox, NULL);
+    fz_error *error = pdf_getpageinfo(_xref, dict, &bbox, NULL);
     if (error)
         return SizeD(0,0);
     return SizeD(fabs(bbox.x1 - bbox.x0), fabs(bbox.y1 - bbox.y0));
