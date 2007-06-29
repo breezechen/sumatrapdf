@@ -620,12 +620,17 @@ static bool runningFromProgramFiles(void)
 {
     char programFilesDir[MAX_PATH];
     BOOL fOk = SHGetSpecialFolderPath(NULL, programFilesDir, CSIDL_PROGRAM_FILES, FALSE);
-    if (!fOk) return true; // assume it is
     char *exePath = ExePathGet();
     if (!exePath) return true; // again, assume it is
     bool fromProgramFiles = false;
-    if (str_startswithi(exePath, programFilesDir))
-        fromProgramFiles = true;
+    if (fOk) {
+        if (str_startswithi(exePath, programFilesDir))
+            fromProgramFiles = true;
+    } else {
+        // SHGetSpecialFolderPath() might fail on win95/98 so need a different check
+        if (strstr(exePath, "Program Files"))
+            fromProgramFiles = true;
+    }
     free(exePath);
     return fromProgramFiles;
 }
