@@ -14,4 +14,7 @@ LanguagesList* Translations_GetLanguages();
 bool Translations_SetCurrentLanguage(const char* lang);
 const char* Translatations_GetTranslation(const char* data);
 void Translations_FreeData();
+
+#define _TR(x) Translatations_GetTranslation(x)
+
 #endif

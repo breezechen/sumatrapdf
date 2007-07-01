@@ -146,6 +146,7 @@
 				DebugInformationFormat="3"
 				CompileAs="0"
 				DisableSpecificWarnings="4996;4244;4267;4995"
+				EnablePREfast="false"
 				UseFullPaths="true"
 			/>
 			<Tool
@@ -266,6 +267,14 @@
 			</File>
 			<File
 				RelativePath=".\src\SumatraPDF.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\translations.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\translations.h"
 				>
 			</File>
 			<File

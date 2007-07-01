@@ -20,25 +20,25 @@ static LanguagesList* g_langList;
 LanguagesList* Translations_FromData(const char* data, size_t data_len)
 {
 
-
+    return NULL;
 }
 
 LanguagesList* Translations_GetLanguages()
 {
 
-
+    return NULL;
 }
 
 bool Translations_SetCurrentLanguage(const char* lang)
 {
 
-
+    return false;
 }
 
 const char* Translatations_GetTranslation(const char* data)
 {
 
-
+    return NULL;
 }
 
 void Translations_FreeData()

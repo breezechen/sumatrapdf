@@ -21,6 +21,8 @@ static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wPa
             /* TODO: intelligently center the dialog within the parent window? */
             data = (Dialog_GetPassword_Data*)lParam;
             assert(data);
+            if (!data)
+                return FALSE;
             assert(data->fileName);
             assert(!data->pwdOut);
             SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
@@ -40,6 +42,8 @@ static BOOL CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT message, WPARAM wPa
                 case IDOK:
                     data = (Dialog_GetPassword_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
                     assert(data);
+                    if (!data)
+                        return TRUE;
                     edit = GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT);
                     data->pwdOut = win_get_text(edit);
                     EndDialog(hDlg, DIALOG_OK_PRESSED);
@@ -91,6 +95,8 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
             /* TODO: intelligently center the dialog within the parent window? */
             data = (Dialog_GoToPage_Data*)lParam;
             assert(NULL != data);
+            if (!data)
+                return FALSE;
             SetWindowLongPtr(hDlg, GWL_USERDATA, (LONG_PTR)data);
             assert(INVALID_PAGE_NO != data->currPageNo);
             assert(data->pageCount >= 1);
@@ -113,6 +119,8 @@ static BOOL CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT message, WPARAM wParam
                 case IDOK:
                     data = (Dialog_GoToPage_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
                     assert(data);
+                    if (!data)
+                        return TRUE;
                     data->pageEnteredOut = INVALID_PAGE_NO;
                     editPageNo = GetDlgItem(hDlg, IDC_GOTO_PAGE_EDIT);
                     newPageNoTxt = win_get_text(editPageNo);
@@ -172,12 +180,16 @@ static BOOL CALLBACK Dialog_PdfAssociate_Proc(HWND hDlg, UINT message, WPARAM wP
         case WM_COMMAND:
             data = (Dialog_PdfAssociate_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
             assert(data);
+            if (!data)
+                return TRUE;
             data->dontAskAgain = FALSE;
             switch (LOWORD(wParam))
             {
                 case IDOK:
                     data = (Dialog_PdfAssociate_Data*)GetWindowLongPtr(hDlg, GWL_USERDATA);
                     assert(data);
+                    if (!data)
+                        return TRUE;
                     if (BST_CHECKED == IsDlgButtonChecked(hDlg, IDC_DONT_ASK_ME_AGAIN))
                         data->dontAskAgain = TRUE;
                     EndDialog(hDlg, DIALOG_OK_PRESSED);
@@ -208,7 +220,8 @@ int Dialog_PdfAssociate(HWND hwnd, BOOL *dontAskAgainOut)
 
     Dialog_PdfAssociate_Data data;
     int dialogResult = DialogBoxParam(NULL, MAKEINTRESOURCE(IDD_DIALOG_PDF_ASSOCIATE), hwnd, Dialog_PdfAssociate_Proc, (LPARAM)&data);
-    *dontAskAgainOut = data.dontAskAgain;
+    if (dontAskAgainOut)
+        *dontAskAgainOut = data.dontAskAgain;
     return dialogResult;
 }
 

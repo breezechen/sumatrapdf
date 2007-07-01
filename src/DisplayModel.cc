@@ -344,7 +344,7 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
     int         pageNo;
     PdfPageInfo*pageInfo = NULL;
     double      currPosX;
-    double      pageDx, pageDy;
+    double      pageDx=0, pageDy=0;
     int         currDxInt, currDyInt;
     double      totalAreaDx, totalAreaDy;
     double      areaPerPageDx;

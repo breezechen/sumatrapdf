@@ -1,7 +1,7 @@
 /* Copyright Krzysztof Kowalczyk 2006-2007
    License: GPLv2 */
 
-// WTF, have to undef _WIN32_IE here to use TB_* constants
+// have to undef _WIN32_IE here to use TB_* constants
 // (_WIN32_IE was defined in *.cbp - codeblocks project file)
 // ==> we have to use a stable API instead of MinGW 5.1.3 :-\
 
@@ -15,6 +15,7 @@
 #include "file_util.h"
 #include "geom_util.h"
 #include "win_util.h"
+#include "translations.h"
 
 #include "SumatraDialogs.h"
 #include "FileHistory.h"
@@ -40,7 +41,7 @@
 
 #include <windowsx.h>
 
-// Fsck again, some stupid things are in headers of MinGW 5.1.3 :-\
+// some stupid things are in headers of MinGW 5.1.3 :-\
 // why we have to define these constants & prototypes again (?!)
 #ifdef __GNUC__
 #ifndef	VK_OEM_PLUS
@@ -334,7 +335,7 @@ void RenderQueue_Add(DisplayModel *dm, int pageNo) {
                 req->rotation = rotation;
                 goto LeaveCsAndExit;
             
-}
+            }
         }
     }
 
@@ -1047,6 +1048,8 @@ static bool WindowInfoList_ExistsWithError(void) {
 
 static void WindowInfoList_Remove(WindowInfo *to_remove) {
     assert(to_remove);
+    if (!to_remove)
+        return;
     if (gWindowList == to_remove) {
         gWindowList = to_remove->next;
         return;
@@ -2541,7 +2544,7 @@ static void OnPaint(WindowInfo *win)
         HFONT fontRightTxt = Win32_Font_GetSimple(hdc, "Tahoma", 14);
         HFONT origFont = (HFONT)SelectObject(hdc, fontRightTxt); /* Just to remember the orig font */
         FillRect(hdc, &ps.rcPaint, gBrushBg);
-        DrawText (hdc, "Error loading PDF file.", -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
+        DrawText(hdc, _TR("Error loading PDF file."), -1, &rc, DT_SINGLELINE | DT_CENTER | DT_VCENTER) ;
         if (origFont)
             SelectObject(hdc, origFont);
         Win32_Font_Delete(fontRightTxt);
@@ -2766,6 +2769,7 @@ static void OnMenuSaveAs(WindowInfo *win)
     const char*  srcFileName = NULL;
 
     assert(win);
+    if (!win) return;
     assert(win->dm);
     if (!win->dm) return;
 
@@ -4114,6 +4118,8 @@ static void EnumeratePrinters()
         fOk = EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 
         5, (LPBYTE)info5Arr, bufSize, &bufSize, &printersCount);
     }
+    if (!info5Arr)
+        return;
     assert(fOk);
     if (!fOk) return;
     printf("Printers: %d\n", printersCount);
