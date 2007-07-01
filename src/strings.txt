@@ -1,0 +1,20 @@
+﻿# This is a file with translations for Sumatra
+# Lines at the beginning starting with # are comments
+# It must be in utf-8 encoding so when editing make sure
+# you use a proper text editor (notepad++ or notepad2 will work)
+# What follows below is a line listing all languages supported
+# in this file followed by translations themselves
+Languages: en pl fr de
+Open
+pl: Otworz
+fr: Ouvrir
+-
+Previous page
+pl: Nastepna strona
+fr: Suivre
+-
+Next page
+-
+Zoom in
+-
+Zoom out
