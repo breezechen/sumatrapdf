@@ -2,11 +2,13 @@
 #include "translations.h"
 #include "str_util.h"
 
-/* For simplicity, maximum number of languages is defined upfront. If you need
-   more, change the value and recompile */
-#define MAX_LANGS 5
+/* Note: it could be a singleton class but writing sigletons is stupid. */
+typedef struct Language {
+    const char* m_langName;
+    int m_id; /* 0..n */
+} Language;
 
-static LanguagesList* g_langList;
+static Language* g_langs;
 
 /* 'data'/'data_len' is a text describing all texts we translate.
    It builds data structures need for quick lookup of translations
@@ -17,16 +19,10 @@ static LanguagesList* g_langList;
    It can be called multiple times. This is to make debugging of translations
    easier by allowing re-loading translation file at runtime. 
    */
-LanguagesList* Translations_FromData(const char* data, size_t data_len)
+bool Translations_FromData(const char* langs, const char* data, size_t data_len)
 {
 
-    return NULL;
-}
-
-LanguagesList* Translations_GetLanguages()
-{
-
-    return NULL;
+    return false;
 }
 
 bool Translations_SetCurrentLanguage(const char* lang)
@@ -35,10 +31,10 @@ bool Translations_SetCurrentLanguage(const char* lang)
     return false;
 }
 
-const char* Translatations_GetTranslation(const char* data)
+const char* Translatations_GetTranslation(const char* txt)
 {
 
-    return NULL;
+    return txt;
 }
 
 void Translations_FreeData()
@@ -46,4 +42,3 @@ void Translations_FreeData()
 
 }
 
-#undef MAX_LANGS

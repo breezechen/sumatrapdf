@@ -2804,7 +2804,7 @@ static void OnMenuSaveAs(WindowInfo *win)
     BOOL ok = CopyFileEx(srcFileName, realDstFileName, NULL, NULL, &cancelled, COPY_FILE_FAIL_IF_EXISTS);
     if (!ok) {
         SeeLastError();
-        MessageBox(win->hwndFrame, "Failed to save a file", "Information", MB_OK);
+        MessageBox(win->hwndFrame, _TR("Failed to save a file"), "Information", MB_OK);
     }
     if (realDstFileName != dstFileName)
         free(realDstFileName);
@@ -3167,7 +3167,7 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 
     bool shiftPressed = WasShiftPressed();
     bool ctrlPressed = WasCtrlPressed();
-    //DBG_OUT("key=%d,%c,shift=%d,ctrl=%d\n", key, (char)key, (int)shiftPressed, (int)ctrlPressed);
+	//DBG_OUT("key=%d,%c,shift=%d,ctrl=%d\n", key, (char)key, (int)shiftPressed, (int)ctrlPressed);
 
     if (VK_PRIOR == key) {
         /* TODO: more intelligence (see VK_NEXT comment). Also, probably
@@ -3191,10 +3191,12 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
         win->dm->goToFirstPage();
     } else if (VK_END == key) {
         win->dm->goToLastPage();    
-    } else if ('g' == key) {
+#if 0 // we do it via accelerators
+	} else if ('G' == key) {
         if (ctrlPressed)
             OnMenuGoToPage(win);
-    } else if (VK_OEM_PLUS == key) {
+#endif
+	} else if (VK_OEM_PLUS == key) {
         // Emulate acrobat: "Shift Ctrl +" is rotate clockwise
         if (shiftPressed & ctrlPressed)
             RotateRight(win);
