@@ -26,22 +26,22 @@
 					<Add option="-DENABLE_ZLIB=1" />
 					<Add option="-DENABLE_LIBJPEG=1" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
 					<Add directory="$(GTK_BASEPATH)\lib" />
 				</ResourceCompiler>
 				<Linker>
@@ -68,22 +68,22 @@
 					<Add option="-DENABLE_ZLIB=1" />
 					<Add option="-DENABLE_LIBJPEG=1" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 				</ResourceCompiler>
 				<Linker>

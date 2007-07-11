@@ -26,12 +26,12 @@
 					<Add option="-DNEED_STRSEP=1" />
 					<Add option="-Dinline=" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</ResourceCompiler>
@@ -56,12 +56,12 @@
 					<Add option="-DNEED_STRSEP=1" />
 					<Add option="-Dinline=__forceinline" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 					<Add directory="$(GTK_BASEPATH)\include\freetype2" />
 				</ResourceCompiler>

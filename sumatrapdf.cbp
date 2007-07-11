@@ -24,23 +24,23 @@
 					<Add option="-DENABLE_ZLIB=1" />
 					<Add option="-DENABLE_LIBJPEG=1" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\lib" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 				</ResourceCompiler>
 				<Linker>
@@ -71,23 +71,23 @@
 					<Add option="-DENABLE_ZLIB=1" />
 					<Add option="-DENABLE_LIBJPEG=1" />
 					<Add option="-D_WIN32_IE=0x0500" />
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 				</Compiler>
 				<ResourceCompiler>
-					<Add directory="D:\Projects\sumatrapdf\baseutils" />
-					<Add directory="D:\Projects\sumatrapdf\src" />
-					<Add directory="D:\Projects\sumatrapdf\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\goo" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\poppler" />
-					<Add directory="D:\Projects\sumatrapdf\poppler\splash" />
-					<Add directory="D:\Projects\sumatrapdf\fitz\include" />
+					<Add directory="$(PROJECTTOPDIR)\baseutils" />
+					<Add directory="$(PROJECTTOPDIR)\src" />
+					<Add directory="$(PROJECTTOPDIR)\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\goo" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\poppler" />
+					<Add directory="$(PROJECTTOPDIR)\poppler\splash" />
+					<Add directory="$(PROJECTTOPDIR)\fitz\include" />
 					<Add directory="$(GTK_BASEPATH)\include" />
 				</ResourceCompiler>
 				<Linker>
@@ -177,6 +177,8 @@
 		<Unit filename="src\icons-silk\zoom_out.bmp" />
 		<Unit filename="src\toolbar-disabled.bmp" />
 		<Unit filename="src\toolbar.bmp" />
+		<Unit filename="src\translations.cpp" />
+		<Unit filename="src\translations.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
