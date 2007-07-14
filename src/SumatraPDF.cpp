@@ -174,6 +174,7 @@ static HBRUSH                       gBrushLinkDebug;
 static HPEN                         ghpenWhite;
 static HPEN                         ghpenBlue;
 
+static bool                         gRunningDLL = false;
 //static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName;
@@ -380,21 +381,15 @@ void RenderQueue_Pop(PageRenderRequest *req)
 
 static HMENU FindMenuItem(WindowInfo *win, UINT id)
 {
-    HMENU   menuMain;
-    HMENU   subMenu;
-
-    UINT    thisId;
-    int     i, j;
-
-    menuMain = GetMenu(win->hwndFrame);
+    HMENU menuMain = GetMenu(win->hwndFrame);
 
     /* TODO: to be fully valid, it would have to be recursive */
-    for (i = 0; i < GetMenuItemCount(menuMain); i++) {
-        thisId = GetMenuItemID(menuMain, i);
-        subMenu = GetSubMenu(menuMain, i);
+    for (int i = 0; i < GetMenuItemCount(menuMain); i++) {
+        UINT thisId = GetMenuItemID(menuMain, i);
+        HMENU subMenu = GetSubMenu(menuMain, i);
         if (id == thisId)
             return subMenu;
-        for (j = 0; j < GetMenuItemCount(subMenu); j++) {
+        for (int j = 0; j < GetMenuItemCount(subMenu); j++) {
             thisId = GetMenuItemID(menuMain, j);
             if (id == thisId)
                 return GetSubMenu(subMenu, j);
@@ -764,8 +759,7 @@ static void ZoomMenuItemCheck(HMENU hmenu, UINT menuItemId)
 
 static double ZoomMenuItemToZoom(UINT menuItemId)
 {
-    int     i;
-    for (i=0; i<dimof(gZoomMenuItemsId); i++) {
+    for (int i=0; i<dimof(gZoomMenuItemsId); i++) {
         if (menuItemId == gZoomMenuItemsId[i].id) {
             return gZoomMenuItemsId[i].zoom;
         }
@@ -831,10 +825,13 @@ static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
     if (!fileName)
         return;
 
-    node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
-    assert(node);
-    if (!node)
-        return;
+    if (!gRunningDLL) 
+    {
+        node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
+        assert(node);
+        if (!node)
+            return;
+    }
 
     DisplayState_Init(&ds);
     if (!displayStateFromDisplayModel(&ds, win->dm))
@@ -1249,9 +1246,11 @@ void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
     RECT totalRect;
     GetWindowRect(win->hwndFrame, &totalRect);
     *dxOut = rect_dx(&totalRect) - rect_dx(&canvasRect);
-    assert(*dxOut >= 0);
+   // TODO: should figure out why it fires in DLL
+    assert(gRunningDLL || *dxOut >= 0);
     *dyOut = rect_dy(&totalRect) - rect_dy(&canvasRect);
-    assert(*dyOut >= 0);
+    // TODO: should figure out why it fires in DLL
+    assert(gRunningDLL || *dyOut >= 0);
 }
 
 SizeI GetMaxCanvasSize(WindowInfo *win)
@@ -2104,9 +2103,7 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
 
 static const char *AboutGetLink(WindowInfo *win, int x, int y)
 {
-    int         i;
-
-    for (i = 0; gAboutLayoutInfo[i].leftTxt; i++) {
+    for (int i = 0; gAboutLayoutInfo[i].leftTxt; i++) {
         if ((x < gAboutLayoutInfo[i].rightTxtPosX) ||
             (x > gAboutLayoutInfo[i].rightTxtPosX + gAboutLayoutInfo[i].rightTxtDx))
             continue;
@@ -2576,17 +2573,20 @@ static void OnMenuExit(void)
 static void CloseWindow(WindowInfo *win, bool quitIfLast)
 {
     assert(win);
-    if (!win)
-        return;
+    if (!win)  return;
 
     bool lastWindow = false;
-    if (1 == WindowInfoList_Len())
+    if (gRunningDLL) {
         lastWindow = true;
+    } else {
+        if (1 == WindowInfoList_Len())
+            lastWindow = true;
 
-    if (lastWindow)
-        Prefs_Save();
-    else
-        UpdateCurrentFileDisplayStateForWin(win);
+        if (lastWindow)
+            Prefs_Save();
+        else
+            UpdateCurrentFileDisplayStateForWin(win);
+    }
 
     win->state = WS_ABOUT;
 
@@ -2606,8 +2606,10 @@ static void CloseWindow(WindowInfo *win, bool quitIfLast)
     if (lastWindow && quitIfLast) {
         assert(0 == WindowInfoList_Len());
         PostQuitMessage(0);
-    } else
-        MenuToolbarUpdateStateForAllWindows();
+    } else {
+        if (!gRunningDLL)
+            MenuToolbarUpdateStateForAllWindows();
+    }
 }
 
 /* Zoom document in window 'hwnd' to zoom level 'zoom'.
@@ -2668,6 +2670,7 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int from
         // render at a big zoom, 250% should be good enough. It's a compromise
         // between quality and memory usage. TODO: ideally we would use zoom
         // that matches the size of the page in the printer
+        // TODO: consider using a greater zoom level e.g. 750.0
         RenderedBitmap *bmp = pdfEngine->renderBitmap(pageNo, 250.0, rotation, NULL, NULL);
         if (!bmp)
             goto Error; /* most likely ran out of memory */
@@ -3167,7 +3170,7 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 
     bool shiftPressed = WasShiftPressed();
     bool ctrlPressed = WasCtrlPressed();
-	//DBG_OUT("key=%d,%c,shift=%d,ctrl=%d\n", key, (char)key, (int)shiftPressed, (int)ctrlPressed);
+    //DBG_OUT("key=%d,%c,shift=%d,ctrl=%d\n", key, (char)key, (int)shiftPressed, (int)ctrlPressed);
 
     if (VK_PRIOR == key) {
         /* TODO: more intelligence (see VK_NEXT comment). Also, probably
@@ -4338,7 +4341,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
 Exit:
     WindowInfoList_DeleteAll();
-        FileHistoryList_Free(&gFileHistoryRoot);
+    FileHistoryList_Free(&gFileHistoryRoot);
     CaptionPens_Destroy();
     DeleteObject(gBrushBg);
     DeleteObject(gBrushWhite);
@@ -4349,4 +4352,274 @@ Exit:
     StrList_Destroy(&argListRoot);
     //histDump();
     return (int) msg.wParam;
+}
+
+// Code for DLL interace
+static WindowInfo* CreateEmpty(HWND parentHandle) {
+    WindowInfo* pdfWin;
+    HWND        hwndCanvas;
+    pdfWin = WindowInfo_New(parentHandle);
+    hwndCanvas = CreateWindow(
+        CANVAS_CLASS_NAME, NULL,
+        WS_CHILD | WS_HSCROLL | WS_VSCROLL,
+        CW_USEDEFAULT, CW_USEDEFAULT,
+        DEF_WIN_DX, DEF_WIN_DY,
+        parentHandle, NULL,
+        ghinst, NULL);
+    if (hwndCanvas)
+        pdfWin->hwndCanvas = hwndCanvas;
+    return pdfWin;
+}
+
+static void OpenPdf(WindowInfo* pdfWin,const char *fileName,  HWND parentHandle)
+{
+    assert(fileName);
+    if (!fileName) return;
+    assert(pdfWin);
+    if (!pdfWin) return;
+
+    pdfWin->GetCanvasSize();
+    SizeI maxCanvasSize = GetMaxCanvasSize(pdfWin);
+    SizeD totalDrawAreaSize(pdfWin->winSize());
+    DisplayMode displayMode = DEFAULT_DISPLAY_MODE;
+    int offsetX = 0;
+    int offsetY = 0;
+    int startPage = 1;
+    int scrollbarYDx = 0;
+    int scrollbarXDy = 0;
+
+    if (gUseFitz) {
+        pdfWin->dm = DisplayModelFitz_CreateFromFileName(fileName, 
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, pdfWin);
+    } 
+    else {
+        pdfWin->dm = DisplayModelSplash_CreateFromFileName(fileName, 
+            totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, pdfWin);
+    }
+
+    pdfWin->dm->setAppData((void*)pdfWin);
+    pdfWin->state = WS_SHOWING_PDF;
+    double zoomVirtual = DEFAULT_ZOOM;
+    int rotation = DEFAULT_ROTATION;
+
+    UINT menuId = MenuIdFromVirtualZoom(zoomVirtual);
+    ZoomMenuItemCheck(GetMenu(pdfWin->hwndFrame), menuId);
+
+    pdfWin->dm->relayout(zoomVirtual, rotation);
+    if (!pdfWin->dm->validPageNo(startPage))
+        startPage = 1;
+    offsetY = 0;
+    pdfWin->dm->goToPage(startPage, offsetY, offsetX);
+    WindowInfo_ResizeToPage(pdfWin, startPage);
+    WindowInfoList_Add(pdfWin);
+
+    RECT rect;
+    if (GetWindowRect(pdfWin->hwndFrame , &rect) != 0)
+    {
+        int nWidth = rect_dx(&rect);
+        int nHeight = rect_dy(&rect);
+        WinResizeClientArea(pdfWin->hwndCanvas, nWidth, nHeight);
+    }
+
+    ShowWindow(pdfWin->hwndFrame, SW_SHOW);
+    ShowWindow(pdfWin->hwndCanvas, SW_SHOW);
+    UpdateWindow(pdfWin->hwndFrame);
+    UpdateWindow(pdfWin->hwndCanvas);
+}
+
+void Sumatra_LoadPDF(WindowInfo* pdfWin, const char *pdfFile)
+{
+    int  pdfOpened = 0;
+    OpenPdf(pdfWin, pdfFile, pdfWin->hwndFrame);
+    ++pdfOpened;
+    if (pdfWin)
+        ShowWindow(pdfWin->hwndFrame, SW_SHOWNORMAL);
+}
+
+void Sumatra_PrintPDF(WindowInfo* pdfWin, const char *pdfFile, long showOptionWindow)
+{
+}
+
+void Sumatra_Print(WindowInfo* pdfWin)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+        OnMenuPrint(pdfWin);
+}
+
+void Sumatra_ShowPrintDialog(WindowInfo* pdfWin)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+        OnMenuPrint(pdfWin);
+}
+
+void Sumatra_SetDisplayMode(WindowInfo* pdfWin,long displayMode)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+        SwitchToDisplayMode(pdfWin, (DisplayMode)displayMode);
+}
+
+long Sumatra_GoToNextPage(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    pdfWin->dm->goToNextPage(0);
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_GoToPreviousPage(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    pdfWin->dm->goToPrevPage(0);
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_GoToFirstPage(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    pdfWin->dm->goToFirstPage();
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_GoToLastPage(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    pdfWin->dm->goToLastPage();
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_GetNumberOfPages(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    return pdfWin->dm->pageCount();
+}
+
+long Sumatra_GetCurrentPage(WindowInfo* pdfWin)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_GoToThisPage(WindowInfo* pdfWin,long pageNumber)
+{
+    if (!WindowInfo_PdfLoaded(pdfWin))
+        return 0;
+    if (pdfWin->dm->validPageNo(pageNumber))
+        pdfWin->dm->goToPage(pageNumber, 0);
+    return pdfWin->dm->currentPageNo();
+}
+
+long Sumatra_ZoomIn(WindowInfo* pdfWin)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+    {
+        long currentZoom = Sumatra_GetCurrentZoom(pdfWin);
+        if (currentZoom < 500)
+            Sumatra_SetZoom(pdfWin,currentZoom+10);
+    }
+    return Sumatra_GetCurrentZoom(pdfWin);
+}
+
+long Sumatra_ZoomOut(WindowInfo* pdfWin)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+    {
+        long currentZoom = Sumatra_GetCurrentZoom(pdfWin);
+        if (currentZoom > 10)
+            Sumatra_SetZoom(pdfWin,currentZoom-10);
+    }
+    return Sumatra_GetCurrentZoom(pdfWin);
+}
+
+long Sumatra_SetZoom(WindowInfo* pdfWin,long zoomValue)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+        pdfWin->dm->zoomTo((double)zoomValue);
+    return Sumatra_GetCurrentZoom(pdfWin);
+}
+
+long Sumatra_GetCurrentZoom(WindowInfo* pdfWin)
+{
+    double zoomLevel = 0;
+    if (WindowInfo_PdfLoaded(pdfWin))
+        zoomLevel = pdfWin->dm->zoomReal();
+    return (long)zoomLevel;
+} 
+
+void Sumatra_Resize(WindowInfo* pdfWin)
+{
+    RECT rect;
+    if (GetWindowRect(pdfWin->hwndFrame , &rect) != 0)
+    {
+        int nWidth = rect_dx(&rect);
+        int nHeight = rect_dy(&rect);
+        WinResizeClientArea(pdfWin->hwndCanvas, nWidth, nHeight);
+    }
+}
+
+void Sumatra_ClosePdf(WindowInfo* pdfWin)
+{
+    if (WindowInfo_PdfLoaded(pdfWin))
+        CloseWindow(pdfWin, FALSE);
+}
+
+WindowInfo* Sumatra_Init(HWND pHandle)
+{
+    WindowInfo* pdfWin;
+    gRunningDLL = true;
+    HINSTANCE hInstance = NULL;
+    HINSTANCE hPrevInstance = NULL;
+    int nCmdShow = 0;
+
+    StrList *           argListRoot = NULL;
+    StrList *           currArg = NULL;
+    MSG                 msg = {0};
+    bool                exitOnPrint = false;
+    bool                printToDefaultPrinter = false;
+    gUseFitz = TRUE;
+
+    UNREFERENCED_PARAMETER(hPrevInstance);
+
+    u_DoAllTests();
+
+    INITCOMMONCONTROLSEX cex;
+    cex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    cex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES | ICC_USEREX_CLASSES | ICC_COOL_CLASSES;
+    InitCommonControlsEx(&cex);
+    argListRoot = NULL;
+
+    LoadString(hInstance, IDS_APP_TITLE, windowTitle, MAX_LOADSTRING);
+
+    if (!RegisterWinClass(hInstance))
+        Sumatra_Exit();
+
+    CaptionPens_Create();
+
+    if (!InstanceInit(hInstance, nCmdShow))
+        Sumatra_Exit();
+
+    CreatePageRenderThread();
+
+    bool reuseExistingWindow = false;
+
+    if (pHandle == 0 ) 
+        pHandle = NULL;
+
+    pdfWin = CreateEmpty(pHandle);
+
+    return pdfWin;
+}
+
+void Sumatra_Exit()
+{
+    CaptionPens_Destroy();
+    DeleteObject(gBrushBg);
+    DeleteObject(gBrushWhite);
+    DeleteObject(gBrushShadow);
+    DeleteObject(gBrushLinkDebug);
+    delete globalParams;
 }
