@@ -174,7 +174,11 @@ static HBRUSH                       gBrushLinkDebug;
 static HPEN                         ghpenWhite;
 static HPEN                         ghpenBlue;
 
+#ifdef _WINDLL
+static bool                         gRunningDLL = true;
+#else
 static bool                         gRunningDLL = false;
+#endif
 //static AppVisualStyle               gVisualStyle = VS_WINDOWS;
 
 static char *                       gBenchFileName;
