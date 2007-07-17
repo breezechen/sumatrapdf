@@ -5,6 +5,7 @@
 # What follows below is a line listing all languages supported
 # in this file followed by translations themselves
 Languages: en pl fr de
+-
 Open
 pl: Otworz
 fr: Ouvrir
