@@ -107,8 +107,6 @@ END
 
 IDC_SUMATRAPDF ACCELERATORS 
 BEGIN
-    "?",            IDM_ABOUT,              ASCII,  ALT
-    "/",            IDM_ABOUT,              ASCII,  ALT
     "O",            IDM_OPEN,               VIRTKEY, CONTROL
     "W",            IDM_CLOSE,              VIRTKEY, CONTROL
     "Q",            IDM_EXIT,               VIRTKEY, CONTROL

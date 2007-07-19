@@ -15,33 +15,39 @@ const char *g_transLangs[] = {
   "en", "pl", "fr"
 };
 
-int g_transTranslationsCount = 7;
+int g_transTranslationsCount = 9;
 
 const char *g_transTranslations[] = {
 
   /* Translations for language en */
+  "Could not open Printer",
   "Error loading PDF file.",
   "Failed to save a file",
   "Next page",
   "Open",
   "Previous page",
+  "Printing problem.",
   "Zoom in",
   "Zoom out",
 
   /* Translations for language pl */
+  "Drukarka niedostepna.",
   NULL,
   NULL,
   "Nastepna strona",
   "Otworz",
   "Poprzednia strona",
+  "Problem z drukowaniem.",
   NULL,
   NULL,
 
   /* Translations for language fr */
   NULL,
   NULL,
+  NULL,
   "Suivre",
   "Ouvrir",
+  NULL,
   NULL,
   NULL,
   NULL,

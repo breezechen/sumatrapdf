@@ -25,3 +25,9 @@ Failed to save a file
 -
 Error loading PDF file.
 -
+Could not open Printer
+pl:Drukarka niedostepna.
+-
+Printing problem.
+pl:Problem z drukowaniem.
+-

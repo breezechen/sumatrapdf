@@ -4052,7 +4052,7 @@ static void PrintFile(WindowInfo *win, const char *fileName, const char *printer
     
     BOOL fOk = OpenPrinter((LPSTR)printerName, &printer, NULL);
     if (!fOk) {
-        MessageBox(win->hwndFrame, "Could not open Printer", "Printing problem.", MB_ICONEXCLAMATION | MB_OK);
+        MessageBox(win->hwndFrame, _TR("Could not open Printer"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK);
         return;
     }
 
@@ -4183,7 +4183,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     Translations_SetCurrentLanguage("pl");
     tr = _TR("Error loading PDF file.");
     tr = _TR("Open");
-    tr = _TR("Failed");
+    tr = _TR("String for testing that is not supposed to be translatable");
 #endif
 
     INITCOMMONCONTROLSEX cex;

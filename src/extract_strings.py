@@ -170,13 +170,15 @@ def dump_diffs(strings_dict, strings):
             strings_all[s] = SS_ONLY_IN_TXT
         else:
             assert strings_all[s] == SS_IN_BOTH
+    print "Only in C code:"
     for (s, str_state) in strings_all.items():
         if SS_ONLY_IN_C == str_state:
-            print "'%s' only in C code" % s
-        elif SS_ONLY_IN_TXT == str_state:
-            print "'%s' only in %s file" % (s, strings_file)
-        else:
-            assert SS_IN_BOTH == str_state
+            print "'%s'" % s
+    print
+    print "Only in %s file:" % strings_file
+    for (s, str_state) in strings_all.items():
+        if SS_ONLY_IN_TXT == str_state:
+            print "'%s'" % s
 
 def main():
     strings_dict = load_strings_file(strings_file)
