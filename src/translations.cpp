@@ -1,14 +1,33 @@
 #include "base_util.h"
 #include "translations.h"
+#include "translations_txt.h"
 #include "str_util.h"
 
-/* Note: it could be a singleton class but writing sigletons is stupid. */
-typedef struct Language {
-    const char* m_langName;
-    int m_id; /* 0..n */
-} Language;
+/*
+This code relies on the following variables that must be defined in a 
+separate file (translations_txt.h and translations_txt.c).
+The idea is that those files are automatically generated 
+by a script from translations file.
 
-static Language* g_langs;
+// number of languages we support
+int g_transLangsCount;
+
+// array of language names so that g_transLangs[i] is a name of
+// language. i is 0..g_transLangsCount-1
+const char **g_transLangs;
+
+// total number of translated strings
+int g_transTranslationsCount;
+
+// array of translated strings. 
+// it has g_transLangsCount * g_translationsCount elements
+// (for simplicity). Translation i for language n is at position
+// (n * g_transTranslationsCount) + i
+const char **g_transTranslations;
+*/
+
+// numeric index of the current language. 0 ... g_transLangsCount-1
+static int currLangIdx = 0;
 
 /* 'data'/'data_len' is a text describing all texts we translate.
    It builds data structures need for quick lookup of translations
@@ -21,24 +40,46 @@ static Language* g_langs;
    */
 bool Translations_FromData(const char* langs, const char* data, size_t data_len)
 {
-
+    assert(0); // TODO: implement me
     return false;
 }
 
 bool Translations_SetCurrentLanguage(const char* lang)
 {
-
+    for (int i=0; i < g_transLangsCount; i++) {
+        if (str_eq(lang, g_transLangs[i])) {
+            currLangIdx = i;
+            return true;
+        }
+    }
     return false;
 }
 
 const char* Translatations_GetTranslation(const char* txt)
 {
-
+    // perf shortcut: don't bother translating if we use default lanuage
+    if (0 == currLangIdx)
+        return txt;
+    for (int i=0; i < g_transTranslationsCount; i++) {
+        // TODO: translations are sorted so can use binary search
+        const char *tmp =  g_transTranslations[i];
+        int cmp_res = strcmp(txt, tmp);
+        if (0 == cmp_res) {
+            tmp = g_transTranslations[(currLangIdx * g_transTranslationsCount) + i];
+            if (NULL == tmp)
+                return txt;
+            return tmp;
+        } else if (cmp_res > 0) {
+            assert(0);  // bad - didn't find a translation
+            return txt;
+        }
+    }
+    assert(0); // bad - didn't find a translation
     return txt;
 }
 
 void Translations_FreeData()
 {
-
+    // TODO: nothing to do until we implement Translations_FromData
 }
 
