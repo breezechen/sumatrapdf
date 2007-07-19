@@ -7,12 +7,12 @@
 Languages: en pl fr de
 -
 Open
-pl: Otworz
-fr: Ouvrir
+pl:Otworz
+fr:Ouvrir
 -
 Previous page
-pl: Nastepna strona
-fr: Suivre
+pl:Nastepna strona
+fr:Suivre
 -
 Next page
 -
