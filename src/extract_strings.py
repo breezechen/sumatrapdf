@@ -119,9 +119,105 @@ def load_strings_file(file_name):
         strings_dict[key] = value
     return strings_dict
 
+def get_lang_list(strings_dict):
+    langs = []
+    for translations in strings_dict.values():
+        for t in translations:
+            lang = t[0]
+            if lang not in langs:
+                langs.append(lang)
+    return langs
+
+def gen_c_code(strings_dict):
+    langs = get_lang_list(strings_dict)
+    keys = strings_dict.keys()
+    keys.sort()
+    langs_count = len(langs)
+    translations_count = len(strings_dict)
+    print "#define TRANS_LANG_COUNT %d" % langs_count
+    print
+    print "const char *g_langs[TRANS_LANG_COUNT] = {"
+    print "}"
+    print
+    print "int g_translationsCount = %d" % translations_count
+    for t in range(langs_count):
+        print "char *g_translation%d[] = {" % t
+        lang = langs[t]
+        for k in keys:
+            vals = strings_dict[k]
+            txt = None
+            for v in vals:
+                (lang, txt) = v
+                if lang == v:
+                    txt = '"%s",' % txt # TODO: escape '"' withing string
+            if txt:
+                print txt
+            else:
+                print "NULL,"
+        print "}"
+    print "char *g_translation[TRANS_LANG_COUNT] = {"
+    for t in range(langs_count):
+        print "&g_translations%d" % t
+    print "}"
+
+def extract_strings_from_line(l):
+    strings = []
+    start_pos = 0
+    while True:
+        tr_start = l.find('_TR("', start_pos)
+        if -1 == tr_start:
+            return strings
+        tr_start = tr_start + len('_TR("')
+        tr_end = l.find('")', tr_start)
+        if -1 == tr_end:
+            print l
+            assert tr_end != -1 # if it is, it's suspicious
+        strings.append(l[tr_start:tr_end])
+        start_pos = tr_end
+
+def extract_strings_from_c_file(f, strings):
+    fo = open(f, "rb")
+    for l in fo.readlines():
+        strs = extract_strings_from_line(l)
+        for s in strs:
+            strings.append(s)
+    fo.close()
+    
+def extract_strings_from_c_files(files):
+    strings = []
+    for f in files:
+        extract_strings_from_c_file(f, strings)
+    return strings
+
+(SS_ONLY_IN_C, SS_ONLY_IN_TXT, SS_IN_BOTH) = range(3)
+def dump_diffs(strings_dict, strings):
+    strings_all = {}
+    for s in strings:
+        if s in strings_dict:
+            strings_all[s] = SS_IN_BOTH
+        else:
+            strings_all[s] = SS_ONLY_IN_C
+    for s in strings_dict.keys():
+        if s not in strings_all:
+            strings_all[s] = SS_ONLY_IN_TXT
+        else:
+            assert strings_all[s] == SS_IN_BOTH
+    for (s, str_state) in strings_all.items():
+        if SS_ONLY_IN_C == str_state:
+            print "'%s' only in C code" % s
+        elif SS_ONLY_IN_TXT == str_state:
+            print "'%s' only in %s file" % (s, strings_file)
+        else:
+            assert SS_IN_BOTH == str_state
+
 def main():
     strings_dict = load_strings_file(strings_file)
-    print strings_dict
+    #print strings_dict
+    #gen_c_code(strings_dict)
+    c_files = ["SumatraPDF.cpp"]
+    strings = extract_strings_from_c_files(c_files)
+    #print strings
+    dump_diffs(strings_dict, strings)
 
 if __name__ == "__main__":
     main()

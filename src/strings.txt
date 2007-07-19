@@ -11,11 +11,17 @@ pl:Otworz
 fr:Ouvrir
 -
 Previous page
-pl:Nastepna strona
-fr:Suivre
+pl:Poprzednia strona
 -
 Next page
+pl:Nastepna strona
+fr:Suivre
 -
 Zoom in
 -
 Zoom out
+-
+Failed to save a file
+-
+Error loading PDF file.
+-
