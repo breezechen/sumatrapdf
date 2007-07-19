@@ -7,9 +7,9 @@ extern "C"
 #endif
 
 extern int g_transLangsCount;
-extern const char **g_transLangs;
+extern const char *g_transLangs[];
 extern int g_transTranslationsCount;
-extern const char **g_transTranslations;
+extern const char *g_transTranslations[];
 
 #ifdef __cplusplus
 }

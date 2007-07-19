@@ -4177,6 +4177,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
 
     u_DoAllTests();
 
+#if 0
+    // mini tests for translations stuff
+    const char *tr = _TR("Error loading PDF file.");
+    Translations_SetCurrentLanguage("pl");
+    tr = _TR("Error loading PDF file.");
+    tr = _TR("Open");
+    tr = _TR("Failed");
+#endif
+
     INITCOMMONCONTROLSEX cex;
     cex.dwSize = sizeof(INITCOMMONCONTROLSEX);
     cex.dwICC = ICC_WIN95_CLASSES | ICC_DATE_CLASSES | ICC_USEREX_CLASSES | ICC_COOL_CLASSES;

@@ -69,7 +69,7 @@ const char* Translatations_GetTranslation(const char* txt)
             if (NULL == tmp)
                 return txt;
             return tmp;
-        } else if (cmp_res > 0) {
+        } else if (cmp_res < 0) {
             assert(0);  // bad - didn't find a translation
             return txt;
         }
