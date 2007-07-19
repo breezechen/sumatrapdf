@@ -1,6 +1,6 @@
 import codecs
 
-files_to_process = ["SumatraPDF.cpp"]
+c_files_to_process = ["SumatraPDF.cpp"]
 strings_file = "strings.txt"
 
 (ST_NONE, ST_BEFORE_ORIG, ST_IN_TRANSLATIONS) = range(3)
@@ -128,38 +128,6 @@ def get_lang_list(strings_dict):
                 langs.append(lang)
     return langs
 
-def gen_c_code(strings_dict):
-    langs = get_lang_list(strings_dict)
-    keys = strings_dict.keys()
-    keys.sort()
-    langs_count = len(langs)
-    translations_count = len(strings_dict)
-    print "#define TRANS_LANG_COUNT %d" % langs_count
-    print
-    print "const char *g_langs[TRANS_LANG_COUNT] = {"
-    print "}"
-    print
-    print "int g_translationsCount = %d" % translations_count
-    for t in range(langs_count):
-        print "char *g_translation%d[] = {" % t
-        lang = langs[t]
-        for k in keys:
-            vals = strings_dict[k]
-            txt = None
-            for v in vals:
-                (lang, txt) = v
-                if lang == v:
-                    txt = '"%s",' % txt # TODO: escape '"' withing string
-            if txt:
-                print txt
-            else:
-                print "NULL,"
-        print "}"
-    print "char *g_translation[TRANS_LANG_COUNT] = {"
-    for t in range(langs_count):
-        print "&g_translations%d" % t
-    print "}"
-
 def extract_strings_from_line(l):
     strings = []
     start_pos = 0
@@ -212,11 +180,7 @@ def dump_diffs(strings_dict, strings):
 
 def main():
     strings_dict = load_strings_file(strings_file)
-    #print strings_dict
-    #gen_c_code(strings_dict)
-    c_files = ["SumatraPDF.cpp"]
-    strings = extract_strings_from_c_files(c_files)
-    #print strings
+    strings = extract_strings_from_c_files(c_files_to_process)
     dump_diffs(strings_dict, strings)
 
 if __name__ == "__main__":
