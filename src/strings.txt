@@ -6,20 +6,25 @@
 # in this file followed by translations themselves
 Languages: en pl fr de
 -
-Open
-pl:Otworz
-fr:Ouvrir
+&Print
+pl:Drukuj
 -
-Previous page
-pl:Poprzednia strona
+Make SumatraPDF a default PDF reader
+pl:Zrob domyslnym programem dla PDF
 -
-Next page
-pl:Nastepna strona
-fr:Suivre
+&Close\tCtrl-W
+pl:&Zamknij\tCtrl-W
 -
-Zoom in
+E&xit\tCtrl-Q
+pl:Wyjdz\tCtrl-Q
 -
-Zoom out
+&Open\tCtrl-O
+pl:Otworz\tCtrl-O
+-
+&Save as
+pl:Zapisz jako
+-
+Use MuPDF rendering engine
 -
 Failed to save a file
 -
@@ -31,3 +36,78 @@ pl:Drukarka niedostepna.
 Printing problem.
 pl:Problem z drukowaniem.
 -
+Rotate right
+-
+Act&ual Size\tCtrl-1
+-
+Show toolbar
+-
+Next Page
+pl:Nastepna strona
+fr:Suivre
+-
+Previous Page
+pl:Poprzednia strona
+-
+Page...\tCtrl-G
+-
+Continuous
+-
+Fit Widt&h\tCtrl-2
+-
+&Visit website
+-
+Fit &Page\tCtrl-0
+-
+First Page\tHome
+-
+&About
+-
+Single page
+-
+Facing
+-
+Last Page\tEnd
+-
+Continuous facing
+-
+Rotate left
+-
+Open
+pl:Otworz
+-
+6400%
+-
+3200%
+-
+1600%
+-
+800%
+-
+400%
+-
+200%
+-
+150%
+-
+125%
+-
+100%
+-
+50%
+-
+25%
+-
+12.5%
+-
+8.33%
+-
+&View
+-
+&Go To
+-
+&Help
+-
+&Zoom
+-
+&File

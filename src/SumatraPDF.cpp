@@ -1,6 +1,11 @@
 /* Copyright Krzysztof Kowalczyk 2006-2007
    License: GPLv2 */
 
+/*
+TODO:
+* remember selected language in settings file
+*/
+
 // have to undef _WIN32_IE here to use TB_* constants
 // (_WIN32_IE was defined in *.cbp - codeblocks project file)
 // ==> we have to use a stable API instead of MinGW 5.1.3 :-\
@@ -447,6 +452,71 @@ static void AddMenuSepToFilesMenu(WindowInfo *win)
     AppendMenu(menuFile, MF_SEPARATOR, 0, NULL);
 }
 
+#define SEP_ITEM "-----"
+
+typedef struct MenuDef {
+    const char *m_title;
+    int         m_id;
+} MenuDef;
+
+MenuDef menuDefFile[] = {
+    { _TRN("&Open\tCtrl-O"),       IDM_OPEN },
+    { _TRN("&Close\tCtrl-W"),      IDM_CLOSE  },
+    { _TRN("&Save as"),            IDM_SAVEAS },
+    { _TRN("&Print"),              IDM_PRINT },
+    { SEP_ITEM,              0 },
+    { _TRN("Make SumatraPDF a default PDF reader"), IDM_MAKE_DEFAULT_READER },
+    { SEP_ITEM ,             0 },
+    { _TRN("E&xit\tCtrl-Q"),       IDM_EXIT }
+};
+
+MenuDef menuDefView[] = {
+    { _TRN("Single page"),                 IDM_VIEW_SINGLE_PAGE },
+    { _TRN("Facing"),                      IDM_VIEW_FACING },
+    { _TRN("Continuous"),                  IDM_VIEW_CONTINUOUS },
+    { _TRN("Continuous facing"),           IDM_VIEW_CONTINUOUS_FACING },
+    { SEP_ITEM, 0 },
+    { _TRN("Rotate left"),                 IDM_VIEW_ROTATE_LEFT },
+    { _TRN("Rotate right"),                IDM_VIEW_ROTATE_RIGHT },
+    { SEP_ITEM, 0 },
+    { _TRN("Show toolbar"),                IDM_VIEW_SHOW_HIDE_TOOLBAR },
+    { SEP_ITEM, 0 },
+    { _TRN("Use MuPDF rendering engine"),  IDM_VIEW_USE_FITZ },
+};
+
+MenuDef menuDefGoTo[] = {
+    { _TRN("Next Page"),                   IDM_GOTO_NEXT_PAGE },
+    { _TRN("Previous Page"),               IDM_GOTO_PREV_PAGE },
+    { _TRN("First Page\tHome"),            IDM_GOTO_FIRST_PAGE },
+    { _TRN("Last Page\tEnd"),              IDM_GOTO_LAST_PAGE },
+    { _TRN("Page...\tCtrl-G"),             IDM_GOTO_PAGE },
+};
+
+MenuDef menuDefZoom[] = {
+    { _TRN("Fit &Page\tCtrl-0"),           IDM_ZOOM_FIT_PAGE },
+    { _TRN("Act&ual Size\tCtrl-1"),        IDM_ZOOM_ACTUAL_SIZE },
+    { _TRN("Fit Widt&h\tCtrl-2"),          IDM_ZOOM_FIT_WIDTH },
+    { SEP_ITEM },
+    { _TRN("6400%"),                       IDM_ZOOM_6400 },
+    { _TRN("3200%"),                       IDM_ZOOM_3200 },
+    { _TRN("1600%"),                       IDM_ZOOM_1600 },
+    { _TRN("800%"),                        IDM_ZOOM_800 },
+    { _TRN("400%"),                        IDM_ZOOM_400 },
+    { _TRN("200%"),                        IDM_ZOOM_200 },
+    { _TRN("150%"),                        IDM_ZOOM_150 },
+    { _TRN("125%"),                        IDM_ZOOM_125 },
+    { _TRN("100%"),                        IDM_ZOOM_100 },
+    { _TRN("50%"),                         IDM_ZOOM_50 },
+    { _TRN("25%"),                         IDM_ZOOM_25 },
+    { _TRN("12.5%"),                       IDM_ZOOM_12_5 },
+    { _TRN("8.33%"),                       IDM_ZOOM_8_33 },
+};
+
+MenuDef menuDefHelp[] = {
+    { _TRN("&Visit website"),              IDM_VISIT_WEBSITE },
+    { _TRN("&About"),                      IDM_ABOUT }
+};
+
 static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
 {
     HMENU               menuFile;
@@ -470,6 +540,59 @@ static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
     DBG_OUT("AddMenuItemToFilesMenu() txt=%s, newId=%d\n", txt, (int)newId);
     if (INVALID_MENU_ID == node->menuId)
         node->menuId = newId;
+}
+
+static HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuItems)
+{
+    HMENU m = CreateMenu();
+    if (NULL == m) return NULL;
+    for (int i=0; i < menuItems; i++) {
+        MenuDef md = menuDefs[i];
+        const char *title = md.m_title;
+        int id = md.m_id;
+        if (str_eq(title, SEP_ITEM))
+            AppendMenu(m, MF_SEPARATOR, 0, NULL);
+        else {
+            const WCHAR* wtitle = Translatations_GetTranslationW(title);
+            if (wtitle)
+                AppendMenuW(m, MF_STRING, (UINT_PTR)id, wtitle);
+        }
+    }
+    return m;
+}
+
+static HMENU g_currMenu = NULL;
+
+static void DestroyCurrentMenu()
+{
+    DestroyMenu(g_currMenu);
+    g_currMenu = NULL;
+}
+
+static HMENU RebuildProgramMenu()
+{
+    HMENU tmp;
+    DestroyCurrentMenu();
+    g_currMenu = CreateMenu();
+    tmp = BuildMenuFromMenuDef(menuDefFile, dimof(menuDefFile));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&File"));
+    tmp = BuildMenuFromMenuDef(menuDefView, dimof(menuDefView));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&View"));
+    tmp = BuildMenuFromMenuDef(menuDefGoTo, dimof(menuDefGoTo));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Go To"));
+    tmp = BuildMenuFromMenuDef(menuDefZoom, dimof(menuDefZoom));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Zoom"));
+    tmp = BuildMenuFromMenuDef(menuDefHelp, dimof(menuDefHelp));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Help"));
+    return g_currMenu;
+}
+
+static HMENU GetProgramMenu()
+{
+    if (NULL == g_currMenu)
+        RebuildProgramMenu();
+    assert(g_currMenu);
+    return g_currMenu;
 }
 
 static void AddRecentFilesToMenu(WindowInfo *win)
@@ -1215,7 +1338,8 @@ static WindowInfo* WindowInfo_CreateEmpty(void) {
             DEF_WIN_DX, DEF_WIN_DY,
             NULL, NULL,
             ghinst, NULL);
-
+    HMENU m = GetProgramMenu();
+    SetMenu(hwndFrame, m);
 #endif
 
     if (!hwndFrame)
@@ -3797,7 +3921,7 @@ static BOOL RegisterWinClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SUMATRAPDF));
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground  = NULL;
-    wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_SUMATRAPDF);
+    wcex.lpszMenuName   = NULL;
     wcex.lpszClassName  = FRAME_CLASS_NAME;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
     atom = RegisterClassEx(&wcex);
@@ -4363,6 +4487,7 @@ Exit:
 
     delete globalParams;
     StrList_Destroy(&argListRoot);
+    Translations_FreeData();
     //histDump();
     return (int) msg.wParam;
 }

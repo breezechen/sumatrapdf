@@ -78,8 +78,36 @@ const char* Translatations_GetTranslation(const char* txt)
     return txt;
 }
 
+static WCHAR* lastTxtCached = NULL;
+
+WCHAR* utf8_to_utf16(const char *txt)
+{
+    // TODO: this is not correct, need real conversion
+    size_t len = strlen(txt);
+    WCHAR* wstr = (WCHAR*)malloc((len+1) * sizeof(WCHAR));
+    WCHAR* wstr_tmp = wstr;
+    while (*txt) {
+        *wstr_tmp++ = *txt++;
+    }
+    *wstr_tmp = 0;
+    return wstr;
+}
+
+// TODO: this is not thread-safe. lastTxtCached should be per-thread
+const WCHAR* Translatations_GetTranslationW(const char* txt)
+{
+    txt = Translatations_GetTranslation(txt);
+    if (!txt) return NULL;
+    if (lastTxtCached)
+        free(lastTxtCached);
+    lastTxtCached = utf8_to_utf16(txt);
+    return (const WCHAR*)lastTxtCached;
+}
+
 void Translations_FreeData()
 {
-    // TODO: nothing to do until we implement Translations_FromData
+    // TODO: will be more when we implement Translations_FromData
+    free(lastTxtCached);
+    lastTxtCached = NULL;
 }
 

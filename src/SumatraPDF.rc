@@ -34,74 +34,6 @@ IDI_SUMATRAPDF          ICON                    "SumatraPDF.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Menu
-//
-
-IDC_SUMATRAPDF MENU 
-BEGIN
-    POPUP "&File"
-    BEGIN
-        MENUITEM "&Open\tCtrl-O",               IDM_OPEN
-        MENUITEM "&Close\tCtrl-W",              IDM_CLOSE
-        MENUITEM "&Save as",					IDM_SAVEAS
-        MENUITEM "&Print",                      IDM_PRINT
-        MENUITEM SEPARATOR
-        MENUITEM "Make SumatraPDF a default PDF reader", IDM_MAKE_DEFAULT_READER
-        MENUITEM SEPARATOR
-        MENUITEM "E&xit\tCtrl-Q",               IDM_EXIT
-    END
-    POPUP "&View"
-    BEGIN
-        MENUITEM "Single page",                 IDM_VIEW_SINGLE_PAGE
-        MENUITEM "Facing",                      IDM_VIEW_FACING
-        MENUITEM "Continuous",                  IDM_VIEW_CONTINUOUS
-        MENUITEM "Continuous facing",           IDM_VIEW_CONTINUOUS_FACING
-        MENUITEM SEPARATOR
-        MENUITEM "Rotate left",                 IDM_VIEW_ROTATE_LEFT
-        MENUITEM "Rotate right",                IDM_VIEW_ROTATE_RIGHT
-        MENUITEM SEPARATOR
-        MENUITEM "Show toolbar",                IDM_VIEW_SHOW_HIDE_TOOLBAR
-        MENUITEM SEPARATOR
-        MENUITEM "Use MuPDF rendering engine",  IDM_VIEW_USE_FITZ
-    END
-    POPUP "&Go To"
-    BEGIN
-        MENUITEM "Next Page",                   IDM_GOTO_NEXT_PAGE
-        MENUITEM "Previous Page",               IDM_GOTO_PREV_PAGE
-        MENUITEM "First Page\tHome",            IDM_GOTO_FIRST_PAGE
-        MENUITEM "Last Page\tEnd",              IDM_GOTO_LAST_PAGE
-        MENUITEM "Page...",                     IDM_GOTO_PAGE
-    END
-    POPUP "&Zoom"
-    BEGIN
-        MENUITEM "Fit &Page\tCtrl-0",           IDM_ZOOM_FIT_PAGE
-        MENUITEM "Act&ual Size\tCtrl-1",        IDM_ZOOM_ACTUAL_SIZE
-        MENUITEM "Fit Widt&h\tCtrl-2",          IDM_ZOOM_FIT_WIDTH
-        MENUITEM SEPARATOR
-        MENUITEM "6400%",                       IDM_ZOOM_6400
-        MENUITEM "3200%",                       IDM_ZOOM_3200
-        MENUITEM "1600%",                       IDM_ZOOM_1600
-        MENUITEM "800%",                        IDM_ZOOM_800
-        MENUITEM "400%",                        IDM_ZOOM_400
-        MENUITEM "200%",                        IDM_ZOOM_200
-        MENUITEM "150%",                        IDM_ZOOM_150
-        MENUITEM "125%",                        IDM_ZOOM_125
-        MENUITEM "100%",                        IDM_ZOOM_100
-        MENUITEM "50%",                         IDM_ZOOM_50
-        MENUITEM "25%",                         IDM_ZOOM_25
-        MENUITEM "12.5%",                       IDM_ZOOM_12_5
-        MENUITEM "8.33%",                       IDM_ZOOM_8_33
-    END
-    POPUP "&Help"
-    BEGIN
-        MENUITEM "&Visit website",              IDM_VISIT_WEBSITE
-        MENUITEM "&About",                      IDM_ABOUT
-    END
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // Accelerator
 //
 
@@ -163,11 +95,11 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Enter password"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,7,49,59,14
-    PUSHBUTTON      "Cancel",IDCANCEL,109,49,60,14
-    LTEXT           "Enter password for test.pdf",IDC_GET_PASSWORD_LABEL,7,7,162,8
-    LTEXT           "Password:",IDC_STATIC,7,27,34,8
-    EDITTEXT        IDC_GET_PASSWORD_EDIT,48,24,121,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK", IDOK,7,49,59,14
+    PUSHBUTTON      "Cancel", IDCANCEL,109,49,60,14
+    LTEXT           "Enter password for test.pdf", IDC_GET_PASSWORD_LABEL,7,7,162,8
+    LTEXT           "Password:", IDC_STATIC,7,27,34,8
+    EDITTEXT        IDC_GET_PASSWORD_EDIT, 48,24,121,14,ES_AUTOHSCROLL
 END
 
 
@@ -233,19 +165,9 @@ END
 
 IDC_CURSORDRAG          CURSOR                  "dragcursor.cur"
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// String Table
-//
-
 STRINGTABLE 
 BEGIN
-    IDC_SUMATRAPDF          "SUMATRAPDFWIN"
-END
-
-STRINGTABLE 
-BEGIN
-    IDS_APP_TITLE           "SumatraPDF"
+    IDS_APP_TITLE           "Sumatra PDF"
 END
 
 #endif    // English (U.S.) resources

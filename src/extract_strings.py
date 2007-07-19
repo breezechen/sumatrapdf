@@ -23,9 +23,10 @@ def is_comment_line(l):
     return l[0] == '#'
 
 def line_strip_newline(l):
-    while is_newline_char(l[-1]):
+    while True:
+        if 0  == len(l): return l
+        if not is_newline_char(l[-1]): return l
         l = l[:-1]
-    return l
 
 def line_with_translation(l):
     if len(l) < 3: return False
@@ -69,8 +70,10 @@ def load_strings_file(file_name):
     line_no = 0
     for l in fo.readlines():
         line_no = line_no + 1
+        #print "'%s'" % l
         l = line_strip_newline(l)
-        #print l
+        if 0 == len(l):
+            continue
         #print state_name(state)
         if is_comment_line(l):
             assert ST_NONE == state
@@ -128,20 +131,27 @@ def get_lang_list(strings_dict):
                 langs.append(lang)
     return langs
 
-def extract_strings_from_line(l):
+def extract_strings_with_mark(l, mark_start, mark_end):
     strings = []
     start_pos = 0
     while True:
-        tr_start = l.find('_TR("', start_pos)
+        tr_start = l.find(mark_start, start_pos)
         if -1 == tr_start:
             return strings
-        tr_start = tr_start + len('_TR("')
-        tr_end = l.find('")', tr_start)
+        tr_start = tr_start + len(mark_start)
+        tr_end = l.find(mark_end, tr_start)
         if -1 == tr_end:
             print l
             assert tr_end != -1 # if it is, it's suspicious
         strings.append(l[tr_start:tr_end])
         start_pos = tr_end
+
+def extract_strings_from_line(l):
+    strings1 = extract_strings_with_mark(l, '_TR("', '")')
+    strings2 = extract_strings_with_mark(l, '_TRN("', '")')
+    strings3 = extract_strings_with_mark(l, '_TRW("', '")')
+    strings4 = extract_strings_with_mark(l, '_TRWN("', '")')
+    return strings1 + strings2 + strings3 + strings4
 
 def extract_strings_from_c_file(f, strings):
     fo = open(f, "rb")
@@ -173,7 +183,7 @@ def dump_diffs(strings_dict, strings):
     print "Only in C code:"
     for (s, str_state) in strings_all.items():
         if SS_ONLY_IN_C == str_state:
-            print "'%s'" % s
+            print "%s" % s
     print
     print "Only in %s file:" % strings_file
     for (s, str_state) in strings_all.items():
