@@ -1147,7 +1147,7 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
 
     win->state = WS_ABOUT;
     win->hwndFrame = hwndFrame;
-    win->dragging = FALSE;
+    win->mouseAction = MA_IDLE;
     AddRecentFilesToMenu(win);
     return win;
 Error:
@@ -1400,6 +1400,30 @@ SizeI GetMaxCanvasSize(WindowInfo *win)
         maxCanvasDy -= abd.dy();
     }
     return SizeI(maxCanvasDx, maxCanvasDy);
+}
+
+
+static void RecalcSelectionPosition (WindowInfo *win) {
+    SelectionOnPage *   selOnPage = win->selectionOnPage;
+    RectD               selD;
+    PdfPageInfo*        pageInfo;
+
+    while (selOnPage != NULL) {
+        pageInfo = win->dm->getPageInfo(selOnPage->pageNo);
+        /* if page is not visible, we hide seletion by simply moving it off
+         * the canvas */
+        if (!pageInfo->visible) {
+            selOnPage->selectionCanvas.x = -100;
+            selOnPage->selectionCanvas.y = -100;
+            selOnPage->selectionCanvas.dx = 0;
+            selOnPage->selectionCanvas.dy = 0;
+        } else {//page is visible
+            RectD_Copy (&selD, &selOnPage->selectionPage);
+            win->dm->rectCvtUserToScreen (selOnPage->pageNo, &selD);
+            RectI_FromRectD (&selOnPage->selectionCanvas, &selD);
+        }
+        selOnPage = selOnPage->next;
+    }
 }
 
 static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = true, bool ignoreHistory = false)
@@ -2015,6 +2039,77 @@ static void SeeLastError(void) {
     LocalFree(msgBuf);
 }
 
+static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect) {
+    HBITMAP hbitmap;       // bitmap handle
+    BITMAPINFO bmi;        // bitmap header
+    VOID *pvBits;          // pointer to DIB section
+    BLENDFUNCTION bf;      // structure for alpha blending
+    HDC rectDC = CreateCompatibleDC(hdc);
+    const DWORD selectionColorYellow = 0xfff5fc0c;
+    const DWORD selectionColorBlack = 0xff000000;
+    const int margin = 1;
+
+    ZeroMemory(&bmi, sizeof(BITMAPINFO));
+
+    bmi.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = rect->dx;
+    bmi.bmiHeader.biHeight = rect->dy;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+    bmi.bmiHeader.biSizeImage = rect->dx * rect->dy * 4;
+
+    hbitmap = CreateDIBSection (rectDC, &bmi, DIB_RGB_COLORS, &pvBits, NULL, 0x0);
+    SelectObject(rectDC, hbitmap);
+
+    for (int y = 0; y < rect->dy; y++) {
+        for (int x = 0; x < rect->dx; x++) {
+            if (x < margin || x > rect->dx - margin - 1 
+                    || y < margin || y > rect->dy - margin - 1)
+                ((UINT32 *)pvBits)[x + y * rect->dx] = selectionColorBlack;
+            else
+                ((UINT32 *)pvBits)[x + y * rect->dx] = selectionColorYellow;
+        }
+    }
+    bf.BlendOp = AC_SRC_OVER;
+    bf.BlendFlags = 0;
+    bf.SourceConstantAlpha = 0x5f;
+    bf.AlphaFormat = AC_SRC_ALPHA;
+
+    if (!AlphaBlend(hdc, rect->x, rect->y, rect->dx, rect->dy,
+        rectDC, 0, 0, rect->dx, rect->dy, bf))
+        DBG_OUT("AlphaBlending error\n");
+    DeleteObject (hbitmap);
+    DeleteDC (rectDC);
+}
+
+static void PaintSelection (WindowInfo *win, HDC hdc) {
+    if (win->mouseAction == MA_SELECTING) {
+        // during selecting
+        RectI selRect;
+
+        selRect.x = min (win->selectionRect.x, 
+            win->selectionRect.x + win->selectionRect.dx);
+        selRect.y = min (win->selectionRect.y, 
+            win->selectionRect.y + win->selectionRect.dy);
+        selRect.dx = abs (win->selectionRect.dx);
+        selRect.dy = abs (win->selectionRect.dy);
+
+        if (selRect.dx != 0 && selRect.dy != 0)
+            PaintTransparentRectangle (win, hdc, &selRect);
+    } else {
+        // after selection is done
+        SelectionOnPage *selOnPage = win->selectionOnPage;
+        // TODO: Move recalcing to better place
+        RecalcSelectionPosition(win);
+        while (selOnPage != NULL) {
+            if (selOnPage->selectionCanvas.dx != 0 && selOnPage->selectionCanvas.dy != 0)
+                PaintTransparentRectangle(win, hdc, &selOnPage->selectionCanvas);
+            selOnPage = selOnPage->next;
+        }
+    }
+}
+
 static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 {
     RECT                bounds;
@@ -2113,6 +2208,9 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         }
         DeleteObject(hbmp);
     }
+
+    if (win->showSelection)
+        PaintSelection(win, hdc);
 
     DBG_OUT("\n");
     if (!gDebugShowLinks)
@@ -2440,18 +2538,103 @@ static void WinMoveDocBy(WindowInfo *win, int dx, int dy)
         win->dm->scrollYBy(dy, FALSE);
 }
 
+static void CopySelectionTextToClipboard(WindowInfo *win)
+{
+    SelectionOnPage *   selOnPage;
+
+    assert(win);
+    if (!win) return;
+
+    if (!win->selectionOnPage) return;
+
+    HGLOBAL handle;
+    unsigned short *ucsbuf;
+    int ucsbuflen = 4096;
+
+    if (!OpenClipboard(NULL)) return;
+
+    EmptyClipboard();
+
+    handle = GlobalAlloc(GMEM_MOVEABLE, ucsbuflen * sizeof(unsigned short));
+    if (!handle) {
+        CloseClipboard();
+        return;
+    }
+    ucsbuf = (unsigned short *) GlobalLock(handle);
+
+    selOnPage = win->selectionOnPage;
+
+    int copied = 0;
+    while (selOnPage != NULL) {
+        int charCopied = win->dm->getTextInRegion(selOnPage->pageNo, 
+            &selOnPage->selectionPage, ucsbuf + copied, ucsbuflen - copied - 1);
+        copied += charCopied;
+        if (ucsbuflen - copied == 1) 
+            break;
+        selOnPage = selOnPage->next;
+    }
+    ucsbuf[copied] = 0;
+
+    GlobalUnlock(handle);
+
+    SetClipboardData(CF_UNICODETEXT, handle);
+    CloseClipboard();
+}
+
+static void DeleteOldSelectionInfo (WindowInfo *win) {
+    SelectionOnPage *selOnPage = win->selectionOnPage;
+    while (selOnPage != NULL) {
+        SelectionOnPage *tmp = selOnPage->next;
+        free(selOnPage);
+        selOnPage = tmp;
+    }
+    win->selectionOnPage = NULL;
+}
+
+static void ConvertSelectionRectToSelectionOnPage (WindowInfo *win) {
+    RectI pageOnScreen, intersect;
+
+    for (int pageNo = win->dm->pageCount(); pageNo >= 1; --pageNo) {
+        PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
+        if (!pageInfo->visible)
+            continue;
+        assert(pageInfo->shown);
+        if (!pageInfo->shown)
+            continue;
+
+        pageOnScreen.x = pageInfo->screenX;
+        pageOnScreen.y = pageInfo->screenY;
+        pageOnScreen.dx = pageInfo->bitmapDx;
+        pageOnScreen.dy = pageInfo->bitmapDy;
+
+        if (!RectI_Intersect(&win->selectionRect, &pageOnScreen, &intersect))
+            continue;
+
+        /* selection intersects with a page <pageNo> on the screen */
+        SelectionOnPage *selOnPage = (SelectionOnPage*)malloc(sizeof(SelectionOnPage));
+        RectD_FromRectI(&selOnPage->selectionPage, &intersect);
+
+        win->dm->rectCvtScreenToUser (&selOnPage->pageNo, &selOnPage->selectionPage);
+
+        assert (pageNo == selOnPage->pageNo);
+
+        selOnPage->next = win->selectionOnPage;
+        win->selectionOnPage = selOnPage;
+    }
+}
+
 static void OnMouseLeftButtonDown(WindowInfo *win, int x, int y)
 {
     assert(win);
     if (!win) return;
-    if (WS_SHOWING_PDF == win->state) {
+    if (WS_SHOWING_PDF == win->state && win->mouseAction == MA_IDLE) {
         assert(win->dm);
         if (!win->dm) return;
         win->linkOnLastButtonDown = win->dm->linkAtPosition(x, y);
         /* dragging mode only starts when we're not on a link */
         if (!win->linkOnLastButtonDown) {
             SetCapture(win->hwndCanvas);
-            win->dragging = TRUE;
+            win->mouseAction = MA_DRAGGING;
             win->dragPrevPosX = x;
             win->dragPrevPosY = y;
             SetCursor(gCursorDrag);
@@ -2485,7 +2668,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
     assert(win->dm);
     if (!win->dm) return;
 
-    if (win->dragging && (GetCapture() == win->hwndCanvas)) {
+    if (win->mouseAction == MA_DRAGGING && (GetCapture() == win->hwndCanvas)) {
         dragDx = 0; dragDy = 0;
         dragDx = x - win->dragPrevPosX;
         dragDy = y - win->dragPrevPosY;
@@ -2494,7 +2677,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y)
         WinMoveDocBy(win, dragDx, -dragDy*2);
         win->dragPrevPosX = x;
         win->dragPrevPosY = y;
-        win->dragging = FALSE;
+        win->mouseAction = MA_IDLE;
         SetCursor(gCursorArrow);
         ReleaseCapture();            
         return;
@@ -2521,21 +2704,27 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
     if (WS_SHOWING_PDF == win->state) {
         assert(win->dm);
         if (!win->dm) return;
-        if (win->dragging) {
-            dragDx = 0; dragDy = 0;
-            dragDx = -(x - win->dragPrevPosX);
-            dragDy = -(y - win->dragPrevPosY);
-            DBG_OUT(" drag move, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
-            WinMoveDocBy(win, dragDx, dragDy*2);
-            win->dragPrevPosX = x;
-            win->dragPrevPosY = y;
-            return;
-        }
-        link = win->dm->linkAtPosition(x, y);
-        if (link) {
-            SetCursor(gCursorHand);
-        } else {
+        if (win->mouseAction == MA_SELECTING) {
             SetCursor(gCursorArrow);
+            win->selectionRect.dx = x - win->selectionRect.x;
+            win->selectionRect.dy = y - win->selectionRect.y;
+            triggerRepaintDisplayNow(win);
+        } else {
+            if (win->mouseAction == MA_DRAGGING) {
+                dragDx = 0; dragDy = 0;
+                dragDx = -(x - win->dragPrevPosX);
+                dragDy = -(y - win->dragPrevPosY);
+                DBG_OUT(" drag move, x=%d, y=%d, dx=%d, dy=%d\n", x, y, dragDx, dragDy);
+                WinMoveDocBy(win, dragDx, dragDy*2);
+                win->dragPrevPosX = x;
+                win->dragPrevPosY = y;
+                return;
+            }
+            link = win->dm->linkAtPosition(x, y);
+            if (link)
+                SetCursor(gCursorHand);
+            else
+                SetCursor(gCursorArrow);
         }
     } else if (WS_ABOUT == win->state) {
         url = AboutGetLink(win, x, y);
@@ -2547,6 +2736,53 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
     } else {
         // TODO: be more efficient, this only needs to be set once (I think)
         SetCursor(gCursorArrow);
+    }
+}
+
+static void OnMouseRightButtonDown(WindowInfo *win, int x, int y)
+{
+    //DBG_OUT("Right button clicked on %d %d\n", x, y);
+    assert (win);
+    if (!win) return;
+
+    if (WS_SHOWING_PDF == win->state && win->mouseAction == MA_IDLE) {
+        win->documentBlocked = true;
+        DeleteOldSelectionInfo (win);
+
+        win->selectionRect.x = x;
+        win->selectionRect.y = y;
+        win->selectionRect.dx = 0;
+        win->selectionRect.dy = 0;
+        win->showSelection = true;
+        win->mouseAction = MA_SELECTING;
+
+        triggerRepaintDisplayNow(win);
+    }
+}
+
+static void OnMouseRightButtonUp(WindowInfo *win, int x, int y)
+{
+    assert (win);
+    if (!win) return;
+
+    if (WS_SHOWING_PDF == win->state && win->mouseAction == MA_SELECTING) {
+        assert (win->dm);
+        if (!win->dm) return;
+        win->documentBlocked = false;
+
+        win->selectionRect.dx = abs (x - win->selectionRect.x);
+        win->selectionRect.dy = abs (y - win->selectionRect.y);
+        win->selectionRect.x = min (win->selectionRect.x, x);
+        win->selectionRect.y = min (win->selectionRect.y, y);
+
+        win->mouseAction = MA_IDLE;
+        if (win->selectionRect.dx == 0 || win->selectionRect.dy == 0) {
+            win->showSelection = false;
+        } else {
+            ConvertSelectionRectToSelectionOnPage (win);
+            CopySelectionTextToClipboard (win);
+        }
+        triggerRepaintDisplayNow(win);
     }
 }
 
@@ -2990,6 +3226,7 @@ static void RotateRight(WindowInfo *win)
 
 static void OnVScroll(WindowInfo *win, WPARAM wParam)
 {
+	if (win->documentBlocked) return;
     SCROLLINFO   si = {0};
     int          iVertPos;
 
@@ -3046,6 +3283,7 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
 
 static void OnHScroll(WindowInfo *win, WPARAM wParam)
 {
+	if (win->documentBlocked) return;
     SCROLLINFO   si = {0};
     int          iVertPos;
 
@@ -3295,6 +3533,8 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 {
     if (!win->dm)
         return;
+    if (win->documentBlocked)
+        return;
 
     bool shiftPressed = WasShiftPressed();
     bool ctrlPressed = WasCtrlPressed();
@@ -3323,11 +3563,11 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
     } else if (VK_END == key) {
         win->dm->goToLastPage();    
 #if 0 // we do it via accelerators
-	} else if ('G' == key) {
+    } else if ('G' == key) {
         if (ctrlPressed)
             OnMenuGoToPage(win);
 #endif
-	} else if (VK_OEM_PLUS == key) {
+    } else if (VK_OEM_PLUS == key) {
         // Emulate acrobat: "Shift Ctrl +" is rotate clockwise
         if (shiftPressed & ctrlPressed)
             RotateRight(win);
@@ -3341,6 +3581,8 @@ static void OnKeydown(WindowInfo *win, int key, LPARAM lparam)
 static void OnChar(WindowInfo *win, int key)
 {
     if (!win->dm)
+        return;
+    if (win->documentBlocked)
         return;
 
 //    DBG_OUT("char=%d,%c\n", key, (char)key);
@@ -3637,8 +3879,18 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
                 OnMouseLeftButtonUp(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
             break;
 
+        case WM_RBUTTONDOWN:
+            if (win)
+                OnMouseRightButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            break;
+
+        case WM_RBUTTONUP:
+            if (win)
+                OnMouseRightButtonUp(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+            break;
+
         case WM_SETCURSOR:
-            if (win && win->dragging) {
+            if (win && win->mouseAction == MA_DRAGGING) {
                 SetCursor(gCursorDrag);
                 return TRUE;
             }

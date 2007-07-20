@@ -590,6 +590,43 @@ void DisplayModel::rectCvtUserToScreen(int pageNo, RectD *r)
     RectD_FromXY(r, sx, ex, sy, ey);
 }
 
+/* Map rectangle <r> on the page <pageNo> to point on the screen. */
+void DisplayModel::rectCvtScreenToUser(int *pageNo, RectD *r)
+{
+    double          sx, sy, ex, ey;
+
+    sx = r->x;
+    sy = r->y;
+    ex = r->x + r->dx;
+    ey = r->y + r->dy;
+
+    cvtScreenToUser(pageNo, &sx, &sy);
+    cvtScreenToUser(pageNo, &ex, &ey);
+    RectD_FromXY(r, sx, ex, sy, ey);
+}
+
+int DisplayModel::getPageNoByPoint (double x, double y) 
+{
+    for (int pageNo = 1; pageNo <= pageCount(); ++pageNo) {
+        PdfPageInfo *pageInfo = getPageInfo(pageNo);
+        if (!pageInfo->visible)
+            continue;
+        assert(pageInfo->shown);
+        if (!pageInfo->shown)
+            continue;
+
+        RectI pageOnScreen;
+        pageOnScreen.x = pageInfo->screenX;
+        pageOnScreen.y = pageInfo->screenY;
+        pageOnScreen.dx = pageInfo->bitmapDx;
+        pageOnScreen.dy = pageInfo->bitmapDy;
+
+        if (RectI_Inside (&pageOnScreen, x, y))
+            return pageNo;
+    }
+    return POINT_OUT_OF_PAGE;
+}
+
 void DisplayModel::recalcSearchHitCanvasPos(void)
 {
     int             pageNo;

@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype231mt_d.lib comctl32.lib zlib_ds.lib jpeg_ds.lib winspool.lib"
+				AdditionalDependencies="freetype231mt_d.lib comctl32.lib zlib_ds.lib jpeg_ds.lib winspool.lib Msimg32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(ProjectDir)ext\freetype231&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)ext\jpeg&quot;"
 				GenerateManifest="true"
@@ -160,7 +160,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="freetype231mt.lib comctl32.lib zlib_s.lib jpeg_s.lib winspool.lib"
+				AdditionalDependencies="freetype231mt.lib comctl32.lib zlib_s.lib jpeg_s.lib winspool.lib Msimg32.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(ProjectDir)ext\freetype231&quot;;&quot;$(ProjectDir)ext\zlib&quot;;&quot;$(ProjectDir)ext\jpeg&quot;"
 				IgnoreDefaultLibraryNames=""
@@ -275,6 +275,14 @@
 			</File>
 			<File
 				RelativePath=".\src\translations.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\translations_txt.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\translations_txt.h"
 				>
 			</File>
 			<File

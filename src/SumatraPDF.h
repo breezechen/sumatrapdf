@@ -59,6 +59,22 @@ typedef struct {
     UINT_PTR    timerId;
 } AnimState;
 
+/* Describes actions which can be performed by mouse */
+enum MouseAction {
+	MA_IDLE = 0,
+	MA_DRAGGING,
+	MA_SELECTING
+};
+
+/* Represents selected area on given page */
+typedef struct SelectionOnPage {
+	int				pageNo;
+	RectD			selectionPage;		/* position of selection rectangle on page */
+	RectI			selectionCanvas;	/* position of selection rectangle on canvas */
+	SelectionOnPage	*next;				/* pointer to next page with selected area
+										 * or NULL if such page not exists */
+} SelectionOnPage;
+
 /* Describes information related to one window with (optional) pdf document
    on the screen */
 class WindowInfo {
@@ -96,12 +112,27 @@ public:
     PdfLink *       linkOnLastButtonDown;
     const char *    url;
 
+	/*if set to TRUE, page rotating, zooming, and scrolling is impossible */
+	bool			documentBlocked;
+
+	MouseAction     mouseAction;
+
     /* when dragging the document around, this is previous position of the
        cursor. A delta between previous and current is by how much we
        moved */
-    BOOL            dragging;
     int             dragPrevPosX, dragPrevPosY;
     AnimState       animState;
+
+	bool showSelection;
+	
+	/* selection rectangle in screen coordinates
+	 * while selecting, it represents area which is being selected */
+	RectI selectionRect;
+
+	/* after selection is done, the selected area is converted
+	 * to user coordinates for each page which has not empty intersection with it */
+	SelectionOnPage *selectionOnPage;
+
 
 private:
     RECT m_canvasRc;

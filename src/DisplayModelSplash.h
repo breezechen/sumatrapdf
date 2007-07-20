@@ -92,16 +92,16 @@ public:
     BOOL          FindNextForward();
     BOOL          FindNextBackward();
 
-    GooString *   GetTextInRegion(int pageNo, RectD *region);
 
-    void        FreeTextPages(void);
-    void        RecalcLinks(void);
-    void        GoToDest(LinkDest *linkDest);
-    void        GoToNamedDest(UGooString *dest);
-    void        FreeLinks(void);
+    void          FreeTextPages(void);
+    void          RecalcLinks(void);
+    void          GoToDest(LinkDest *linkDest);
+    void          GoToNamedDest(UGooString *dest);
+    void          FreeLinks(void);
 
-protected:
-    virtual void cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual int   getTextInRegion(int pageNo, RectD *region, unsigned short *buf, int buflen);
+    virtual void  cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void  cvtScreenToUser(int *pageNo, double *x, double *y);
 
 public:
     PDFDoc *            pdfDoc;

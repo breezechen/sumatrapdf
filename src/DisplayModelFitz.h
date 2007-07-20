@@ -11,11 +11,13 @@ public:
     DisplayModelFitz(DisplayMode displayMode);
     virtual ~DisplayModelFitz();
 
-    PdfEngineFitz *pdfEngineFitz(void) { return (PdfEngineFitz*)_pdfEngine; }
-    virtual void   handleLink(PdfLink *pdfLink);
+    PdfEngineFitz * pdfEngineFitz(void) { return (PdfEngineFitz*)_pdfEngine; }
+    virtual void    handleLink(PdfLink *pdfLink);
 
-protected:
-    virtual void cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual int     getTextInRegion(int pageNo, RectD *region, unsigned short *buf, int buflen);
+
+    virtual void    cvtUserToScreen(int pageNo, double *x, double *y);
+    virtual void    cvtScreenToUser(int *pageNo ,double *x, double *y);
 };
 
 DisplayModelFitz *DisplayModelFitz_CreateFromFileName(

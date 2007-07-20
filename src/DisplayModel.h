@@ -50,6 +50,8 @@ typedef struct DisplaySettings {
 #define PADDING_BETWEEN_PAGES_X      gDisplaySettings.paddingBetweenPagesX
 #define PADDING_BETWEEN_PAGES_Y      gDisplaySettings.paddingBetweenPagesY
 
+#define POINT_OUT_OF_PAGE			0
+
 /* Describes a link on PDF page. */
 typedef struct PdfLink {
     int             pageNo;     /* on which Pdf page the link exists. 1..pageCount */
@@ -245,6 +247,8 @@ public:
     void            zoomBy(double zoomFactor);
     void            rotateBy(int rotation);
 
+    virtual int     getTextInRegion(int pageNo, RectD *region, unsigned short *buf, int buflen) = 0;
+
     void            clearSearchHit(void);
     void            setSearchHit(int pageNo, RectD *hitRect);
     void            recalcLinksCanvasPos(void);
@@ -254,8 +258,14 @@ public:
     PdfLink *       linkAtPosition(int x, int y);
 
     virtual void    handleLink(PdfLink *pdfLink) = 0;
+
+    virtual void    cvtUserToScreen(int pageNo, double *x, double *y) = 0;
+    virtual void    cvtScreenToUser(int *pageNo, double *x, double *y) = 0;
+    void            rectCvtUserToScreen(int pageNo, RectD *r);
+    void            rectCvtScreenToUser(int *pageNo, RectD *r);
+
 protected:
-    virtual void cvtUserToScreen(int pageNo, double *x, double *y) = 0;
+    int             getPageNoByPoint (double x, double y);
 
     void            startRenderingPage(int pageNo);
 
@@ -264,7 +274,6 @@ protected:
     int             firstVisiblePageNo(void) const;
     void            changeStartPage(int startPage);
     void            recalcVisibleParts(void);
-    void            rectCvtUserToScreen(int pageNo, RectD *r);
     void            recalcSearchHitCanvasPos(void);
     void            renderVisibleParts(void);
     /* Those need to be implemented somewhere else by the GUI */
@@ -307,7 +316,6 @@ protected:
     int             _linkCount;
     /* an array of 'totalLinksCount' size, each entry describing a link */
     PdfLink *       _links;
-
 };
 
 bool                validZoomReal(double zoomReal);

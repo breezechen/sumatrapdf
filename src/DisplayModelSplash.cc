@@ -234,43 +234,97 @@ void DisplayModelSplash::cvtUserToScreen(int pageNo, double *x, double *y)
     pdfDoc->getCatalog()->getPage(pageNo)->getDefaultCTM(ctm, dpi, dpi, rotationTmp, outputDev->upsideDown());
 
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
-    *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->currPosX;
-    *y = ctm[1] * xTmp + ctm[3] * yTmp + ctm[5] + 0.5 + pageInfo->currPosY;
+    *x = ctm[0] * xTmp + ctm[2] * yTmp + ctm[4] + 0.5 + pageInfo->screenX - pageInfo->bitmapX;
+    *y = ctm[1] * xTmp + ctm[3] * yTmp + ctm[5] + 0.5 + pageInfo->screenY - pageInfo->bitmapY;
+}
+
+/* Map point <x>/<y> on screen to user coordinates <pageNo>, <x>, <y>. 
+ * If it's not possible (i.e. given point is out of any page), 
+ * returns CONVERSION_IMPOSSIBLE as a <pageNo> */
+void DisplayModelSplash::cvtScreenToUser(int *pageNo, double *x, double *y)
+{
+    double          xTmp = *x;
+    double          yTmp = *y;
+    double          ctm[6], invCtm[6];
+    double          dpi, invDpi;
+    int             rotationTmp, invRotationTmp;
+
+    assert(pdfDoc);
+    if (!pdfDoc) return;
+
+    /* find page number of point <x>/<y> */
+    *pageNo = getPageNoByPoint (*x, *y);
+
+    if (*pageNo == POINT_OUT_OF_PAGE) return;
+
+    dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
+    invDpi = (double)PDF_FILE_DPI * 1/(_zoomReal * 0.01);
+    rotationTmp = rotation();
+    normalizeRotation(&rotationTmp);
+    invRotationTmp = rotationTmp == 0 ? 0 : 360 - rotationTmp;
+    SplashOutputDev *outputDev = pdfEnginePoppler()->outputDevice();
+    pdfDoc->getCatalog()->getPage(*pageNo)->getDefaultCTM(ctm, dpi, dpi, rotationTmp, outputDev->upsideDown());
+    pdfDoc->getCatalog()->getPage(*pageNo)->getDefaultCTM(invCtm, invDpi, invDpi, invRotationTmp, outputDev->upsideDown());
+
+    //DBG_OUT("Rotation = %d\n", rotationTmp);
+
+    int sign;
+    if (rotationTmp == 0 || rotationTmp == 180)
+        sign = 1;
+    else //rotationTmp == 90 || rotationTmp == 270
+        sign = -1;
+
+    PdfPageInfo *pageInfo = getPageInfo(*pageNo);
+    *x = invCtm[0] * sign*(xTmp - ctm[4] - 0.5 - pageInfo->screenX + pageInfo->bitmapX)
+        + invCtm[2] * sign*(yTmp - ctm[5] - 0.5 - pageInfo->screenY + pageInfo->bitmapY);
+    *y = invCtm[1] * sign*(xTmp - ctm[4] - 0.5 - pageInfo->screenX + pageInfo->bitmapX)
+        + invCtm[3] * sign*(yTmp - ctm[5] - 0.5 - pageInfo->screenY + pageInfo->bitmapY);
 }
 
 /* Given <region> (in user coordinates ) on page <pageNo>, return a text in that
    region or NULL if no text */
-GooString *DisplayModelSplash::GetTextInRegion(int pageNo, RectD *region)
+int DisplayModelSplash::getTextInRegion(int pageNo, RectD *region, unsigned short *buf, int buflen)
 {
     GooString *         txt = NULL;
     double              xMin, yMin, xMax, yMax;
     GBool               useMediaBox = gFalse;
     GBool               crop = gTrue;
     GBool               doLinks = gFalse;
+    PDFRectangle        selection;
+    PdfPageInfo *       pageInfo;
 
     assert(pdfDoc);
     if (!pdfDoc) return NULL;
 
-    double dpi = (double)PDF_FILE_DPI * _zoomReal * 0.01;
+    double dpi = (double)PDF_FILE_DPI;
 
     /* TODO: cache textOut? */
     TextOutputDev *textOut = new TextOutputDev(NULL, gTrue, gFalse, gFalse);
     if (!textOut->isOk()) {
         delete textOut;
-        goto Exit;
+        return 0;
     }
     /* TODO: make sure we're not doing background threading */
-    pdfDoc->displayPage(textOut, pageNo, dpi, dpi, rotation(), useMediaBox, crop, doLinks);
+    pageInfo = getPageInfo(pageNo);
     xMin = region->x;
-    yMin = region->y;
+    yMin = pageInfo->pageDy - (region->y + region->dy);//since coordinates are upside-dwon
     xMax = xMin + region->dx;
     yMax = yMin + region->dy;
+    pdfDoc->displayPage(textOut, pageNo, dpi, dpi, 0, useMediaBox, crop, doLinks);
+
     txt = textOut->getText(xMin, yMin, xMax, yMax);
+
+    int length = 0;
     if (txt && (txt->getLength() > 0)) {
-        DBG_OUT("DisplayModelSplash::GetTextInRegion() found text '%s' on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
-            txt->getCString(), pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
+        //DBG_OUT("DisplayModelSplash::getTextInRegion() found text '%s' on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
+            //txt->getCString(), pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
+        length = min (txt->getLength(), buflen);
+        for (int i = 0; i < length; i++) {
+            buf[i] = (unsigned short)(unsigned char)txt->getChar(i);
+            //DBG_OUT("Char: %c : %d; ushort: %hu\n", txt->getChar(i), (int)(unsigned char)txt->getChar(i), (unsigned short)(unsigned char)txt->getChar(i));
+        }
     } else {
-        DBG_OUT("DisplayModelSplash::GetTextInRegion() didn't find text on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
+        DBG_OUT("DisplayModelSplash::getTextInRegion() didn't find text on pageNo=%d, (x=%d, y=%d), (dx=%d, dy=%d)\n",
             pageNo, (int)region->x, (int)region->y, (int)region->dx, (int)region->dy);
         if (txt) {
             delete txt;
@@ -278,8 +332,7 @@ GooString *DisplayModelSplash::GetTextInRegion(int pageNo, RectD *region)
         }
     }
     delete textOut;
-Exit:
-    return txt;
+    return length;
 }
 
 /* Create display info from a 'fileName' etc. 'pdfDoc' will be owned by DisplayInfo

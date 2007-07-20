@@ -1,8 +1,7 @@
 /* Copyright Krzysztof Kowalczyk 2006-2007
    License: GPLv2 */
+#include "base_util.h"
 #include "PdfEngine.h"
-
-#include <assert.h>
 
 #include "ErrorCodes.h"
 #include "GooString.h"
@@ -15,6 +14,7 @@
 #include "PDFDoc.h"
 #include "SecurityHandler.h"
 #include "Link.h"
+#include "str_util.h"
 
 // in SumatraPDF.cpp
 extern "C" char *GetPasswordForFile(WindowInfo *win, const char *fileName);
@@ -359,7 +359,7 @@ const char* PdfEnginePoppler::linkType(int pageNo, int linkNo) {
     return linkActionKindToLinkType(actionKind);
 }
 
-static fz_matrix pdfapp_viewctm(pdf_page *page, float zoom, int rotate)
+fz_matrix PdfEngineFitz::viewctm (pdf_page *page, float zoom, int rotate)
 {
     fz_matrix ctm;
     ctm = fz_identity();
@@ -378,6 +378,7 @@ PdfEngineFitz::PdfEngineFitz() :
         , _pages(NULL)
         , _rast(NULL)
 {
+    _getPageSem = CreateSemaphore(NULL, 1, 1, NULL);
 }
 
 PdfEngineFitz::~PdfEngineFitz()
@@ -410,6 +411,8 @@ PdfEngineFitz::~PdfEngineFitz()
         fz_droprenderer(_rast);
 #endif
     }
+
+    CloseHandle(_getPageSem);
 
     delete _popplerEngine;        
 }
@@ -510,17 +513,27 @@ pdf_page *PdfEngineFitz::getPdfPage(int pageNo)
 {
     if (!_pages)
         return NULL;
+
+    WaitForSingleObject(_getPageSem, INFINITE);
     pdf_page* page = _pages[pageNo-1];
-    if (page)
+    if (page) {
+        if (!ReleaseSemaphore(_getPageSem, 1, NULL))
+            DBG_OUT("Fitz: ReleaseSemaphore error!\n");
         return page;
+    }
     // TODO: should check for error from pdf_getpageobject?
     fz_obj * obj = pdf_getpageobject(_pageTree, pageNo - 1);
     fz_error * error = pdf_loadpage(&page, _xref, obj);
+    assert (!error);
     if (error) {
+        if (!ReleaseSemaphore(_getPageSem, 1, NULL))
+            DBG_OUT("Fitz: ReleaseSemaphore error!\n");
         fz_droperror(error);
         return NULL;
     }
     _pages[pageNo-1] = page;
+    if (!ReleaseSemaphore(_getPageSem, 1, NULL))
+        DBG_OUT("Fitz: ReleaseSemaphore error!\n");
     return page;
 }
 
@@ -630,7 +643,7 @@ RenderedBitmap *PdfEngineFitz::renderBitmap(
     if (!page)
         goto TryPoppler;
     zoomReal = zoomReal / 100.0;
-    ctm = pdfapp_viewctm(page, zoomReal, rotation);
+    ctm = viewctm(page, zoomReal, rotation);
     bbox = fz_transformaabb(ctm, page->mediabox);
 #ifdef FITZ_HEAD
     error = fz_drawtree(&image, _rast, page->tree, ctm, pdf_devicergb, fz_roundrect(bbox), 1);

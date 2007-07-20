@@ -5,16 +5,10 @@
 
 #include "geom_util.h"
 
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-
 #ifndef _FITZ_H_
 #include <fitz.h>
 #include <mupdf.h>
 #endif
-
-#include <windows.h>
 
 class WindowInfo;
 
@@ -169,15 +163,19 @@ public:
     virtual int linkCount(int pageNo);
     virtual const char* linkType(int pageNo, int linkNo);
 
+    fz_matrix viewctm (pdf_page *page, float zoom, int rotate);
+
+    pdf_page * getPdfPage(int pageNo);
+
 private:
     PdfEnginePoppler* _popplerEngine;
+
+    HANDLE            _getPageSem;
 
     pdf_xref * xref() { return _xref; }
     pdf_pagetree * pages() { return _pageTree; }
 
     void dropPdfPage(int pageNo);
-
-    pdf_page * getPdfPage(int pageNo);
 
     pdf_xref *      _xref;
     pdf_outline *   _outline;
