@@ -8,101 +8,125 @@ Languages: en pl fr de
 -
 &File
 pl:Plik
+de:&Datei
+fr:&Fichier
 -
 &Open\tCtrl-O
 pl:Otwórz\tCtrl-O
+de:&Öffnen\tCtrl-O
+fr:Ouvrir\tCtrl-O
+-
+&Close\tCtrl-W
+pl:&Zamknij\tCtrl-W
+de:&Schließen\tCtrl-W
+fr:&Fermer\tCtrl-W
 -
 &Save as
 pl:Zapisz jako
 -
 &Print
 pl:Drukuj
-de:Print
+de:&Drucken
 -
 Make SumatraPDF a default PDF reader
 pl:Zrób domyślnym programem dla PDF
--
-&Close\tCtrl-W
-pl:&Zamknij\tCtrl-W
+de:Standardmäßig PDFs öffnen
 -
 E&xit\tCtrl-Q
 pl:Wyjdź\tCtrl-Q
--
-Use MuPDF rendering engine
-pl:Użyj MuPDF do renderowania
--
-Failed to save a file
-pl:Problem przy zapisywaniu pliku.
--
-Error loading PDF file.
-pl:Problem przy otwarzaniu pliku.
--
-Could not open Printer
-pl:Drukarka niedostępna.
--
-Printing problem.
-pl:Problem z drukowaniem.
--
-Rotate right
-pl:Obróć w prawo
--
-Rotate left
-pl:Obróć w lewo
--
-Show toolbar
-pl:Pokaż toolbar
--
-&Go To
-pl:Idź do
--
-First Page\tHome
-pl:Pierwsza strona\tHome
--
-Last Page\tEnd
-pl:Ostatnia strona\tEnd
--
-Next Page
-pl:Następna strona
-fr:Suivre
--
-Previous Page
-pl:Poprzednia strona
--
-Page...\tCtrl-G
-pl:Strona...\tCtrl-G
--
-Fit &Page\tCtrl-0
-pl:Dopasuj do strony\tCtrl-0
--
-Act&ual Size\tCtrl-1
-pl:Prawdziwy rozmiar\tCtrl-1
--
-Fit Widt&h\tCtrl-2
-pl:Dopasuj do szerokości\tCtrl-2
+de:E&nde\tCtrl-Q
+fr:Quitter\tCtrl-Q
 -
 &View
 pl:&Widok
+de:&Ansicht
+fr:&Afffichage
 -
 Single page
 pl:Jedna strona
--
-Continuous
-pl:Ciągły
+de:Einzelnde Seite
+fr:Une seule page
 -
 Facing
 pl:Na przeciwko
+de:Doppelseite
+fr:Page double
+-
+Continuous
+pl:Ciągły
+de:Fortlaufend
+fr:Continue
 -
 Continuous facing
 pl:Ciągły na przeciwko
+de:Fortlaufende Doppelseite
+fr:Continue - Page double
+-
+Rotate left
+pl:Obróć w lewo
+de:Drehung links
+fr:Rotation horaire
+-
+Rotate right
+pl:Obróć w prawo
+de:Drehung rechts
+fr:Rotation antihoraire
+-
+Show toolbar
+pl:Pokaż toolbar
+de:Werkzeugleiste zeigen
+-
+Use MuPDF rendering engine
+pl:Użyj MuPDF do renderowania
+de:MuPDF Renderingengine benutzen
+-
+&Go To
+pl:Idź do
+de:&Gehe zu
+fr:Atteindre
+-
+Next Page
+pl:Następna strona
+de:Nächste Seite
+fr:Page suivante
+-
+Previous Page
+pl:Poprzednia strona
+de:Vorherige Seite
+fr:Page précédente
+-
+First Page\tHome
+pl:Pierwsza strona\tHome
+de:Erste Seite\tHome
+fr:Première page\tHome
+-
+Last Page\tEnd
+pl:Ostatnia strona\tEnd
+de:Letzte Seite\tEnd
+fr:Dernière page\tEnd
+-
+Page...\tCtrl-G
+pl:Strona...\tCtrl-G
+de:Seite...
 -
 &Zoom
 pl:Powiększenie
+de:&Zoom
 -
-Zoom In
-pl:Powiększ
+Fit &Page\tCtrl-0
+pl:Dopasuj do strony\tCtrl-0
+de:An Seite anpassen\tCtrl-0
+fr:Page entière\tCtrl-0
 -
-Zoom Out
-pl:Pomniejsz
+Act&ual Size\tCtrl-1
+pl:Prawdziwy rozmiar\tCtrl-1
+de:Tat&sächliche Größe\tCtrl-1
+fr:Taille réelle\tCtrl-1
+-
+Fit Widt&h\tCtrl-2
+pl:Dopasuj do szerokości\tCtrl-2
+de:An Breite Anpassen\tCtrl-2
+fr:Pleine largeur
 -
 6400%
 -
@@ -130,18 +154,6 @@ pl:Pomniejsz
 -
 8.33%
 -
-&Help
-pl:&Pomoc
--
-&Visit website
-pl:Strona www
--
-&About
-pl:O programie
--
-About SumatraPDF
-pl:O programie
--
 &Language
 pl:Język
 -
@@ -157,5 +169,39 @@ pl:&Polski
 &French
 pl:&Francuski
 -
+&Help
+pl:&Pomoc
+de:&Hilfe
+-
+&Visit website
+pl:Strona www
+de:&Website
+-
+&About
+pl:O programie
+de:&Über
+-
+Zoom In
+pl:Powiększ
+-
+Zoom Out
+pl:Pomniejsz
+-
+Failed to save a file
+pl:Problem przy zapisywaniu pliku.
+-
+Error loading PDF file.
+pl:Problem przy otwarzaniu pliku.
+-
+Could not open Printer
+pl:Drukarka niedostępna.
+-
+Printing problem.
+pl:Problem z drukowaniem.
+-
+About SumatraPDF
+pl:O programie
+-
 Open
 pl:Otwórz
+de:&Öffnen\tCtrl-O

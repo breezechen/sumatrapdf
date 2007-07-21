@@ -525,9 +525,9 @@ MenuDef menuDefZoom[] = {
 
 MenuDef menuDefLang[] = {
     { _TRN("&English"), IDM_LANG_EN },
-    { _TRN("&Polish"),  IDM_LANG_PL },
     { _TRN("&French"),  IDM_LANG_FR },
     { _TRN("&German"),  IDM_LANG_DE },
+    { _TRN("&Polish"),  IDM_LANG_PL },
 };
 
 MenuDef menuDefHelp[] = {
