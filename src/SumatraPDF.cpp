@@ -44,11 +44,11 @@
 // some stupid things are in headers of MinGW 5.1.3 :-\
 // why we have to define these constants & prototypes again (?!)
 #ifdef __GNUC__
-#ifndef	VK_OEM_PLUS
-#define	VK_OEM_PLUS		0xBB
+#ifndef VK_OEM_PLUS
+#define VK_OEM_PLUS     0xBB
 #endif
-#ifndef	VK_OEM_MINUS
-#define	VK_OEM_MINUS	0xBD
+#ifndef VK_OEM_MINUS
+#define VK_OEM_MINUS 0xBD
 #endif
 
 extern "C" {
@@ -1277,6 +1277,19 @@ static void MenuUpdateUseFitzStateForWindow(WindowInfo *win) {
         CheckMenuItem(hmenu, IDM_VIEW_USE_FITZ, MF_BYCOMMAND | MF_UNCHECKED);
 }
 
+// show which language is being used via check in Language/* menu
+static void MenuUpdateLanguage(WindowInfo *win) {
+    HMENU hmenu = GetMenu(win->hwndFrame);
+    for (int i = 0; i < LANGS_COUNT; i++) {
+        const char *langName = g_langs[i]._langName;
+        int langMenuId = g_langs[i]._langId;
+        if (str_eq(g_currLangName, langName))
+            CheckMenuItem(hmenu, langMenuId, MF_BYCOMMAND | MF_CHECKED);
+        else
+            CheckMenuItem(hmenu, langMenuId, MF_BYCOMMAND | MF_UNCHECKED);
+    }
+}
+
 static void MenuUpdateStateForWindow(WindowInfo *win) {
     static UINT menusToDisableIfNoPdf[] = {
         IDM_VIEW_SINGLE_PAGE, IDM_VIEW_FACING, IDM_VIEW_CONTINUOUS, IDM_VIEW_CONTINUOUS_FACING,
@@ -1304,6 +1317,7 @@ static void MenuUpdateStateForWindow(WindowInfo *win) {
 
     MenuUpdateShowToolbarStateForWindow(win);
     MenuUpdateUseFitzStateForWindow(win);
+    MenuUpdateLanguage(win);
 
     for (int i = 0; i < dimof(menusToDisableIfNoPdf); i++) {
         UINT menuId = menusToDisableIfNoPdf[i];
@@ -2284,7 +2298,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
 #define SUMATRA_TXT             "Sumatra PDF"
 #define SUMATRA_TXT_FONT        "Arial Black"
 #define SUMATRA_TXT_FONT_SIZE   24
-#define BETA_TXT                "Beta v0.6"
+#define BETA_TXT                "Beta v0.7"
 #define BETA_TXT_FONT           "Arial Black"
 #define BETA_TXT_FONT_SIZE      12
 #define LEFT_TXT_FONT           "Arial"
@@ -3423,6 +3437,7 @@ static void LanguageChanged(const char *langName)
     WindowInfo *win = gWindowList;
     while (win) {
         SetMenu(win->hwndFrame, m);
+        MenuUpdateStateForWindow(win);
         win = win->next;
     }
     // TODO: recreate tooltips
