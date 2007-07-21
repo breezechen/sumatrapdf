@@ -1,11 +1,6 @@
 /* Copyright Krzysztof Kowalczyk 2006-2007
    License: GPLv2 */
 
-/*
-TODO:
-* remember selected language in settings file
-*/
-
 // have to undef _WIN32_IE here to use TB_* constants
 // (_WIN32_IE was defined in *.cbp - codeblocks project file)
 // ==> we have to use a stable API instead of MinGW 5.1.3 :-\
@@ -129,7 +124,7 @@ static BOOL             gDebugShowLinks = FALSE;
 #define ABOUT_CLASS_NAME    _T("SUMATRA_PDF_ABOUT")
 #define APP_NAME            _T("SumatraPDF")
 #define PDF_DOC_NAME        _T("Adobe PDF Document")
-#define ABOUT_WIN_TITLE     _T("About SumatraPDF")
+#define ABOUT_WIN_TITLE     _TR("About SumatraPDF")
 #define PREFS_FILE_NAME     _T("sumatrapdfprefs.txt")
 #define APP_SUB_DIR         _T("SumatraPDF")
 
@@ -226,16 +221,32 @@ typedef struct ToolbarButtonInfo {
 #define IDB_SEPARATOR  -1
 
 ToolbarButtonInfo gToolbarButtons[] = {
-    { IDB_SILK_OPEN,     IDM_OPEN, _T("Open"), 0 },
+    { IDB_SILK_OPEN,     IDM_OPEN, _TRN("Open"), 0 },
     { IDB_SEPARATOR,     IDB_SEPARATOR, 0, 0 },
-    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, _T("Previous page"), 0 },
-    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, _T("Next page"), 0 },
+    { IDB_SILK_PREV,     IDM_GOTO_PREV_PAGE, _TRN("Previous Page"), 0 },
+    { IDB_SILK_NEXT,     IDM_GOTO_NEXT_PAGE, _TRN("Next Page"), 0 },
     { IDB_SEPARATOR,     IDB_SEPARATOR, 0, 0 },
-    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, _T("Zoom in"), 0 },
-    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, _T("Zoom out"), 0 }
+    { IDB_SILK_ZOOM_IN,  IDT_VIEW_ZOOMIN, _TRN("Zoom In"), 0 },
+    { IDB_SILK_ZOOM_OUT, IDT_VIEW_ZOOMOUT, _TRN("Zoom Out"), 0 }
 };
 
+#define DEFAULT_LANGUAGE "en"
+
 #define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
+
+static const char *g_currLangName = DEFAULT_LANGUAGE;
+
+struct LangDef {
+    const char* _langName;
+    int         _langId;
+} g_langs[] = {
+    {"en", IDM_LANG_EN},
+    {"pl", IDM_LANG_PL},
+    {"fr", IDM_LANG_FR},
+    {"de", IDM_LANG_DE},
+};
+
+#define LANGS_COUNT dimof(g_langs)
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
@@ -512,6 +523,13 @@ MenuDef menuDefZoom[] = {
     { _TRN("8.33%"),                       IDM_ZOOM_8_33 },
 };
 
+MenuDef menuDefLang[] = {
+    { _TRN("&English"), IDM_LANG_EN },
+    { _TRN("&Polish"),  IDM_LANG_PL },
+    { _TRN("&French"),  IDM_LANG_FR },
+    { _TRN("&German"),  IDM_LANG_DE },
+};
+
 MenuDef menuDefHelp[] = {
     { _TRN("&Visit website"),              IDM_VISIT_WEBSITE },
     { _TRN("&About"),                      IDM_ABOUT }
@@ -582,6 +600,8 @@ static HMENU RebuildProgramMenu()
     AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Go To"));
     tmp = BuildMenuFromMenuDef(menuDefZoom, dimof(menuDefZoom));
     AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Zoom"));
+    tmp = BuildMenuFromMenuDef(menuDefLang, dimof(menuDefLang));
+    AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Language"));
     tmp = BuildMenuFromMenuDef(menuDefHelp, dimof(menuDefHelp));
     AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&Help"));
     return g_currMenu;
@@ -1374,7 +1394,7 @@ void GetCanvasDxDyDiff(WindowInfo *win, int *dxOut, int *dyOut)
     RECT totalRect;
     GetWindowRect(win->hwndFrame, &totalRect);
     *dxOut = rect_dx(&totalRect) - rect_dx(&canvasRect);
-   // TODO: should figure out why it fires in DLL
+    // TODO: should figure out why it fires in DLL
     assert(gRunningDLL || *dxOut >= 0);
     *dyOut = rect_dy(&totalRect) - rect_dy(&canvasRect);
     // TODO: should figure out why it fires in DLL
@@ -3391,6 +3411,40 @@ static void ReloadPdfDocument(WindowInfo *win)
     }
 }
 
+static void LanguageChanged(const char *langName)
+{
+    assert(!str_eq(langName, g_currLangName));
+
+    g_currLangName = langName;
+    bool ok = Translations_SetCurrentLanguage(langName);
+    assert(ok);
+    
+    HMENU m = RebuildProgramMenu();
+    WindowInfo *win = gWindowList;
+    while (win) {
+        SetMenu(win->hwndFrame, m);
+        win = win->next;
+    }
+    // TODO: recreate tooltips
+}
+
+static void OnMenuLanguage(int langId)
+{
+    const char *langName = NULL;
+    for (int i=0; i < LANGS_COUNT; i++) {
+        if (g_langs[i]._langId == langId) {
+            langName = g_langs[i]._langName;
+            break;
+        }
+    }
+
+    assert(langName);
+    if (!langName) return;
+    if (str_eq(langName, g_currLangName))
+        return;
+    LanguageChanged(langName);
+}
+
 static void OnMenuViewUseFitz(WindowInfo *win)
 {
     assert(win);
@@ -4080,6 +4134,14 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                 case IDM_VISIT_WEBSITE:
                     LaunchBrowser(_T("http://blog.kowalczyk.info/software/sumatrapdf/"));
                     break;
+
+                case IDM_LANG_EN:
+                case IDM_LANG_PL:
+                case IDM_LANG_FR:
+                case IDM_LANG_DE:
+                    OnMenuLanguage((int)wmId);
+                    break;
+
                 case IDM_ABOUT:
                     OnMenuAbout();
                     break;
@@ -4552,15 +4614,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCm
     UNREFERENCED_PARAMETER(hPrevInstance);
 
     u_DoAllTests();
-
-#if 0
-    // mini tests for translations stuff
-    const char *tr = _TR("Error loading PDF file.");
-    Translations_SetCurrentLanguage("pl");
-    tr = _TR("Error loading PDF file.");
-    tr = _TR("Open");
-    tr = _TR("String for testing that is not supposed to be translatable");
-#endif
 
     INITCOMMONCONTROLSEX cex;
     cex.dwSize = sizeof(INITCOMMONCONTROLSEX);

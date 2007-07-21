@@ -6,75 +6,103 @@
 # in this file followed by translations themselves
 Languages: en pl fr de
 -
+&File
+pl:Plik
+-
+&Open\tCtrl-O
+pl:Otwórz\tCtrl-O
+-
+&Save as
+pl:Zapisz jako
+-
 &Print
 pl:Drukuj
+de:Print
 -
 Make SumatraPDF a default PDF reader
-pl:Zrob domyslnym programem dla PDF
+pl:Zrób domyślnym programem dla PDF
 -
 &Close\tCtrl-W
 pl:&Zamknij\tCtrl-W
 -
 E&xit\tCtrl-Q
-pl:Wyjdz\tCtrl-Q
--
-&Open\tCtrl-O
-pl:Otworz\tCtrl-O
--
-&Save as
-pl:Zapisz jako
+pl:Wyjdź\tCtrl-Q
 -
 Use MuPDF rendering engine
+pl:Użyj MuPDF do renderowania
 -
 Failed to save a file
+pl:Problem przy zapisywaniu pliku.
 -
 Error loading PDF file.
+pl:Problem przy otwarzaniu pliku.
 -
 Could not open Printer
-pl:Drukarka niedostepna.
+pl:Drukarka niedostępna.
 -
 Printing problem.
 pl:Problem z drukowaniem.
 -
 Rotate right
+pl:Obróć w prawo
 -
-Act&ual Size\tCtrl-1
+Rotate left
+pl:Obróć w lewo
 -
 Show toolbar
+pl:Pokaż toolbar
+-
+&Go To
+pl:Idź do
+-
+First Page\tHome
+pl:Pierwsza strona\tHome
+-
+Last Page\tEnd
+pl:Ostatnia strona\tEnd
 -
 Next Page
-pl:Nastepna strona
+pl:Następna strona
 fr:Suivre
 -
 Previous Page
 pl:Poprzednia strona
 -
 Page...\tCtrl-G
--
-Continuous
--
-Fit Widt&h\tCtrl-2
--
-&Visit website
+pl:Strona...\tCtrl-G
 -
 Fit &Page\tCtrl-0
+pl:Dopasuj do strony\tCtrl-0
 -
-First Page\tHome
+Act&ual Size\tCtrl-1
+pl:Prawdziwy rozmiar\tCtrl-1
 -
-&About
+Fit Widt&h\tCtrl-2
+pl:Dopasuj do szerokości\tCtrl-2
+-
+&View
+pl:&Widok
 -
 Single page
+pl:Jedna strona
+-
+Continuous
+pl:Ciągły
 -
 Facing
--
-Last Page\tEnd
+pl:Na przeciwko
 -
 Continuous facing
+pl:Ciągły na przeciwko
 -
-Rotate left
+&Zoom
+pl:Powiększenie
 -
-Open
-pl:Otworz
+Zoom In
+pl:Powiększ
+-
+Zoom Out
+pl:Pomniejsz
 -
 6400%
 -
@@ -102,12 +130,32 @@ pl:Otworz
 -
 8.33%
 -
-&View
--
-&Go To
--
 &Help
+pl:&Pomoc
 -
-&Zoom
+&Visit website
+pl:Strona www
 -
-&File
+&About
+pl:O programie
+-
+About SumatraPDF
+pl:O programie
+-
+&Language
+pl:Język
+-
+&English
+pl:&Angielski
+-
+&German
+pl:&Niemiecki
+-
+&Polish
+pl:&Polski
+-
+&French
+pl:&Francuski
+-
+Open
+pl:Otwórz

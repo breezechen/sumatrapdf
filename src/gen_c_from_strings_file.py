@@ -1,10 +1,66 @@
 import string
 from extract_strings import load_strings_file, strings_file, get_lang_list
 
+def as_utf8(n):
+    if n < 0x7f:
+        assert 0 # don't pass me those
+    if n < 0x7ff:
+        y = (n >> 6) | 192 # 110yyyyy
+        z = (n & 0x3f) | 128 # 10zzzzzz
+        return [y,z]        
+    assert 0 # too lazy to encode those
+
+# TODO: stupid C escaping fails on e.g. \xcbb
+def c_hex2(n):
+    h = hex(n)[2:]
+    if 1 == len(h):
+        h = "x0" + h
+    else:
+        assert 2 == len(h)
+        h = "x" + h
+    assert 3 == len(h)
+    h = "\\" + h
+    h = " \"" + h + "\" "
+    return h
+
+def c_hex(n):
+    h = hex(n)[2:]
+    if 1 == len(h):
+        h = "x0" + h
+    else:
+        assert 2 == len(h)
+        h = "x" + h
+    assert 3 == len(h)
+    h = "\\" + h
+    return h
+
+def c_oct(n):
+    o = oct(n)
+    if 1 == len(o):
+        return "\\00" + o
+    elif 2 == len(o):
+        return "\\0" + o
+    elif 3 == len(o):
+        return "\\" + o
+    elif 4 == len(o):
+        assert '0' == o[0]
+        return "\\" + o[1:]
+
+def cstr_esc(n):
+    return c_oct(n)
+
 def c_escape(txt):
     if None == txt:
         return "NULL"
-    # TODO: for unicode chars, encode them as utf8 in C binary syntax
+    a = []
+    for c in txt:
+        if ord(c) <= 0x7f:
+            a.append(c)
+        else:
+            chars = as_utf8(ord(c))
+            for c2 in chars:
+                a.append(cstr_esc(c2))
+    txt = string.join(a,"")
     txt.replace("\"", r'\"')
     txt =  '"%s"' % txt
     return txt

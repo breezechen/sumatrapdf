@@ -51,6 +51,10 @@
 #define IDM_VISIT_WEBSITE               436
 #define IDM_VIEW_USE_FITZ               437
 #define IDM_SAVEAS                      438
+#define IDM_LANG_EN                     450
+#define IDM_LANG_FR                     451
+#define IDM_LANG_PL                     452
+#define IDM_LANG_DE                     453
 #define IDC_SUMATRAPDF                  600
 #define IDI_SMALL                       601
 #define IDC_GOTO_PAGE_EDIT              1000
