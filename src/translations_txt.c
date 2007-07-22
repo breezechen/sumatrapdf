@@ -15,7 +15,7 @@ const char *g_transLangs[] = {
   "en", "pl", "de", "fr"
 };
 
-int g_transTranslationsCount = 55;
+int g_transTranslationsCount = 56;
 
 const char *g_transTranslations[] = {
 
@@ -72,6 +72,7 @@ const char *g_transTranslations[] = {
   "Rotate right",
   "Show toolbar",
   "Single page",
+  "SumatraPDF is now a default reader for PDF files.",
   "Use MuPDF rendering engine",
   "Zoom In",
   "Zoom Out",
@@ -129,6 +130,7 @@ const char *g_transTranslations[] = {
   "Obr\303\263\304\207 w prawo",
   "Poka\305\274 toolbar",
   "Jedna strona",
+  "SumatraPDF jest teraz domy\305\233lnym programem do obs\305\202ugi plik\303\263w PDF",
   "U\305\274yj MuPDF do renderowania",
   "Powi\304\231ksz",
   "Pomniejsz",
@@ -186,6 +188,7 @@ const char *g_transTranslations[] = {
   "Drehung rechts",
   "Werkzeugleiste zeigen",
   "Einzelnde Seite",
+  NULL,
   "MuPDF Renderingengine benutzen",
   NULL,
   NULL,
@@ -243,6 +246,7 @@ const char *g_transTranslations[] = {
   "Rotation antihoraire",
   NULL,
   "Une seule page",
+  NULL,
   NULL,
   NULL,
   NULL,

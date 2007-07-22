@@ -187,6 +187,16 @@ pl:Powiększ
 Zoom Out
 pl:Pomniejsz
 -
+About SumatraPDF
+pl:O programie
+-
+Open
+pl:Otwórz
+de:&Öffnen\tCtrl-O
+-
+SumatraPDF is now a default reader for PDF files.
+pl:SumatraPDF jest teraz domyślnym programem do obsługi plików PDF
+-
 Failed to save a file
 pl:Problem przy zapisywaniu pliku.
 -
@@ -198,10 +208,3 @@ pl:Drukarka niedostępna.
 -
 Printing problem.
 pl:Problem z drukowaniem.
--
-About SumatraPDF
-pl:O programie
--
-Open
-pl:Otwórz
-de:&Öffnen\tCtrl-O
