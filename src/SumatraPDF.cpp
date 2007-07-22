@@ -250,6 +250,7 @@ struct LangDef {
 
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
+static void RebuildProgramMenus(void);
 
 void LaunchBrowser(const TCHAR *url)
 {
@@ -456,13 +457,6 @@ static UINT AllocNewMenuId(void)
     return firstId;
 }
 
-static void AddMenuSepToFilesMenu(WindowInfo *win)
-{
-    HMENU               menuFile;
-    menuFile = GetFileMenu(win->hwndFrame);
-    AppendMenu(menuFile, MF_SEPARATOR, 0, NULL);
-}
-
 #define SEP_ITEM "-----"
 
 typedef struct MenuDef {
@@ -535,29 +529,19 @@ MenuDef menuDefHelp[] = {
     { _TRN("&About"),                      IDM_ABOUT }
 };
 
-static void AddMenuItemToFilesMenu(WindowInfo *win, FileHistoryList *node)
+static void AddFileMenuItem(HMENU menuFile, FileHistoryList *node)
 {
-    HMENU               menuFile;
-    UINT                newId;
-    const char *        txt;
-
     assert(node);
-    if (!node)
-        return;
-    menuFile = GetFileMenu(win->hwndFrame);
+    if (!node) return;
     assert(menuFile);
-    if (!menuFile)
-        return;
+    if (!menuFile) return;
 
-    txt = FilePath_GetBaseName(node->state.filePath);
-
-    newId = node->menuId;
+    UINT newId = node->menuId;
     if (INVALID_MENU_ID == node->menuId)
         newId = AllocNewMenuId();
+    const char* txt = FilePath_GetBaseName(node->state.filePath);
     AppendMenu(menuFile, MF_ENABLED | MF_STRING, newId, txt);
-    DBG_OUT("AddMenuItemToFilesMenu() txt=%s, newId=%d\n", txt, (int)newId);
-    if (INVALID_MENU_ID == node->menuId)
-        node->menuId = newId;
+    node->menuId = newId;
 }
 
 static HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuItems)
@@ -587,12 +571,36 @@ static void DestroyCurrentMenu()
     g_currMenu = NULL;
 }
 
-static HMENU RebuildProgramMenu()
+static void AddRecentFilesToMenu(HMENU m)
+{
+    if (!gFileHistoryRoot) return;
+
+    AppendMenu(m, MF_SEPARATOR, 0, NULL);
+
+    int  itemsAdded = 0;
+    FileHistoryList *curr = gFileHistoryRoot;
+    while (curr) {
+        assert(curr->state.filePath);
+        if (curr->state.filePath) {
+            AddFileMenuItem(m, curr);
+            assert(curr->menuId != INVALID_MENU_ID);
+            ++itemsAdded;
+            if (itemsAdded >= MAX_RECENT_FILES_IN_MENU) {
+                DBG_OUT("  not adding, reached max %d items\n", MAX_RECENT_FILES_IN_MENU);
+                return;
+            }
+        }
+        curr = curr->next;
+    }
+}
+
+static HMENU ForceRebuildMenu()
 {
     HMENU tmp;
     DestroyCurrentMenu();
     g_currMenu = CreateMenu();
     tmp = BuildMenuFromMenuDef(menuDefFile, dimof(menuDefFile));
+    AddRecentFilesToMenu(tmp);
     AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&File"));
     tmp = BuildMenuFromMenuDef(menuDefView, dimof(menuDefView));
     AppendMenuW(g_currMenu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, _TRW("&View"));
@@ -610,35 +618,9 @@ static HMENU RebuildProgramMenu()
 static HMENU GetProgramMenu()
 {
     if (NULL == g_currMenu)
-        RebuildProgramMenu();
+        ForceRebuildMenu();
     assert(g_currMenu);
     return g_currMenu;
-}
-
-static void AddRecentFilesToMenu(WindowInfo *win)
-{
-    int                 itemsAdded = 0;
-    FileHistoryList *   curr;
-
-    if (!gFileHistoryRoot)
-        return;
-
-    AddMenuSepToFilesMenu(win);
-
-    curr = gFileHistoryRoot;
-    while (curr) {
-        assert(curr->state.filePath);
-        if (curr->state.filePath) {
-            AddMenuItemToFilesMenu(win, curr);
-            assert(curr->menuId != INVALID_MENU_ID);
-            ++itemsAdded;
-            if (itemsAdded >= MAX_RECENT_FILES_IN_MENU) {
-                DBG_OUT("  not adding, reached max %d items\n", MAX_RECENT_FILES_IN_MENU);
-                return;
-            }
-        }
-        curr = curr->next;
-    }
 }
 
 /* Return the full exe path of my own executable.
@@ -1168,7 +1150,6 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     win->state = WS_ABOUT;
     win->hwndFrame = hwndFrame;
     win->mouseAction = MA_IDLE;
-    AddRecentFilesToMenu(win);
     return win;
 Error:
     WindowInfo_Delete(win);
@@ -1547,8 +1528,10 @@ static WindowInfo* LoadPdf(const char *fileName, bool ignoreHistorySizePos = tru
 
     win->dm->setAppData((void*)win);
 
-    if (!fileFromHistory)
+    if (!fileFromHistory) {
         AddFileToHistory(fileName);
+        RebuildProgramMenus();
+    }
 
     /* TODO: if fileFromHistory, set the state based on gFileHistoryList node for
        this entry */
@@ -3425,6 +3408,17 @@ static void ReloadPdfDocument(WindowInfo *win)
     }
 }
 
+static void RebuildProgramMenus(void)
+{
+    HMENU m = ForceRebuildMenu();
+    WindowInfo *win = gWindowList;
+    while (win) {
+        SetMenu(win->hwndFrame, m);
+        MenuUpdateStateForWindow(win);
+        win = win->next;
+    }
+}
+
 static void LanguageChanged(const char *langName)
 {
     assert(!str_eq(langName, g_currLangName));
@@ -3432,14 +3426,8 @@ static void LanguageChanged(const char *langName)
     g_currLangName = langName;
     bool ok = Translations_SetCurrentLanguage(langName);
     assert(ok);
-    
-    HMENU m = RebuildProgramMenu();
-    WindowInfo *win = gWindowList;
-    while (win) {
-        SetMenu(win->hwndFrame, m);
-        MenuUpdateStateForWindow(win);
-        win = win->next;
-    }
+
+    RebuildProgramMenus();
     // TODO: recreate tooltips
 }
 

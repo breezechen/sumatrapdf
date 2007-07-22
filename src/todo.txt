@@ -1,6 +1,4 @@
 Short term todo (before next 0.7 release):
-* (re)add recent files to menu
-* update recent files menu right after opening a file
 * remember selected language in settings file
 * change toolbar tooltips after changing a language
 * use MultiByteToWideChar() 
