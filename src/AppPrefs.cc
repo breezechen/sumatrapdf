@@ -16,6 +16,8 @@ extern BOOL gShowToolbar;
 extern BOOL gUseFitz;
 extern BOOL gPdfAssociateDontAskAgain;
 extern BOOL gPdfAssociateShouldAssociate;
+extern bool CurrLangNameSet(const char* langName);
+extern const char* CurrLangNameGet();
 
 #define DEFAULT_WINDOW_X     40
 #define DEFAULT_WINDOW_Y     20
@@ -33,13 +35,14 @@ static BOOL FileExists(const char *fileName)
   return TRUE;
 }
 
-BOOL Prefs_Serialize(FileHistoryList **root, DString *strOut)
+bool Prefs_Serialize(FileHistoryList **root, DString *strOut)
 {
     assert(0 == strOut->length);
     DStringSprintf(strOut, "  %s: %d\n", SHOW_TOOLBAR_STR, gShowToolbar);
     DStringSprintf(strOut, "  %s: %d\n", USE_FITZ_STR, gUseFitz);
     DStringSprintf(strOut, "  %s: %d\n", PDF_ASSOCIATE_DONT_ASK_STR, gPdfAssociateDontAskAgain);
-    DStringSprintf(strOut, "  %s: %d\n", PDF_ASSOCIATE_ASSOCIATE, gPdfAssociateShouldAssociate);
+    DStringSprintf(strOut, "  %s: %d\n", PDF_ASSOCIATE_ASSOCIATE_STR, gPdfAssociateShouldAssociate);
+    DStringSprintf(strOut, "  %s: %s\n", UI_LANGUAGE_STR, CurrLangNameGet());
     return FileHistoryList_Serialize(root, strOut);
 }
 
@@ -232,7 +235,7 @@ void FileHistory_Add(FileHistoryList **fileHistoryRoot, DisplayState *state)
    items to file history list 'root'.
    Return FALSE if there was an error.
    An ode to a state machine. */
-BOOL Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
+bool Prefs_Deserialize(const char *prefsTxt, FileHistoryList **fileHistoryRoot)
 {
     PrefsParsingState   state = PPS_START;
     char *              prefsTxtNormalized = NULL;
@@ -300,9 +303,13 @@ StartOver:
                     ParseBool(value, &gPdfAssociateDontAskAgain);
                     break;
                 }
-                if (str_eq(PDF_ASSOCIATE_ASSOCIATE, key)) {
+                if (str_eq(PDF_ASSOCIATE_ASSOCIATE_STR, key)) {
                     gPdfAssociateShouldAssociate = TRUE;
                     ParseBool(value, &gPdfAssociateShouldAssociate);
+                    break;
+                }
+                if (str_eq(UI_LANGUAGE_STR, key)) {
+                    CurrLangNameSet(value);
                     break;
                 }
                 if (str_eq(FILE_HISTORY_STR, key)) {

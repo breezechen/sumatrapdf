@@ -234,7 +234,7 @@ ToolbarButtonInfo gToolbarButtons[] = {
 
 #define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
 
-static const char *g_currLangName = DEFAULT_LANGUAGE;
+static const char *g_currLangName;
 
 struct LangDef {
     const char* _langName;
@@ -251,6 +251,36 @@ struct LangDef {
 static void WindowInfo_ResizeToPage(WindowInfo *win, int pageNo);
 static void CreateToolbar(WindowInfo *win, HINSTANCE hInst);
 static void RebuildProgramMenus(void);
+
+const char* CurrLangNameGet() {
+    if (!g_currLangName)
+        return DEFAULT_LANGUAGE;
+    return g_currLangName;
+}
+
+bool CurrLangNameSet(const char* langName) {
+    bool validLang = false;
+    for (int i=0; i < LANGS_COUNT; i++) {
+        if (str_eq(langName, g_langs[i]._langName)) {
+            validLang = true;
+            break;
+        }
+    }
+    assert(validLang);
+    if (!validLang) return false;
+    free((void*)g_currLangName);
+    g_currLangName = str_dup(langName);
+
+    bool ok = Translations_SetCurrentLanguage(langName);
+    assert(ok);
+
+    return true;
+}
+
+void CurrLangNameFree() {
+    free((void*)g_currLangName);
+    g_currLangName = NULL;
+}
 
 void LaunchBrowser(const TCHAR *url)
 {
@@ -812,19 +842,18 @@ static void Prefs_GetFileName(DString* pDs)
 static void Prefs_Load(void)
 {
     DString             path;
-    static int          loaded = FALSE;
-    size_t              prefsFileLen;
+    static bool         loaded = false;
     char *              prefsTxt = NULL;
-    BOOL                fOk;
 
     assert(!loaded);
-    loaded = TRUE;
+    loaded = true;
 
     DBG_OUT("Prefs_Load()\n");
 
     DStringInit(&path);
     Prefs_GetFileName(&path);
 
+    size_t prefsFileLen;
     prefsTxt = file_read_all(path.pString, &prefsFileLen);
     if (str_empty(prefsTxt)) {
         DBG_OUT("  no prefs file or is empty\n");
@@ -832,7 +861,7 @@ static void Prefs_Load(void)
     }
     DBG_OUT("Prefs file %s:\n%s\n", path.pString, prefsTxt);
 
-    fOk = Prefs_Deserialize(prefsTxt, &gFileHistoryRoot);
+    bool fOk = Prefs_Deserialize(prefsTxt, &gFileHistoryRoot);
     assert(fOk);
 
     DStringFree(&path);
@@ -994,9 +1023,6 @@ static void Prefs_Save(void)
 {
     DString       path;
     DString       prefsStr;
-    size_t        len = 0;
-    FILE*         pFile = NULL;
-    BOOL          fOk;
 
 #if 0
     if (gPrefsSaved)
@@ -1009,7 +1035,7 @@ static void Prefs_Save(void)
     /* mark currently shown files as visible */
     UpdateCurrentFileDisplayState();
 
-    fOk = Prefs_Serialize(&gFileHistoryRoot, &prefsStr);
+    bool fOk = Prefs_Serialize(&gFileHistoryRoot, &prefsStr);
     if (!fOk)
         goto Exit;
 
@@ -1019,21 +1045,11 @@ static void Prefs_Save(void)
     /* TODO: consider 2-step process:
         * write to a temp file
         * rename temp file to final file */
-    pFile = fopen(path.pString, "w");
-    if (!pFile) {
-        goto Exit;
-    }
-
-    len = prefsStr.length;
-    if (fwrite(prefsStr.pString, 1, len, pFile) != len) {
-        goto Exit;
-    }
+    write_to_file(path.pString, (void*)prefsStr.pString, prefsStr.length);
     
 Exit:
     DStringFree(&prefsStr);
     DStringFree(&path);
-    if (pFile)
-        fclose(pFile);
 }
 
 static bool WindowInfo_Dib_Init(WindowInfo *win) {
@@ -1264,7 +1280,7 @@ static void MenuUpdateLanguage(WindowInfo *win) {
     for (int i = 0; i < LANGS_COUNT; i++) {
         const char *langName = g_langs[i]._langName;
         int langMenuId = g_langs[i]._langId;
-        if (str_eq(g_currLangName, langName))
+        if (str_eq(CurrLangNameGet(), langName))
             CheckMenuItem(hmenu, langMenuId, MF_BYCOMMAND | MF_CHECKED);
         else
             CheckMenuItem(hmenu, langMenuId, MF_BYCOMMAND | MF_UNCHECKED);
@@ -3176,7 +3192,6 @@ static void OnMenuSaveAs(WindowInfo *win)
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_SHOWHELP | OFN_OVERWRITEPROMPT;
 
-    // Display the Open dialog box.
     if (FALSE == GetSaveFileName(&ofn))
         return;
 
@@ -3214,7 +3229,6 @@ static void OnMenuOpen(WindowInfo *win)
     ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-    // Display the Open dialog box.
     if (FALSE == GetOpenFileName(&ofn))
         return;
 
@@ -3381,7 +3395,7 @@ static void OnMenuViewFacing(WindowInfo *win)
 static void OneMenuMakeDefaultReader(void)
 {
     AssociateExeWithPdfExtensions();
-    MessageBox(NULL, "SumatraPDF is now a default reader for PDF files.", "Information", MB_OK);
+    MessageBox(NULL, _TR("SumatraPDF is now a default reader for PDF files."), "Information", MB_OK);
 }
 
 static void OnSize(WindowInfo *win, int dx, int dy)
@@ -3421,11 +3435,9 @@ static void RebuildProgramMenus(void)
 
 static void LanguageChanged(const char *langName)
 {
-    assert(!str_eq(langName, g_currLangName));
+    assert(!str_eq(langName, CurrLangNameGet()));
 
-    g_currLangName = langName;
-    bool ok = Translations_SetCurrentLanguage(langName);
-    assert(ok);
+    CurrLangNameSet(langName);
 
     RebuildProgramMenus();
     // TODO: recreate tooltips
@@ -3443,7 +3455,7 @@ static void OnMenuLanguage(int langId)
 
     assert(langName);
     if (!langName) return;
-    if (str_eq(langName, g_currLangName))
+    if (str_eq(langName, CurrLangNameGet()))
         return;
     LanguageChanged(langName);
 }
@@ -4796,6 +4808,7 @@ Exit:
     delete globalParams;
     StrList_Destroy(&argListRoot);
     Translations_FreeData();
+    CurrLangNameFree();
     //histDump();
     return (int) msg.wParam;
 }

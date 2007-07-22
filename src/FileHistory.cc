@@ -102,21 +102,19 @@ static BOOL FileHistoryList_Node_Serialize(FileHistoryList *node, DString *strOu
     return TRUE;
 }
 
-BOOL FileHistoryList_Serialize(FileHistoryList **root, DString *strOut)
+bool FileHistoryList_Serialize(FileHistoryList **root, DString *strOut)
 {
-    FileHistoryList *curr;
-    int              fOk;
-
     assert(root);
-    if (!root) return FALSE;
-    curr = *root;
+    if (!root) return false;
+
+    FileHistoryList *curr = *root;
     while (curr) {
-        fOk = FileHistoryList_Node_Serialize(curr, strOut);
+        int fOk = FileHistoryList_Node_Serialize(curr, strOut);
         if (!fOk)
-            return FALSE;
+            return false;
         curr = curr->next;
     }
-    return TRUE;
+    return true;
 }
 
 void FileHistoryList_Node_InsertHead(FileHistoryList **root, FileHistoryList *node)

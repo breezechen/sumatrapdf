@@ -6,11 +6,6 @@
 #include "DisplayState.h"
 #include "dstring.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #define INVALID_MENU_ID (unsigned int)-1
 
 typedef struct FileHistoryList {
@@ -33,10 +28,6 @@ BOOL              FileHistoryList_Node_RemoveAndFree(FileHistoryList **root, Fil
 
 BOOL              FileHistoryList_Node_RemoveByFilePath(FileHistoryList **root, const char *filePath);
 
-BOOL              FileHistoryList_Serialize(FileHistoryList **root, DString *strOut);
-
-#ifdef __cplusplus
-}
-#endif
+bool              FileHistoryList_Serialize(FileHistoryList **root, DString *strOut);
 
 #endif
