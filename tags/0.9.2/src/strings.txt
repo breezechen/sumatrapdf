@@ -1,0 +1,2790 @@
+﻿# This is a file with translations for Sumatra
+# Lines at the beginning starting with # are comments
+# It must be in utf-8 encoding so when editing make sure
+# you use a proper text editor (notepad++ or notepad2 will work)
+# What follows below is a line listing all languages supported
+# in this file followed by translations themselves
+# Contributors:
+# Francisco Fuchs (pontocinza.blogspot.com) - Brazilian Portuguese
+# German:
+#   Lars Wohlfahrt (www.eviltux.de)
+#   Christopher Amann
+# Hakan ATAC - Turkish
+# Яўген Змачынскі - Belarusian
+# French:
+#   fiuzzy
+#   laclasse
+# Nardog (nardog.takoweb.com) - Japanese
+# Richard Magyar (magyar_richard@yahoo.com)- Hungarian
+# Persian: 
+#   Adham Beyki (odinay@gmail.com)
+#   Mardi Az Pansad Dastgah Artesh
+# Lars J. Helbo - Danish
+# Italian:
+#   Angelo Contardi
+#   iBlawgger
+# Dutch:
+#   Barry Haveman (webstek.info) 
+#   Kristof Bal 
+#   Stephan Paternotte
+# R. Rajesh Jeba Anbiah (rajeshanbiah.blogspot.com) - Tamil
+# Jose Virgili - Spanish
+# Krunoslav Tomorad (cygnus77@gmail.com) - Croatian
+# Zero-8 - Russian
+# Dmitry Yerokhin (erodim@mail.ru) - Russian
+# Arabic:
+#   Mohammed Al-Foulad (http://www.mbsee.info)
+#   Boubker Talibi
+# WangKing(http://wkismet.spaces.live.com) - Chinese Simplified
+# Linus Persson - Swedish
+# Kristian Vrhel - Czech
+# Giorgos Dimopoulos (geodimo1985@gmail.com) - Greek (Hellenic)
+# Uthen Phutneam - Thai
+# Ricardo Santos[bogas](http://www.meta-morf.pt.vu) - Português(Portugal)
+# Jon Ivar F. Omland - Norwegian
+# Kjell A. A. Holm - Norwegian
+# Slovak republic
+#   Radoslav Zelenák (radoslav.zelenak@elkop.sk)
+#   Bernard Holý - TREVERT
+# Nguyễn Lương Đống (http://sites.google.com/site/nguyenluongdong) - Việt Nam (Vietnamese)
+# Viktoras Jakovlevas - Lithuania
+# Masley b. Mastil - Bahasa Melayu (Malaysian)
+# Pekka Halmela - Finnish
+# Joan Montané - Catalan
+# Janez Vehovec - Slovensko (Slovenian)
+# FreeXD (http://blog.ecstart.com/?47979) - Chinese Traditional
+# Maxin B. John (maxinbjohn@gmail.com) - Malayalam 
+# Eyal Berman - Hebrew
+# milanso (milanso@gmail.com) - Srpski/Latinica (Serbian/Latin)
+# Горан Обрадовић - Srpski/Latinica (Serbian/Cyrillic )
+# Yudi Wibisono (http://yudiwbs.wordpress.com) - Indonesia
+# Goce Mitevski - Macedonian 
+# Elly Câmpeanu - Romanian
+# Hong Seung-geol (hsgno5@hanmir.com) – Korean
+# Bengali/বাংলা:
+#  Soham Chatterjee (soham.chatterjee@gmail.com)
+#  Shabab Mustafa (shabab.mustafa@gmail.com)
+# Xulio Gómez Díaz - Galego (Galician)
+# Христо Бенев (http://hbcom.info) - Bulgarian/Български
+# Daniel Bohdan - Ukrainian	
+# Igor G. Olaizola - Basque
+# Mark Angelo F. Racca - Tagalog
+# Vicent Adam - Valencian
+# Brian Musarurwa
+
+Lang: en English
+Lang: ar Arabic (الْعَرَبيّة)
+Lang: by Belarusian (Беларуская)
+Lang: bg Bulgarian (Български)
+Lang: bn Bengali (বাংলা)
+Lang: ca Catalan (Català)
+Lang: cn Chinese Simplified (简体中文)
+Lang: tw Chinese Traditional (簡體中文)
+Lang: hr Croatian (Hrvatski)
+Lang: cz Czech (Čeština)
+Lang: dk Danish (Dansk)
+Lang: nl Dutch (Nederlands)
+Lang: fi Finnish (Suomen)
+Lang: fr French (Français)
+Lang: gl Galician (Galego)
+Lang: de German (Deutsch)
+Lang: gr Greek (Ελληνικά)
+Lang: he Hebrew (עברית)
+Lang: hu Hungarian (Magyar)
+Lang: id Indonesian (Bahasa Indonesia)
+Lang: ja Japanese (日本語)
+Lang: it Italian (Italiano)
+Lang: kr Korean (한국어)
+Lang: lt Lithuanian (Lietuvių)
+Lang: ml Malayalam (മലയാളം)
+Lang: my Malaysian (Bahasa Melayu)
+Lang: mk Macedonian (Македонски)
+Lang: no Norwegian (Norsk)
+Lang: fa Persian (فارسی)
+Lang: pl Polish (Polski)
+Lang: br Portuguese - Brazil (Português)
+Lang: pt Portuguese - Portugal (Português)
+Lang: ro Romanian (Română)
+Lang: ru Russian (Русский)
+Lang: sp-rs Serbian (Latin)
+Lang: sr-rs Serbian (Cyrillic)
+Lang: sk Slovak (Slovenčina)
+Lang: si Slovenian (Slovenščina)
+Lang: es Spanish (Español)
+Lang: sv Swedish (Svenska)
+Lang: ta Tamil (தமிழ்)
+Lang: th Thai (ภาษาไทย)
+Lang: tr Turkish (Türkçe)
+Lang: vn Vietnamese (Việt Nam)
+Lang: uk Ukrainian (Українська)
+Lang: eu Basque (Euskara)
+Lang: tl Tagalog (Tagalog)
+Lang: va Valencian (Valencià)
+Lang: sn Shona (Shona)
+-
+&File
+bg:&Файл
+br:&Arquivo
+hu:&Fájl
+pl:Plik
+de:&Datei
+fr:&Fichier
+tr:&Dosya
+by:Файл
+ja:ファイル(&F)
+fa:فايل
+dk:&Filer
+it:&File
+nl:&Bestand
+ta:கோப்பு
+es:&Archivo
+hr:&Datoteka
+ru:Файл
+ar:ملف
+cn: 文件(&F)
+sv:&Arkiv
+cz:&Soubor
+gr:&Αρχείο
+th:แฟ้ม
+pt:&Ficheiro
+no:&Fil
+sk:Súbor
+vn:&Tệp tin
+lt:&Failas
+my:&Fail 
+fi:&Tiedosto
+ca:&Fitxer
+si:&Datoteka
+sr-rs:Датотека
+tw: 檔案(&F)
+ml:ഫയല്‍
+he:&קובץ
+sp-rs:&Datoteka
+id:&Berkas
+mk:&Датотека
+ro:&Fişier
+kr:파일(&F)
+bn:&সঞ্চিকা
+gl:&Arquivo
+uk:&Файл
+eu:&Fitxategia
+tl:Salansan
+va:&Archiu
+sn:&Faira
+-
+&Open\tCtrl-O
+bg:&Отвори\tCttl-O
+br:A&brir\tCtrl-O
+hu:Megny&itás\tCtrl-O
+pl:Otwórz\tCtrl-O
+de:Ö&ffnen...\tCtrl-O
+fr:&Ouvrir\tCtrl-O
+tr:&Aç\tCtrl-O
+by:Адчыніць\tCtrl-O
+ja:開く(&O)\tCtrl-O
+fa:گشودن\tCtrl-O
+dk:&Åbn\tCtrl-O
+it:&Apri\tCtrl-O
+nl:&Open\tCtrl-O
+ta:திற\tCtrl-O
+es:&Abrir\tCtrl-O
+hr:&Otvori\tCtrl-O
+ru:Открыть\tCtrl-O
+ar:&فتح\tCtrl-O
+cn:打开(&O)\tCtrl-O
+sv:&Öppna\tCtrl-O
+cz:&Otevřít\tCtrl-O
+gr:Ά&νοιγμα\tCtrl-O
+th:เปิด\tCtrl-O
+pt:&Abrir\tCtrl-O
+no:&Åpne\tCtrl-O
+sk:Otvoriť\tCtrl-O
+vn:&Mở tệp\tCtrl-O
+lt:&Atverti\tCtrl-O
+my:&Buka\tCtrl-O
+fi:&Avaa\tCtrl-O
+ca:&Obre\tCtrl-O
+si:&Odpri\tCtrl-O
+sr-rs:Отвори\tCtrl-O
+tw:開啟\tCtrl-O
+ml:തുറക്കുക\tCtrl-O
+he:&פתח\tCtrl-O
+sp-rs:&Otvori\tCtrl-O
+id:&Buka\tCtrl-O
+mk:&Отвори\tCtrl-O
+ro:&Deschidere\tCtrl-O
+kr:열기(&O)...\tCtrl-O
+bn:&উন্মীলন\tCtrl-O
+gl:A&brir\tCtrl-O
+uk:Відкрити\tCtrl-O
+eu:Ireki\tCtrl-O
+tl:Buksan\tCtrl-O
+va:Obrir\tCtrl-O
+sn:Vhura\tCtrl-0
+-
+&Close\tCtrl-W
+bg:Затвори\tCtrl-W
+br:&Fechar\tCtrl-W
+hu:Be&zárás\tCtrl-W
+pl:&Zamknij\tCtrl-W
+de:&Schließen\tCtrl-W
+fr:&Fermer\tCtrl-W
+tr:Kapa&t\tCtrl-W
+by:Зачыніць\tCtrl-W
+ja:閉じる(&C)\tCtrl-W
+fa:بستن\tCtrl-W
+dk:&Luk\tCtrl-W
+it:&Chiudi\tCtrl-W
+nl:&Sluiten\tCtrl-W
+ta:மூடு\tCtrl-W
+es:&Cerrar\tCtrl-W
+hr:&Zatvori\tCtrl-W
+ru:Закрыть\tCtrl-W
+ar:&إغلاق\tCtrl-W
+cn:关闭(&C)\tCtrl-W
+sv:&Stäng\tCtrl-W
+cz:&Zavřít\tCtrl-W
+gr:&Κλείσιμο\tCtrl-W
+th:ปิด\tCtrl-W
+pt:&Fechar\tCtrl-W
+no:&Lukk\tCtrl-W
+sk:Zatvoriť\tCtrl-W
+vn:&Đóng tệp\tCtrl-W
+lt:&Užverti\tCtrl-W
+my:&Tutup\tCtrl-W
+fi:&Sulje\tCtrl-W
+ca:&Tanca\tCtrl-W
+si:&Zapri\tCtrl-W
+sr-rs:Затвори\tCtrl-W
+tw:關閉(&C)\tCtrl-W
+ml:അടയ്ക്കുക\tCtrl-W
+he:&סגור\tCtrl-W
+sp-rs:&Zatvori\tCtrl-W
+id:&Tutup\tCtrl-W
+mk:&Затвори\tCtrl-W
+ro:Înc&hidere\tCtrl-W
+kr:닫기(&C)\tCtrl-W
+bn:&বন্ধ\tCtrl-W
+gl:&Pechar\tCtrl-W
+uk:&Закрити\tCtrl-W
+eu:&Itxi\tCtrl-W
+tl:Sarhan\tCtrl-W
+va:&Tancar\tCtrl-W
+sn:&Vhara\tCtrl-0
+-
+&Save as
+bg:&Запиши като...
+br:&Salvar como...
+hu:Ment&és másként...
+de:Speichern &unter...
+pl:Zapisz jako
+fr:&Enregistrer sous
+tr:&Farklı kaydet
+by:Захаваць як
+ja:名前を付けて保存(&S)
+fa:...ذخيره به نام دیگر
+dk:&Gem som
+it:&Salva con nome...
+nl:&Opslaan als...
+ta:எனச் சேமி
+es:&Guardar como
+hr:&Spremi kao...
+ru:Сохранить как...
+ar:&حفظ كـ
+cn:另存为(&S)
+sv:Spara so&m...
+cz:&Uložit jako
+gr:Α&ποθήκευση ως
+th:บันทึกเป็น
+pt:Guardar como
+no:Lagre &som
+sk:Uložiť ako...
+vn:&Sao lưu
+lt:&Įrašyti kaip...
+my:&Simpan sebagai
+fi:&Tallenna nimellä
+ca:Anomena i de&sa...
+si:&Shrani kot
+sr-rs:Сачувај као...
+tw:另存新檔(&S)
+ml:എന്ന പേരില്‍ സൂക്ഷിക്കുക
+he:שמירה בשם
+sp-rs:&Sačuvaj kao...
+id:&Simpan sebagai
+mk:&Зачувај како...
+ro:Salvare c&a...
+kr:다른 이름으로 저장(&S)...
+bn:&সংরক্ষণ এই রূপে...
+gl:&Salvar como...
+uk:Зб&ерегти як...
+eu:... bezala &Gorde
+tl:Iligtas Bilang...
+va:&Guardar com...
+sn:&Sevha se...
+-
+&Print\tCtrl-P
+bg:От&печатай
+br:&Imprimir
+hu:Nyomt&atás\tCtrl-P
+pl:Drukuj
+de:&Drucken...
+fr:&Imprimer
+tr:&Yazdır\tCtrl-P
+by:Друкаваць\tCtrl-P
+ja:印刷(&P)
+fa:چاپ\tCtrl-P
+dk:&Udskriv
+it:S&tampa
+nl:&Afdrukken\tCtrl-P
+ta:அச்சிடு
+es:&Imprimir
+hr:&Ispiši\tCtrl-P
+ru:Печать\tCtrl-P
+ar:&طباعة
+cn:打印(&P)
+sv:Skriv &ut\tCtrl-P
+cz:&Tisk
+gr:&Εκτύπωση
+th:พิมพ์
+pt:&Imprimir
+no:Skriv &ut\tCtrl-P
+sk:Tlačiť\tCtrl-P
+vn:&In\tCtrl-P
+lt:&Spausdinti\tCtrl-P
+my:&Cetak\tCtrl-P
+fi:&Tulosta\tCtrl-P
+ca:&Imprimeix...\tCtrl-P
+si:&Natisni\tCtrl-P
+sr-rs:Штампај
+tw:列印(&P)
+ml:അച്ചടി\tCtrl-P
+he:הדפס\tCtrl-p
+sp-rs:&Štampaj
+id:&Cetak\tCtrl-P
+mk:&Печати
+ro:I&mprimare
+kr:인쇄(&P)...\tCtrl-P
+bn:&মুদ্রন
+gl:&Imprimir
+uk:&Друкувати
+eu:&Inprimatu
+tl:Ilimbag\tCtrl-P
+va:&Imprimir
+sn:&Printa\tCtrl-P
+-
+Make SumatraPDF a default PDF reader
+bg:Направи SumatraPDF четец на PDF по подразбиране
+br:Fazer do SumatraPDF o leitor PDF padrão
+hu:SumatraPDF mint alapértelmezett PDF olvasó
+pl:Zrób domyślnym programem dla PDF
+de:Standardmäßig pdf-Dateien mit SumatraPDF öffnen
+fr:Définir SumatraPDF comme lecteur PDF par défaut
+tr:&Varsayılan PDF okuyucusu yap
+by:Зрабіць SumatraPDF чытальнікам PDF па-змаўчанні
+ja:SumatraPDF を既定の PDF リーダーにする
+fa:PDF به برنامه‌ي پيش‌فرض مرور اسناد SumatraPDF تبديل
+dk:Gør SumatraPDF til din standard PDF læser
+it:&Imposta SumatraPDF come lettore predefinito per i file PDF
+nl:SumatraPDF instellen als standaard PDF lezer
+ta:SumatraPDFயை முன்னிருப்பு PDF படிப்பியாக பதிவு செய்
+es:Convertir SumatraPDF en lector PDF por defecto
+hr:Neka SumatraPDF bude pretpostavljeni PDF preglednik
+ru:Ассоциировать SumatraPDF с файлами PDF
+ar:PDF جعل هذا البرنامج القارىء الرئيسي لملفات
+cn:设置 SumatraPDF 为默认 PDF 阅读器
+sv:Använd SumatraPDF som standardläsare för PDF
+cz:Nastavit SumatraPDF jako výchozí PDF čtečku
+gr:Ορισμός SumatraPDF ως προεπιλεγμένο αναγνώστη PDF
+th:ตั้ง SumatraPDF ตั้งเป็นโปรแกรมหลักสำหรับเปิดไฟล์ PDF
+pt:Fazer de SumatraPDF o leitor de PDF pedefenido
+no:Bruk SumatraPDF som standard PDF-leser
+sk:Nastaviť SumatraPDF ako predvolený PDF prehliadač
+vn:Đặt SumatraPDF làm trình đọc PDF mặc định
+lt:Parinkti SumatraPDF numatytuoju PDF dokumentų skaitytuvu
+my:Jadikan SumatraPDF pembaca utama PDF
+fi:Tee SumatraPDF:stä PDF-tiedostojen oletuslukuohjelma
+ca:Fes el SumatraPDF el lector de PDF predeterminat
+si:Nastavi SumatraPDF kot privzeti PDF pregledovalnik
+sr-rs:Нека SumatraPFD буде стандардни PDF читач
+tw:把 SumatraPDF 作為預設的PDF閱讀工具
+ml:സുമാത്രാപിഡീഎഫ് നിങ്ങളു PDF ഫയല്‍ വായിക്കാനുള്ള മുഖ്യ പ്രോഗ്രാം ആക്കുക
+he:הפוך את סומטרה לברירת מחדל עבור קבצי PDF
+sp-rs:Neka SumatraPDF bude standardni PDF čitač
+id:Jadikan SumatraPDF sebagai pembaca-PDF utama
+mk:Направи го SumatraPDF основен PDF читач
+ro:Fă SumatraPDF un cititor implicit de PDF
+kr:SumatraPDF를 기본 PDF 뷰어로 설정
+bn:SumatraPDF-কে ডিফল্ট রিডার হিসেবে নির্বাচন করুন
+gl:Facer do SumatraPDF o leitor PDF por defecto
+uk:Зробити SumatraPDF типовим переглядачем PDF
+eu:Sumatra PDF erabili besterik ezean PDFak irakurtzeko
+tl:Gawin na SumatraPDF ang Likas na Gagamitin sa Pangbasa ng PDF
+va:Convertir SumatraPDF en llector PDF per defecte
+sn:Ita SumatraPDF igovhura maPDF ese
+bn:সুমাত্রাপিডিএফ কে আপনার স্বাভাবিক পঠক রূপে নির্ধারণ 
+-
+E&xit\tCtrl-Q
+bg:&Изход\tCtrl-Q
+br:Sai&r\tCtrl-Q
+hu:&Kilépés\tCtrl-Q
+pl:Wyjdź\tCtrl-Q
+de:&Beenden\tCtrl-Q
+fr:Quitter\tCtrl-Q
+tr:Çı&kış\tCtrl-O
+by:Выйсце\tCtrl-Q
+ja:終了(&X)\tCtrl-Q
+fa:بستن برنامه\tCtrl-Q
+dk:&Slut\tCtrl-Q
+it:&Esci\tCtrl-Q
+nl:&Afsluiten\tCtrl-Q
+ta:வெளியேறு\tCtrl-Q
+es:&Salir\tCtrl-Q
+hr:&Izađi\tCtrl-Q
+ru:Выход\tCtrl-Q
+ar:إغلاق البرنامج\tCtrl-Q
+cn:退出(&X)\tCtrl-Q
+sv:&Avsluta\tCtrl-Q
+cz:&Konec\tCtrl-Q
+gr:Έ&ξοδος\tCtrl-Q
+th:ออก\tCtrl-Q
+pt:&Sair\tCtrl-Q
+no:&Avslutt\tCtrl-Q
+sk:&Ukončiť\tCtrl-Q
+vn:Th&oát\tCtrl-Q
+lt:Baigti darbą\tCtrl-Q
+my:&Keluar\tCtrl-Q
+fi:&Poistu\tCtrl-Q
+ca:S&urt\tCtrl-Q
+si:&Izhod\tCtrl-Q
+sr-rs:Изађи\tCtrl-Q
+tw:離開(&X)\tCtrl-Q
+ml:പുറത്തേക്ക് \tCtrl-Q
+he:יציאה\tCtrl-Q
+sp-rs:&Izađi\tCtrl-Q
+id:&Keluar\tCtrl-Q
+mk:&Излез\tCtrl-Q
+ro:&Ieşire\tCtrl-Q
+kr:끝내기(&X)\tCtrl-Q
+bn:&প্রস্থান\tCtrl-Q
+gl:Sai&r\tCtrl-Q
+uk:&Вийти\tCtrl-Q
+eu:&Irten\tCtrl-Q
+tl:Labasan\tCtrl-Q
+va:E&ixir\tCtrl-Q
+sn:&Siyana Nazvo\tCtrl-Q
+-
+&View
+bg:&Виж
+br:&Ver
+hu:&Nézet
+pl:&Widok
+de:&Ansicht
+fr:&Affichage
+tr:&Göster
+by:Выгляд
+ja:表示(&V)
+fa:نمايش
+dk:&Vis
+it:&Visualizza
+nl:&Beeld
+ta:நோக்கு
+es:&Ver
+hr:&Pogled
+ru:Вид
+ar:&العرض
+cn:查看(&V)
+sv:&Visa
+cz:&Zobrazit
+gr:&Προβολή
+th:มุมมอง
+pt:&Ver
+no:&Vis
+sk:&Zobraziť
+vn:&Khung nhìn
+lt:Peržiūra
+my:&Lihat
+fi:&Näytä
+ca:&Visualitza
+si:&Pogled
+sr-rs:Приказ
+tw:檢視(&V)
+ml:കാഴ്ച്ച
+he:&תצוגה
+sp-rs:Prikaz
+id:&Lihat
+mk:&Поглед
+ro:&Vizualizare
+kr:보기(&V)
+bn:দর্শন
+gl:&Ver
+uk:Ви&гляд
+eu:I&kusi
+tl:Masdan
+va:&Vore
+sn:&Maonero
+-
+Single page
+bg:Единична страница
+br:Página única
+hu:Egy oldalas
+pl:Jedna strona
+de:Einzelne Seite
+fr:Une seule page
+tr:Tek sayfa
+by:Адна старонка
+ja:単一のページ
+fa:نمايش تک‌صفحه‌اي
+dk:Enkelt side
+it:Pagina singola
+nl:Enkele pagina
+ta:ஒற்றைப் பக்கம்
+es:Página Única
+hr:Jedna stranica
+ru:Одна страница
+ar:صفحة واحدة
+cn:单个页面
+sv:Enkel sida
+cz:Jedna stránka
+gr:Μονή σελίδα
+th:หน้าเดี่ยว
+pt:Página Única
+no:Enkel side
+sk:Jedna strana
+vn:Trang đơn
+lt:Vienas puslapis
+my:Satu Mukasurat
+fi:Yksittäinen sivu
+ca:Pàgina única
+si:Enostransko
+sr-rs:Приказ једне стране
+tw:單一頁面
+ml:ഒറ്റ താള്‍
+he:דף יחיד
+sp-rs:Prikaz jedne strane
+id:Satu Halaman
+mk:Една страница
+ro:O singură pagină
+kr:한 장씩
+bn:একটি পৃষ্ঠায়
+gl:Unha soa páxina
+uk:Одна сторінка
+eu:Orri bakarra
+tl: Isang Pahina
+va:Pàgina Única
+sn:Peji imwechete
+-
+Facing
+bg:Две страници
+br:Página dupla
+hu:Oldalpár
+pl:Na przeciwko
+de:Doppelseite
+fr:Page double
+tr:Çift sayfa
+by:Дзьве старонкі
+ja:見返し
+fa:نمايش دوصفحه‌اي
+dk:Modstående
+it:Pagine affiancate
+nl:Dubbele pagina
+ta:முகப்பு
+es:Página Doble
+hr:Dvije stranice
+ru:Две страницы
+ar:صفحتان متقابلتان
+cn:平铺页面
+sv:Uppslag
+cz:Protilehlé
+gr:Αντικριστά
+th:เป็นหน้า
+pt:Página Dupla
+no:Motstående
+sk:Dve strany
+vn:Trang kép
+lt:Puslapiavimas
+my:Dua belah mukasurat
+fi:Rinnakkain
+ca:Pàgina doble
+si:Dvostransko
+sr-rs:Приказ две стране
+tw:整頁模式
+ml:തിരിച്ച്
+he:דף כפול
+sp-rs:Prikaz dve strane
+id:Dua Halaman
+mk:Две страници
+ro:Două pagini
+kr:여러 장씩
+bn:দুটি পৃষ্ঠায়
+gl:Páxina dobre
+uk:Дві сторінки
+eu:Bi aldetatik
+tl:Harapan
+va:Pàgina Doble
+sn:Facing
+-
+Continuous
+bg:Непрекъснати
+br:Contínuo
+hu:Folyamatos
+pl:Ciągły
+de:Fortlaufend
+fr:Continue
+tr:Devamlı
+by:Працягла
+ja:連続
+fa:نمايش پيوسته
+dk:Fortløbende
+it:Pagina singola continua
+nl:Doorlopend
+ta:தொடர்
+es:Contínua
+hr:Slijedno
+ru:Непрерывно
+ar:صفحات متتالية
+cn:连续页面
+sv:Fortlöpande
+cz:Průběžně
+gr:Συνεχόμενα
+th:ต่อเนื่อง
+pt:Contínua
+no:Kontinuerlig
+sk:Priebežne
+vn:Liên tục
+lt:Besitęsiantis
+my:Bersambung
+fi:Peräkkäin
+ca:Contínua
+si:Nepretrgano
+sr-rs:Непрекидни приказ
+tw:連續頁面
+ml:തുടര്‍ച്ച
+he:המשך
+sp-rs:Neprekidni prikaz
+id:Bersambung
+mk:Непрекинат приказ
+ro:Continuu
+kr:한 장씩 연속
+bn:ক্রমাগত...
+gl:Contínuo
+uk:Протяжний
+eu:Jarraian
+tl:Tuloy-tuloy
+va:Contínua
+sn:Continuous
+-
+Continuous facing
+bg:Две непрекъснати
+br:Página dupla contínua
+hu:Folyamatos oldalpár
+pl:Ciągły na przeciwko
+de:Fortlaufende Doppelseiten
+fr:Continue - Page double
+tr:Devamlı çift sayfa
+by:Працягла дзьве старонкі
+ja:連続の見返し
+fa:نمايش دوصفحه‌اي پيوسته
+dk:Fortløbende modstående
+it:Pagine affiancate continue
+nl:Dubbele pagina doorlopend
+ta:தொடர் முகப்பு
+es:Página Doble Contínua
+hr:Dvije stranice sljedno
+ru:Непрерывно по две страницы
+ar:صفحات متقابلة متتالية
+cn:连续平铺页面
+sv:Fortlöpande uppslag
+cz:Průběžně protilehlé
+gr:Αντικριστά και συνεχόμενα
+th:เป็นหน้าต่อเนื่อง
+pt:Página Dupla Contínua
+no:Kontinuerlig motstående
+sk:Dve strany priebežne
+vn:Liên tục trang kép
+lt:Besitęsiantis puslapiavimas
+my:Dua belah mukasurat bersambung
+fi:Peräkkäin ja rinnakkain
+ca:Pàgina doble contínua
+si:Nepretrgano dvostransko
+sr-rs:Непрекидни приказ на две стране
+tw:連續整頁模式
+ml:തുടര്‍ച്ചയായി കാണിക്കുക
+he:המשך תצוגה כפולה
+sp-rs:Neprkidni prikaz dve strane
+id:Dua Halaman Bersambung
+mk:Непрекинат приказ со две страници
+ro:Pagină dublă continuu
+kr:여러 장씩 연속
+bn:ক্রমাগত দুটি পৃষ্ঠায়
+gl:Páxina dobre continua
+uk:Дві протяжні сторінки
+eu:Bi aldetatik jarraian
+tl:Tuloy-tuloy na Harapan
+va:Pàgina Doble Contínua
+sn:Facing iriContinous
+-
+Rotate left
+bg:Завърти наляво
+br:Girar à esquerda
+hu:Forgatás balra
+pl:Obróć w lewo
+de:Drehung links
+fr:Rotation antihoraire
+tr:Sola çevir
+by:Павярнуць налева
+ja:左に回転
+fa:چرخاندن به چپ
+dk:Drej venstre
+it:Ruota a sinistra
+nl:Linksom draaien
+ta:இடதுப்புறம் சுழற்று
+es:Girar a la izquierda
+hr:Zaokreni nalijevo
+ru:Повернуть влево
+ar:دوران لليسار
+cn:向左旋转
+sv:Rotera åt vänster
+cz:Otočit zobrazení doleva
+gr:Περιστροφή αριστερά
+th:หมุนซ้าย
+pt:Rodar à esquerda
+no:Roter til venstre
+sk:Otočiť vľavo
+vn:Quay trái
+lt:Pasukti kairėn
+my:Ubah ke kiri
+fi:Kierrä vasempaan
+ca:Gira a l'esquerra
+si:Obrni v levo
+sr-rs:Ротирај лево
+tw:頁面左旋
+ml: ഇടത്തേക്കു ചരിക്കുക
+he:סובב שמאלה
+sp-rs:Rotiraj levo
+id:Putar ke kiri
+mk:Ротирај на лево
+ro:Roteşte spre stânga
+kr:왼쪽으로 회전
+bn:বামদিকে বিবর্তন
+gl:Xirar á esquerda
+uk:Повернути ліворуч
+eu:Ezkerrerantz biratu
+tl:Iikot Pakaliwa
+va:Girar a l'esquerra
+sn:Tenderedza kuruboshwe
+-
+Rotate right
+bg:Завърти надясно
+br:Girar à direita
+hu:Forgatás jobbra
+pl:Obróć w prawo
+de:Drehung rechts
+fr:Rotation horaire
+tr:Sağa çevir
+by:Павярнуць направа
+ja:右に回転
+fa:چرخاندن به راست
+dk:Drej højre
+it:Ruota a destra
+nl:Rechtsom draaien
+ta:வலப்புறம் சுழற்று
+es:Girar a la derecha
+hr:Zaokreni nadesno
+ru:Повернуть вправо
+ar:دوران لليمين
+cn:向右旋转
+sv:Rotera åt höger
+cz:Otočit zobrazení doprava
+gr:Περιστροφή δεξιά
+th:หมุนขวา
+pt:Rodar à direita
+no:Roter til høyre
+sk:Otočiť vpravo
+vn:Quay phải
+lt:Pasukti dešinėn
+my:Ubah ke kanan
+fi:Kierrä oikeaan
+ca:Gira a la dreta
+si:Obrni v desno
+sr-rs:Ротирај десно
+tw:頁面右旋
+ml:വലത്തേക്കു ചരിക്കുക
+he:סובב ימינה
+sp-rs:Rotiraj desno
+id:Putar ke Kanan
+mk:Ротирај на десно
+ro:Roteşte spre dreapta
+kr:오른쪽으로 회전
+bn:ডানদিকে বিবর্তন
+gl:Xirar á dereita
+uk:Повернути праворуч
+eu:Eskubirantz biratu
+tl:Iikot Pakanan
+va:Girar a la dreta
+sn:Tenderedza kurudyi
+-
+Bookmarks
+br:Marcadores
+bg:Етикети
+de:Lesezeichen
+tr:Yer imleri
+hu:Könyvjelzők
+lt:Žymės
+my:Penanda
+ja:ブックマーク
+fa:نشان یادگاری سرکتاب
+it:Segnalibri
+nl:Bladwijzers
+fi:Kirjainmerkit
+ca:Punts d'interés
+si:Zaznamki
+sr-rs:Белешке
+tw:書籤
+sp-rs:Beleške
+mk:Обележувачи
+ro:Marcaje
+sk:Záložky
+vn:Chỉ dấu sách
+kr:책갈피
+bn:পৃষ্ঠাস্মারকসমূহ
+cn:书签
+fr:Signets
+ru:Закладки
+gl:Preferidos
+es:Marcadores
+th:ที่คั่น
+uk:Закладки
+eu:Markagailuak
+gr:Σελιδοδείκτες
+hr:Knjiške oznake
+tl:Pananda ng Aklat
+va:Marcadors
+sn:Mabhukumaki
+-
+Fullscreen\tCtrl-L
+br:Tela cheia\tCtrl-L
+bg:Цял Екран\tCtrl-L
+de:Vollbild
+tr:Tam Ekran\tCtrl-L
+hu:Teljes képernyő\tCtrl+L
+pl:Na cały ekran\tCtrl-L
+ja:全画面表示\tCtrl-L
+fa:تمام‌صفحه\tCtrl-L
+it:Schermo intero\tCtrl-L
+nl:Volledig scherm\tCtrl-L
+no:Full skjerm\tCtrl-L
+sk:Na celú obrazovku\tCtrl-L
+vn:Toàn màn hình\tCtrl-L
+lt:Visame ekrane\tCtrl-L
+my:Mukasurat Penuh\tCtrl-L
+fi:Koko näyttö\tCtrl-L
+ca:Pantalla completa\tCtrl-L
+si:Celozaslonsko\tCtrl-L
+sr-rs:Цео екран\tCtrl-L
+tw:全螢幕顯示(按Ctrl+L切換)
+ml:മുഴുവന്‍ കാണിക്കുക\tCtrl-L
+he:מסך מלא\tCtrl-L
+sp-rs:Ceo ekran\tCtrl-L
+id:Selayar Penuh\tCtrl-L
+mk:На цел екран\tCtrl-L
+ro:Ecran complet
+kr:전체 화면\tCtrl-L
+bn:পূর্ণ পর্দা\tCtrl-L
+cn:全屏\tCtrl-L
+fr:Plein écran
+ru:Полный экран
+gl:A toda pantalla\tCtrl-L
+es:Pantalla Completa\tCtrl-L
+th:เต็มจอภาพ
+ar:بحجم الشاشة
+uk:На цілий екран\tCtrl-L
+eu:Pantaila osoan\tCtrl-L
+gr:Πλήρης οθόνη\tCtrl-L
+hr:Cijeli zaslon\tCtrl-L
+tl:BuongTabing\tCtrl-L
+va:Pantalla Completa\tCtrl-L
+sn:Zadza Screen\tCtrl-L
+-
+Show toolbar
+bg:Покажи лентата с инструменти
+br:Mostrar barra de ferramentas
+hu:Eszköztár
+pl:Pokaż toolbar
+de:Werkzeugleiste anzeigen
+fr:Afficher la barre d'outils
+tr:Araç kutusunu göster
+by:Паказаль панэль прыладаў
+ja:ツール バーの表示
+fa:نمايش نوار ابزار
+dk:Vis værktøjslinie
+it:Mostra la barra degli strumenti
+nl:Werkbalk tonen
+ta:கருவிப்பட்டை காண்பி
+es:Mostrar barra de herramientas
+hr:Pokaži alatnu traku
+ru:Показ панели инструментов
+ar:عرض شريط الأدوات
+cn:显示工具栏
+sv:Visa verktygsfält
+cz:Zobrazit lištu nástrojů
+gr:Εμφάνιση γραμμής εργαλείων
+th:แสดงแถบเครื่องมือ
+pt:Mostrar barra de ferramentas
+no:Vis verktøylinje
+sk:Zobraziť panel nástrojov
+vn:Hiện thanh công cụ
+lt:Rodyti įrankinę
+my:Tunjukkan Bar Alat
+fi:Näytä työkalupalkki
+ca:Mostra la barra d'eines
+si:Prikaži orodno vrstico
+sr-rs:Прикажи траку са алатима
+tw:顯示工具列
+ml:റ്റുള്‍ബാര്‍  കാണിക്കുക
+he:הצג שורת תפריט
+sp-rs:Prikaži traku sa alatima
+id:Perlihatkan toolbar
+mk:Прикажи алатник
+ro:Arată bara de instrumente
+kr:도구 모음 보기
+bn:উপকরণপট্টি প্রদর্শন
+gl:Amosar barra de ferramentas
+uk:Показати пенал
+eu:Lanabes barra azaldu
+tl:Ipakita ang Bareta ng Kagamitan
+va:Mostrar barra de ferramentes
+sn:Ratidza Toolbar
+-
+&Go To
+bg:Отиди &на
+br:Ir &para
+hu:U&grás
+pl:Idź do
+de:&Gehe zu
+fr:Atteindre
+tr:&Git
+by:Перайсці да
+ja:移動(&G)
+fa:برو به
+dk:&Gå til
+it:Va&i a
+nl:&Ga naar
+ta:அங்கு செல்
+es:&Ir a
+hr:Idi na
+ru:Перейти
+ar:&الذهاب إلى
+cn:转到(&G)
+sv:&Gå till
+cz:Jdi na
+gr:&Μετάβαση
+th:ไปที่
+pt:Ir para
+no:&Gå til
+sk:Ísť na
+vn:&Nhảy đến
+lt:&Eiti
+my:&Pergi Ke
+fi:&Siirry
+ca:&Vés a
+si:Po&jdi na
+sr-rs:Иди на
+tw:移至(&G)
+ml:അവിടെ സന്ദര്‍ശിക്കുക
+he:לך ל
+sp-rs:&Idi na
+id:&Pergi ke
+mk:П&ојди на
+ro:Sal&t la...
+kr:이동(&G)
+bn:এতে চলুন...
+gl:Ir &a
+uk:&Перейти
+eu:...ra &Joan
+tl:Punta Sa...
+va:&Anar a
+sn:Enda ku...
+-
+Next Page
+bg:Следваща страница
+br:Página seguinte
+hu:Következő oldal
+pl:Następna strona
+de:Nächste Seite
+fr:Page suivante
+tr:Sonraki Sayfa
+by:Наступная старонка
+ja:次のページ
+fa:صفحه بعدی
+dk:Næste side
+it:Pagina successiva
+nl:Volgende pagina
+ta:அடுத்த பக்கம்
+es:Página Siguiente
+hr:Sljedeća stranica
+ru:Следующая страница
+ar:الصفحة التالية
+cn:下一页
+sv:Nästa sida
+cz:Další stránka
+gr:Επόμενη σελίδα
+th:หน้าถัดไป
+pt:Próxima página
+no:Neste side
+sk:Ďaľšia strana
+vn:Trang tiếp
+lt:Kitas puslapis
+my:Mukasurat seterusnya
+fi:Seuraava sivu
+ca:Pàgina següent
+si:Naslednja stran
+sr-rs:Следећа страна
+tw:下一頁
+ml:അടുത്ത താള്‍
+he:דף הבא
+sp-rs:Sledeća strana
+id:Halaman Berikutnya
+mk:Следна страница
+ro:Pagina următoare
+kr:다음 장
+bn:পরবর্তী পৃষ্ঠা
+gl:Páxina seguinte
+uk:Наступна сторінка
+eu:Hurrengo orria
+tl:Sunod na Pahina
+va:Pàgina Següent
+sn:Peji yemberi
+-
+Previous Page
+bg:Предишна страница
+br:Página anterior
+hu:Előző oldal
+pl:Poprzednia strona
+de:Vorherige Seite
+fr:Page précédente
+tr:Önceki Sayfa
+by:Папярэдняя старонка
+ja:前のページ
+fa:صفحه قبلی
+dk:Forrige side
+it:Pagina precedente
+nl:Vorige pagina
+ta:முந்தைய பக்கம்
+es:Página Anterior
+hr:Prethodna stranica
+ru:Предыдущая страница
+ar:الصفحة السابقة
+cn:上一页
+sv:Föregående sida
+cz:Předchozí stránka
+gr:Προηγούμενη σελίδα
+th:หน้าก่อนหน้า
+pt:Página anterior
+no:Forrige side
+sk:Predchádzajúca strana
+vn:Trang trước
+lt:Ankstesnis puslapis
+my:Mukasurat sebelumnya
+fi:Edellinen sivu
+ca:Pàgina anterior
+si:Predhodna stran
+sr-rs:Претходна страна
+tw:上一頁
+ml:മുന്‍പുള്ള താള്‍
+he:דף קודם
+sp-rs:Prethodna strana
+id:Halaman Sebelumnya
+mk:Претходна страница
+ro:Pagina anterioară
+kr:이전 장
+bn:পূর্ববর্তী পৃষ্ঠা
+gl:Páxina anterior
+uk:Попередня сторінка
+eu:Aurreko orria
+tl:Nakaraan na Pahina
+va:Pàgina Anterior
+sn:Peji yesure
+-
+First Page\tHome
+bg:Начална страница\tHome
+br:Primeira página\tHome
+hu:Első oldal\tHome
+pl:Pierwsza strona\tHome
+de:Erste Seite\tHome
+fr:Première page\tHome
+tr:İlk Sayfa\tHome
+by:Першая старонка\tHome
+ja:最初のページ\tHome
+fa:صفحه نخست\tHome
+dk:Første side\tHome
+it:Prima pagina\tHome
+nl:Eerste pagina\tHome
+ta:முதல் பக்கம்\tHome
+es:Primera Página\tHome
+hr:Prva stranica\tHome
+ru:Первая страница\tHome
+ar:الصفحة الأولى\tHome
+cn:第一页\tHome
+sv:Första sidan\tHome
+cz:První stránka\tHome
+gr:Πρώτη σελίδα\tHome
+th:หน้าแรก
+pt:Primeira página\tHome
+no:Første side\tHome
+sk:Prvá strana\tHome
+vn:Trang đầu\tHome
+lt:Pirmas puslapis\tHome
+my:Mukasurat pertama\tHome
+fi:Ensimmäinen sivu\tHome
+ca:Primera pàgina\tInici
+si:Prva stran\tHome
+sr-rs:Прва страна\tHome
+tw:首頁\tHome
+ml:ആദ്യ താള്‍\tHome
+he:דף ראשון\tHome
+sp-rs:Prva strana\tHome
+id:Halaman Pertama\tHome
+mk:Прва страница\tHome
+ro:Prima pagină\tHome
+kr:첫 장\tHome
+bn:প্রথম পৃষ্ঠা\tHome
+gl:Primeira páxina\tHome
+uk:Перша сторінка\tHome
+eu:Lehendabiziko orria \tHome
+tl:Unang Pahina\tTahanan
+va:Primera Pàgina\tInici
+sn:Peji yekutanga\tHome
+-
+Last Page\tEnd
+bg:Последна страница\tEnd
+br:Última página\tEnd
+hu:Utolsó oldal\tEnd
+pl:Ostatnia strona\tEnd
+de:Letzte Seite\tEnd
+fr:Dernière page\tEnd
+tr:Son Sayfa\tEnd
+by:Апошняя старонка\tEnd
+ja:最後のページ\tEnd
+fa:صفحه پایانی\tEnd
+dk:Sidste side\tEnd
+it:Ultima pagina\tEnd
+nl:Laatste pagina\tEnd
+ta:இறுதி பக்கம்\tEnd
+es:Última Página\tEnd
+hr:Posljednja stranica\tEnd
+ru:Последняя страница\tEnd
+ar:الصفحة الأخيرة\tEnd
+cn:最后一页\tEnd
+sv:Sista sidan\tEnd
+cz:Poslední stránka\tEnd
+gr:Τελευταία σελίδα\tEnd
+th:หน้าสุดท้าย
+pt:Última página\tEnd
+no:Siste side\tEnd
+sk:Posledná strana\tEnd
+vn:Trang cuối\tEnd
+lt:Paskutinis puslapis\tEnd
+my:Mukasurat terakhir
+fi:Viimeinen sivu\tEnd
+ca:Última pàgina\tFinal
+si:Zadnja stran\tEnd
+sr-rs:Последња страна\tEnd
+tw:尾頁\tEnd
+ml:അവസാന താള്‍\tEnd
+he:דף אחרון\tEnd
+sp-rs:Poslednja strana\tEnd
+id:Halaman Terakhir\tEnd
+mk:Последна страница\tEnd
+ro:Ultima pagină\tEnd
+kr:마지막 장\tEnd
+bn:শেষ পৃষ্ঠা\tEnd
+gl:Última páxina\tEnd
+uk:Остання сторінка\tEnd
+eu:Azken orria\tEnd
+tl:Huling Pahina\tDulo
+va:Última Pàgina\tFi
+sn:Peji yekupedzisira\tEnd
+-
+Page...\tCtrl-G
+bg:Страница...\tCtrl-G
+br:Página...\tCtrl-G
+hu:Megadott oldal...\tCtrl-G
+pl:Strona...\tCtrl-G
+de:Seite...
+fr:Page...\tCtrl-G
+tr:Sayfa...\tCtrl-G
+by:Старонка...\tCtrl-G
+ja:ページ...\tCtrl-G
+fa:...صفحه\tCtrl-G
+dk:Side...\tCtrl-G
+it:Pagina...\tCtrl-G
+nl:Pagina...\tCtrl-G
+ta:பக்கம்...\tCtrl-G
+es:Página...\tCtrl-G
+hr:Stranica...\tCtrl-G
+ru:Указанная страница...\tCtrl-G
+ar:صفحة محددة\tCtrl-G
+cn:页面...\tCtrl-G
+sv:Sida...\tCtrl-G
+cz:Stránka...\tCtrl-G
+gr:Σελίδα...\tCtrl-G
+th:หน้า...\tCtrl-G
+pt:Página...\tCtrl-G
+no:Side...\tCtrl-G
+sk:Strana...\tCtrl-G
+vn:Trang...\tCtrl-G
+lt:Puslapis...\tCtrl-G
+my:Mukasurat...\tCtrl-G
+fi:Sivulle...\tCtrl-G
+ca:Pàgina...\tCtrl-G
+si:Stran...\tCtrl-G
+sr-rs:Страна...\tCtrl-G
+tw:頁面...\tCtrl-G
+ml:താള്‍...\tCtrl-G
+he:דף...\tCtrl-G
+sp-rs:Strana...\tCtrl-G
+id:Halaman...\tCtrl-G
+mk:Страница...\tCtrl-G
+ro:Pagina...\tCtrl-G
+kr:쪽...\tCtrl-G
+bn:পৃষ্ঠা সংখ্যা...\tCtrl-G
+gl:Páxina...\tCtrl-G
+uk:До сторінки...\tCtrl-G
+eu:...garren orria\tCtrl-G
+tl:Pahina...\tCtrl-G
+va:Pàgina...\tCtrl-G
+sn:Peji...\tCtrl-G
+-
+&Zoom
+bg:&Мащаб
+br:&Zoom
+hu:&Nagyítás
+pl:Powiększenie
+de:&Zoom
+fr:Zoom
+tr:&Yakınlaştırma
+by:Памер
+ja:拡大と縮小(&Z)
+fa:تغيير بزرگی
+dk:&Zoom
+it:&Zoom
+nl:&Zoom
+ta:பெரிதாக்கு
+es:&Zoom
+hr:&Uvećaj
+ru:Масштаб
+ar:التقريب
+cn:缩放(&Z)
+sv:&Zoom
+cz:&Zvětšení
+gr:&Εστίαση
+th:ขยาย
+pt:&Zoom
+no:&Zoom
+sk:&Zväčšenie
+vn:&Thu-Phóng
+lt:Artinimas
+my:&Fokus
+fi:&Kohdista
+ca:&Escalat
+si:Po&večava
+sr-rs:Увећај
+tw:縮放(&Z)
+ml:വലുതാക്കുക
+he:זום
+sp-rs:&Uvećaj
+id:&Ukuran
+mk:&Зголемување
+ro:&Panoramare
+kr:확대(&Z)
+bn:&বিবর্ধন
+gl:&Zoom
+uk:&Збільшення
+eu:&Zoom-a
+tl:Zoom
+va:&Zoom
+sn:&Zuma
+-
+Fit &Page\tCtrl-0
+bg:Оразмери страницата\tCtrl-0
+br:&Página inteira\tCtrl-0
+hu:&Teljes oldal\tCtrl-0
+pl:Dopasuj do strony\tCtrl-0
+de:An Seite anpassen\tCtrl-0
+fr:Page entière\tCtrl-0
+tr:&Sayfaya sığdır\tCtrl-0
+by:Змясціць старонку\tCtrl-0
+ja:ページに合わせる(&P)\tCtrl-0
+fa:به بزرگی پنجره\tCtrl-0
+dk:Hele &siden\tCtrl-0
+it:&Pagina intera\tCtrl-0
+nl:Hele &Pagina\tCtrl-0
+ta:பக்கம் பொருந்தவை\tCtrl-0
+es:Ajustar &Página\tCtrl-0
+hr:Prilagodi &stranici\tCtrl-0
+ru:По размеру страницы\tCtrl-0
+ar:مناسب للشاشة\tCtrl-0
+cn:适合页面\tCtrl-0
+sv:Anpa&ssa efter helsida\tCtrl-0
+cz:Přizpůsobit stránce\tCtrl-0
+gr:Ολόκληρη σελίδα\tCtrl-0
+th:พอดีหน้า\tCtrl-0
+pt:Ajustar &Página\tCtrl-0
+no:Tilpass &side\tCtrl-0
+sk:Prispôsobiť strane\tCtrl-0
+vn:Vừa &trang\tCtrl-0
+lt:Pritaikyti lange\tCtrl-0
+my:&Muatkan mukasurat\tCtrl-0
+fi:Sovita sivu pystysuunnassa\tCtrl-0
+ca:Ajusta a la pàgina\tCtrl-0
+si:&Prilagodi strani\tCtrl-0
+sr-rs:Прилагоди страни\tCtrl-0
+tw:適合頁面\tCtrl-0
+ml:വലിപ്പം പൊരുത്തപ്പെടുത്തുക\tCtrl-0
+he:התאם דף\tCtrl-0
+sp-rs:Prilagodi &strani\tCtrl-0
+id:&Sesuaikan\tCtrl-0
+mk:Прилагоди на &страница\tCtrl-0
+ro:&Pagină întreagă\tCtrl-0
+kr:창 크기에 맞춤(&P)\tCtrl-0
+bn:পৃষ্ঠা অনুরূপ\tCtrl-0
+gl:&Páxina enteira\tCtrl-0
+uk:Припа&сувати сторінку\tCtrl-0
+eu:Orriaren neurria egokitu\tCtrl-O
+tl:Ihusto ang Pahina\tCtrl-0
+va:Ajustar &Pàgina\tCtrl-0
+sn:Kwanisa &Peji\tCtrl-0
+-
+Act&ual Size\tCtrl-1
+bg:Едно към едно\tCtrl-1
+br:&Tamanho real\tCtrl-1
+hu:&Eredeti méret\tCtrl-1
+pl:Prawdziwy rozmiar\tCtrl-1
+de:Tat&sächliche Größe\tCtrl-1
+fr:Taille réelle\tCtrl-1
+tr:Gerçek Boyut\tCtrl-1
+by:Рэальны памер\tCtrl-1
+ja:実際のサイズ(&U)\tCtrl-1
+fa:بزرگی خودش\tCtrl-1
+dk:Akt&ual størrelse\tCtrl-1
+it:&Dimensioni reali\tCtrl-1
+nl:Ware grootte\tCtrl-1
+ta:மெய் அளவு\tCtrl-1
+es:Tamaño Real\tCtrl-1
+hr:Stvarna veličina\tCtrl-1
+ru:Реальный размер\tCtrl-1
+ar:الحجم الحقيقي\tCtrl-1
+cn:实际大小\tCtrl-1
+sv:Normal storlek\tCtrl-1
+cz:Skutečná velikost\tCtrl-1
+gr:Πραγματικό μέγεθος\tCtrl-1
+th:ขนาดจริง\tCtrl-1
+pt:Tamanho real\tCtrl-1
+no:F&aktisk størrelse\tCtrl-1
+sk:Skutočná veľkosť\tCtrl-1
+vn:Kích thướ&c thật\tCtrl-1
+lt:Tikrasis dydis\tCtrl-1
+my:&Saiz sebenar\tCtrl-1
+fi:&Todellinen koko\tCtrl-1
+ca:Mida &real\tCtrl-1
+si:&Dejanska velikost\tCtrl-1
+sr-rs:Страна величина\tCtrl-1
+tw:實際大小\tCtrl-1
+ml:ശരിയായ വലിപ്പം\tCtrl-1
+he:גודל מקור\tCtrl-1
+sp-rs:Stvarna veličina\tCtrl-1
+id:&Ukuran Sebenarnya\tCtrl-1
+mk:Ре&ална големина\tCtrl-1
+ro:Mărime &actuală\tCtrl-1
+kr:본래 크기(&U)\tCtrl-1
+bn:বাস্তবিক আকার\tCtrl-1
+gl:&Tamaño real\tCtrl-1
+uk:Справжній розмір\tCtrl-1
+eu:&Berezko neurria\tCtrl-1
+tl:Tunay na Laki\tCtrl-1
+va:Tam&any Real\tCtrl-1
+sn:Saizi chaiyo\tCtrl-1
+-
+Fit Widt&h\tCtrl-2
+bg:Оразмери по ширина\tCtrl-2
+br:Ajustar pela l&argura\tCtrl-2
+hu:Oldal&szélesség\tCtrl-2
+pl:Dopasuj do szerokości\tCtrl-2
+de:An Breite anpassen\tCtrl-2
+fr:Pleine largeur
+tr:Genişliğe &sığdır\tCtrl-2
+by:Змясціць па шырыне
+ja:幅に合わせる(&H)\tCtrl-2
+fa:به بزرگی پهنای پنجره\tCtrl-2
+dk:Tilpas &bredde\tCtrl-2
+it:&Larghezza pagina\tCtrl-2
+nl:Passend in &breedte\tCtrl-2
+ta:அகலம் பொருந்தவை\tCtrl-2
+es:&Ancho de Página\tCtrl-2
+hr:&Podesi po širini\tCtrl-2
+ru:Заполнение по ширине\tCtrl-2
+ar:مناسب لعرض الشاشة\tCtrl-2
+cn:适合宽度\tCtrl-2
+sv:Anpassa efter bredd\tCtrl-2
+cz:Podle šířky\tCtrl-2
+gr:Στο πλάτος παραθύρου\tCtrl-2
+th:พอดีความกว้าง\tCtrl-2
+pt:Largura de página\tCtrl-2
+no:Tilpass &bredde\tCtrl-2
+sk:Na šírku obrazovky\tCtrl-2
+vn:Vừa chiều &rộng\tCtrl-2
+lt:Pritaikyti plotį\tCtrl-2
+my:&Muatkan lebar\tCtrl-2
+fi:&Sovita sivu vaakasuunnassa\tCtrl-2
+ca:Ajusta a l'am&plada\tCtrl-2
+si:P&rilagodi po širini\tCtrl-2
+sr-rs:Подеси по ширини\tCtrl-2
+tw:適合寬度\tCtrl-2
+ml:അകലം പൊരുത്തപ്പെടുത്തുക\tCtrl-2
+he:התאם רוחב\tCtrl-2
+sp-rs:&Podesi po širini\tCtrl-2
+id:Sesuaikan dengan &Lebar\tCtrl-2
+mk:Прилагоди на &ширина\tCtrl-2
+ro:Lăţime pagină
+kr:꽉 찬 화면(&H)\tCtrl-2
+bn:প্রস্থ অনুরূপ\tCtrl-2
+gl:Axustar ao ancho\tCtrl-2
+uk:Припасувати до &ширини\tCtrl-2
+eu:Orriaren zabalera egokitu\tCtrl-2
+tl:Husto na Lapad\tCtrl-2
+va:&Amplària de la Pàgina\tCtrl-2
+sn:Kwanisa hupamhu\tCtrl-2
+-
+6400%
+-
+3200%
+-
+1600%
+-
+800%
+-
+400%
+-
+200%
+-
+150%
+-
+125%
+-
+100%
+-
+50%
+-
+25%
+-
+12.5%
+-
+8.33%
+-
+&Language
+bg:Език
+br:I&dioma
+hu:&Nyelv
+pl:&Język
+fr:&Langue
+de:Sprache
+tr:Dil
+by:Мова
+ja:言語(&L)
+fa:زبان
+dk:&Sprog
+it:&Lingua
+nl:&Taal
+ta:மொழி
+es:&Idioma
+hr:&Jezik
+ru:Язык
+ar:&اللغة
+cn:语言(&L)
+sv:&Språk
+cz:Jazyk
+gr:&Γλώσσα
+th:ภาษา
+pt:&Linguagem
+no:&Språk
+sk:Jazyk
+vn:N&gôn ngữ
+lt:Kalba
+my:&Bahasa
+fi:Kieli
+ca:&Llengua
+si:&Jezik
+sr-rs:Језик
+tw:語言(&L)
+ml:ഭാഷ
+he:שפה
+sp-rs:&Jezik
+id:Ba&hasa
+mk:&Јазик
+ro:&Limbă
+kr:언어(&L)
+bn:ভাষা
+gl:&Lingua
+uk:&Мова
+eu:&Hizkuntza
+tl:Wika
+va:&Idioma
+sn:&Mutauro
+-
+&Help
+bg:Помо&щ
+br:A&juda
+hu:&Súgó
+pl:&Pomoc
+de:&Hilfe
+fr:Aide
+tr:&Yardım
+by:Дапамога
+ja:ヘルプ(&H)
+fa:راهنما
+dk:&Hjælp
+it:&Aiuto
+nl:&Help
+ta:உதவி
+es:&Ayuda
+hr:&Pomoć
+ru:Справка
+ar:&مساعدة
+cn:帮助(&H)
+sv:&Hjälp
+cz:&Nápověda
+gr:&Βοήθεια
+th:ช่วยเหลือ
+pt:&Ajuda
+no:&Hjelp
+sk:Nápoveda
+vn:Trợ giú&p
+lt:&Pagalba
+my:&Bantuan
+fi:&Ohje
+ca:&Ajuda
+si:P&omoč
+sr-rs:Помоћ
+tw:說明(&H)
+ml:സഹായം
+he:עזרה
+sp-rs:&Pomoć
+id:Ban&tuan
+mk:&Помош
+ro:A&jutor
+kr:도움(&H)
+bn:&সাহায্য
+gl:A&xuda
+uk:&Допомога
+eu:&Laguntza
+tl:Saklolo
+va:&Ajuda
+sn:&Rubatsiro
+-
+&Visit website
+bg:Посетете сайта
+br:Visitar o SumatraPDF na W&eb
+hu:&Weboldal
+pl:Strona www
+de:&SumatraPDF im Internet besuchen
+fr:Visiter le site web
+tr:&Web sayfası
+by:Наведаць сайт
+ja:ウェブサイトの訪問(&V)
+fa:بازديد از وب‌سايت
+dk:Besøg &webside
+it:&Visita il sito Internet
+nl:Bezoek de &website
+ta:வலைத்தளம் செல்
+es:&Visitar Sitio Web
+hr:&Posjeti Internet stranicu
+ru:Посетить веб-сайт программы
+ar:&زيارة موقع البرنامج
+cn:访问网站(&V)
+sv:Besök webbplats
+cz:&Navštívit webovou stránku
+gr:&Ιστοσελίδα προγράμματος
+th:เยี่ยมเว็บไชด์
+pt:Visitar a página Web
+no:Besøk &hjemmeside
+sk:&Navštíviť webovú stránku
+vn:Thăm &website
+lt:Aplankyti svetainę
+my:&Lawat lamanweb
+fi:Vieraile ohjelman kotisivuilla
+ca:Visiteu el lloc &web
+si:Ob&išči domačo stran
+sr-rs:Посети Интернет страну
+tw:連結網站(&V)
+ml:വെബ്സൈറ്റ് സന്ദര്‍ശിക്കുക
+he:בקר באתר
+sp-rs:&Poseti Internet stranu
+id:&Kunjungi Halaman Web
+mk:Посети веб-сајт
+ro:&Vizitează website-ul
+kr:웹 사이트 방문(&V)
+bn:&আমাদের অন্তর্জালস্থান দর্শন করুন
+gl:Visitar o &Website
+uk:Відкрити сайт
+eu:&Web orria bisitatu
+tl:Dalawin ang PookSapot
+va:&Visitar Lloc Web
+sn:&Shanyira dande-mtande
+-
+&Manual
+bg:Ръководство
+de:Anleitung
+fr:Manuel
+pl:Instrukcja obslugi
+ru:Руководство
+fa:کتابچه راهنما در اینترنت
+ja:マニュアル(&M)
+nl:Handleiding
+hr:Korisnički priručnik
+vn:&Hướng dẫn sử dụng
+sk:Príručka
+th:คู่มือการใช้งาน
+gl:Manual de Instruccións
+mk:Прирачник за употреба
+tl:Gabay
+bn:নির্দেশ নথিপত্র
+it:&Guida
+-
+&About
+bg:Относно програмата...
+br:S&obre o SumatraPDF
+hu:Név&jegy
+pl:O programie
+de:&Über SumatraPDF
+fr:A propos
+tr:&Hakkında
+by:Аб праграме
+ja:バージョン情報(&A)
+fa:درباره
+dk:&Om
+it:&Informazioni
+nl:&Over
+ta:பற்றி
+es:&Acerca de
+hr:&O programu...
+ru:О программе...
+ar:حول البرنامج
+cn:关于(&A)
+sv:&Om
+cz:&O programu
+gr:&Σχετικά...
+th:เกี่ยวกับ
+pt:Acerca de...
+no:&Om
+sk:&O programe...
+vn:&Giới thiệu
+lt:Apie
+my:&Mengenai
+fi:&Tietoja
+ca:&Quant a...
+si:O Progr&amu
+sr-rs:О програму
+tw:關於(&A)
+ml:പറ്റി
+he:אודות
+sp-rs:&O programu
+id:&Tentang
+mk:&За SumatraPDF...
+ro:&Despre
+kr:정보(&A)...
+bn:&আমাদের সম্পর্কে
+gl:Arred&or de
+uk:П&ро програму...
+eu:Ho&Ni buruz...
+tl:Tungkol Sa...
+va:Al voltant de
+sn:&Nezve...
+-
+Page:
+bg:Страница:
+br:Página:
+hu:Oldal:
+pl:Strona:
+de:Seite:
+fr:Page:
+tr:Sayfa:
+dk:Side:
+it:Pagina:
+nl:Pagina:
+es:Página:
+hr:Stranica:
+fa:صفحه:
+sv:Sida:
+cz:Stránka:
+pt:Página:
+no:Side:
+sk:Strana:
+vn:Trang:
+sp-rs:Strana:
+ro:Pagina:
+ru:Страница:
+ja:ページ:
+gl:Páxina:
+mk:Страница:
+tl:Pahina:
+va:Pàgina:
+ca:Pàgina:
+sn:Peji:
+bn:পৃষ্ঠা:
+-
+Find:
+br:Localizar:
+bg:Търси:
+de:Suchen:
+tr:Bul:
+hu:Keresés:
+pl:Szukaj:
+ja:検索:
+fa:جستجو:
+it:Trova:
+nl:Zoeken:
+sk:Hľadať:
+vn:Tìm kiếm:
+lt:Ieškoti:
+my:Cari:
+fi:Etsi:
+ca:Cerca:
+si:Najdi:
+sr-rs:Пронађи:
+ml:കണ്ടെത്തുക:
+he:חפש:
+sp-rs:Pronađi:
+id:Temukan:
+mk:Најди:
+ro:Caută:
+kr:찾기:
+bn:অনুসন্ধান:
+cn:查找:
+fr:Rechercher:
+ru:Найти:
+gl:Procura:
+es:Buscar:
+ar:بحث
+uk:Знайти:
+eu:Bilatu:
+gr:Αναζήτηση:
+hr:Pronađi:
+tl:Hanapin:
+va:Buscar:
+sn:Wana:
+-
+Find Previous
+br:Localizar anterior
+bg:Намери предишното
+de:Rückwärts suchen
+tr:Öncekini bul
+hu:Előző keresése
+lt:Rasti kitą
+my:Cari sebelum
+ja:前を検索
+fa:جستجو روبه عقب
+it:Trova precedente
+nl:Vorige
+fi:Etsi edellinen
+ca:Cerca anterior
+si:Najdi predhodno
+sr-rs:Пронађи претходно
+ml: മുന്‍പുള്ളത് കണ്ടെത്തുക
+he:חפש קודם
+sp-rs:Pronađi prethodno
+id:Temukan Sebelum
+mk:Најди претходно
+ro:Caută înapoi
+sk:Hľadať predchádzajúce
+vn:Tìm phía trước
+kr:이전 찾기
+bn:পূর্ববর্তী অনুসন্ধান
+cn:上一个
+fr:Occurrence précédente
+ru:Найти предыдущее
+gl:Atopar Anterior
+es:Buscar Anterior
+ar:البحث عن السابق
+uk:Знайти попереднє
+eu:Aurrekoa bilatu
+gr:Αναζήτηση προηγούμενου
+hr:Pronađi prethodno
+tl:Hanapin ang Nakaraan
+va:Busca Anterior
+sn:Wana pashure
+-
+Find Next
+br:Localizar seguinte
+bg:Намери следващото
+de:Weitersuchen
+tr:Sonrakini Bul
+hu:Következő keresése
+lt:Rasti ankstesnį
+my:Cari selepas
+ja:次を検索
+fa:جستجو روبه جلو
+it:Trova successivo
+nl:Volgende
+fi:Etsi seuraava
+ca:Cerca següent
+si:Najdi naslednje
+sr-rs:Пронађи следеће
+ml:അടുത്തത് കണ്ടെത്തുക
+he:חפש הבא
+sp-rs:Pronađi sledeće
+id:Temukan Sesudah
+mk:Најди следно
+ro:Caută înainte
+sk:Hľadať ďalšie
+vn:Tìm phía sau
+kr:다음 찾기
+bn:পরবর্তী অনুসন্ধান
+cn:下一个
+fr:Occurrence suivante
+ru:Найти следующее
+gl:Atopar Seguinte
+es:Buscar Siguiente
+uk:Знайти наступне
+eu:Hurrengoa bilatu
+gr:Αναζήτηση επόμενου
+hr:Pronađi sljedeće
+tl:Hanapin ang Susunod
+va:Busca Següent
+sn:Wana pamberi
+-
+Match case
+br:Diferenciar  minúsculas e Maiúsculas
+bg:Точно същите букви
+de:Groß-/Kleinschreibung beachten
+tr:Büyük/Küçük harf eşleştir
+hu:Kis- és nagybetűk megkülönböztetése
+my:Hampir sama
+ja:大文字と小文字を区別する
+it:Maiuscole/minuscole
+nl:Hoofdlettergevoelig
+fi:Sama kirjainkoko
+ca:Distigeix la caixa
+si:Velikost pisave
+sr-rs:Разликуј мала и велика слова
+sp-rs:Razlikuj mala i velika slova
+id:Cocokkan Huruf Besar-Kecilnya
+mk:Разликувај мали и големи букви
+ro:Potrivire litere mari şi mici
+sk:Rozlišovať veľké/malé písmená
+vn:Phân biệt chữ Hoa
+kr:대/소문자 구분
+bn:অক্ষরের আকার মেলান
+cn:大小写匹配
+fa:با توجه به کوچکي و بزرگي حروف 
+fr:Respecter la casse
+ru:Учитывать размер
+gl:Coincidir maiúsculas e minúsculas
+es:Coincidir mayúsculas y minúsculas
+ar:مناسبة الخط
+uk:Розрізняти малу й велику літери
+eu:Hizki handiak edo txikiak bereizi
+gr:Αντιστοίχιση πεζών-κεφαλαίων
+hr:Razlikuj velika/mala slova
+tl:Ipantay ang Laki ng Titik
+va:Distinguir MAYÚSCULES i minúscules
+sn:Fananidza kesi
+-
+Open
+bg:Отвори
+br:Abrir
+hu:Megny&itás
+pl:Otwórz
+de:Ö&ffnen...
+fr:Ouvrir
+tr:&Aç
+by:Адчыніць
+ja:開く
+fa:گشودن
+dk:Åbn
+it:Apri
+nl:Openen
+ta:திற
+es:Abrir
+hr:Otvori
+ru:Открыть
+ar:فتح
+cn:打开
+sv:Öppna
+cz:Otevřít
+gr:Άνοιγμα
+th:เปิด
+pt:Abrir
+no:Åpne
+sk:Otvoriť
+vn:Mở tệp
+lt:Atverti
+my:Buka
+fi:Avaa
+ca:Obre
+si:Odpri
+sr-rs:Отвори
+tw:開啟
+ml:തുറക്കുക
+he:פתח
+sp-rs:Otvori
+id:Buka
+mk:Отвори
+ro:Deschide
+kr:열기
+bn:উন্মীলন
+gl:Abrir
+uk:Відкрити
+eu:Ireki
+tl:Buksan
+va:Obrir
+sn:Vhura
+-
+Zoom In
+bg:Увеличи
+br:Aumentar Zoom
+de:Reinzoomen
+hu:Nagyítás
+pl:Powiększ
+fr:Zoom avant
+tr:Yakınlaştır
+by:Павялічыць
+ja:拡大
+fa:بزرگ‌نمايي
+dk:Zoom ind
+it:Ingrandisci
+nl:Inzoomen
+ta:பெரிதாக்கு
+es:Acercar Zoom
+hr:Uvećaj
+ru:Увеличить
+ar:تكبير
+cn:放大
+sv:Zooma in
+cz:Zvětšení
+gr:Μεγένθυση
+th:ขยาย
+pt:Aproximar Zoom
+no:Forstørr
+sk:Zvačšiť
+vn:Phóng to
+lt:Priartinti
+my:Fokus ke dalam
+fi:Kohdenna lähemmäksi
+ca:Apropa't
+si:Povečaj
+sr-rs:Увећај
+tw:放大
+ml:വലുതാക്കുക
+he:זום פנימה
+sp-rs:Uvećaj
+id:Perbesar
+mk:Зголеми
+ro:Măreşte
+kr:확대
+bn:বৃহৎ বিবর্ধন
+gl:Achegar zoom
+uk:Збільшити
+eu:Zoom-a hurbildu
+tl:Palakihin
+va:Arrimar
+sn:Kudza
+-
+Zoom Out
+bg:Намали
+br:Diminuir Zoom
+de:Rauszoomen
+hu:Kicsinyítés
+pl:Pomniejsz
+fr:Zoom arrière
+tr:Uzaklaştır
+by:Паменьшыць
+ja:縮小
+fa:کوچک‌نمايي
+dk:Zoom ud
+it:Riduci
+nl:Uitzoomen
+ta:சிறிதாக்கு
+es:Alejar Zoom
+hr:Umanji
+ru:Уменьшить
+ar:تصغير
+cn:缩小
+sv:Zooma ut
+cz:Zmenšení
+gr:Σμίκρυνση
+th:ย่อ
+pt:Afastar Zoom
+no:Forminsk
+sk:Zmenšiť
+vn:Thu nhỏ
+lt:Sumažinti
+my:Fokus ke luar
+fi:Loitonna kauemmaksi
+ca:Allunya't
+si:Zmanjšaj
+sr-rs:Умањи
+tw:縮小
+ml:ചെറുതാക്കുക
+he:זום החוצה
+sp-rs:Umanji
+id:Perkecil
+mk:Намали
+ro:Micşorează
+kr:축소
+bn:ক্ষুদ্র বিবর্ধন
+gl:Afastar zoom
+uk:Зменшити
+eu:Zoom-a urruneratu
+tl:Paliitin
+va:Alluntar
+sn:Duputsa
+-
+About SumatraPDF
+bg:Относно SumatraPDF
+br:Sobre o SumatraPDF
+de:Über SumatraPDF
+hu:SumatraPDF névjegye
+pl:O programie
+fr:A propos de SumatraPDF
+tr:SumatraPDF hakkında
+by:Аб SumatraPDF
+ja:SumatraPDF のバージョン情報
+fa:SumatraPDF دربارۀ برنامۀ
+dk:Om SumatraPDF
+it:Informazioni su SumatraPDF
+nl:Over SumatraPDF
+ta:SumatraPDF பற்றி
+es:Acerca de SumatraPDF
+hr:O programu SumatraPDF
+ru:О программе SumatraPDF
+ar:SumatraPDF حول برنامج 
+cn:关于 SumatraPDF
+sv:Om SumatraPDF
+cz:O programu SumatraPDF
+gr:Για το πρόγραμμα SumatraPDF
+th:เกี่ยวกับ SumatraPDF
+pt:Acerca de SumatraPDF
+no:Om SumatraPDF
+sk:O programe SumatraPDF
+vn:Giới thiệu SumatraPDF
+lt:Apie SumatraPDF
+my:Mengenai SumatraPDF
+fi:Tietoja SumatraPDF:stä
+ca:Quant al SumatraPDF
+si:O SumatraPDF
+sr-rs:О програму SumatraPDF
+tw:關於 SumatraPDF
+ml:സുമാത്രാപിഡീഎഫിനെപ്പറ്റി
+he:אודות סומטרהPDF
+sp-rs:O programu SumatraPDF
+id:Tentang SumatraPDF
+mk:За SumatraPDF
+ro:Despre SumatraPDF
+kr:SumatraPDF 정보
+bn:সুমাত্রাপিডিএফ-এর সম্পর্কে
+gl:Arredor do SumatraPDF
+uk:Про програму SumatraPDF
+eu:SumatraPDF-taz
+tl:Tungkol sa SumatraPDF
+va:Al voltant de SumatraPDF
+sn:NezveSumatraPDF
+-
+SumatraPDF is now a default reader for PDF files.
+bg:SumatraPDF е четеца по подразбиране на PDF файлове.
+br:SumatraPDF tornou-se o leitor PDF padrão.
+de:SumatraPDF öffnet nun standardmäßig alle PDF-Dateien.
+hu:A SumatraPDF lett az alapértelmezett PDF olvasó.
+pl:SumatraPDF jest teraz domyślnym programem do obsługi plików PDF
+fr:SumatraPDF est maintenant le lecteur de fichiers PDF par défaut.
+tr:SumatraPDF varsayılan PDF okuyucusu olarak atandı.
+by:SumatraPDF зараз чытальнік PDF-файлаў па-змаўчанні.
+ja:SumatraPDF は現在 PDF ファイルの既定のリーダーです。
+fa:.شما خواهد بود PDF مرورگر پيش‌فرض اسناد  SumatraPDF از اين پس
+dk:SumatraPDF er nu din standardlæser for PDF filer.
+it:SumatraPDF è stato impostato come lettore predefinito per i file PDF.
+nl:SumatraPDF is nu de standaardlezer voor PDF-bestanden.
+ta:SumatraPDF இப்போது உங்கள் முன்னிருப்பு PDF படிப்பி
+es:SumatraPDF es ahora el lector PDF por defecto.
+hr:SumatraPDF je sada pretpostavljeni preglednik PDF datoteka.
+ru:Теперь PDF-файлы будут по умолчанию открываться с помощью SumatraPDF.
+ar:هذا البرنامج هو القارىء التلقائي لملفاتك الآن  
+cn:已将 SumatraPDF 设置为默认 PDF 阅读器
+sv:SumatraPDF är nu standardläsare för PDF-filer.
+cz:SumatraPDF je nyní nastaven jako defaultní čtečka PDF souborů.
+gr:Το SumatraPDF είναι τώρα το προεπιλεγμένο πρόγραμμα ανάγνωσης PDF
+th:ตอนนี้ SumatraPDF ได้ถูกตั้งให้เป็นโปรแกรมหลักสำหรับเปิดไฟล์ PDF
+pt:SumatraPDF é agora o leitor de PDF por defeito.
+no:SumatraPDF er nå standard PDF-leser.
+sk:SumatraPDF je teraz nastavený ako predvolený prehliadač PDF súborov.
+vn:SumatraPDF hiện giờ là trình đọc PDF mặc định.
+lt:SumatraPDF dabar yra numatytasis PDF dokumentų skaitytuvas
+my:SumatraPDF adalah pembaca utama fail PDF sekarang
+fi:SumatraPDF on nyt PDF-tiedostojen oletuslukija
+ca:Ara el SumatraPDF és el visor de PDF predeterminat.
+si:SumatraPFD je privzeti pregledovalnik PDF datotek.
+sr-rs:SumatraPDF је сада подразумевани читач PDF докумената
+tw:已經把 SumatraPDF 設為預設的PDF閱讀工具
+ml:സുമാത്രാപിഡീഎഫ് ആണ് ഇപ്പൊള്‍ നിങ്ങളു PDF ഫയല്‍ വായിക്കാനുള്ള മുഖ്യ പ്രോഗ്രാം
+sp-rs:SumatraPDF je sada podrazumevani čitač PDF dokumenata
+id:SumatraPDF sekarang menjadi pembaca-PDF utama.
+mk:Сега SumatraPDF е твојот основен читач на PDF документи.
+ro:SumatraPDF este acum cititorul implicit de fişiere PDF.
+kr:SumatraPDF를 기본 PDF 파일 뷰어로 지정합니다.
+bn:সুমাত্রাপিডিএফ এখন আপনার পিডিএফ সঞ্চিকাগুলির জন্য স্বাভাবিক পঠক
+gl:SumatraPDF é o lector PDF por defecto agora.
+uk:Тепер SumatraPDF є типовим переглядачем файлів PDF.
+eu:Sumatra orain berezko PDF irakur tresna bihurtu da.
+tl:SumatraPDF na ang Likas na Pangbasa sa mga Salansan ng PDF.
+va:SumatraPDF es ara el llector PDF per defecte.
+sn:SumatraPDF ndiyo yaakuvhura maPDF ese.
+-
+Failed to save a file
+bg:Грешка при записване на файла
+br:Erro ao salvar o arquivo.
+de:Fehler beim Speichern der Datei!
+hu:A fájl mentése sikertelen
+pl:Problem przy zapisywaniu pliku.
+fr:Echec d'enregistrement du fichier
+tr:Dosya kaydedilirken hata çıktı.
+by:Немагчыма захаваць файл
+ja:ファイルの保存に失敗しました
+fa:ذخيره کردن فايل با مشکل روبرو شد
+dk:Kunne ikke gemme filen.
+it:Salvataggio del file PDF fallito!
+nl:Fout bij opslaan bestand
+ta:கோப்பு சேமிப்பு தோற்பு
+es:Error al Guardar el Archivo
+hr:Spremanje datoteke nije uspjelo
+ru:Невозможно сохранить файл.
+ar:فشل حفظ الملف
+cn:保存文件失败
+sv:Kan inte spara filen.
+cz:Uložení souboru selhalo
+gr:Αποτυχία αποθήκευσης αρχείου
+th:การบันทึกไฟล์ล้มเหลว
+pt:Erro ao guardar arquivo.
+no:Kan ikke lagre filen.
+sk:Zlyhanie pri ukladaní súboru.
+vn:Không lưu được tệp.
+lt:Nepavyko išsaugoti failo
+my:Gagal menyimpan fail
+fi:Tiedoston tallennus epäonnistui
+ca:S'ha produït un error en desar el fitxer.
+si:Snemanje datoteke je neuspešno.
+sr-rs:Грешка при снимању PDF документа
+tw:檔案儲存失敗
+ml:ഫയല്‍ സുക്ഷിക്കാന്‍ സാധിച്ചില്ല
+sp-rs:Greška pri snimanju PDF dokumenta
+id:Gagal menyimpan berkas
+mk:Зачувување на PDF документот не успеа
+ro:Eroare la salvarea unui fişier
+kr:파일을 저장할 수 없습니다.
+bn:সঞ্চিকা সংরক্ষণে ব্যর্থ
+gl:Erro ao salvar o arquivo.
+uk:Не можна зберегти файл.
+eu:Fitxategia ezin izan da gorde
+tl:Nabigo na iligtas ang salansan
+va:Erro al Guardar l'Archiu
+sn:Tatadza kuseva faira
+-
+Error loading PDF file.
+bg:Грешка при зареждане на файла.
+br:Erro ao abrir o arquivo PDF.
+de:Fehler beim Öffnen der Datei!
+hu:Hiba a PDF betöltése közben.
+pl:Problem przy otwarzaniu pliku.
+fr:Erreur à l'ouverture du fichier PDF.
+tr:Dosya yüklenirken hata çıktı.
+by:Памылка пры адчыненні файла.
+ja:PDF ファイルの読み込みエラーです。
+fa:گشودن فايل با مشکل مواجه شد
+dk:Fejl ved åbning af PDF-fil
+it:Errore durante l'apertura del file PDF.
+nl:Fout bij laden PDF bestand.
+ta:PDF கோப்பு ஏற்று பிழை
+es:Error al Cargar el Archivo PDF.
+hr:Greška kod učitavanja PDF datoteke.
+ru:Невозможно загрузить PDF-файл.
+ar:هناك خطأ في تشغيل الملف
+cn:载入 PDF 文件时发生错误
+sv:Kan inte öppna PDF-filen.
+cz:Chyba při načítání PDF souboru.
+gr:Σφάλμα κατά τη φόρτωση του αρχείου
+th:การเปิดไฟล์ผิดพลาด
+pt:Erro a carregar ficheiro PDF.
+no:Feil ved åpning av PDF-fil.
+sk:Chyba pri pokuse načítať PDF súbor.
+vn:Lỗi nạp tệp PDF.
+lt:Klaida įkeliant PDF dokumentą
+my:Masalah memuatkan fail PDF
+fi:Tiedoston avaus epäonnistui
+ca:S'ha produït un error en carregar el fitxer.
+si:Napaka pri branju PDF datoteke.
+sr-rs:Грешка при учитавању PDF документа
+tw:讀取PDF檔案時發失錯誤
+ml:PDF ഫയല്‍ തുറക്കാന്‍ സാധിച്ചില്ല
+sp-rs:Greška pri učitavanju PDF dokumenta
+id:Kesalahan dalam memanggil berkas PDF.
+mk:Грешка при вчитување на PDF документот.
+ro:Erroare la încărcarea unui fişier PDF.
+kr:PDF 파일 읽을 수 없습니다.
+bn:পিডিএফ সঞ্চিকা ভরণে ত্রুটি
+gl:Erro ao abrir o arquivo PDF.
+uk:Помилка відкриття документу.
+eu:PDF fitxategia kargargatzerakoan errorea suertatu da
+tl:Nagkamali sa Paglulan ng Salansan na PDF
+va:Erro al Carregar l'Archiu PDF.
+sn:Tatadza kulodha faira rePDF
+-
+Could not open Printer
+bg:Принтера не е достъпен
+br:Erro ao acessar a impressora.
+de:Konnte den Drucker nicht ansprechen.
+hu:Nem lehet megnyitni a nyomtatót.
+pl:Drukarka niedostępna.
+fr:Impossible d'accéder à l'imprimante
+tr:Yazıcıya erişilemiyor.
+by:Немагчыма адчыніць друкарку
+ja:プリンタを開けませんでした
+fa:برنامه قادر به يافتن چاپگر نيست
+dk:Kunne ikke åbne printeren
+it:Stampante non accessibile
+nl:Printer niet gevonden
+ta:அச்சுப்பொறியை திறக்க முடியவில்லை
+es:Impresora no accesible
+hr:Nije moguće otvoriti pisač
+ru:Невозможно найти принтер.
+ar:تعذر فتح الطابعة
+cn:无法打开打印机
+sv:Kan inte anropa skrivaren.
+cz:Není možné otevřít tiskárnu
+gr:Δε μπορεί να ανοίξει ο εκτυπωτής
+th:ไม่สามารถเปิดเครื่องพิมพ์ได้
+pt:Não foi possivel abrir a impressora.
+no:Kan ikke finne skriveren.
+sk:Nie je možné otvoriť tlačiareň.
+vn:Không mở được máy in.
+lt:Nepavyko atverti spausdintuvo
+my:Pencetak tidak dapat dibuka
+fi:Tulostinta ei löydy
+ca:No s'ha pogut accedir a la impressora.
+si:Ne morem najti tiskalnika.
+sr-rs:Штампач није пронађен
+tw:無法開啟印表機
+ml:അച്ചടിയന്ത്രം തുറക്കാന്‍ സാധിച്ചില്ല
+sp-rs:Štampač nije pronađen
+id:Tidak dapat membuka printer
+mk:Пристапот до печатачот не е можен
+ro:Imprimantă inaccesibilă
+kr:프린터를 열 수 없습니다.
+bn:মুদ্রক কার্যকরী করা যাচ্ছে না
+gl:Erro ao aceder á impressora.
+uk:Принтер недоступний.
+eu:Ezin da inprimagailua ireki
+tl:Hindi Mabuksan ang Panglimbag
+va:No s'ha pogut obrir l'impressora.
+sn:Tatadza kuvhura Printer
+-
+Printing problem.
+bg:Проблем при печатане.
+br:Problema de impressão.
+de:Druckerproblem
+hu:Nyomtatási probléma.
+pl:Problem z drukowaniem.
+fr:Problème d'impression.
+tr:Yazdırma problemi.
+by:Памылка з друкаваннем.
+dk:Printer problem
+ta:அச்சுப்பொறி சிக்கல்
+nl:Probleem bij het afdrukken.
+ja:印刷の問題です。
+fa:مشکل در چاپ
+it:Problema di stampa.
+es:Error de impresión.
+hr:Problem kod ispisivanja.
+ru:Ошибка при печати.
+ar:يوجد مشكلة في الطباعة
+cn:打印问题。
+sv:Utskriftsproblem.
+cz:Problém s tiskem
+gr:Πρόβλημα εκτύπωσης
+th:การพิมพ์เกิดปัญหา
+pt:Problema de impressão.
+no:Problem med utskrift.
+sk:Problém pri tlači.
+vn:Lỗi in.
+lt:Spausdinimo klaida
+my:Masalah mencetak
+fi:Tulostusongelma
+ca:S'ha produït un problema en la impressió.
+si:Napaka pri tiskanju.
+sr-rs:Проблем при штампању
+tw:列印問題
+ml:അച്ചടിയില് തകരാര്‍
+sp-rs:Problem pri štampanju
+id:Masalahan Pencetakkan.
+mk:Проблем при печатење.
+ro:Problemă la imprimare.
+kr:인쇄를 할 수 없습니다.
+bn:মুদ্রণ করতে সমস্যা হয়েছে
+gl:Problema de impresión.
+uk:Помилка друкування.
+eu:Arazoak inprimatze lanetan
+tl:Suliranin sa Paglilimbag.
+va:Erro d'impressió.
+sn:Dambudziko pakuprinta
+-
+Contribute translation
+bg:Допринеси за превода
+hu:&Járulj hozzá a fordításhoz
+de:Übersetzung beisteuern
+fr:Contribuer à la traduction
+tr:Çeviriye katkıda bulunun.
+pl:Pomóż przy translacji
+ja:翻訳の提供
+it:Contribuisci alla traduzione
+nl:Help met vertalen
+hr:Pomozi prijevodom ovog programa
+ru:Помочь с переводом
+ar:ساهم في ترجمة البرنامج 
+cn:提供翻译
+sv:Bidra med översättning
+cz:Zašli překlad
+gr:Βοήθησε στη μετάφραση
+th:ร่วมช่วยเหลือในการแปลภาษา
+pt:Contribuir na tradução.
+no:Bidra med oversetting
+sk:Prispieť k prekladu programu
+vn:Đóng góp dịch thuật
+lt:Pasiklydę vertime
+my:Menyumbangkan alihbahasa
+ca:Contribuïu en la traducció
+si:Prispevaj prevod
+sr-rs:Помози у превођењу овог програма
+tw:翻譯提供
+fa:در ترجمۀ اين برنامه کمک کنيد
+ml:മാക്സിന്‍ ബി ജൊണ്‍
+he:עזור לתרגם
+sp-rs:Pomozi u prevođenju ovog programa
+id:Membantu alihbahasa
+mk:Учествувај во преведувањето на оваа апликација
+ro:Contribuie la traducere
+kr:번역 제공
+bn:অনুবাদ প্রদান করুন
+gl:Contribuir na traducción
+es:Contribuir en la traducción
+uk:Допоможіть перекласти
+eu:Lagun gaitzazu itzulpenekin
+tl:Mag-ambag sa Pagsasaling-wika
+va:Contribuir en la traducció
+sn:Batsira kuturikira
+-
+Set inverse search command-line
+bg:Активирай обратно търсене
+br:Configurar pesquisa inversa
+de:Befehlszeile Inverssuche setzen
+fr:Configurer la recherche inverse
+sk:Nastaviť inverzné vyhľadávanie
+vn:Đặt dòng lệnh tìm kiếm ngược
+uk:Установити зворотній пошук.
+ru:Задать команду обратного поиска
+es:Establecer búsqueda inversa
+fa:تنظیم وارانه جستجو
+hr:Omogući inverznu pretragu
+nl:Omgekeerde zoekrichting instellen
+eu:Alderantzizko bilaketa ezarri
+mk:Активирај инверзно пребарување
+ja:逆検索コマンドラインの設定
+th:ตั้งค่าตรงกันข้ามในการค้นหาในโหมด command-line
+gl:Establecer procura inversa
+tl:Iayos ang Utos-Linya ng Tiwarik na Paghahanap
+va:Establir busca inversa
+ca:Cerca cap enrere
+bn:সমাদেশ-পংক্তিতে বিলোম অনুসন্ধান নির্ধারণ করুন
+it:Imposta comando di ricerca inversa
+-
+Change language
+bg:Смени езика (Change language)
+br:Mudar o idioma (Change language)
+de:Sprache ändern (Change language)
+pl:Zmien język (Change language)
+sk:Zmeniť jazyk (Change language)
+vn:Đổi ngôn ngữ (Change language)
+uk:Змінити мову (Change language)
+ru:Изменить язык (Change language)
+es:Cambiar Idioma (Change language)
+hr:Promijeni jezik (Change language)
+it:Cambia lingua (Change language)
+nl:Taal kiezen (Change language)
+fr:Changer la langue (Change language)
+eu:Hizkuntza aldatu (Change language)
+fa:تغییر زبان (Change language)
+mk:Смени јазик (Change language)
+hu:Nyelv kiválasztása (Change language)
+ja:言語の変更 (Change language)
+th:เปลี่ยนภาษา (Change language)
+gl: Cambiar lingua (Change language)
+tl:Ibahin ang Wika (Change language)
+va:Canviar Idioma (Change language)
+ca:Canvia la llengua (Changue language)
+sn:Chinja mutauro (Change language)
+bn:ভাষা পরিবর্তন (Change language)
+-
+Enter password
+bg:Въведете парола
+br:Digite a senha
+de:Bitte Passwort eingeben
+sk:Zadať heslo
+vn:Nhập mật khẩu
+uk:Введіть пароль
+ru:Введите пароль
+es:Introduzca contraseña
+hr:Unesite lozinku
+it:Inserisci password
+nl:Wachtwoord invoeren
+fr:Entrer le mot de passe
+eu:Pasahitza sartu
+mk:Внеси лозинка
+fa:اسم رمز را وارد کنید
+hu:Írja be a jelszót
+ja:パスワードの入力
+th:ป้อนรหัสผ่าน
+gl:Introduza o contrasinal
+tl:Ipasok ang Sikretong Salita
+va:Posar contrasenya
+ca:Introduiu la contrasenya
+sn:Isa password
+bn:শব্দকূট প্রবেশ করুন
+-
+Enter password for %s
+bg:Въведете парола за %s
+br:Digite a senha de %s
+de:Bitte Passwort für %s eingeben
+sk:Zadať heslo pre %s
+vn:Nhật mật khẩu cho %s
+uk:Введіть пароль для %s
+ru:Введите пароль для %s
+es:Introduzca contraseña para %s
+hr:Unesite lozinku za %s
+fa:%s اسم رمز را وارد کنید برای
+it:Inserisci password per %s
+nl:Wachtwoord invoeren voor %s
+fr:Entrer le mot de passe pour %s
+eu:%s-rentzat pasahitza sartu
+mk:Внеси лозинка за %s
+hu:Írja be a(z) %s jelszavát
+ja:%s のパスワードを入力します
+th:ป้อนรหัสผ่านสำหรับ %s
+gl:Introduza contrasinal para %s
+tl:Ipasok ang Sikretong Salita para kay %s
+va:Posar contrasenya per a %s
+ca:Introduiu la constrasenya per a %s
+sn:Isa password ya %s
+bn:%s-এর জন্য শব্দকূট প্রবেশ করুন
+-
+Go to page
+bg:Към страница
+br:Ir para a página
+de:Gehe zu Seite
+sk:Ísť na stranu
+vn:Nhảy đến trang
+uk:Перейти на сторінку
+ru:Перейти на страницу
+es:Ir a la página
+hr:Idi na stranicu
+it:Vai a pagina
+nl:Ga naar pagina
+fr:Aller à la page
+eu:...garren orrira joan
+mk:Појди на страница
+fa:برو به صفحه
+hu:Ugrás adott oldalra
+ja:ページへ移動
+th:ไปที่หน้า
+gl:Ir a páxina
+tl:Pumunta sa Pahina
+va:Anar a la pàgina
+ca:Vés a la pàgina
+sn:Enda kupeji
+bn:এর পৃষ্ঠায় চলুন
+-
+Associate with PDF files?
+bg:Асоцииране с PDF файлове?
+br:Associar arquivos PDF?
+de:Mit PDF-Dateien verknüpfen?
+sk:Asociovať s PDF súbormi?
+vn:Liên kết với file PDF?
+uk:Асоціювати з PDF-файлами?
+ru:Ассоциировать с PDF-файлами?
+es:¿Asociar con archivos PDF?
+hr:Asocirati sa PDF datotekama?
+it:Associare ai file PDF?
+fa:قرار بدهیم ؟ PDF ایا این برنامه را نمایشگر همیشگی فایل های
+nl:Associëren met PDF-bestanden?
+fr:Associer aux fichiers PDF ?
+eu:PDF fitxategiekin lotu?
+mk:Да управувам со PDF датотеки?
+hu:Társítsuk a PDF fájlokkal?
+ja:PDF ファイルと関連付けますか?
+th:เชื่อมกับไฟล์ PDF
+gl:Asociar con arquivos PDF?
+tl:Isanib sa Salansan na PDF?
+va:¿Associar en archius PDF?
+ca:Voleu associar-lo amb els fitxers PDF?
+sn:Ita zvifambidzane ne PDF
+bn:পিডিএফ সঞ্চিকার সাথে সম্বন্ধ করা হবে?
+-
+Make SumatraPDF default application for PDF files?
+bg:Направи SumatraPDF основно приложение за PDF файлове?
+br:Fazer do SumatraPDF o programa padrão para arquivos PDF?
+de:SumatraPDF als Standardanwendung für PDF-Dateien registrieren?
+sk:Nastaviť SumatraPDF ako predvolený prehliadač PDF súborov?
+vn:Đặt SumatraPDF làm trình đọc PDF mặc định?
+uk:Зробити SumatraPDF типовою програмою для PDF-файлів?
+ru:Сделать SumatraPDF стандартной программой открытия PDF-файлов?
+es:¿Convertir SumatraPDF en la aplicación por defecto para archivos PDF?
+hr:Učiniti SumatruPDF pretpostavljenim preglednikom PDF datoteka?
+it:Impostare SumatraPDF come programma predefinito per i file PDF? 
+nl:SumatraPDF als standaardlezer van PDF-bestanden instellen?
+fr:Faire de SumatraPDF l’application par défaut pour les fichiers PDF ?
+eu:PDF fitxategiak irakurtzeko SumatraPFD defektuzko aplikazioa izatea nahi al duzu?
+mk:Дали да ја направам SumatraPDF основна апликација за PDF датотеки?
+fa:قرار بدهیم ؟ PDF ایا این برنامه را مجری استاندارد فایل های
+hu:Legyen a SumatraPDF az alapértelmezett PDF-megnyitó program?
+ja:SumatraPDF を PDF ファイルの既定のアプリケーションにしますか?
+th:ตั้ง SumatraPDF เป็นโปรแกรมมาตรฐานสำหรับเปิดไฟล์ PDF
+gl:Facer o SumatraPDF a aplicación por defecto para arquivos PDF?
+tl:Gawin SumatraPDF ang Likas na Pambasa ng mga Salansan na PDF?
+va:¿Convertir SumatraPDF en l'aplicació per defecte per archius PDF?
+ca:Voleu que el SumatraPDF sigui el visor predeterminat de fitxers PDF?
+bn:সুমাত্রাপিডিএফ কে পিডিএফ সঞ্চিকাগুলির জন্য স্বাভাবিক অনুপ্রয়োগ রূপে নির্ধারণ করা হবে?
+-
+Don't ask me again
+bg:Не питай отново
+br:Não perguntar novamente
+de:Nicht wieder fragen
+sk:Nepýtať sa znova
+vn:Không hỏi lại
+uk:Не питати знову
+ru:Больше не спрашивать
+es:No volver a preguntar
+hr:Ubuduće nemoj pitati
+it:Non chiedermelo ancora
+nl:Niet meer vragen
+fr:Ne plus le demander
+no:Ikke spør meg igjen.
+eu:Ez berriz galdetu
+mk:Не ме прашувај повторно
+fa:این پاسخ را به یاد بسپار و دوباره از من نپرس
+hu:Ne kérdezze meg többé
+ja:再び質問しない
+th:ไม่ต้องถามอีกครั้ง
+gl:Non preguntar de novo
+tl:Huwag na ako muling tanungin
+va:No tornar a preguntar
+ca:No ho tornis a preguntar
+sn:Usandivhunze futi
+bn:আমাকে পুনরায় জিজ্ঞাসা করা হবে না
+-
+&Check for new version
+bg:Проверка за нова версия
+br:Procurar atualizações
+de:Nach neuer Version suchen
+sk:Skontrolovať novú verziu
+vn:Kiểm tra có phiên bản mới
+uk:Перевірити, чи є нова версія
+ru:Проверить наличие новой версии
+es:Comprobar actualizaciones
+hr:Provjeravaj dostupnost nove inačice
+it:V&erifica aggiornamenti
+nl:&Controleren op updates
+fr:Vérifier les mises à jour
+no:Se etter oppdatering
+eu:Bertsio berriagorik ba ote den begiratu
+mk:&Провери за нова верзија
+fa:چک کردن نسخه تازه تر
+hu:Újabb &verzió keresése
+ja:新しいバージョンのチェック(&C)
+th:&ตรวจสำหรับสอบเวอร์ชั่นใหม่
+gl:&Comprobar nova versión
+tl:Siyasatin kung may bago na bersyon
+va:&Comprovar actualisacions
+ca:&Comprova si hi ha una versió nova
+sn:&Tsvaga version idzva
+bn:নতুন সংস্করণের জন্য নিরীক্ষা করুন
+-
+No new version available.
+bg:Няма нова версия.
+br:Nenhuma atualização foi encontrada.
+de:Keine neuere Version vorhanden.
+sk:Nie je k dispozícia nová verzia.
+vn:Không có phiên bản mới.
+uk:Новішої версії немає.
+ru:Обновлений не обнаружено.
+es:No hay nuevas versiones.
+hr:Nema nove inačice.
+it:Nessun aggiornamento disponibile
+nl:Geen nieuwe versie beschikbaar.
+fr:Pas de nouvelle version disponible
+no:Ingen ny versjon tilgjenglig.
+eu:Ez dago bertsio berririk.
+mk:Нема понова верзија.
+fa: نسخه تازه دردسترس نمی باشد
+hu:Nincs újabb verzió.
+ja:新しいバージョンが利用できません。
+th:ไม่มีเวอร์ชั่นใหม่
+gl:Non hai nova versión dispoñible
+tl:Walang bago na bersyon na makukuha.
+va:No hi han noves versions.
+ca:No hi ha cap versió nova.
+sn:Hapana version idzva.
+bn:নতুন সংস্করণ অনুপলব্ধ
+-
+You have the latest version.
+bg:Имате последната версия.
+br:Esta é a versão mais recente.
+de:Sie haben die neuste Version installiert.
+sk:Používate najnovšiu verziu.
+vn:Bạn đang dùng phiên bản mới nhất.
+uk:Ви вже маєте найновішу версію.
+ru:Вы используете самую новую версию.
+es:Su versión es la más reciente.
+hr:Imate najnoviju inačicu.
+it:Hai già l'ultima versione disponibile
+nl:U gebruikt de meest recente versie.
+fr:Vous avez la dernière version sortie
+no:Du har den nyeste versjonen.
+eu:Azkeneko bertsioa da daukazuna.
+mk:Ја имаш најновата верзија.
+fa:نسخۀ شما تازه ترین نسخه می باشد
+hu:Önnél a legfrissebb verzió van telepítve.
+ja:最新のバージョンです。
+th:โปรแกรมของคุณเป็นเวอร์ชั่นล่าสุดอยู่แล้ว
+gl:Ten vostede a última versión
+tl:Nasa iyo na ang bagong bersyon.
+va:Està es l'última versió.
+ca:Teniu la darrera versió.
+sn:Pane version idzva.
+bn:আপনার এই সংস্করণটি সর্বাধুনিক।
+-
+You have version %s
+bg:Вашата версия е %s
+br:Você tem a versão %s
+de:Sie haben Version %s
+sk:Používate verziu %s
+vn:Bạn đang dùng phiên bản %s
+uk:Ви використовуєте версію %s
+ru:Вы используете версию %s
+es:Tiene la versión %s
+hr:Imate inačicu %s
+it:La tua versione è la %s
+nl:U heeft versie %s
+fr:Votre version est la %s
+no:Du har versjon %s
+eu:%s bertsioa daukazu.
+mk:Ја имаш верзијата %s
+fa:شماره نسخه شما %s
+hu:Jelenlegi verzió: %s
+ja:バージョン %s です
+th:ของคุณเป็นเวอร์ชั่น
+gl:A súa versión é %s
+tl:Ang bersyon na nsa iyo ay %s
+va:Te la versió %s
+ca:Teniu la versió %s
+sn:Pane version %s
+bn:আপনার সংস্করণটি হল %s
+-
+New version %s is available. Download new version?
+bg:Достъпна е нова версия %s. Искате ли да я свалите?
+br:A versão %s está disponível. Baixar a nova versão?
+de:Es ist eine neue Version vorhanden. Möchten Sie diese laden?
+sk:Nová verzia %s je dispozícii. Stiahnuť novú verziu?
+vn:Đã có phiên bản mới %s. Download phiên bản mới?
+uk:Нова версія %s є доступною. Завантажити нову версію?
+ru:Доступна новая версия: %s. Хотите её загрузить?
+es:La nueva versión %s está disponible. ¿Desea descargarla?
+hr:Dostupna je nova inačica: %s. Skinuti novu inačicu?
+it:È disponibile la versione %s. Scaricare la nuova versione?
+nl:Nieuwe versie %s is beschikbaar. Wilt u deze downloaden?
+fr:La version %s est disponible. Télécharger la nouvelle version ?
+no:Ny versjon %s er tilgjenglig. Vil du laste ned ny versjon?
+eu:%s bertsio berria eskuragarri dago. Jeisterik nahi?
+mk:Новата верзија %s е достапна. Сакаш да ја преземеш?
+fa:نسخۀ تازه تری پیدا شده است ، ایا می خواهید آنرا پیاده کنید ؟
+hu:Új verzió érhető el (%s). Kívánja letölteni?
+ja:新しいバージョン %s は利用可能です。新しいバージョンをダウンロードしますか?
+th:เวอร์ชั่นใหม่ %s ออกแล้ว ต้องการดาวน์โหลดหรือไม่
+gl:A nova versión %s está dispoñible. ¿Desexa obtela?
+tl:May bagong bersyon %s. Kukuhanin ang bagong bersyon?
+va:Una nova versió %s está disponible. ¿Vols descarregar-la?
+ca:Hi ha disponible una versió nova. Voleu descarregar-la?
+sn:Version %s ririkuwanika. Unoda here version idzva?
+bn:নতুন সংস্করণ %s উপলব্ধ হয়েছে। নতুন সংস্করণ অধঃভরণ করা হবে?
+-
+New version available.
+bg:Има нова версия.
+br:Uma versão nova está disponível.
+de:Neuere Version vorhanden.
+sk:Je k dispozícia nová verzia.
+vn:Đã có phiên bản mới.
+uk:Доступна нова версія.
+ru:Доступна новая версия.
+es:Nueva versión disponible
+hr:Dostupna je nova inačica.
+it:È disponibile una nuova versione. 
+nl:Nieuwe versie beschikbaar.
+fr:Une nouvelle version est disponible
+no:Ny versjon tilgjenglig.
+eu:Bertsio berria eskuragarri duzu.
+mk:Достапна е нова верзија.
+fa:نسخه تازه یافت شده
+hu:Új verzió érhető el.
+ja:新しいバージョンが利用可能です。
+th:เวอร์ชั่นใหม่ออกแล้ว
+gl:Nova versión dispoñible
+tl:May bagong bersyon.
+va:Nova versió disponible.
+ca:Hi ha una versió nova.
+sn:Version idzva ririkuwanika
+bn:নতুন সংস্করণ উপলব্ধ হয়েছে।
+-
+Skip this version
+bg:Пропусни тази версия.
+br:Pular esta versão.
+de:Diese Version überspringen.
+sk:Preskočiť túto verziu.
+vn:Bỏ qua phiên bản này.
+uk:Пропустити цю версію.
+ru:Пропустить эту версию.
+es:Saltarse esta versión.
+hr:Propusti ovu inačicu.
+it:Salta questa versione
+nl:Deze versie overslaan
+fr:Ignorer cette version
+eu:Bertsio berria saihestu
+mk:Прескокни ја оваа верзија
+fa:از این نسخه چشم پوشی کن
+hu:Verzió kihagyása
+ja:このバージョンをスキップ
+th:ช้ามเวอร์ชั่นนี้ไป
+gl:Ignorar esta versión
+tl:Laktawan ang bersyon na ito
+va:Botar-se esta versió.
+ca:Omet aquesta versió
+sn:Siyana neversion irori.
+bn:এই সংস্করণটি পরিহার করুন
+-
+Enable auto-update
+bg:Включи автоматичното обновяване
+de:Automatisches Update aktivieren
+fr:Activer la mise-à-jour automatique
+nl:Updates automatisch downloaden
+mk:Овозможи автоматско ажурирање
+ru:Включить автообновление
+tl:Paubrahin ang kusang pagtataas-petsa
+va:Activar l'actualisació automàtica
+ca:Actualitza automàticament
+sn:Rega iite auto-update
+bn:স্বয়ংক্রিয় আধুনিকীকরণ সক্রিয় করুন
+fa:به روز رسانی اتوماتیک
+it:Aggiornamento automatico
