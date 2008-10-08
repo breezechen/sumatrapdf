@@ -1,0 +1,53 @@
+#summary DDE commands for SumatraPDF
+
+= DDE message format: =
+
+The format of a single DDE command is:
+{{{
+[Command(parameter1, parameter2, ..., )]
+}}}
+
+Multiple commands are separated with a semicolon as follows:
+{{{
+[Command1(parameter1, parameter2, ..., );Command2(...); ...]
+}}}
+
+= List of recognized commands =
+
+* Open file command
+  * Format:
+  {{{
+  [Open("<pdffilepath>"[,<newwindow>,<setfocus>,<forcerefresh>])]
+  }}}
+  * Arguments:
+    * if newwindow = 1 then a new window is created even if the file is already open
+    * if focus = 1 then the focus is set to the window
+  * Eg:
+   {{{
+   [Open("c:\file.pdf", 1, 1)]
+   }}}
+
+
+* Forward-search command
+  * Format:
+  {{{
+  [ForwardSearch("<pdffilepath>","<sourcefilepath>",<line>,<column>[,<newwindow>,<setfocus>])]
+  }}}
+  * Arguments:
+    * if newwindow = 1 then a new window is created even if the file is already open
+    * if focus = 1 then the focus is set to the window
+  * Eg:
+  {{{
+   [ForwardSearch("c:\file.pdf","c:\folder\source.tex",298,0)]
+  }}}
+
+* Jump to named destination command
+  * Format:
+  {{{
+  [GoToNamedDest("<pdffilepath>","<destination name>")]
+  }}}
+  * Eg:
+  {{{
+  [GoToNamedDest("c:\file.pdf", "chapter.1")]
+  }}}
+  * Note: the pdf file must be already opened.
