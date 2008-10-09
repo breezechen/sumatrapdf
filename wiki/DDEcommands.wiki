@@ -10,7 +10,7 @@ The format of a single DDE command is:
 
 Multiple commands can be concatenated as follows:
 {{{
-[Command1(parameter1, parameter2, ..., )Command2(...) ...]
+[Command1(parameter1, parameter2, ..., )][Command2(...) ...]
 }}}
 
 = List of recognized commands =
