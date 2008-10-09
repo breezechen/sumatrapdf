@@ -58,23 +58,21 @@ the Open example needs the forcerefresh parameter, it's either no parameters or 
 
 = Configuring DDE-synchronization with TeX editors =
 
-  * TeXnicCenter
-  The following configuration has been reported to work:
+* TeXnicCenter:
+  * Path of executable:
+  {{{
+  C:\Program Files\TeXnicCenter\SumatraPDF.exe -reuse-instance -inverse-search "\"C:\Program Files\TeXnicCenter\TEXCNTR.EXE\" /ddecmd \"[goto('%f', '%l')]\""
+  }}}
 
-    * Path of executable:
-    {{{
-    C:\Program Files\TeXnicCenter\SumatraPDF.exe -reuse-instance -inverse-search "\"C:\Program Files\TeXnicCenter\TEXCNTR.EXE\" /ddecmd \"[goto('%f', '%l')]\""
-    }}}
+  * View project's output:
+  DDE command: {{{[Open("%bm.pdf",0,1,1)]}}}
+  Server: {{{SUMATRA}}}
+  Topic: {{{control}}}
 
-    * View project's output:
-    DDE command: [Open("%bm.pdf",0,1,1)]
-    Server: SUMATRA
-    Topic: control
+  * Forward Search:
+  DDE command: {{{[ForwardSearch("%sbm.pdf","%Wc",%l,0)]}}}
+  Server: {{{SUMATRA}}}
+  Topic: {{{control}}}
 
-    * Forward Search:
-    DDE command: [ForwardSearch("%sbm.pdf","%Wc",%l,0)]
-    Server: SUMATRA
-    Topic: control
-
-    * Close document before running (La)TeX:
-    Do not close
+  * Close document before running (La)TeX:
+  Do not close
