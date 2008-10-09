@@ -58,7 +58,7 @@ the Open example needs the forcerefresh parameter, it's either no parameters or 
 
 = Configuring DDE-synchronization with TeX editors =
 
-* TeXnicCenter:
+==TeXnicCenter==
   * Path of executable:
   {{{
   C:\Program Files\TeXnicCenter\SumatraPDF.exe -reuse-instance -inverse-search "\"C:\Program Files\TeXnicCenter\TEXCNTR.EXE\" /ddecmd \"[goto('%f', '%l')]\""
@@ -76,3 +76,11 @@ the Open example needs the forcerefresh parameter, it's either no parameters or 
 
   * Close document before running (La)TeX:
   Do not close
+
+==WinEdt==
+
+TODO: see posts and comments at http://william.famille-blum.org/blog/comments.php?y=08&m=05&entry=entry080515-065447
+
+==Emacs==
+
+TODO: see posts and comments at http://william.famille-blum.org/blog/comments.php?y=08&m=05&entry=entry080515-065447
