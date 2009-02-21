@@ -60,7 +60,7 @@ Multiple commands can be concatenated as follows:
 ==TeXnicCenter==
   * Path of executable:
   {{{
-  C:\Program Files\TeXnicCenter\SumatraPDF.exe -reuse-instance -inverse-search "\"C:\Program Files\TeXnicCenter\TEXCNTR.EXE\" /ddecmd \"[goto('%f', '%l')]\""
+  C:\Program Files\SumatraPDF\SumatraPDF.exe -reuse-instance -inverse-search "\"C:\Program Files\TeXnicCenter\TEXCNTR.EXE\" /ddecmd \"[goto('%f', '%l')]\""
   }}}
 
   * View project's output:
@@ -72,6 +72,8 @@ Multiple commands can be concatenated as follows:
   DDE command: {{{[ForwardSearch("%sbm.pdf","%Wc",%l,0)]}}}
   Server: {{{SUMATRA}}}
   Topic: {{{control}}}
+
+  (Some people reported better results when using %sbm instead of %bm in the above command.)
 
   * Close document before running (La)TeX:
   Do not close
