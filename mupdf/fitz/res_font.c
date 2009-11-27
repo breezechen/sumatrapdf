@@ -25,6 +25,7 @@ fz_newfont(void)
 
 	font->t3matrix = fz_identity();
 	font->t3procs = nil;
+	font->t3widths = nil; /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690959 */
 
 	font->bbox.x0 = 0;
 	font->bbox.y0 = 0;
@@ -54,6 +55,11 @@ fz_dropfont(fz_font *font)
 			for (i = 0; i < 256; i++)
 				if (font->t3procs[i])
 					fz_droptree(font->t3procs[i]);
+			{ /* HACK: make sure the static pixmap is freed through a dummy call */
+                fz_glyph glyph; fz_matrix tmr = { 0 };
+				font->t3procs[0] = nil;
+				fz_rendert3glyph(&glyph, font, 0, tmr);
+			}
 			fz_free(font->t3procs);
 		}
 
@@ -64,6 +70,10 @@ fz_dropfont(fz_font *font)
 				fz_warn("freetype finalizing face: %s", ft_errorstring(fterr));
 			fz_finalizefreetype();
 		}
+
+		/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690959 */
+		if (font->t3widths)
+			fz_free(font->t3widths);
 
 		fz_free(font);
 	}

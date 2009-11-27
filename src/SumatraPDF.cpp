@@ -1,5 +1,5 @@
 /* Copyright Krzysztof Kowalczyk 2006-2009
-   License: GPLv2 */
+   License: GPLv3 */
 
 #include "SumatraPDF.h"
 
@@ -246,10 +246,10 @@ static bool LoadPdfIntoWindow(const TCHAR *fileName, WindowInfo *win,
     bool showWin, bool placeWindow);
 static void WindowInfo_ShowMessage_Asynch(WindowInfo *win, const TCHAR *message, bool resize);
 
-void Find(HWND hwnd, WindowInfo *win, PdfSearchDirection direction = FIND_FORWARD);
+static void Find(HWND hwnd, WindowInfo *win, PdfSearchDirection direction = FIND_FORWARD);
 static void ClearSearch(WindowInfo *win);
-void WindowInfo_EnterFullscreen(WindowInfo *win);
-void WindowInfo_ExitFullscreen(WindowInfo *win);
+static void WindowInfo_EnterFullscreen(WindowInfo *win);
+static void WindowInfo_ExitFullscreen(WindowInfo *win);
 static bool GetAcrobatPath(TCHAR * buffer=NULL, int bufSize=0);
 
 #define SEP_ITEM "-----"
@@ -973,11 +973,11 @@ static void MenuUpdateDisplayMode(WindowInfo *win)
 
     UINT id = 0;
     switch (displayMode) {
-    case DM_SINGLE_PAGE: id = IDM_VIEW_SINGLE_PAGE; break;
-    case DM_FACING: id = IDM_VIEW_FACING; break;
-    case DM_CONTINUOUS: id = IDM_VIEW_CONTINUOUS; break;
-    case DM_CONTINUOUS_FACING: id = IDM_VIEW_CONTINUOUS_FACING; break;
-    default: assert(!win->dm && DM_AUTOMATIC == displayMode); break;
+        case DM_SINGLE_PAGE: id = IDM_VIEW_SINGLE_PAGE; break;
+        case DM_FACING: id = IDM_VIEW_FACING; break;
+        case DM_CONTINUOUS: id = IDM_VIEW_CONTINUOUS; break;
+        case DM_CONTINUOUS_FACING: id = IDM_VIEW_CONTINUOUS_FACING; break;
+        default: assert(!win->dm && DM_AUTOMATIC == displayMode); break;
     }
 
     if (id)
@@ -1508,13 +1508,14 @@ static void WindowInfo_Refresh(WindowInfo* win, bool autorefresh) {
                     : IsZoomed(win->hwndFrame) ? WIN_STATE_MAXIMIZED 
                     : IsIconic(win->hwndFrame) ? WIN_STATE_MINIMIZED
                     : WIN_STATE_NORMAL ;
-    LoadPdfIntoWindow(win->watcher.filepath(), win, &ds, false,
-                        !autorefresh, // We don't allow PDF-repair if it is an autorefresh because
-                                      // a refresh event can occur before the file is finished being written,
-                                      // in which case the repair could fail. Instead, if the file is broken, 
-                                      // we postpone the reload until the next autorefresh event
-                        true,
-                        false);
+
+    // We don't allow PDF-repair if it is an autorefresh because
+    // a refresh event can occur before the file is finished being written,
+    // in which case the repair could fail. Instead, if the file is broken, 
+    // we postpone the reload until the next autorefresh event
+    bool tryrepair = !autorefresh;
+    LoadPdfIntoWindow(win->watcher.filepath(), win, &ds, false, tryrepair, true, false);
+    DisplayState_Free(&ds);
 }
 
 #ifndef THREAD_BASED_FILEWATCH
@@ -2061,6 +2062,7 @@ static void RecalcSelectionPosition (WindowInfo *win) {
         selOnPage = selOnPage->next;
     }
 }
+
 // Clear all the requests from the PageRender queue.
 static void ClearPageRenderRequests()
 {
@@ -2597,18 +2599,6 @@ static void DoAssociateExeWithPdfExtension(HKEY hkey)
     }
 }
 
-static void DoAssociateExeWithPdfExtension()
-{
-    DoAssociateExeWithPdfExtension(HKEY_CURRENT_USER);
-    DoAssociateExeWithPdfExtension(HKEY_LOCAL_MACHINE);
-
-    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST | SHCNF_FLUSHNOWAIT, 0, 0);
-
-    // Remind the user, when a different application takes over
-    gGlobalPrefs.m_pdfAssociateShouldAssociate = TRUE;
-    gGlobalPrefs.m_pdfAssociateDontAskAgain = FALSE;
-}
-
 // verify that all registry entries that need to be set in order to associate
 // Sumatra with .pdf files exist and have the right values
 bool IsExeAssociatedWithPdfExtension(void)
@@ -2645,27 +2635,16 @@ bool IsExeAssociatedWithPdfExtension(void)
     return same;
 }
 
-static BOOL RunMyselfAsAdmin(TCHAR *cmdline)
-{
-    assert(WindowsVer2000OrGreater());
-    TCHAR *exePath = ExePathGet();
-    SHELLEXECUTEINFO sei = {0};
-    sei.cbSize = sizeof(sei);
-    sei.lpVerb = _T("runas");
-    sei.lpFile = exePath;
-    sei.lpParameters = cmdline;
-    sei.nShow = SW_SHOWNORMAL;
-    sei.fMask = SEE_MASK_FLAG_NO_UI;
-    BOOL ok = ShellExecuteEx(&sei);
-    return ok;
-}
-
 void AssociateExeWithPdfExtension(void)
 {
-    if (WindowsVerVistaOrGreater())
-        RunMyselfAsAdmin(_T("-register-for-pdf"));
-    else
-        DoAssociateExeWithPdfExtension();
+    DoAssociateExeWithPdfExtension(HKEY_CURRENT_USER);
+    DoAssociateExeWithPdfExtension(HKEY_LOCAL_MACHINE);
+
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST | SHCNF_FLUSHNOWAIT, 0, 0);
+
+    // Remind the user, when a different application takes over
+    gGlobalPrefs.m_pdfAssociateShouldAssociate = TRUE;
+    gGlobalPrefs.m_pdfAssociateDontAskAgain = FALSE;
 }
 
 // Registering happens either through the Installer or the Options dialog;
@@ -2845,11 +2824,11 @@ static int ExtractNextNumber(TCHAR **txt)
 // -1 otherwise.
 // e.g. 
 //   0.9.3.900 is greater than 0.9.3
-//   1/|09@300 is greater than 1/|09@3 which is greater than 1$%9)1
+//   1.09.300 is greater than 1.09.3 which is greater than 1.9.1
 int CompareVersion(TCHAR *txt1, TCHAR *txt2)
 {
     int v1, v2;
-    while(1) {
+    while (1) {
         v1 = ExtractNextNumber(&txt1);
         v2 = ExtractNextNumber(&txt2);
         if (v1 == v2) {
@@ -2877,38 +2856,75 @@ static BOOL ShowNewVersionDialog(WindowInfo *win, const TCHAR *newVersion)
     return DIALOG_OK_PRESSED == res;
 }
 
+static bool ValiProgramVersionChar(char c)
+{
+    if (c >= '0' && c <= '9')
+        return true;
+    if (c == '.' || c == '\r' || c == '\n')
+        return true;
+    return false;
+}
+
+// the only valid chars are 0-9, . and newlines. Return false if contains
+// anything else
+static bool ValidProgramVersion(char *txt)
+{
+    char c = *txt++;
+    while (c != 0) {
+        if (!ValiProgramVersionChar(c)) {
+            return false;
+        }
+        c = *txt++;
+    }
+    return true;
+}
+
 static void OnUrlDownloaded(WindowInfo *win, HttpReqCtx *ctx)
 {
     DWORD dataSize;
     char *txt = (char*)ctx->data.getData(&dataSize);
     TCHAR *url = ctx->url;
-    if (tstr_startswith(url, SUMATRA_UPDATE_INFO_URL)) {
-        TCHAR *verTxt = multibyte_to_tstr(txt, CP_ACP);
-        /* TODO: too hackish */
-        tstr_trans_chars(verTxt, _T("\r\n"), _T("\0\0"));
-        if (CompareVersion(verTxt, UPDATE_CHECK_VER)>0){
-            bool showDialog = true;
-            // if automated, respect gGlobalPrefs.m_versionToSkip
-            if (ctx->autoCheck && gGlobalPrefs.m_versionToSkip) {
-                if (tstr_ieq(gGlobalPrefs.m_versionToSkip, verTxt)) {
-                    showDialog = false;
-                }
-            }
-            if (showDialog) {
-                BOOL download = ShowNewVersionDialog(win, verTxt);
-                if (download) {
-                    LaunchBrowser(SVN_UPDATE_LINK);
-                }
-            }
-        } else {
-            /* if automated => don't notify that there is no new version */
-            if (!ctx->autoCheck) {
-                MessageBox(win->hwndFrame, _TR("You have the latest version."), _TR("No new version available."), MB_ICONEXCLAMATION | MB_OK);
+    if (!tstr_startswith(url, SUMATRA_UPDATE_INFO_URL)) {
+        goto Exit;
+    }
+
+    // see http://code.google.com/p/sumatrapdf/issues/detail?id=725
+    // if a user configures os-wide proxy that is not regular ie proxy
+    // (which we pick up) we might get complete garbage in response to
+    // our query and in might accidentally contain number which might
+    // be bigger than our version number which will make program ask
+    // to upgrade every time
+    // to fix that, we reject text that doesn't look like comes from us
+    if (!ValidProgramVersion(txt)) {
+        goto Exit;
+    }
+        
+    TCHAR *verTxt = multibyte_to_tstr(txt, CP_ACP);
+    /* TODO: too hackish */
+    tstr_trans_chars(verTxt, _T("\r\n"), _T("\0\0"));
+    if (CompareVersion(verTxt, UPDATE_CHECK_VER) > 0){
+        bool showDialog = true;
+        // if automated, respect gGlobalPrefs.m_versionToSkip
+        if (ctx->autoCheck && gGlobalPrefs.m_versionToSkip) {
+            if (tstr_ieq(gGlobalPrefs.m_versionToSkip, verTxt)) {
+                showDialog = false;
             }
         }
-        free(verTxt);
+        if (showDialog) {
+            BOOL download = ShowNewVersionDialog(win, verTxt);
+            if (download) {
+                LaunchBrowser(SVN_UPDATE_LINK);
+            }
+        }
+    } else {
+        /* if automated => don't notify that there is no new version */
+        if (!ctx->autoCheck) {
+            MessageBox(win->hwndFrame, _TR("You have the latest version."), _TR("No new version available."), MB_ICONEXCLAMATION | MB_OK);
+        }
     }
-    free(txt);
+    free(verTxt);
+Exit:
+	free(txt);
     delete ctx;
 }
 
@@ -4413,7 +4429,7 @@ static void OnMenuSaveAs(WindowInfo *win)
     if (!tstr_endswithi(dstFileName, _T(".pdf"))) {
         realDstFileName = tstr_cat_s(dstFileName, dimof(dstFileName), _T(".pdf"));
     }
-    BOOL ok = CopyFileEx(srcFileName, realDstFileName, NULL, NULL, NULL, COPY_FILE_FAIL_IF_EXISTS);
+    BOOL ok = CopyFileEx(srcFileName, realDstFileName, NULL, NULL, NULL, 0);
     if (ok) {
         const DWORD attributesToDrop = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
         DWORD attributes = GetFileAttributes(realDstFileName);
@@ -4860,6 +4876,8 @@ static void OnMenuViewContinuousFacing(WindowInfo *win)
 {
     assert(win);
     if (!win) return;
+    if (!win->dm) return;
+
     SwitchToDisplayMode(win, DM_CONTINUOUS_FACING);
 }
 
@@ -4975,7 +4993,7 @@ static void OnMenuViewRotateRight(WindowInfo *win)
     RotateRight(win);
 }
 
-void WindowInfo_EnterFullscreen(WindowInfo *win)
+static void WindowInfo_EnterFullscreen(WindowInfo *win)
 {
     if (win->fullScreen || !IsWindowVisible(win->hwndFrame)) 
         return;
@@ -5019,7 +5037,7 @@ void WindowInfo_EnterFullscreen(WindowInfo *win)
     SetFocus(win->hwndFrame);
 }
 
-void WindowInfo_ExitFullscreen(WindowInfo *win)
+static void WindowInfo_ExitFullscreen(WindowInfo *win)
 {
     if (!win->fullScreen) 
         return;
@@ -5556,7 +5574,7 @@ static LRESULT CALLBACK WndProcFindBox(HWND hwnd, UINT message, WPARAM wParam, L
     return ret;
 }
 
-void Find(HWND hwnd, WindowInfo *win, PdfSearchDirection direction)
+static void Find(HWND hwnd, WindowInfo *win, PdfSearchDirection direction)
 {
     TCHAR text[256];
     GetWindowText(hwnd, text, sizeof(text));
@@ -7346,7 +7364,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     TCHAR *newWindowTitle = NULL;
     for (TStrList *currArg = argListRoot->next; currArg; currArg = currArg->next) {
         if (is_arg("-register-for-pdf")) {
-            DoAssociateExeWithPdfExtension();
+            AssociateExeWithPdfExtension();
             return 0;
         }
         else if (is_arg("-enum-printers")) {
