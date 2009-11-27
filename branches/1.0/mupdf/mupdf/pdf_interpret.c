@@ -108,6 +108,7 @@ gsave(pdf_csi *csi)
 
 	pdf_keepmaterial(&gs->stroke);
 	pdf_keepmaterial(&gs->fill);
+	if (gs->font) pdf_keepfont(gs->font); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 
 	return fz_okay;
 }
@@ -122,6 +123,7 @@ grestore(pdf_csi *csi)
 
 	pdf_dropmaterial(&gs->stroke);
 	pdf_dropmaterial(&gs->fill);
+	pdf_dropfont(gs->font); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 
 	csi->gtop --;
 
@@ -138,6 +140,17 @@ pdf_dropcsi(pdf_csi *csi)
 		fz_dropcolorspace(csi->gstate[csi->gtop].fill.cs);
 	if (csi->gstate[csi->gtop].stroke.cs)
 		fz_dropcolorspace(csi->gstate[csi->gtop].stroke.cs);
+	/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
+	if (csi->gstate[csi->gtop].font)
+		pdf_dropfont(csi->gstate[csi->gtop].font);
+	if (csi->gstate[csi->gtop].fill.pattern)
+		pdf_droppattern(csi->gstate[csi->gtop].fill.pattern);
+	if (csi->gstate[csi->gtop].stroke.pattern)
+		pdf_droppattern(csi->gstate[csi->gtop].stroke.pattern);
+	if (csi->gstate[csi->gtop].fill.shade)
+		fz_dropshade(csi->gstate[csi->gtop].fill.shade);
+	if (csi->gstate[csi->gtop].stroke.shade)
+		fz_dropshade(csi->gstate[csi->gtop].stroke.shade);
 
 	if (csi->tree) fz_droptree(csi->tree);
 
@@ -328,11 +341,13 @@ runextgstate(pdf_gstate *gstate, pdf_xref *xref, fz_obj *rdb, fz_obj *extgstate)
 			{
 				fz_error error;
 
+				pdf_dropfont(gstate->font); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 				error = pdf_loadfont(&gstate->font, xref, rdb, fz_arrayget(val, 0));
 				if (error)
 					return fz_rethrow(error, "cannot load font");
 				if (!gstate->font)
 					return fz_throw("cannot find font in store");
+
 				gstate->size = fz_toreal(fz_arrayget(val, 1));
 			}
 			else
@@ -677,6 +692,7 @@ Lsetcolorspace:
 				}
 
 				error = pdf_setcolorspace(csi, what, cs);
+				fz_dropcolorspace(cs); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690680 */
 				if (error) return fz_rethrow(error, "cannot set colorspace");
 			}
 		}
@@ -752,6 +768,7 @@ Lsetcolor:
 					if (pat)
 					{
 						error = pdf_setpattern(csi, what, pat, csi->top == 1 ? nil : v);
+						pdf_droppattern(pat); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 						if (error)
 							return fz_rethrow(error, "cannot set pattern");
 					}
@@ -765,6 +782,7 @@ Lsetcolor:
 					if (shd)
 					{
 						error = pdf_setshade(csi, what, shd);
+						fz_dropshade(shd); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 						if (error)
 							return fz_rethrow(error, "cannot set shade");
 					}
@@ -887,6 +905,7 @@ Lsetcolor:
 			if (!obj)
 				return fz_throw("cannot find font resource: %s", fz_toname(csi->stack[0]));
 
+			pdf_dropfont(gstate->font); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 			error = pdf_loadfont(&gstate->font, xref, rdb, obj);
 			if (error)
 				return fz_rethrow(error, "cannot load font");
@@ -1013,6 +1032,7 @@ Lsetcolor:
 
 				clearstack(csi);
 				error = runxobject(csi, xref, rdb, xobj);
+				pdf_dropxobject(xobj); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 				if (error)
 					return fz_rethrow(error, "cannot draw xobject");
 			}
@@ -1024,6 +1044,7 @@ Lsetcolor:
 					return fz_rethrow(error, "cannot load image");
 
 				error = pdf_showimage(csi, img);
+				fz_dropimage((fz_image*)img); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 				if (error)
 					return fz_rethrow(error, "cannot draw image");
 			}
@@ -1054,6 +1075,7 @@ Lsetcolor:
 				return fz_rethrow(error, "cannot load shade");
 
 			error = pdf_addshade(gstate, shd);
+			fz_dropshade(shd); /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=690942 */
 			if (error) return fz_rethrow(error, "cannot draw shade");
 		}
 

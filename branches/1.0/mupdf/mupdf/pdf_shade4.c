@@ -60,12 +60,17 @@ pdf_loadtype4shade(fz_shade *shade, pdf_xref *xref, fz_obj *shading)
 	obj = fz_dictgets(shading, "Decode");
 	if (fz_isarray(obj))
 	{
+		/* security issue reported by Christophe Devine - obj can have more
+			items than size of c0/c1, corrupting the stack */
+		int alen = fz_arraylen(obj) / 2;
+		if (alen > FZ_MAXCOLORS)
+			alen = FZ_MAXCOLORS;
 		pdf_logshade("decode array\n");
 		x0 = fz_toreal(fz_arrayget(obj, 0));
 		x1 = fz_toreal(fz_arrayget(obj, 1));
 		y0 = fz_toreal(fz_arrayget(obj, 2));
 		y1 = fz_toreal(fz_arrayget(obj, 3));
-		for (i=0; i < fz_arraylen(obj) / 2; ++i) {
+		for (i=0; i < alen; ++i) {
 			c0[i] = fz_toreal(fz_arrayget(obj, i*2+4));
 			c1[i] = fz_toreal(fz_arrayget(obj, i*2+5));
 		}
@@ -242,12 +247,17 @@ pdf_loadtype5shade(fz_shade *shade, pdf_xref *xref, fz_obj *shading)
 	obj = fz_dictgets(shading, "Decode");
 	if (fz_isarray(obj))
 	{
+		/* security issue reported by Christophe Devine - obj can have more
+			items than size of c0/c1, corrupting the stack */
+		int alen = fz_arraylen(obj) / 2;
+		if (alen > FZ_MAXCOLORS)
+			alen = FZ_MAXCOLORS;
 		pdf_logshade("decode array\n");
 		x0 = fz_toreal(fz_arrayget(obj, 0));
 		x1 = fz_toreal(fz_arrayget(obj, 1));
 		y0 = fz_toreal(fz_arrayget(obj, 2));
 		y1 = fz_toreal(fz_arrayget(obj, 3));
-		for (i=0; i < fz_arraylen(obj) / 2; ++i) {
+		for (i=0; i < alen; ++i) {
 			c0[i] = fz_toreal(fz_arrayget(obj, i*2+4));
 			c1[i] = fz_toreal(fz_arrayget(obj, i*2+5));
 		}
@@ -608,12 +618,17 @@ pdf_loadtype6shade(fz_shade *shade, pdf_xref *xref, fz_obj *shading)
 	obj = fz_dictgets(shading, "Decode");
 	if (fz_isarray(obj))
 	{
+		/* security issue reported by Christophe Devine - obj can have more
+			items than size of c0/c1, corrupting the stack */
+		int alen = fz_arraylen(obj) / 2;
+		if (alen > FZ_MAXCOLORS)
+			alen = FZ_MAXCOLORS;
 		pdf_logshade("decode array\n");
 		p0.x = fz_toreal(fz_arrayget(obj, 0));
 		p1.x = fz_toreal(fz_arrayget(obj, 1));
 		p0.y = fz_toreal(fz_arrayget(obj, 2));
 		p1.y = fz_toreal(fz_arrayget(obj, 3));
-		for (i=0; i < fz_arraylen(obj) / 2; ++i) {
+		for (i=0; i < alen; ++i) {
 			c0[i] = fz_toreal(fz_arrayget(obj, i*2+4));
 			c1[i] = fz_toreal(fz_arrayget(obj, i*2+5));
 		}
@@ -728,12 +743,17 @@ pdf_loadtype7shade(fz_shade *shade, pdf_xref *xref, fz_obj *shading)
 	obj = fz_dictgets(shading, "Decode");
 	if (fz_isarray(obj))
 	{
+		/* security issue reported by Christophe Devine - obj can have more
+			items than size of c0/c1, corrupting the stack */
+		int alen = fz_arraylen(obj) / 2;
+		if (alen > FZ_MAXCOLORS)
+			alen = FZ_MAXCOLORS;
 		pdf_logshade("decode array\n");
 		x0 = fz_toreal(fz_arrayget(obj, 0));
 		x1 = fz_toreal(fz_arrayget(obj, 1));
 		y0 = fz_toreal(fz_arrayget(obj, 2));
 		y1 = fz_toreal(fz_arrayget(obj, 3));
-		for (i=0; i < fz_arraylen(obj) / 2; ++i) {
+		for (i=0; i < alen; ++i) {
 			c0[i] = fz_toreal(fz_arrayget(obj, i*2+4));
 			c1[i] = fz_toreal(fz_arrayget(obj, i*2+5));
 		}
