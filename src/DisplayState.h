@@ -7,15 +7,14 @@
 
 enum DisplayMode {
     DM_FIRST = 0,
-    // automatic means: the continuous form of single page, facing or
-    // book view - depending on the document's desired PageLayout
+    // automatic means: continuous or continuous facing,
+    // depending on the document's desired PageLayout
     DM_AUTOMATIC = DM_FIRST,
     DM_SINGLE_PAGE,
     DM_FACING,
-    DM_BOOK_VIEW,
     DM_CONTINUOUS,
     DM_CONTINUOUS_FACING,
-    DM_CONTINUOUS_BOOK_VIEW
+    DM_LAST = DM_CONTINUOUS_FACING
 };
 
 #define ZOOM_FIT_PAGE       -1
@@ -27,10 +26,8 @@ enum DisplayMode {
 #define DM_AUTOMATIC_STR            "automatic"
 #define DM_SINGLE_PAGE_STR          "single page"
 #define DM_FACING_STR               "facing"
-#define DM_BOOK_VIEW_STR            "book view"
 #define DM_CONTINUOUS_STR           "continuous"
 #define DM_CONTINUOUS_FACING_STR    "continuous facing"
-#define DM_CONTINUOUS_BOOK_VIEW_STR "continuous book view"
 
 #define FILE_HISTORY_STR            "File History"
 
@@ -60,10 +57,6 @@ enum DisplayMode {
 #define REMEMBER_OPENED_FILES_STR   "RememberOpenedFiles"
 #define GLOBAL_PREFS_ONLY_STR       "GlobalPrefsOnly"
 #define USE_GLOBAL_VALUES_STR       "UseGlobalValues"
-
-#define FWDSEARCH_OFFSET            "ForwardSearch_HighlightOffset"
-#define FWDSEARCH_COLOR             "ForwardSearch_HighlightColor"
-#define FWDSEARCH_WIDTH             "ForwardSearch_HighlightWidth"
 
 typedef struct DisplayState {
     const TCHAR *       filePath;

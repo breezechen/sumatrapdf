@@ -14,6 +14,12 @@
 // convert a PDF coordinate into a sync file coordinate
 #define PDFCOORDINATE_TO_SYNCCOORDINATE(p)          (p*65781.76)
 
+// Test if the file 'filename' exists
+bool FileExists( LPCTSTR filename ) {
+    struct _stat buffer ;
+    return 0 == _tstat( filename, &buffer );
+}
+
 Synchronizer *CreateSynchronizer(LPCTSTR pdffilename)
 {
     TCHAR syncfile[MAX_PATH];
@@ -23,19 +29,19 @@ Synchronizer *CreateSynchronizer(LPCTSTR pdffilename)
         // Check if a PDFSYNC file is present
         tstr_copyn(syncfile, dimof(syncfile), pdffilename, n-u);
         tstr_cat_s(syncfile, dimof(syncfile), PDFSYNC_EXTENSION);
-        if (file_exists(syncfile)) 
+        if (FileExists(syncfile)) 
             return new Pdfsync(syncfile);
 
         #ifdef SYNCTEX_FEATURE
             // check if a compressed SYNCTEX file is present
             tstr_copyn(syncfile, dimof(syncfile), pdffilename, n-u);
             tstr_cat_s(syncfile, dimof(syncfile), SYNCTEXGZ_EXTENSION);
-            BOOL exist = file_exists(syncfile);
+            bool exist = FileExists(syncfile);
 
             // check if a SYNCTEX file is present
             tstr_copyn(syncfile, dimof(syncfile), pdffilename, n-u);
             tstr_cat_s(syncfile, dimof(syncfile), SYNCTEX_EXTENSION);
-            exist |= file_exists(syncfile);
+            exist |= FileExists(syncfile);
 
             if(exist)
                 return new SyncTex(syncfile); // due to a bug with synctex_parser.c, this must always be 

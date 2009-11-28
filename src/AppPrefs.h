@@ -49,7 +49,6 @@ typedef struct {
     /* Default state of Sumatra window */
     /* TODO: I would also like to remember a monitor, but that seems a bit complicated */
     DisplayMode m_defaultDisplayMode;
-
     double m_defaultZoom;
     int  m_windowState;
     int  m_windowPosX;
@@ -59,10 +58,6 @@ typedef struct {
 
     int  m_showToc;
     int  m_globalPrefsOnly;
-    /* Forward search highlighting settings  */
-    int  m_fwdsearchOffset; /* if <=0 then use the standard (inline) highlighting style, otherwise use the margin highlight (i.e., coloured block on the left side of the page) */
-    int  m_fwdsearchColor;  /* highlight color of the forward-search for both the standard and margin style*/
-    int  m_fwdsearchWidth;  /* width of the coloured blocks for the margin style */
 } SerializableGlobalPrefs;
 
 extern SerializableGlobalPrefs gGlobalPrefs;

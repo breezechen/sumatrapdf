@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <direct.h>
 
 #include <windowsx.h>
 #include <shellapi.h>
 #include <shlobj.h>
+#include <Wininet.h>
 
 #include "file_util.h"
 #include "geom_util.h"
@@ -20,7 +20,7 @@
 #include "translations.h"
 #include "win_util.h"
 #include "tstr_util.h"
-#include "Http.h"
+#include "MemSegment.h"
 
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
@@ -33,7 +33,7 @@
 // those are defined here instead of resource.h to avoid
 // having them overwritten by dialog editor
 #define IDM_VIEW_LAYOUT_FIRST           IDM_VIEW_SINGLE_PAGE
-#define IDM_VIEW_LAYOUT_LAST            IDM_VIEW_CONTINUOUS
+#define IDM_VIEW_LAYOUT_LAST            IDM_VIEW_CONTINUOUS_FACING
 
 // this sucks but I don't know any other way
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -96,8 +96,6 @@ static BOOL             gDebugShowLinks = FALSE;
 #define ABOUT_BG_COLOR          RGB(255,242,0)
 #endif
 
-#define COL_FWDSEARCH_BG        RGB(101,129,255)
-
 #define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
 #define CANVAS_CLASS_NAME       _T("SUMATRA_PDF_CANVAS")
 #define ABOUT_CLASS_NAME        _T("SUMATRA_PDF_ABOUT")
@@ -106,6 +104,9 @@ static BOOL             gDebugShowLinks = FALSE;
 #define PDF_DOC_NAME            _T("Adobe PDF Document")
 #define ABOUT_WIN_TITLE         _TR("About SumatraPDF")
 #define PREFS_FILE_NAME         _T("sumatrapdfprefs.dat")
+#define APP_NAME_STR            _T("SumatraPDF")
+
+#define DEFAULT_INVERSE_SEARCH_COMMANDLINE _T("winedt.exe \"[Open(|%f|);SelPar(%l,8)]\"")
 
 /* Default size for the window, happens to be american A4 size (I think) */
 #define DEF_PAGE_DX 612
@@ -199,9 +200,6 @@ SerializableGlobalPrefs             gGlobalPrefs = {
     DEFAULT_WIN_POS, // int  m_windowDy
     1, // int  m_showToc
     0, // int  m_globalPrefsOnly
-    0, // int  m_fwdsearchOffset
-    COL_FWDSEARCH_BG, // int  m_fwdsearchColor
-    15, // int  m_fwdsearchWidth
 };
 
 typedef struct ToolbarButtonInfo {
@@ -253,7 +251,6 @@ static void ClearSearch(WindowInfo *win);
 static void WindowInfo_EnterFullscreen(WindowInfo *win);
 static void WindowInfo_ExitFullscreen(WindowInfo *win);
 static bool GetAcrobatPath(TCHAR * buffer=NULL, int bufSize=0);
-static bool ReadRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, const TCHAR *buffer, DWORD bufLen);
 
 #define SEP_ITEM "-----"
 
@@ -541,6 +538,185 @@ void u_testMemSegment()
 }
 #endif
 
+// based on information in http://www.codeproject.com/KB/IP/asyncwininet.aspx
+class HttpReqCtx {
+public:
+    // the window to which we'll send notification about completed download
+    HWND          hwndToNotify;
+    // message to send when download is complete
+    UINT          msg;
+    // handle for connection during request processing
+    HINTERNET     httpFile;
+
+    TCHAR *       url;
+    MemSegment    data;
+    /* true for automated check, false for check triggered from menu */
+    bool          autoCheck;
+
+    HttpReqCtx(const TCHAR *_url, HWND _hwnd, UINT _msg) {
+        assert(_url);
+        hwndToNotify = _hwnd;
+        url = tstr_dup(_url);
+        msg = _msg;
+        autoCheck = false;
+        httpFile = 0;
+    }
+    ~HttpReqCtx() {
+        free(url);
+        data.freeAll();
+    }
+};
+
+void __stdcall InternetCallbackProc(HINTERNET hInternet,
+                        DWORD_PTR dwContext,
+                        DWORD dwInternetStatus,
+                        LPVOID statusInfo,
+                        DWORD statusLen)
+{
+    char buf[256];
+    INTERNET_ASYNC_RESULT* res;
+    HttpReqCtx *ctx = (HttpReqCtx*)dwContext;
+
+    switch (dwInternetStatus)
+    {
+        case INTERNET_STATUS_HANDLE_CREATED:
+            res = (INTERNET_ASYNC_RESULT*)statusInfo;
+            ctx->httpFile = (HINTERNET)(res->dwResult);
+
+            _snprintf(buf, 256, "HANDLE_CREATED (%d)", statusLen );
+            break;
+
+        case INTERNET_STATUS_REQUEST_COMPLETE:
+        {
+            // Check for errors.
+            if (LPINTERNET_ASYNC_RESULT(statusInfo)->dwError != 0)
+            {
+                _snprintf(buf, 256, "REQUEST_COMPLETE (%d) Error (%d) encountered", statusLen, GetLastError());
+                break;
+            }
+
+            // Set the resource handle to the HINTERNET handle returned in the callback.
+            HINTERNET hInt = HINTERNET(LPINTERNET_ASYNC_RESULT(statusInfo)->dwResult);
+            assert(hInt == ctx->httpFile);
+
+            _snprintf(buf, 256, "REQUEST_COMPLETE (%d)", statusLen);
+
+            INTERNET_BUFFERS ib = {0};
+            ib.dwStructSize = sizeof(ib);
+            ib.lpvBuffer = malloc(1024);
+
+            // This is not exactly async, but we're assuming it'll complete quickly
+            // because the update file is small and we now that connection is working
+            // since we already got headers back
+            BOOL ok;
+            while (TRUE) {
+                ib.dwBufferLength = 1024;
+                ok = InternetReadFileEx(ctx->httpFile, &ib, IRF_ASYNC, (LPARAM)ctx);
+                if (ok || (!ok && GetLastError()==ERROR_IO_PENDING)) {
+                    DWORD readSize = ib.dwBufferLength;
+                    if (readSize > 0) {
+                        ctx->data.add(ib.lpvBuffer, readSize);
+                    }
+                }
+                if (ok || GetLastError()!=ERROR_IO_PENDING)
+                    break; // read the whole file or error
+            }
+            free(ib.lpvBuffer);
+            InternetCloseHandle(ctx->httpFile);
+            ctx->httpFile = 0;
+            if (ok) {
+                // read the whole file
+                PostMessage(ctx->hwndToNotify, ctx->msg, (WPARAM) ctx, 0);
+            } else {
+                delete ctx;
+            }
+        }
+        break;
+
+#if 0
+        case INTERNET_STATUS_CLOSING_CONNECTION:
+            _snprintf(buf, 256, "CLOSING_CONNECTION (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_CONNECTED_TO_SERVER:
+            _snprintf(buf, 256, "CONNECTED_TO_SERVER (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_CONNECTING_TO_SERVER:
+            _snprintf(buf, 256, "CONNECTING_TO_SERVER (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_CONNECTION_CLOSED:
+            _snprintf(buf, 256, "CONNECTION_CLOSED (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_HANDLE_CLOSING:
+            _snprintf(buf, 256, "HANDLE_CLOSING (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_INTERMEDIATE_RESPONSE:
+            _snprintf(buf, 256, "INTERMEDIATE_RESPONSE (%d)", statusLen );
+            break;
+
+        case INTERNET_STATUS_NAME_RESOLVED:
+            _snprintf(buf, 256, "NAME_RESOLVED (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_RECEIVING_RESPONSE:
+            _snprintf(buf, 256, "RECEIVING_RESPONSE (%d)",statusLen);
+            break;
+
+        case INTERNET_STATUS_RESPONSE_RECEIVED:
+            _snprintf(buf, 256, "RESPONSE_RECEIVED (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_REDIRECT:
+            _snprintf(buf, 256, "REDIRECT (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_REQUEST_SENT:
+            _snprintf(buf, 256, "REQUEST_SENT (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_RESOLVING_NAME:
+            _snprintf(buf, 256, "RESOLVING_NAME (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_SENDING_REQUEST:
+            _snprintf(buf, 256, "SENDING_REQUEST (%d)", statusLen);
+            break;
+
+        case INTERNET_STATUS_STATE_CHANGE:
+            _snprintf(buf, 256, "STATE_CHANGE (%d)", statusLen);
+            break;
+#else
+        case INTERNET_STATUS_CLOSING_CONNECTION:
+        case INTERNET_STATUS_CONNECTED_TO_SERVER:
+        case INTERNET_STATUS_CONNECTING_TO_SERVER:
+        case INTERNET_STATUS_CONNECTION_CLOSED:
+        case INTERNET_STATUS_HANDLE_CLOSING:
+        case INTERNET_STATUS_INTERMEDIATE_RESPONSE:
+        case INTERNET_STATUS_NAME_RESOLVED:
+        case INTERNET_STATUS_RECEIVING_RESPONSE:
+        case INTERNET_STATUS_RESPONSE_RECEIVED:
+        case INTERNET_STATUS_REDIRECT:
+        case INTERNET_STATUS_REQUEST_SENT:
+        case INTERNET_STATUS_RESOLVING_NAME:
+        case INTERNET_STATUS_SENDING_REQUEST:
+        case INTERNET_STATUS_STATE_CHANGE:
+            return;
+#endif
+        default:
+            _snprintf(buf, 256, "Unknown: Status %d Given", dwInternetStatus);
+            break;
+    }
+
+    DBG_OUT(buf);
+    DBG_OUT("\n");
+}
+
+static HINTERNET g_hOpen = NULL;
+
 #ifndef SUMATRA_UPDATE_INFO_URL
 #ifdef SVN_PRE_RELEASE_VER
 #define SUMATRA_UPDATE_INFO_URL _T("http://kjkpub.s3.amazonaws.com/sumatrapdf/sumpdf-prerelease-latest.txt")
@@ -556,6 +732,24 @@ void u_testMemSegment()
 #define SVN_UPDATE_LINK         _T("http://blog.kowalczyk.info/software/sumatrapdf")
 #endif
 #endif
+
+
+bool WininetInit()
+{
+    if (!g_hOpen)
+        g_hOpen = InternetOpen(APP_NAME_STR, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, INTERNET_FLAG_ASYNC);
+    if (NULL == g_hOpen) {
+        DBG_OUT("InternetOpen() failed\n");
+        return false;
+    }
+    return true;
+}
+
+void WininetDeinit()
+{
+    if (g_hOpen)
+        InternetCloseHandle(g_hOpen);
+}
 
 #define SECS_IN_DAY 60*60*24
 
@@ -580,19 +774,26 @@ void DownloadSumatraUpdateInfo(WindowInfo *win, bool autoCheck)
     }
 
     const TCHAR *url = SUMATRA_UPDATE_INFO_URL _T("?v=") UPDATE_CHECK_VER;
-    StartHttpDownload(url, hwndToNotify, WM_APP_URL_DOWNLOADED, autoCheck);
+    HttpReqCtx *ctx = new HttpReqCtx(url, hwndToNotify, WM_APP_URL_DOWNLOADED);
+    ctx->autoCheck = autoCheck;
 
+    InternetSetStatusCallback(g_hOpen, (INTERNET_STATUS_CALLBACK)InternetCallbackProc);
+    HINTERNET urlHandle;
+    urlHandle = InternetOpenUrl(g_hOpen, url, NULL, 0, 
+      INTERNET_FLAG_RELOAD | INTERNET_FLAG_PRAGMA_NOCACHE | 
+      INTERNET_FLAG_NO_CACHE_WRITE, (LPARAM)ctx);
+    /* MSDN says NULL result from InternetOpenUrl() means an error, but in my testing
+       in async mode InternetOpenUrl() returns NULL and error is ERROR_IO_PENDING */
+    if (!urlHandle && (GetLastError() != ERROR_IO_PENDING)) {
+        DBG_OUT("InternetOpenUrl() failed\n");
+        delete ctx;
+    }
     free(gGlobalPrefs.m_lastUpdateTime);
     gGlobalPrefs.m_lastUpdateTime = GetSystemTimeAsStr();
 }
 
 static void SerializableGlobalPrefs_Init() {
-    // Initialize the inverse search command line to a reasonable default value
-    TCHAR path[MAX_PATH];
-    if (ReadRegStr(HKEY_LOCAL_MACHINE, _T("Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\WinEdt.exe"), NULL, path, dimof(path)))
-        gGlobalPrefs.m_inverseSearchCmdLine = tstr_printf(_T("\"%s\" \"[Open(|%%f|);SelPar(%%l,8)]\""), path);
-    else
-        gGlobalPrefs.m_inverseSearchCmdLine = tstr_dup(_T(""));
+    gGlobalPrefs.m_inverseSearchCmdLine = tstr_dup(DEFAULT_INVERSE_SEARCH_COMMANDLINE);
 }
 
 static void SerializableGlobalPrefs_Deinit()
@@ -760,7 +961,6 @@ void RenderQueue_Clear()
 static void MenuUpdateDisplayMode(WindowInfo *win)
 {
     DisplayMode displayMode = gGlobalPrefs.m_defaultDisplayMode;
-
     if (win->dm)
         displayMode = win->dm->displayMode();
 
@@ -775,33 +975,20 @@ static void MenuUpdateDisplayMode(WindowInfo *win)
     switch (displayMode) {
         case DM_SINGLE_PAGE: id = IDM_VIEW_SINGLE_PAGE; break;
         case DM_FACING: id = IDM_VIEW_FACING; break;
-        case DM_BOOK_VIEW: id = IDM_VIEW_BOOK; break;
-        case DM_CONTINUOUS: id = IDM_VIEW_SINGLE_PAGE; break;
-        case DM_CONTINUOUS_FACING: id = IDM_VIEW_FACING; break;
-        case DM_CONTINUOUS_BOOK_VIEW: id = IDM_VIEW_BOOK; break;
+        case DM_CONTINUOUS: id = IDM_VIEW_CONTINUOUS; break;
+        case DM_CONTINUOUS_FACING: id = IDM_VIEW_CONTINUOUS_FACING; break;
         default: assert(!win->dm && DM_AUTOMATIC == displayMode); break;
     }
 
     if (id)
         CheckMenuItem(menuMain, id, MF_BYCOMMAND | MF_CHECKED);
-
-    if (displayModeContinuous(displayMode))
-        CheckMenuItem(menuMain, IDM_VIEW_CONTINUOUS, MF_BYCOMMAND | MF_CHECKED);
-
 }
 
-static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode, bool keepContinuous)
+static void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode)
 {
     if (!win->dm)
         return;
 
-    if (keepContinuous && displayModeContinuous(win->dm->displayMode())) {
-        switch (displayMode) {
-            case DM_SINGLE_PAGE: displayMode = DM_CONTINUOUS; break;
-            case DM_FACING: displayMode = DM_CONTINUOUS_FACING; break;
-            case DM_BOOK_VIEW: displayMode = DM_CONTINUOUS_BOOK_VIEW; break;
-        }
-    }
     win->dm->changeDisplayMode(displayMode);
     MenuUpdateDisplayMode(win);
 }
@@ -831,8 +1018,8 @@ MenuDef menuDefFile[] = {
 MenuDef menuDefView[] = {
     { _TRN("Single page"),                 IDM_VIEW_SINGLE_PAGE,        0  },
     { _TRN("Facing"),                      IDM_VIEW_FACING,             0  },
-    { _TRN("Book view"),                   IDM_VIEW_BOOK,               0  },
-    { _TRN("Show pages continuously"),     IDM_VIEW_CONTINUOUS,         0  },
+    { _TRN("Continuous"),                  IDM_VIEW_CONTINUOUS,         0  },
+    { _TRN("Continuous facing"),           IDM_VIEW_CONTINUOUS_FACING,  0  },
     { SEP_ITEM, 0, 0  },
     { _TRN("Rotate left\tCtrl-Shift--"),   IDM_VIEW_ROTATE_LEFT,        0  },
     { _TRN("Rotate right\tCtrl-Shift-+"),  IDM_VIEW_ROTATE_RIGHT,       0  },
@@ -2272,13 +2459,8 @@ void DisplayModel::setScrollbarsState(void)
             si.nPage = 1;
         }
         else if (DM_FACING == win->dm->displayMode() && ZOOM_FIT_PAGE == win->dm->zoomVirtual()) {
-            si.nPos = (win->dm->currentPageNo() + 1) / 2 - 1;
-            si.nMax = (win->dm->pageCount() + 1) / 2 - 1;
-            si.nPage = 1;
-        }
-        else if (DM_BOOK_VIEW == win->dm->displayMode() && ZOOM_FIT_PAGE == win->dm->zoomVirtual()) {
-            si.nPos = win->dm->currentPageNo() / 2;
-            si.nMax = win->dm->pageCount() / 2;
+            si.nPos = (win->dm->currentPageNo() + (win->dm->showCover() ? 2 : 1)) / 2 - 1;
+            si.nMax = (win->dm->pageCount() + (win->dm->showCover() ? 2 : 1)) / 2 - 1;
             si.nPage = 1;
         }
         else {
@@ -2752,13 +2934,14 @@ static void DrawCenteredText(HDC hdc, RECT *r, const TCHAR *txt)
     DrawText(hdc, txt, lstrlen(txt), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWORD selectionColor, int margin = 1) {
+static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWORD selectionColor) {
     HBITMAP hbitmap;       // bitmap handle
     BITMAPINFO bmi;        // bitmap header
     VOID *pvBits;          // pointer to DIB section
     BLENDFUNCTION bf;      // structure for alpha blending
     HDC rectDC = CreateCompatibleDC(hdc);
     const DWORD selectionColorBlack = 0xff000000;
+    const int margin = 1;
 
     ZeroMemory(&bmi, sizeof(BITMAPINFO));
 
@@ -2825,10 +3008,7 @@ static void PaintForwardSearchMark(WindowInfo *win, HDC hdc) {
     if (!pageInfo->visible)
         return;
     
-    const DWORD selectionColorBlue = 0xff000000 | 
-        (GetRValue(gGlobalPrefs.m_fwdsearchColor) << 16) |
-        (GetGValue(gGlobalPrefs.m_fwdsearchColor) << 8) | 
-        GetBValue(gGlobalPrefs.m_fwdsearchColor);
+    const DWORD selectionColorBlue = 0xffAFBEFF;
 
     RectD recD;
     RectI recI;
@@ -2839,14 +3019,7 @@ static void PaintForwardSearchMark(WindowInfo *win, HDC hdc) {
         RectD_FromRectI (&recD, &win->fwdsearchmarkRects[i]);
         win->dm->rectCvtUserToScreen (win->fwdsearchmarkPage, &recD);
         RectI_FromRectD (&recI, &recD);
-        if (gGlobalPrefs.m_fwdsearchOffset > 0)
-        {
-          recI.x = pageInfo->screenX + gGlobalPrefs.m_fwdsearchOffset;
-		  recI.dx = gGlobalPrefs.m_fwdsearchWidth > 0 ? gGlobalPrefs.m_fwdsearchWidth : 15;
-          recI.y -= 4;
-          recI.dy += 8;          
-        }
-        PaintTransparentRectangle(win, hdc, &recI, selectionColorBlue, 0);
+        PaintTransparentRectangle(win, hdc, &recI, selectionColorBlue);
     }
 
 }
@@ -3099,9 +3272,6 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     { _T("ui polishing"), _T("Simon B\xFCnzli"), _T("http://www.zeniko.ch/#SumatraPDF"),
     0, 0, 0, 0, 0, 0, 0, 0 },
 
-    { _T("TeX enhancements"), _T("William Blum"), _T("http://william.famille-blum.org/"),
-    0, 0, 0, 0, 0, 0, 0, 0 },
-
     { _T("translators"), _T("The Translators"), _T("http://blog.kowalczyk.info/software/sumatrapdf/translators.html"),
     0, 0, 0, 0, 0, 0, 0, 0 },
 
@@ -3109,6 +3279,8 @@ AboutLayoutInfoEl gAboutLayoutInfo[] = {
     0, 0, 0, 0, 0, 0, 0, 0 },
 
 #ifdef _TEX_ENHANCEMENT
+    { _T("TeX enhancements"), _T("William Blum"), _T("http://william.famille-blum.org/"),
+    0, 0, 0, 0, 0, 0, 0, 0 },
     { _T("SyncTeX"), _T("J\xE9rome Laurens"), _T("http://itexmac.sourceforge.net/SyncTeX.html"),
     0, 0, 0, 0, 0, 0, 0, 0 },
 #endif 
@@ -3502,14 +3674,7 @@ static void ConvertSelectionRectToSelectionOnPage (WindowInfo *win) {
 static void OnInverseSearch(WindowInfo *win, UINT x, UINT y)
 {
     assert(win);
-    if (!win || !win->dm) return;
-
-    // Clear the last forward-search result
-    win->fwdsearchmarkRects.clear();
-    InvalidateRect(win->hwndCanvas, NULL, FALSE);
-
-    if (!gGlobalPrefs.m_inverseSearchCmdLine || !*gGlobalPrefs.m_inverseSearchCmdLine)
-        return;
+    if (!win || !win->dm ) return;
 
     if (!win->pdfsync) {
         win->pdfsync = CreateSynchronizer(win->watcher.filepath());
@@ -4387,9 +4552,7 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
         if (DM_SINGLE_PAGE == win->dm->displayMode() && ZOOM_FIT_PAGE == win->dm->zoomVirtual())
             win->dm->goToPage(si.nPos + 1, 0);
         else if (DM_FACING == win->dm->displayMode() && ZOOM_FIT_PAGE == win->dm->zoomVirtual())
-            win->dm->goToPage(si.nPos * 2 + 1, 0);
-        else if (DM_BOOK_VIEW == win->dm->displayMode() && ZOOM_FIT_PAGE == win->dm->zoomVirtual())
-            win->dm->goToPage(si.nPos * 2 + (si.nPos > 0 ? 0 : 1), 0);
+            win->dm->goToPage(si.nPos * 2 + (win->dm->showCover() && si.nPos > 0 ? 0 : 1), 0);
         else
             win->dm->scrollYTo(si.nPos);
     }
@@ -4460,7 +4623,9 @@ static bool GetAcrobatPath(TCHAR * buffer, int bufSize)
     if (foundAcrobat && buffer)
         lstrcpyn(buffer, path, bufSize);
 
-    return foundAcrobat && file_exists(path);
+    // TODO: Get a Unicode version for file_exists into file_util.c (cf. PdfSync.cpp)?
+    struct _stat stat_buffer;
+    return foundAcrobat && 0 == _tstat(path, &stat_buffer);
 }
 
 // The result value contains major and minor version in the high resp. the low WORD
@@ -4508,21 +4673,14 @@ static void OnMenuViewSinglePage(WindowInfo *win)
 {
     assert(win);
     if (!win) return;
-    SwitchToDisplayMode(win, DM_SINGLE_PAGE, true);
+    SwitchToDisplayMode(win, DM_SINGLE_PAGE);
 }
 
 static void OnMenuViewFacing(WindowInfo *win)
 {
     assert(win);
     if (!win) return;
-    SwitchToDisplayMode(win, DM_FACING, true);
-}
-
-static void OnMenuViewBook(WindowInfo *win)
-{
-    assert(win);
-    if (!win) return;
-    SwitchToDisplayMode(win, DM_BOOK_VIEW, true);
+    SwitchToDisplayMode(win, DM_FACING);
 }
 
 static void RememberWindowPosition(WindowInfo *win)
@@ -4707,29 +4865,20 @@ static void OnMenuSettings(WindowInfo *win)
     Prefs_Save();
 }
 
-// toggles 'show pages continuously' state
 static void OnMenuViewContinuous(WindowInfo *win)
+{
+    assert(win);
+    if (!win) return;
+    SwitchToDisplayMode(win, DM_CONTINUOUS);
+}
+
+static void OnMenuViewContinuousFacing(WindowInfo *win)
 {
     assert(win);
     if (!win) return;
     if (!win->dm) return;
 
-    DisplayMode newMode = win->dm->displayMode();
-    switch (newMode) {
-        case DM_SINGLE_PAGE:
-        case DM_CONTINUOUS:
-            newMode = displayModeContinuous(newMode) ? DM_SINGLE_PAGE : DM_CONTINUOUS;
-            break;
-        case DM_FACING:
-        case DM_CONTINUOUS_FACING:
-            newMode = displayModeContinuous(newMode) ? DM_FACING : DM_CONTINUOUS_FACING;
-            break;
-        case DM_BOOK_VIEW:
-        case DM_CONTINUOUS_BOOK_VIEW:
-            newMode = displayModeContinuous(newMode) ? DM_BOOK_VIEW : DM_CONTINUOUS_BOOK_VIEW;
-            break;
-    }
-    SwitchToDisplayMode(win, newMode, false);
+    SwitchToDisplayMode(win, DM_CONTINUOUS_FACING);
 }
 
 static void OnMenuGoToNextPage(WindowInfo *win)
@@ -5202,14 +5351,11 @@ static void OnChar(WindowInfo *win, int key)
         if (win->fullScreen)
             OnMenuViewFullscreen(win);
         else if (gGlobalPrefs.m_escToExit)
-            CloseWindow(win, TRUE);
+            DestroyWindow(win->hwndFrame);
         else
             ClearSearch(win);
-        return;
-    }
-    if ('q' == key) {
-        CloseWindow(win, TRUE);
-        return;
+    } else if ('q' == key) {
+        DestroyWindow(win->hwndFrame);
     }
 
     if (!win->dm)
@@ -5228,11 +5374,9 @@ static void OnChar(WindowInfo *win, int key)
         win->dm->goToNextPage(0);
     } else if ('c' == key) {
         DisplayMode newMode = DM_CONTINUOUS;
-        if (displayModeShowCover(win->dm->displayMode()))
-            newMode = DM_CONTINUOUS_BOOK_VIEW;
-        else if (displayModeFacing(win->dm->displayMode()))
+        if (displayModeFacing(win->dm->displayMode()))
             newMode = DM_CONTINUOUS_FACING;
-        SwitchToDisplayMode(win, newMode, false);
+        SwitchToDisplayMode(win, newMode);
     } else if ('p' == key) {
         win->dm->goToPrevPage(0);
     } else if ('z' == key) {
@@ -6369,10 +6513,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     OnMenuViewFacing(win);
                     break;
 
-                case IDM_VIEW_BOOK:
-                    OnMenuViewBook(win);
-                    break;
-
                 case IDM_VIEW_CONTINUOUS:
                     OnMenuViewContinuous(win);
                     break;
@@ -6412,6 +6552,10 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
                 case IDM_VIEW_FULLSCREEN:
                     OnMenuViewFullscreen(win);
+                    break;
+
+                case IDM_VIEW_CONTINUOUS_FACING:
+                    OnMenuViewContinuousFacing(win);
                     break;
 
                 case IDM_VIEW_ROTATE_LEFT:
@@ -6624,8 +6768,7 @@ InitMouseWheelInfo:
                         MapWindowPoints(HWND_DESKTOP, pnmtv->hdr.hwndFrom, &ht.pt, 1);
                         TreeView_HitTest(pnmtv->hdr.hwndFrom, &ht);
 
-                        // let TVN_SELCHANGED handle the click, if it isn't on the already selected item
-                        if ((ht.flags & TVHT_ONITEM) && TreeView_GetSelection(pnmtv->hdr.hwndFrom) == ht.hItem)
+                        if (ht.flags & TVHT_ONITEM)
                             GoToTocLinkForTVItem(win, pnmtv->hdr.hwndFrom, ht.hItem);
                         break;
                     }
@@ -7036,11 +7179,9 @@ TCHAR *GetDefaultPrinterName()
 
 #define is_arg(txt) tstr_ieq(_T(txt), currArg->str)
 
-/* Parse 'txt' as hex color and return the result in 'destColor' */
-static void ParseColor(int *destColor, const TCHAR* txt)
+/* Parse 'txt' as hex color and set it as background color */
+static void ParseBgColor(const TCHAR* txt)
 {
-    if(!destColor)
-        return;
     if (tstr_startswith(txt, _T("0x")))
         txt += 2;
     else if (tstr_startswith(txt, _T("#")))
@@ -7056,7 +7197,8 @@ static void ParseColor(int *destColor, const TCHAR* txt)
         return;
     if (*txt)
         return;
-    *destColor = RGB(r,g,b);
+    int col = RGB(r,g,b);
+    gGlobalPrefs.m_bgColor = col;
 }
 
 HDDEDATA CALLBACK DdeCallback(UINT uType,
@@ -7155,38 +7297,6 @@ void RedirectIOToConsole(void)
 }
 #endif
 
-#define PROCESS_EXECUTE_FLAGS 0x22
-
-/*
- * enable "NX" execution prevention for XP, 2003
- * cf. http://www.uninformed.org/?v=2&a=4
- */
-typedef HRESULT (WINAPI *_NtSetInformationProcess)(
-   HANDLE  ProcessHandle,
-   UINT    ProcessInformationClass,
-   PVOID   ProcessInformation,
-   ULONG   ProcessInformationLength
-   );
-
-static void EnableNx(void)
-{
-   HMODULE ntdll;
-   DWORD dep_mode;
-   _NtSetInformationProcess ntsip;
-
-   ntdll = LoadLibrary(_T("ntdll.dll"));
-   if (ntdll == NULL)
-       return;
-
-   ntsip = (_NtSetInformationProcess)GetProcAddress(ntdll, "NtSetInformationProcess");
-   if (ntsip != NULL)
-   {
-       dep_mode = 13; /* ENABLE | DISABLE_ATL | PERMANENT */
-       ntsip(GetCurrentProcess(), PROCESS_EXECUTE_FLAGS,
-           &dep_mode, sizeof(dep_mode));
-   }
-}
-
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     TStrList *          argListRoot;
@@ -7213,8 +7323,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
 
     UNREFERENCED_PARAMETER(hPrevInstance);
-
-    EnableNx();
 
     u_DoAllTests();
 
@@ -7288,24 +7396,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
         else if (is_arg("-bgcolor") && currArg->next) {
             currArg = currArg->next;
-            ParseColor(&gGlobalPrefs.m_bgColor, currArg->str);
+            ParseBgColor(currArg->str);
         }
         else if (is_arg("-inverse-search") && currArg->next) {
             currArg = currArg->next;
             free(gGlobalPrefs.m_inverseSearchCmdLine);
             gGlobalPrefs.m_inverseSearchCmdLine = tstr_dup(currArg->str);
-        }
-        else if (is_arg("-fwdsearch-offset") && currArg->next) {
-            currArg = currArg->next;
-            gGlobalPrefs.m_fwdsearchOffset = _ttoi(currArg->str);
-        }
-        else if (is_arg("-fwdsearch-width") && currArg->next) {
-            currArg = currArg->next;
-            gGlobalPrefs.m_fwdsearchWidth = _ttoi(currArg->str);
-        }
-        else if (is_arg("-fwdsearch-color") && currArg->next) {
-            currArg = currArg->next;
-            ParseColor(&gGlobalPrefs.m_fwdsearchColor, currArg->str);
         }
         else if (is_arg("-esc-to-exit")) {
             gGlobalPrefs.m_escToExit = TRUE;
