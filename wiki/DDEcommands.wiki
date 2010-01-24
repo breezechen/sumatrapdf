@@ -36,8 +36,8 @@ Multiple commands can be concatenated as follows:
   [ForwardSearch("<pdffilepath>","<sourcefilepath>",<line>,<column>[,<newwindow>,<setfocus>])]
   }}}
   * Arguments:
-    * if newwindow = 1 then a new window is created even if the file is already open
-    * if focus = 1 then the focus is set to the window
+    * newwindow: 1 to open the document in a new window (even if the file is already opened)
+    * focus: 1 to set focus to SumatraPDF's window.
   * Eg:
   {{{
    [ForwardSearch("c:\file.pdf","c:\folder\source.tex",298,0)]
@@ -80,8 +80,12 @@ Multiple commands can be concatenated as follows:
 
 ==WinEdt==
 
-TODO: see posts and comments at http://william.famille-blum.org/blog/comments.php?y=08&m=05&entry=entry080515-065447
+See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
 
 ==Emacs==
 
-TODO: see posts and comments at http://william.famille-blum.org/blog/comments.php?y=08&m=05&entry=entry080515-065447
+See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
+
+==Vim==
+
+See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
