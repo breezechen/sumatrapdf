@@ -148,6 +148,8 @@ public:
         return ExtractPageText(getPdfPage(pageNo), lineSep, coords_out);
     };
 
+    pdf_xref *      _xref;
+
 protected:
     const TCHAR *_fileName;
     int _pageCount;
@@ -160,7 +162,6 @@ private:
     PdfTocItem * buildTocTree(pdf_outline *entry);
     void PdfEngine::linkifyPageText(pdf_page *page);
 
-    pdf_xref *      _xref;
     pdf_outline *   _outline;
     PdfPage *       _pages;
     fz_renderer *   _rast;
