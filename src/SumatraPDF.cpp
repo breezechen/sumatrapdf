@@ -4683,41 +4683,125 @@ static void FreePdfProperties(WindowInfo *win)
     win->pdfPropertiesCount = 0;
 }
 
+/*
+Example xref->info ("Info") object:
+<<
+  /Title (javascript performance rocks checklist.graffle)
+  /Author (Amy Hoy)
+  /Subject <>
+  /Creator (OmniGraffle Professional)
+  /Producer (Mac OS X 10.5.8 Quartz PDFContext)
+
+  /CreationDate (D:20091017155028Z)
+  /ModDate (D:20091019165730+02'00')
+
+  /AAPL:Keywords [ <> ]
+  /Keywords <>
+>>
+*/
+
+// TODO: add missing properties
+// TODO: add information about fonts ?
 static void OnMenuProperties(WindowInfo *win)
 {
-    uint64_t fileSize;
-    TCHAR *  tmp;
-    //TCHAR    buf[256];
+    uint64_t    fileSize;
+    TCHAR *     tmp;
+    pdf_xref *  xref;
+    fz_obj *    info = NULL;
+    fz_obj *    subject = NULL;
+    fz_obj *    author = NULL;
+    fz_obj *    title = NULL;
+    fz_obj *    producer = NULL;
+    fz_obj *    creator = NULL;
+    fz_obj *    creationDate = NULL;
+    fz_obj *    modDate = NULL;
+
+    char *      subjectStr = NULL;
+    char *      authorStr = NULL;
+    char *      titleStr = NULL;
+    char *      producerStr = NULL;
+    char *      creatorStr  = NULL;
 
     DisplayModel *dm = win->dm;
+    if (!dm || !dm->pdfEngine || !dm->pdfEngine->_xref) {
+        return;
+    }
+    xref = dm->pdfEngine->_xref;
+    info = xref->info;
+    if (!fz_isdict(info)) {
+        info = NULL;
+    }
+
+    if (info) {
+        title = fz_dictgets(info, "Title");
+        if (title) {
+            titleStr = fz_tostrbuf(title);
+        }
+        author = fz_dictgets(info, "Author");
+        if (author) {
+            authorStr = fz_tostrbuf(author);
+        }
+        subject = fz_dictgets(info, "Subject");
+        if (subject) {
+            subjectStr = fz_tostrbuf(subject);
+        }
+        producer = fz_dictgets(info, "Producer");
+        if (producer) {
+            producerStr = fz_tostrbuf(producer);
+        }
+        creator = fz_dictgets(info, "Creator");
+        if (creator) {
+            creatorStr = fz_tostrbuf(creator);
+        }
+        // TODO: convert creationDate and modDate into user-readable strings
+        creationDate = fz_dictgets(info, "CreationDate");
+        modDate = fz_dictgets(info, "ModDate");
+
+    }
 
     FreePdfProperties(win);
-
-    // TODO: use the real PDF information
 
     if (win->fullPath) {
         AddPdfProperty(win, _T("File:"), win->fullPath);
     }
 
-    AddPdfProperty(win, _T("Title:"), _T("My title"));
-    AddPdfProperty(win, _T("Author:"), _T("William Blake"));
-    AddPdfProperty(win, _T("Created:"), _T("12/22/2009 5:19:33 PM"));
-    AddPdfProperty(win, _T("Modified:"), _T("3/8/2010 1:43:02 PM"));
-    AddPdfProperty(win, _T("Application:"), _T("pdftk 1.12 -- www.pdftk.com"));
-    AddPdfProperty(win, _T("PDF Producer:"), _T("itext-paulo (lowagie.com)[JDK1.1] - build 132"));
-    AddPdfProperty(win, _T("PDF Version:"), _T("1.6 (Acrobat 7.x"));
+    if (titleStr) {
+        AddPdfProperty(win, _T("Title:"), titleStr);
+    }
+    if (authorStr) {
+        AddPdfProperty(win, _T("Author:"), authorStr);
+    }
+
+//    AddPdfProperty(win, _T("Created:"), _T("12/22/2009 5:19:33 PM"));
+//    AddPdfProperty(win, _T("Modified:"), _T("3/8/2010 1:43:02 PM"));
+    if (creatorStr) {
+        AddPdfProperty(win, _T("Application:"), creatorStr);
+    }
+    if (producerStr) {
+        AddPdfProperty(win, _T("PDF Producer:"), producerStr);
+    }
+
+    tmp = tstr_printf(_T("%d.%d"), xref->version / 10, xref->version % 10);
+    AddPdfProperty(win, _T("PDF Version:"), tmp);
+    free(tmp);
 
     fileSize = WinFileSizeGet(win->fullPath);
-    AddPdfProperty(win, _T("File Size:"), _T("1.29 MB (1,348,258 Bytes)"));
+    tmp = tstr_printf(_T("%d"), (int)fileSize);
+    // TODO: format in a more readable way, e.g.: "1.29 MB (1,348,258 Bytes)"
+    AddPdfProperty(win, _T("File Size:"), tmp);
+    free(tmp);
 
-    AddPdfProperty(win, _T("Page Size:"), _T("7x36 x 8.97 in"));
-    AddPdfProperty(win, _T("Tagged PDF:"), _T("No"));
+    //AddPdfProperty(win, _T("Page Size:"), _T("7x36 x 8.97 in"));
+
+    // TODO: don't know what tagged PDF is
+    //AddPdfProperty(win, _T("Tagged PDF:"), _T("No"));
 
     tmp = tstr_printf(_T("%d"), dm->pageCount());
     AddPdfProperty(win, _T("Number of Pages:"), tmp);
     free(tmp);
 
-    AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
+    // TODO: don't know how to get that. Is it about linearlized PDF?
+    //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
     CreatePropertiesWindow(win);
 }
 
