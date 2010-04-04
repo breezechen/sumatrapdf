@@ -1595,8 +1595,8 @@ static void WindowInfo_Delete(WindowInfo *win)
     DragAcceptFiles(win->hwndCanvas, FALSE);
     DeleteOldSelectionInfo(win);
 
+    free(win->fullPath);
     free(win->title);
-    win->title = NULL;
 
     delete win;
 }
@@ -2107,6 +2107,7 @@ static bool LoadPdfIntoWindow(
         win->needrefresh = false;
     }
 
+    win->fullPath = tstr_dup(fileName);
     win->dm->setAppData((void*)win);
 
     double zoomVirtual = gGlobalPrefs.m_defaultZoom;
@@ -2375,6 +2376,25 @@ HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize)
 void Win32_Font_Delete(HFONT font)
 {
     DeleteObject(font);
+}
+
+static uint64_t WinFileSizeGet(const TCHAR *file_path)
+{
+    int                         ok;
+    WIN32_FILE_ATTRIBUTE_DATA   fileInfo;
+    uint64_t                    res;
+
+    if (NULL == file_path)
+        return INVALID_FILE_SIZE;
+
+    ok = GetFileAttributesEx(file_path, GetFileExInfoStandard, (void*)&fileInfo);
+    if (!ok)
+        return (uint64_t)INVALID_FILE_SIZE;
+
+    res = fileInfo.nFileSizeHigh;
+    res = (res << 32) + fileInfo.nFileSizeLow;
+
+    return res;
 }
 
 static HTREEITEM WindowInfo_TreeItemForPageNo(WindowInfo *win, HTREEITEM hItem, int pageNo)
@@ -4524,6 +4544,14 @@ static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *righ
     ++win->pdfPropertiesCount;
 }
 
+#ifdef UNICODE
+static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const char *right) {
+    TCHAR *rightTxt = str_to_wstr_simplistic(right);
+    AddPdfProperty(win, left, rightTxt);
+    free(rightTxt);
+}
+#endif
+
 static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RECT *rect) {
     SIZE            txtSize;
     int             totalDx, totalDy;
@@ -4657,19 +4685,38 @@ static void FreePdfProperties(WindowInfo *win)
 
 static void OnMenuProperties(WindowInfo *win)
 {
+    uint64_t fileSize;
+    TCHAR *  tmp;
+    //TCHAR    buf[256];
+
+    DisplayModel *dm = win->dm;
+
     FreePdfProperties(win);
+
     // TODO: use the real PDF information
+
+    if (win->fullPath) {
+        AddPdfProperty(win, _T("File:"), win->fullPath);
+    }
+
+    AddPdfProperty(win, _T("Title:"), _T("My title"));
     AddPdfProperty(win, _T("Author:"), _T("William Blake"));
-    AddPdfProperty(win, _T("File:"), _T("foo.pdf"));
     AddPdfProperty(win, _T("Created:"), _T("12/22/2009 5:19:33 PM"));
     AddPdfProperty(win, _T("Modified:"), _T("3/8/2010 1:43:02 PM"));
     AddPdfProperty(win, _T("Application:"), _T("pdftk 1.12 -- www.pdftk.com"));
     AddPdfProperty(win, _T("PDF Producer:"), _T("itext-paulo (lowagie.com)[JDK1.1] - build 132"));
     AddPdfProperty(win, _T("PDF Version:"), _T("1.6 (Acrobat 7.x"));
+
+    fileSize = WinFileSizeGet(win->fullPath);
     AddPdfProperty(win, _T("File Size:"), _T("1.29 MB (1,348,258 Bytes)"));
+
     AddPdfProperty(win, _T("Page Size:"), _T("7x36 x 8.97 in"));
     AddPdfProperty(win, _T("Tagged PDF:"), _T("No"));
-    AddPdfProperty(win, _T("Number of Pages:"), _T("28"));
+
+    tmp = tstr_printf(_T("%d"), dm->pageCount());
+    AddPdfProperty(win, _T("Number of Pages:"), tmp);
+    free(tmp);
+
     AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
     CreatePropertiesWindow(win);
 }
