@@ -2329,19 +2329,19 @@ WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win, bool showWin, TCHAR 
 
     // TODO: fileName might not exist.
     // Normalize the file path    
-    TCHAR *pFullpath = FilePath_Normalize(fileName, FALSE);
-    if (!pFullpath)
+    TCHAR *fullpath = FilePath_Normalize(fileName, FALSE);
+    if (!fullpath)
         goto exit;
 
-    FileHistoryList *fileFromHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, pFullpath);
+    FileHistoryList *fileFromHistory = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fullpath);
     DisplayState *ds = NULL;
     if (fileFromHistory) {
         ds = &fileFromHistory->state;
-        AdjustRemovableDriveLetter(pFullpath);
+        AdjustRemovableDriveLetter(fullpath);
     }
 
     CheckPositionAndSize(ds);
-    if (!LoadPdfIntoWindow(pFullpath, win, ds, is_new_window, true, showWin, true)) {
+    if (!LoadPdfIntoWindow(fullpath, win, ds, is_new_window, true, showWin, true)) {
         /* failed to open */
         goto exit;
     }
@@ -2349,25 +2349,24 @@ WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win, bool showWin, TCHAR 
     // Define THREAD_BASED_FILEWATCH to use the thread-based implementation of file change detection.
 #ifdef THREAD_BASED_FILEWATCH
     if (!win->watcher.IsThreadRunning())
-        win->watcher.StartWatchThread(pFullpath, &OnFileChange, (LPARAM)win);
+        win->watcher.StartWatchThread(fullpath, &OnFileChange, (LPARAM)win);
 #else
-        win->watcher.Init(pFullpath);
+        win->watcher.Init(fullpath);
 #endif
 
-    CreateSynchronizer(pFullpath, &win->pdfsync);
+    CreateSynchronizer(fullpath, &win->pdfsync);
 
     if (gGlobalPrefs.m_rememberOpenedFiles) {
-        AddFileToHistory(pFullpath);
+        AddFileToHistory(fullpath);
         RebuildProgramMenus();
     }
 
     // Add the file also to Windows' recently used documents (this doesn't
     // happen automatically on drag&drop, reopening from history, etc.)
-    SHAddToRecentDocs(SHARD_PATH, pFullpath);
+    SHAddToRecentDocs(SHARD_PATH, fullpath);
 
 exit:
-    if (pFullpath)
-        free(pFullpath);
+    free(fullpath);
     return win;
 }
 
