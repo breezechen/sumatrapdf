@@ -188,7 +188,6 @@ public:
         hdcDoubleBuffer = NULL;
         bmpDoubleBuffer = NULL;
         title = NULL;
-        fullPath = NULL;
         currPageNo = 0;
         pdfPropertiesCount = 0;
     }
@@ -297,7 +296,6 @@ public:
     RECT            canvasRc;
     POINT           prevCanvasBR;
 
-    TCHAR *         fullPath;
     TCHAR *         title;
     int             currPageNo;
 

@@ -1595,7 +1595,6 @@ static void WindowInfo_Delete(WindowInfo *win)
     DragAcceptFiles(win->hwndCanvas, FALSE);
     DeleteOldSelectionInfo(win);
 
-    free(win->fullPath);
     free(win->title);
 
     delete win;
@@ -2107,7 +2106,6 @@ static bool LoadPdfIntoWindow(
         win->needrefresh = false;
     }
 
-    win->fullPath = tstr_dup(fileName);
     win->dm->setAppData((void*)win);
 
     double zoomVirtual = gGlobalPrefs.m_defaultZoom;
@@ -4761,8 +4759,8 @@ static void OnMenuProperties(WindowInfo *win)
 
     FreePdfProperties(win);
 
-    if (win->fullPath) {
-        AddPdfProperty(win, _T("File:"), win->fullPath);
+    if (win->dm->fileName()) {
+        AddPdfProperty(win, _T("File:"), win->dm->fileName());
     }
 
     if (titleStr) {
@@ -4785,7 +4783,7 @@ static void OnMenuProperties(WindowInfo *win)
     AddPdfProperty(win, _T("PDF Version:"), tmp);
     free(tmp);
 
-    fileSize = WinFileSizeGet(win->fullPath);
+    fileSize = WinFileSizeGet(win->dm->fileName());
     tmp = tstr_printf(_T("%d"), (int)fileSize);
     // TODO: format in a more readable way, e.g.: "1.29 MB (1,348,258 Bytes)"
     AddPdfProperty(win, _T("File Size:"), tmp);
