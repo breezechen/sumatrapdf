@@ -316,6 +316,7 @@ public:
 
 };
 
+WindowInfo* WindowInfo_FindByHwnd(HWND hwnd);
 WindowInfo* WindowInfoList_Find(LPTSTR file);
 WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, TCHAR *windowTitle=NULL);
 void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
@@ -359,5 +360,12 @@ void OnMenuAbout();
 LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el=NULL);
 void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect);
+
+// In SumatraProperties.cpp
+#define PROPERTIES_CLASS_NAME   _T("SUMATRA_PDF_PROPERTIES")
+
+void FreePdfProperties(WindowInfo *win);
+void OnMenuProperties(WindowInfo *win);
+LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif
