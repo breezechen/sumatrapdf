@@ -4637,11 +4637,6 @@ static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RECT *rect) {
 }
 
 static void CreatePropertiesWindow(WindowInfo *win) {
-    if (win->hwndPdfProperties) {
-        SetActiveWindow(win->hwndPdfProperties);
-        return;
-    }
-
     win->hwndPdfProperties = CreateWindow(
             PROPERTIES_CLASS_NAME, PROPERTIES_WIN_TITLE,
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
@@ -4679,6 +4674,23 @@ static void FreePdfProperties(WindowInfo *win)
         free((void*)win->pdfProperties[i].rightTxt);
     }
     win->pdfPropertiesCount = 0;
+}
+
+// Convert a date in PDF format, e.g. "D:20091017155028Z" to a display
+// format e.g. "12/22/2009 5:19:33 PM"
+// See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
+// Caller needs to free this string
+static TCHAR *pdfDateToDisplay(fz_obj *dateObj) {
+    if (!dateObj) {
+        return NULL;
+    }
+    char *s = fz_tostrbuf(dateObj);
+    if (!s) {
+        return NULL;
+    }
+
+    // TODO: do the real conversion
+    return utf8_to_tstr(s);
 }
 
 /*
@@ -4719,13 +4731,24 @@ static void OnMenuProperties(WindowInfo *win)
     char *      titleStr = NULL;
     char *      producerStr = NULL;
     char *      creatorStr  = NULL;
+    TCHAR *     creationDateStr = NULL;
+    TCHAR *     modDateStr = NULL;
+
+    if (win->hwndPdfProperties) {
+        SetActiveWindow(win->hwndPdfProperties);
+        return;
+    }
 
     DisplayModel *dm = win->dm;
     if (!dm || !dm->pdfEngine || !dm->pdfEngine->_xref) {
         return;
     }
+
+    FreePdfProperties(win);
+
     xref = dm->pdfEngine->_xref;
     info = xref->info;
+
     if (!fz_isdict(info)) {
         info = NULL;
     }
@@ -4751,27 +4774,28 @@ static void OnMenuProperties(WindowInfo *win)
         if (creator) {
             creatorStr = fz_tostrbuf(creator);
         }
-        // TODO: convert creationDate and modDate into user-readable strings
         creationDate = fz_dictgets(info, "CreationDate");
+        creationDateStr = pdfDateToDisplay(creationDate);
+
         modDate = fz_dictgets(info, "ModDate");
-
+        modDateStr = pdfDateToDisplay(modDate);
     }
-
-    FreePdfProperties(win);
 
     if (win->dm->fileName()) {
         AddPdfProperty(win, _T("File:"), win->dm->fileName());
     }
-
     if (titleStr) {
         AddPdfProperty(win, _T("Title:"), titleStr);
     }
     if (authorStr) {
         AddPdfProperty(win, _T("Author:"), authorStr);
     }
-
-//    AddPdfProperty(win, _T("Created:"), _T("12/22/2009 5:19:33 PM"));
-//    AddPdfProperty(win, _T("Modified:"), _T("3/8/2010 1:43:02 PM"));
+    if (creationDateStr) {
+        AddPdfProperty(win, _T("Created:"), creationDateStr);
+    }
+    if (modDateStr) {
+        AddPdfProperty(win, _T("Modified:"), modDateStr);
+    }
     if (creatorStr) {
         AddPdfProperty(win, _T("Application:"), creatorStr);
     }
@@ -4797,6 +4821,9 @@ static void OnMenuProperties(WindowInfo *win)
     tmp = tstr_printf(_T("%d"), dm->pageCount());
     AddPdfProperty(win, _T("Number of Pages:"), tmp);
     free(tmp);
+
+    free(creationDateStr);
+    free(modDateStr);
 
     // TODO: don't know how to get that. Is it about linearlized PDF?
     //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
