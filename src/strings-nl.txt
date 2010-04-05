@@ -395,3 +395,17 @@ Zoomfactor
 [Changes detected; refreshing] %s
 [Bestand gewijzigd; verversen] %s
 
+# Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Title:
+

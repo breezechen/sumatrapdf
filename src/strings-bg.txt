@@ -381,8 +381,20 @@ Zoom factor
 [Намерени са промени; обновявам] %s
 
 # Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
 #OK
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
 #Text documents
+#Title:
 

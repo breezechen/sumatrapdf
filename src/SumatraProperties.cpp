@@ -7,7 +7,7 @@
 #define PROPERTIES_LEFT_RIGHT_SPACE_DX 8
 #define PROPERTIES_RECT_PADDING     8
 #define PROPERTIES_TXT_DY_PADDING 2
-#define PROPERTIES_WIN_TITLE    _T("Document Properties") // TODO: translate it
+#define PROPERTIES_WIN_TITLE    _TR("Document Properties")
 
 static uint64_t WinFileSizeGet(const TCHAR *file_path)
 {
@@ -353,44 +353,44 @@ void OnMenuProperties(WindowInfo *win)
    }
 
    if (win->dm->fileName()) {
-       AddPdfProperty(win, _T("File:"), win->dm->fileName());
+       AddPdfProperty(win, _TR("File:"), win->dm->fileName());
    }
    if (titleStr) {
-       AddPdfProperty(win, _T("Title:"), titleStr);
+       AddPdfProperty(win, _TR("Title:"), titleStr);
    }
    if (authorStr) {
-       AddPdfProperty(win, _T("Author:"), authorStr);
+       AddPdfProperty(win, _TR("Author:"), authorStr);
    }
    if (creationDateStr) {
-       AddPdfProperty(win, _T("Created:"), creationDateStr);
+       AddPdfProperty(win, _TR("Created:"), creationDateStr);
    }
    if (modDateStr) {
-       AddPdfProperty(win, _T("Modified:"), modDateStr);
+       AddPdfProperty(win, _TR("Modified:"), modDateStr);
    }
    if (creatorStr) {
-       AddPdfProperty(win, _T("Application:"), creatorStr);
+       AddPdfProperty(win, _TR("Application:"), creatorStr);
    }
    if (producerStr) {
-       AddPdfProperty(win, _T("PDF Producer:"), producerStr);
+       AddPdfProperty(win, _TR("PDF Producer:"), producerStr);
    }
 
    tmp = tstr_printf(_T("%d.%d"), xref->version / 10, xref->version % 10);
-   AddPdfProperty(win, _T("PDF Version:"), tmp);
+   AddPdfProperty(win, _TR("PDF Version:"), tmp);
    free(tmp);
 
    fileSize = WinFileSizeGet(win->dm->fileName());
    tmp = tstr_printf(_T("%d"), (int)fileSize);
    // TODO: format in a more readable way, e.g.: "1.29 MB (1,348,258 Bytes)"
-   AddPdfProperty(win, _T("File Size:"), tmp);
+   AddPdfProperty(win, _TR("File Size:"), tmp);
    free(tmp);
 
-   //AddPdfProperty(win, _T("Page Size:"), _T("7x36 x 8.97 in"));
+   //AddPdfProperty(win, _TR("Page Size:"), _T("7x36 x 8.97 in"));
 
    // TODO: don't know what tagged PDF is
    //AddPdfProperty(win, _T("Tagged PDF:"), _T("No"));
 
    tmp = tstr_printf(_T("%d"), dm->pageCount());
-   AddPdfProperty(win, _T("Number of Pages:"), tmp);
+   AddPdfProperty(win, _TR("Number of Pages:"), tmp);
    free(tmp);
 
    // TODO: don't know how to get that. Is it about linearlized PDF?

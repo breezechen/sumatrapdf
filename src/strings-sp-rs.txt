@@ -376,10 +376,22 @@ Faktor uvećanja
 [Promene su primećene; osvežavam] %s
 
 # Untranslated:
+#Application:
+#Author:
 #Back\tAlt+<-
 #Book view
 #Continuous book view
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
+#Title:
 

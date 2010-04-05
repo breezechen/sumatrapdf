@@ -382,8 +382,20 @@ Ffactor Chwyddo
 [Newidiadau wedi eu canfod; adnewyddu]
 
 # Untranslated:
+#Application:
+#Author:
 #Back\tAlt+<-
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
+#Title:
 

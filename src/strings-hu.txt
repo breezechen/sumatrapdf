@@ -376,10 +376,22 @@ Nagyítás mértéke
 [a file megváltozott; frissítés] %s
 
 # Untranslated:
+#Application:
+#Author:
 #Cannot start inverse search command. Please check the command line in the settings.
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
 #No result found around line %u in file %s
 #No synchronization file found
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Set inverse search command-line
 #Text documents
+#Title:
 

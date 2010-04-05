@@ -178,7 +178,9 @@ Micşorează
 #(of %d)
 #Advanced
 #All files
+#Application:
 #Associate with PDF files?
+#Author:
 #Automatic
 #Automatically check for &updates
 #Back\tAlt+<-
@@ -191,11 +193,15 @@ Micşorează
 #Copy Selection\tCtrl-C
 #Couldn't initialize printer
 #Couldn't render the page
+#Created:
 #Default &Layout:
 #Default &Zoom:
+#Document Properties
 #Download
 #Enter password
 #Enter password for %s
+#File Size:
+#File:
 #Find
 #Forward\tAlt+->
 #Found text at page %d
@@ -203,6 +209,7 @@ Micşorează
 #Hint: Use the F3 key for finding again
 #Main PDF reader can't be changed in portable mode
 #Make SumatraPDF default application for PDF files?
+#Modified:
 #New version %s is available. Download new version?
 #New version available.
 #No matches were found
@@ -210,10 +217,14 @@ Micşorează
 #No result found around line %u in file %s
 #No synchronization file found
 #No synchronization info at this position
+#Number of Pages:
 #OK
 #Open in &Adobe Reader
 #PDF Document
+#PDF Producer:
+#PDF Version:
 #PDF documents
+#Page Size:
 #Page number %u inexistant
 #Please wait - rendering...
 #Properties...
@@ -230,6 +241,7 @@ Micşorează
 #SumatraPDF should now be your main PDF reader
 #Synchronization file cannot be opened
 #Text documents
+#Title:
 #Unknown source file (%s)
 #Warning
 #You have the latest version.

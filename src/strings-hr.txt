@@ -344,19 +344,31 @@ Umanji
 # Untranslated:
 #&Custom Zoom...
 #&Magnification:
+#Application:
+#Author:
 #Automatic
 #Back\tAlt+<-
 #Book view
 #Cannot start inverse search command. Please check the command line in the settings.
 #Continuous book view
 #Copy Selection\tCtrl-C
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
+#Modified:
 #No synchronization file found
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Select content with Ctrl+left mouse button
 #Send by &email...
 #Show pages continuously
 #Text documents
+#Title:
 #Zoom
 #Zoom factor
 

@@ -10,7 +10,7 @@ about untranslated strings to stdout and adds untranslated strings as
 comments at the end of strings file for each language.
 """
 
-C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraDialogs.cc"]
+C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraAbout.cpp", "SumatraProperties.cpp", "SumatraDialogs.cc"]
 translation_pattern = r'_TRN?\("(.*?)"\)'
 STRINGS_FILE = "strings_obsolete.txt"
 SCRIPT_PATH = os.path.realpath(".")

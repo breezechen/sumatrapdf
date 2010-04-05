@@ -337,6 +337,8 @@ Zoom Out
 #&Custom Zoom...
 #&Magnification:
 #&Manual
+#Application:
+#Author:
 #Automatic
 #Back\tAlt+<-
 #Book view
@@ -344,14 +346,24 @@ Zoom Out
 #Continuous book view
 #Copy Selection\tCtrl-C
 #Couldn't initialize printer
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
 #Hint: Use the F3 key for finding again
+#Modified:
 #No synchronization file found
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Select content with Ctrl+left mouse button
 #Send by &email...
 #Show pages continuously
 #Text documents
+#Title:
 #Zoom
 #Zoom factor
 
