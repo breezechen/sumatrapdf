@@ -820,7 +820,7 @@ void DisplayModel::setSearchHit(int pageNo, RectD *hitRect)
          Possible speed improvement: remember which links are visible after
          scrolling and skip the _Inside test for those invisible.
          Another way: build another list with only those visible, so we don't
-         even have to travers those that are invisible.
+         even have to traverse those that are invisible.
    */
 PdfLink *DisplayModel::linkAtPosition(int x, int y)
 {
