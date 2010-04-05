@@ -4544,7 +4544,7 @@ static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *righ
 
 #ifdef UNICODE
 static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const char *right) {
-    TCHAR *rightTxt = str_to_wstr_simplistic(right);
+    TCHAR *rightTxt = utf8_to_tstr(right);
     AddPdfProperty(win, left, rightTxt);
     free(rightTxt);
 }
