@@ -483,6 +483,7 @@ void PdfEngine::fillPdfLinks(PdfLink *pdfLinks, int linkCount)
     int pageNo;
     PdfLink *pdfLink = pdfLinks;
     int linkNo = 0;
+    float tmp;
 
     for (pageNo=0; pageNo < _pageCount; pageNo++)
     {
@@ -497,9 +498,23 @@ void PdfEngine::fillPdfLinks(PdfLink *pdfLinks, int linkCount)
             pdfLink->link = link;
             pdfLink->rectPage.x = link->rect.x0;
             pdfLink->rectPage.y = link->rect.y0;
+
+            // there are PDFs that have x,y positions in reverse order, so
+            // fix them up
+            if (link->rect.x0 > link->rect.x1) {
+                tmp = link->rect.x0;
+                link->rect.x0 = link->rect.x1;
+                link->rect.x1 = tmp;
+            }
             assert(link->rect.x1 >= link->rect.x0);
             pdfLink->rectPage.dx = link->rect.x1 - link->rect.x0;
             assert(pdfLink->rectPage.dx >= 0);
+
+            if (link->rect.y0 > link->rect.y1) {
+                tmp = link->rect.y0;
+                link->rect.y0 = link->rect.y1;
+                link->rect.y1 = tmp;
+            }
             assert(link->rect.y1 >= link->rect.y0);
             pdfLink->rectPage.dy = link->rect.y1 - link->rect.y0;
             assert(pdfLink->rectPage.dy >= 0);
