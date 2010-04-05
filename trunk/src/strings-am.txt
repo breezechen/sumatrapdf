@@ -392,3 +392,17 @@ Zoom factor
 [Changes detected; refreshing] %s
 [Հայտնաբերվել են փոփոխություններ, ընթանում է թարմացում] %s
 
+# Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Title:
+

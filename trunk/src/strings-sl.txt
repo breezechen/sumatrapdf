@@ -367,13 +367,25 @@ Faktor povečave
 [Spremembe zaznane; osvežitev poteka] %s
 
 # Untranslated:
+#Application:
+#Author:
 #Back\tAlt+<-
 #Book view
 #Continuous book view
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
+#Modified:
 #No synchronization file found
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
 #Show pages continuously
 #Text documents
+#Title:
 

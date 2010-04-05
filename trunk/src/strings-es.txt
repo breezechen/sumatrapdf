@@ -393,3 +393,17 @@ Proporción de Zoom
 [Changes detected; refreshing] %s
 [Modificaciones detectadas; actualizando] %s
 
+# Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Title:
+

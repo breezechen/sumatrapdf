@@ -392,3 +392,17 @@ Faktor pembesaran
 [Changes detected; refreshing] %s
 [Perubahan terdeteksi; muat ulang] %s
 
+# Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Title:
+

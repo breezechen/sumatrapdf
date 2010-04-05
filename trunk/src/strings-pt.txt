@@ -391,5 +391,17 @@ Factor de Zoom
 [Mudanças detectadas; actualizando] %s
 
 # Untranslated:
+#Application:
+#Author:
+#Created:
+#Document Properties
+#File Size:
+#File:
+#Modified:
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
+#Title:
 

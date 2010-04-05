@@ -315,14 +315,20 @@ Zjištěna změna; obnovuji] %s
 # Untranslated:
 #&Manual
 #&Skip this version
+#Application:
 #Associate with PDF files?
+#Author:
 #Automatic
 #Book view
 #Bookmarks\tF12
 #Continuous book view
+#Created:
 #Default &Zoom:
+#Document Properties
 #Enter password
 #Enter password for %s
+#File Size:
+#File:
 #Find Next
 #Find Previous
 #Find...\tCtrl-F
@@ -331,13 +337,19 @@ Zjištěna změna; obnovuji] %s
 #Go to page
 #Make SumatraPDF default application for PDF files?
 #Match case
+#Modified:
 #New version %s is available. Download new version?
 #New version available.
 #No new version available.
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
 #Set inverse search command-line
 #Show pages continuously
+#Title:
 #You have the latest version.
 #You have version %s
 

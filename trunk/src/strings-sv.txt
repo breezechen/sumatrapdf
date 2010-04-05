@@ -380,9 +380,21 @@ Zoomfaktor
 [Ändringar detekterade; uppdaterar] %s
 
 # Untranslated:
+#Application:
+#Author:
 #Back\tAlt+<-
+#Created:
+#Document Properties
+#File Size:
+#File:
 #Forward\tAlt+->
+#Modified:
 #No synchronization file found
+#Number of Pages:
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Properties...
 #Send by &email...
+#Title:
 
