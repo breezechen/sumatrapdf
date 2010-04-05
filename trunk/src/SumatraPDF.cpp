@@ -4676,11 +4676,71 @@ static void FreePdfProperties(WindowInfo *win)
     win->pdfPropertiesCount = 0;
 }
 
-// Convert a date in PDF format, e.g. "D:20091017155028Z" to a display
+static char *pdfDateParseInt(char *s, int numDigits, int *valOut) {
+    int n = 0;
+    while (numDigits > 0) {
+        char c = *s++;
+        if (c < '0' || c > '9') {
+            return NULL;
+        }
+        n = n * 10 + (c - '0');
+        numDigits--;
+    }
+    *valOut = n;
+    return s;
+}
+
+// See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
+// Format:  "D:YYYYMMDDHHMMSSxxxxxxx"
+// Example: "D:20091222171933-05'00'"
+static bool pdfDateParse(char *pdfDate, SYSTEMTIME *timeOut) {
+    int n;
+
+    // "D:" at the beginning is optional
+    if ('D' == pdfDate[0] && ':' == pdfDate[1]) {
+        pdfDate += 2;
+    }
+    // parse YYYY part
+    pdfDate = pdfDateParseInt(pdfDate, 4, &n);
+    if (!pdfDate) { return false; }
+    timeOut->wYear = n;
+    // parse MM part
+    pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+    if (!pdfDate) { return false; }
+    timeOut->wMonth = n;    
+    // parse DD part
+    pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+    if (!pdfDate) { return false; }
+    timeOut->wDay = n;
+    // parse HH part
+    pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+    if (!pdfDate) { return false; }
+    timeOut->wHour = n;
+    // parse MM part
+    pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+    if (!pdfDate) { return false; }
+    timeOut->wMinute = n;
+
+    timeOut->wSecond = 0;
+    timeOut->wMilliseconds = 0;
+    // TODO: this is clearly wrong but I don't know how to calculate wDayOfWeek
+    // and it doesn't seem to matter anyway
+    timeOut->wDayOfWeek = 0;
+    return true;
+}
+
+// Convert a date in PDF format, e.g. "D:20091222171933-05'00'" to a display
 // format e.g. "12/22/2009 5:19:33 PM"
 // See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
 // Caller needs to free this string
 static TCHAR *pdfDateToDisplay(fz_obj *dateObj) {
+    SYSTEMTIME date;
+    bool ok;
+    int ret;
+    TCHAR *tmp;
+    TCHAR buf[512];
+    int cchBufLen = dimof(buf);
+
     if (!dateObj) {
         return NULL;
     }
@@ -4688,9 +4748,25 @@ static TCHAR *pdfDateToDisplay(fz_obj *dateObj) {
     if (!s) {
         return NULL;
     }
+    ok = pdfDateParse(s, &date);
+    if (!ok) {
+        return utf8_to_tstr(s);
+    }
 
-    // TODO: do the real conversion
-    return utf8_to_tstr(s);
+    ret = GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &date, NULL, buf, cchBufLen);
+    if (0 == ret) {
+        // GetDateFormat() failed
+        return utf8_to_tstr(s);
+    }
+    tmp = buf + ret - 1;
+    *tmp++ = _T(' ');
+    cchBufLen -= ret;
+    ret = GetTimeFormat(LOCALE_USER_DEFAULT, 0, &date, NULL, tmp, cchBufLen);
+    if (0 == ret) {
+        // GetTimeFormat() failed
+        return utf8_to_tstr(s);
+    }
+    return tstr_dup(buf);
 }
 
 /*
@@ -4822,11 +4898,11 @@ static void OnMenuProperties(WindowInfo *win)
     AddPdfProperty(win, _T("Number of Pages:"), tmp);
     free(tmp);
 
-    free(creationDateStr);
-    free(modDateStr);
-
     // TODO: don't know how to get that. Is it about linearlized PDF?
     //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
+
+    free(creationDateStr);
+    free(modDateStr);
     CreatePropertiesWindow(win);
 }
 
