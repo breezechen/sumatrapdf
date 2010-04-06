@@ -121,6 +121,58 @@ static TCHAR *PdfDateToDisplay(fz_obj *dateObj) {
    return tstr_dup(buf);
 }
 
+static void TstrReverse(TCHAR *s) {
+    TCHAR *e = s + tstr_len(s) - 1;
+    while (s < e) {
+        TCHAR tmp = *s;
+        *s = *e;
+        *e = tmp;
+        ++s; --e;
+    }
+}
+
+// format a number with a given thousand separator e.g. it turns
+// 1234 into "1,234"
+// TODO: due to how we do it (string reverse step) it only works correctly
+// if thousandSep is a single character. Not sure if that's true for all locales.
+// Caller needs to free() the result.
+static TCHAR *FormatNumWithThousandSep(uint64_t num, TCHAR *thousandSep) {
+    TCHAR buf[32];
+    TCHAR buf2[64];
+    _sntprintf(buf, dimof(buf), _T("%I64d"), num);
+    // go from end and add thousandSep every 3 chars,
+    // then reverse to get the final string
+    TCHAR *src = buf + tstr_len(buf) - 1;
+    TCHAR *dst = buf2;
+    int pos = 3;
+    while (src >= buf) {
+        *dst++ = *src--;
+        --pos;
+        if (0 == pos && src > buf) {
+            TCHAR *tmp = thousandSep;
+            while (*tmp) {
+                *dst++ = *tmp++;
+            }
+            pos = 3;
+        }
+    }
+    *dst = 0;
+    TstrReverse(buf2);
+    return tstr_dup(buf2);
+}
+
+// format file size in a readable way e.g. 1348258 is shown
+// as "1.29 MB (1,348,258 Bytes)"
+// Caller needs to free the result
+static TCHAR *FormatPdfSize(uint64_t size) {
+    TCHAR thousandSep[32];
+    TCHAR *n1;
+    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, thousandSep, dimof(thousandSep));
+    n1 = FormatNumWithThousandSep(size, thousandSep);
+    // TODO: needs more work
+    return n1;
+}
+
 static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *right) {
    if (win->pdfPropertiesCount >= MAX_PDF_PROPERTIES) {
        return;
@@ -379,8 +431,7 @@ void OnMenuProperties(WindowInfo *win)
    free(tmp);
 
    fileSize = WinFileSizeGet(win->dm->fileName());
-   tmp = tstr_printf(_T("%d"), (int)fileSize);
-   // TODO: format in a more readable way, e.g.: "1.29 MB (1,348,258 Bytes)"
+   tmp = FormatPdfSize(fileSize);
    AddPdfProperty(win, _TR("File Size:"), tmp);
    free(tmp);
 
