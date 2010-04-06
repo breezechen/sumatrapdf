@@ -342,6 +342,7 @@ Zoom Out
 #Automatic
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
 #Continuous book view
 #Copy Selection\tCtrl-C
@@ -351,10 +352,14 @@ Zoom Out
 #File Size:
 #File:
 #Forward\tAlt+->
+#GB
 #Hint: Use the F3 key for finding again
+#KB
+#MB
 #Modified:
 #No synchronization file found
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

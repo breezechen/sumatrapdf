@@ -66,6 +66,10 @@
 #include "PdfSync.h"
 #include "translations.h"
 
+#define KB 1024
+#define MB 1024*1024
+#define GB 1024*1024*1024
+
 #define APP_NAME_STR            _T("SumatraPDF")
 #define CMD_ARG_SEND_CRASHDUMP _T("/sendcrashdump")
 

@@ -370,15 +370,20 @@ Hệ số thu phóng
 #Author:
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Continuous book view
 #Created:
 #Document Properties
 #File Size:
 #File:
 #Forward\tAlt+->
+#GB
+#KB
+#MB
 #Modified:
 #No synchronization file found
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

@@ -383,13 +383,18 @@ Zoom factor
 # Untranslated:
 #Application:
 #Author:
+#Bytes
 #Created:
 #Document Properties
 #File Size:
 #File:
+#GB
+#KB
+#MB
 #Modified:
 #Number of Pages:
 #OK
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

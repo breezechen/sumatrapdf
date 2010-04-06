@@ -321,6 +321,7 @@ Zjištěna změna; obnovuji] %s
 #Automatic
 #Book view
 #Bookmarks\tF12
+#Bytes
 #Continuous book view
 #Created:
 #Default &Zoom:
@@ -334,7 +335,10 @@ Zjištěna změna; obnovuji] %s
 #Find...\tCtrl-F
 #Find:
 #Fullscreen\tCtrl-L
+#GB
 #Go to page
+#KB
+#MB
 #Make SumatraPDF default application for PDF files?
 #Match case
 #Modified:
@@ -342,6 +346,7 @@ Zjištěna změna; obnovuji] %s
 #New version available.
 #No new version available.
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

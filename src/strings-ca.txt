@@ -226,6 +226,7 @@ Allunya't
 #Automatically check for &updates
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Cancel
 #Cannot print this file
 #Cannot start inverse search command. Please check the command line in the settings.
@@ -243,7 +244,10 @@ Allunya't
 #Find
 #Forward\tAlt+->
 #Found text at page %d
+#GB
 #Hint: Use the F3 key for finding again
+#KB
+#MB
 #Main PDF reader can't be changed in portable mode
 #Modified:
 #No matches were found
@@ -253,6 +257,7 @@ Allunya't
 #Number of Pages:
 #OK
 #Open in &Adobe Reader
+#P&roperties...
 #PDF Document
 #PDF Producer:
 #PDF Version:
