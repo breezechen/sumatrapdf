@@ -28,7 +28,7 @@ static uint64_t WinFileSizeGet(const TCHAR *file_path)
     return res;
 }
 
-static char *pdfDateParseInt(char *s, int numDigits, int *valOut) {
+static char *PdfDateParseInt(char *s, int numDigits, int *valOut) {
    int n = 0;
    while (numDigits > 0) {
        char c = *s++;
@@ -45,7 +45,7 @@ static char *pdfDateParseInt(char *s, int numDigits, int *valOut) {
 // See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
 // Format:  "D:YYYYMMDDHHMMSSxxxxxxx"
 // Example: "D:20091222171933-05'00'"
-static bool pdfDateParse(char *pdfDate, SYSTEMTIME *timeOut) {
+static bool PdfDateParse(char *pdfDate, SYSTEMTIME *timeOut) {
    int n;
 
    // "D:" at the beginning is optional
@@ -53,23 +53,23 @@ static bool pdfDateParse(char *pdfDate, SYSTEMTIME *timeOut) {
        pdfDate += 2;
    }
    // parse YYYY part
-   pdfDate = pdfDateParseInt(pdfDate, 4, &n);
+   pdfDate = PdfDateParseInt(pdfDate, 4, &n);
    if (!pdfDate) { return false; }
    timeOut->wYear = n;
    // parse MM part
-   pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+   pdfDate = PdfDateParseInt(pdfDate, 2, &n);
    if (!pdfDate) { return false; }
    timeOut->wMonth = n;    
    // parse DD part
-   pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+   pdfDate = PdfDateParseInt(pdfDate, 2, &n);
    if (!pdfDate) { return false; }
    timeOut->wDay = n;
    // parse HH part
-   pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+   pdfDate = PdfDateParseInt(pdfDate, 2, &n);
    if (!pdfDate) { return false; }
    timeOut->wHour = n;
    // parse MM part
-   pdfDate = pdfDateParseInt(pdfDate, 2, &n);
+   pdfDate = PdfDateParseInt(pdfDate, 2, &n);
    if (!pdfDate) { return false; }
    timeOut->wMinute = n;
 
@@ -85,7 +85,7 @@ static bool pdfDateParse(char *pdfDate, SYSTEMTIME *timeOut) {
 // format e.g. "12/22/2009 5:19:33 PM"
 // See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
 // Caller needs to free this string
-static TCHAR *pdfDateToDisplay(fz_obj *dateObj) {
+static TCHAR *PdfDateToDisplay(fz_obj *dateObj) {
    SYSTEMTIME date;
    bool ok;
    int ret;
@@ -100,7 +100,7 @@ static TCHAR *pdfDateToDisplay(fz_obj *dateObj) {
    if (!s) {
        return NULL;
    }
-   ok = pdfDateParse(s, &date);
+   ok = PdfDateParse(s, &date);
    if (!ok) {
        return utf8_to_tstr(s);
    }
@@ -346,10 +346,10 @@ void OnMenuProperties(WindowInfo *win)
            creatorStr = fz_tostrbuf(creator);
        }
        creationDate = fz_dictgets(info, "CreationDate");
-       creationDateStr = pdfDateToDisplay(creationDate);
+       creationDateStr = PdfDateToDisplay(creationDate);
 
        modDate = fz_dictgets(info, "ModDate");
-       modDateStr = pdfDateToDisplay(modDate);
+       modDateStr = PdfDateToDisplay(modDate);
    }
 
    if (win->dm->fileName()) {
