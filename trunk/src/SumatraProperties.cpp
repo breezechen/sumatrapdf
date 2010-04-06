@@ -161,16 +161,79 @@ static TCHAR *FormatNumWithThousandSep(uint64_t num, TCHAR *thousandSep) {
     return tstr_dup(buf2);
 }
 
+// Format the file size in a short form that rounds to the largest size unit
+// e.g. "3.48 GB", "12.38 MB", "23 KB"
+// Caller needs to free the result.
+static TCHAR *FormatSizeSuccint(uint64_t size) {
+    TCHAR buf[64];
+    TCHAR *tmp;
+    const TCHAR *unit;
+
+    double s = (double)size;
+    if (s > (double)GB) {
+        s = s / (double)GB;
+        unit = _TR("GB");
+    } else if (s > (double)MB) {
+        s = s / (double)MB;
+        unit = _TR("MB");
+    } else {
+        s = s / (double)KB;
+        unit = _TR("KB");
+    }
+
+    // TODO: probably should use locale's decimal separator
+    _sntprintf(buf, sizeof(buf), _T("%.2f"), s);
+    // we might end up with ".00" suffix or ".*0" suffix, which we don't want
+    tmp = buf + tstr_len(buf) - 1;
+    if (*tmp == '0') {
+        if (tmp[-1] == '0') {
+            --tmp;
+            --tmp;
+        }
+    } else {
+        ++tmp;
+    }
+
+    *tmp++ = ' ';
+    while (*unit) {
+        *tmp++ = *unit++;
+    }
+    *tmp = 0;
+    return tstr_dup(buf);
+}
+
 // format file size in a readable way e.g. 1348258 is shown
 // as "1.29 MB (1,348,258 Bytes)"
 // Caller needs to free the result
 static TCHAR *FormatPdfSize(uint64_t size) {
+    TCHAR res[128];
     TCHAR thousandSep[32];
-    TCHAR *n1;
+    TCHAR *n1, *n2, *dst;
+    const TCHAR *src;
     GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, thousandSep, dimof(thousandSep));
-    n1 = FormatNumWithThousandSep(size, thousandSep);
-    // TODO: needs more work
-    return n1;
+    n1 = FormatSizeSuccint(size);
+    n2 = FormatNumWithThousandSep(size, thousandSep);
+    dst = res;
+    src = n1;
+    while (*src) {
+        *dst++ = *src++;
+    }
+    *dst++ = ' ';
+    *dst++ = '(';
+    src = n2;
+    while (*src) {
+        *dst++ = *src++;
+    }
+    *dst++ = ' ';
+    src = _TR("Bytes");
+    while (*src) {
+        *dst++ = *src++;
+    }
+    *dst++ = ')';
+    *dst = 0;
+    free(n1);
+    free(n2);
+    return tstr_dup(res);
 }
 
 static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *right) {

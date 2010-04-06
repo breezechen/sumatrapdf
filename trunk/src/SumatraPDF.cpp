@@ -967,7 +967,7 @@ MenuDef menuDefFile[] = {
     { _TRN("Open in &Adobe Reader"),                IDM_VIEW_WITH_ACROBAT,      MF_NOT_IN_RESTRICTED },
     { _TRN("Send by &email..."),                    IDM_SEND_BY_EMAIL,          MF_NOT_IN_RESTRICTED },
     { SEP_ITEM ,                                    0,                          MF_NOT_IN_RESTRICTED },
-    { _TRN("Properties..."),                    	IDM_PROPERTIES,          	0 },
+    { _TRN("P&roperties..."),                       IDM_PROPERTIES,             0 },
     { SEP_ITEM ,                                    0,                          MF_NOT_IN_RESTRICTED },
     { _TRN("E&xit\tCtrl-Q"),                        IDM_EXIT,                   0 }
 };

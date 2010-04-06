@@ -378,15 +378,20 @@ Nagyítás mértéke
 # Untranslated:
 #Application:
 #Author:
+#Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
 #Created:
 #Document Properties
 #File Size:
 #File:
+#GB
+#KB
+#MB
 #Modified:
 #No result found around line %u in file %s
 #No synchronization file found
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

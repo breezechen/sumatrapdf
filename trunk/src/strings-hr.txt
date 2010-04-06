@@ -349,6 +349,7 @@ Umanji
 #Automatic
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
 #Continuous book view
 #Copy Selection\tCtrl-C
@@ -357,9 +358,13 @@ Umanji
 #File Size:
 #File:
 #Forward\tAlt+->
+#GB
+#KB
+#MB
 #Modified:
 #No synchronization file found
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

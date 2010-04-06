@@ -380,14 +380,19 @@ Zoom factor
 #Author:
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Continuous book view
 #Created:
 #Document Properties
 #File Size:
 #File:
 #Forward\tAlt+->
+#GB
+#KB
+#MB
 #Modified:
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:

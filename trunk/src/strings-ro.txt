@@ -185,6 +185,7 @@ Micşorează
 #Automatically check for &updates
 #Back\tAlt+<-
 #Book view
+#Bytes
 #Cancel
 #Cannot print this file
 #Cannot start inverse search command. Please check the command line in the settings.
@@ -205,8 +206,11 @@ Micşorează
 #Find
 #Forward\tAlt+->
 #Found text at page %d
+#GB
 #Go to page
 #Hint: Use the F3 key for finding again
+#KB
+#MB
 #Main PDF reader can't be changed in portable mode
 #Make SumatraPDF default application for PDF files?
 #Modified:
@@ -220,6 +224,7 @@ Micşorează
 #Number of Pages:
 #OK
 #Open in &Adobe Reader
+#P&roperties...
 #PDF Document
 #PDF Producer:
 #PDF Version:

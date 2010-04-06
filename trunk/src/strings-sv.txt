@@ -383,14 +383,19 @@ Zoomfaktor
 #Application:
 #Author:
 #Back\tAlt+<-
+#Bytes
 #Created:
 #Document Properties
 #File Size:
 #File:
 #Forward\tAlt+->
+#GB
+#KB
+#MB
 #Modified:
 #No synchronization file found
 #Number of Pages:
+#P&roperties...
 #PDF Producer:
 #PDF Version:
 #Page Size:
