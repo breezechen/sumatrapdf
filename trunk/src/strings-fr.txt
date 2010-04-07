@@ -9,6 +9,7 @@ Lang: fr French (Français)
 Contributor: fiuzzy
 Contributor: laclasse
 Contributor: phoenix
+Contributor: pconno
 
 &About
 À propos
@@ -106,8 +107,14 @@ Avancé
 All files
 Tous les fichiers
 
+Application:
+Application:
+
 Associate with PDF files?
 Associer aux fichiers PDF ?
+
+Author:
+Auteur:
 
 Automatic
 Automatique
@@ -123,6 +130,9 @@ Comme livre
 
 Bookmarks\tF12
 Signets\tF12
+
+Bytes
+Octets
 
 Cancel
 Annuler
@@ -160,11 +170,17 @@ Impossible d'initialiser l'imprimante
 Couldn't render the page
 Impossible de générer la page
 
+Created:
+Créé:
+
 Default &Layout:
 Mise en page par défaut
 
 Default &Zoom:
 &Zoom par défaut
+
+Document Properties
+Propriétés du document
 
 Download
 Télécharger
@@ -186,6 +202,12 @@ Page double
 
 Failed to save a file
 Echec d'enregistrement du fichier
+
+File Size:
+Taille du fichier:
+
+File:
+Fichier:
 
 Find
 Rechercher
@@ -226,14 +248,23 @@ Texte trouvé à la page %d
 Fullscreen\tCtrl-L
 Plein écran\tCtrl-L
 
+GB
+Go
+
 Go to page
 Aller à la page
 
 Hint: Use the F3 key for finding again
 Remarque: Utilisez la touche F3 pour trouver de nouveau
 
+KB
+Ko
+
 Last Page\tEnd
 Dernière page\tEnd
+
+MB
+Mo
 
 Main PDF reader can't be changed in portable mode
 Le lecteur de PDF ne peut être changer en mode portable
@@ -246,6 +277,9 @@ Définir SumatraPDF comme lecteur PDF par défaut
 
 Match case
 Respecter la casse
+
+Modified:
+Modifié:
 
 New version %s is available. Download new version?
 La version %s est disponible. Télécharger la nouvelle version ?
@@ -274,6 +308,9 @@ Aucun fichier de synchronization trouvé
 No synchronization info at this position
 Pas de synchronisation des informations à cette position
 
+Number of Pages:
+Nombre de pages:
+
 OK
 OK
 
@@ -283,11 +320,23 @@ Ouvrir
 Open in &Adobe Reader
 Ouvrir dans &Adobe Reader
 
+P&roperties...
+Propriétés...
+
 PDF Document
 Document PDF
 
+PDF Producer:
+PDF produit par:
+
+PDF Version:
+Version du PDF:
+
 PDF documents
 Documents PDF
+
+Page Size:
+Taille de la page:
 
 Page number %u inexistant
 La page %u n'existe pas
@@ -309,6 +358,9 @@ Page précédente\t<-
 
 Printing problem.
 Problème d'impression.
+
+Properties...
+Propriétés...
 
 Remember &opened files
 Se rappeler des fichiers ouverts
@@ -361,6 +413,9 @@ Le fichier de synchronisation ne peut pas être ouvert
 Text documents
 Documents texte
 
+Title:
+Titre:
+
 Unknown source file (%s)
 Fichier source unconnu (%s)
 
@@ -390,24 +445,4 @@ Facteur de zoom
 
 [Changes detected; refreshing] %s
 [Modifications détectées; actualisation] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Title:
 
