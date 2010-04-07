@@ -106,8 +106,14 @@ Advanced
 All files
 Все файлы
 
+Application:
+Приложение:
+
 Associate with PDF files?
 Ассоциировать с PDF-файлами?
+
+Author:
+Автор:
 
 Automatic
 Автоматически
@@ -123,6 +129,9 @@ Book view
 
 Bookmarks\tF12
 Закладки\tF12
+
+Bytes
+Байт
 
 Cancel
 Отмена
@@ -160,11 +169,17 @@ Couldn't initialize printer
 Couldn't render the page
 Не удалось сформировать изображение страницы
 
+Created:
+Создан:
+
 Default &Layout:
 &Компоновка по умолчанию
 
 Default &Zoom:
 &Масштаб по умолчанию
+
+Document Properties
+Свойства документа
 
 Download
 Загрузка
@@ -186,6 +201,12 @@ Facing
 
 Failed to save a file
 Ошибка сохранения файла
+
+File Size:
+Размер файла:
+
+File:
+Файл:
 
 Find
 Поиск
@@ -226,14 +247,23 @@ Found text at page %d
 Fullscreen\tCtrl-L
 Полный экран\tCtrl-L
 
+GB
+Гб
+
 Go to page
 Перейти на страницу
 
 Hint: Use the F3 key for finding again
 Для повторного поиска используйте клавишу F3
 
+KB
+Кб
+
 Last Page\tEnd
 Последняя страница\tEnd
+
+MB
+Мб
 
 Main PDF reader can't be changed in portable mode
 В мобильном режиме ассоциирование невозможно
@@ -246,6 +276,9 @@ Make SumatraPDF my main PDF reader
 
 Match case
 Учитывать регистр
+
+Modified:
+Изменен:
 
 New version %s is available. Download new version?
 Доступна новая версия: %s. Загрузить её?
@@ -274,6 +307,9 @@ No synchronization file found
 No synchronization info at this position
 В этой позиции нет информации для синхронизации
 
+Number of Pages:
+Число страниц:
+
 OK
 OK
 
@@ -283,11 +319,23 @@ Open
 Open in &Adobe Reader
 Открыть в &Adobe Reader
 
+P&roperties...
+Свойства...
+
 PDF Document
 PDF-документ
 
+PDF Producer:
+Создатель PDF:
+
+PDF Version:
+Версия PDF:
+
 PDF documents
 PDF-документы
+
+Page Size:
+Формат страницы:
 
 Page number %u inexistant
 Страница %u не существует
@@ -364,6 +412,9 @@ Synchronization file cannot be opened
 Text documents
 Текстовые документы
 
+Title:
+Название:
+
 Unknown source file (%s)
 Неизвестный исходный файл (%s)
 
@@ -393,23 +444,4 @@ Zoom factor
 
 [Changes detected; refreshing] %s
 [Обнаружены изменения; обновление...] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Title:
 
