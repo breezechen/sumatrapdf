@@ -105,8 +105,14 @@ Advanced
 All files
 Όλα τα αρχεία
 
+Application:
+Εφαρμογή:
+
 Associate with PDF files?
 Να γίνει συσχετισμός με τα αρχεία PDF;
+
+Author:
+Δημιουργός:
 
 Automatic
 Αυτόματα
@@ -122,6 +128,9 @@ Book view
 
 Bookmarks\tF12
 Σελιδοδείκτες\tF12
+
+Bytes
+Bytes
 
 Cancel
 Άκυρο
@@ -159,11 +168,17 @@ Couldn't initialize printer
 Couldn't render the page
 Δε μπορεί να φορτωθεί η σελίδα
 
+Created:
+Δημιουργήθηκε:
+
 Default &Layout:
 Προκαθορισμένη &διαμόρφωση:
 
 Default &Zoom:
 Προκαθορισμένο &ζουμ:
+
+Document Properties
+Ιδιότητες εγγράφου
 
 Download
 Λήψη
@@ -185,6 +200,12 @@ Facing
 
 Failed to save a file
 Αποτυχία αποθήκευσης αρχείου
+
+File Size:
+Μέγεθος αρχείου:
+
+File:
+Αρχείο:
 
 Find
 Εύρεση
@@ -225,14 +246,23 @@ Found text at page %d
 Fullscreen\tCtrl-L
 Πλήρης οθόνη\tCtrl-L
 
+GB
+GB
+
 Go to page
 Μετάβαση στη σελίδα
 
 Hint: Use the F3 key for finding again
 Συμβουλή: Χρησιμοποιήστε το F3 για εύρεση του επόμενου
 
+KB
+KB
+
 Last Page\tEnd
 Τελευταία σελίδα\tEnd
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 Δε μπορεί να γίνει συσχετισμός σε portable mode
@@ -245,6 +275,9 @@ Make SumatraPDF my main PDF reader
 
 Match case
 Αντιστοίχιση πεζών-κεφαλαίων
+
+Modified:
+Τροποποιήθηκε:
 
 New version %s is available. Download new version?
 Νέα έκδοση %s είναι διαθέσιμη. Να γίνει λήψη;
@@ -273,6 +306,9 @@ No synchronization file found
 No synchronization info at this position
 Δε βρέθηκαν πληροφορίες συγχρονισμού στη θέση αυτή
 
+Number of Pages:
+Αριθμός σελίδων:
+
 OK
 ΟΚ
 
@@ -282,11 +318,23 @@ Open
 Open in &Adobe Reader
 Άνοιγμα με &Adobe Reader
 
+P&roperties...
+&Ιδιότητες...
+
 PDF Document
 Αρχείο PDF
 
+PDF Producer:
+Δημιουργός PDF:
+
+PDF Version:
+Έκδοση PDF:
+
 PDF documents
 Αρχεία PDF
+
+Page Size:
+Μέγεθος σελίδας:
 
 Page number %u inexistant
 Δεν υπάρχει σελίδα με αριθμό %u
@@ -308,6 +356,9 @@ Previous Page\t<-
 
 Printing problem.
 Πρόβλημα εκτύπωσης
+
+Properties...
+Ιδιότητες...
 
 Remember &opened files
 Απομνημόνευη πρόσφατων αρχείων
@@ -360,6 +411,9 @@ Synchronization file cannot be opened
 Text documents
 Αρχεία κειμένου
 
+Title:
+Τίτλος:
+
 Unknown source file (%s)
 Άγνωστο αρχείο προέλευσης (%s)
 
@@ -389,24 +443,4 @@ Zoom factor
 
 [Changes detected; refreshing] %s
 [Ανιχνέυτηκαν αλλαγές, ανανέωση…] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Title:
 
