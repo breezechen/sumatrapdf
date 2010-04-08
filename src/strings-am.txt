@@ -104,8 +104,14 @@ Advanced
 All files
 Բոլոր ֆայլերը
 
+Application:
+Ծրագիրը.
+
 Associate with PDF files?
 Ասոցացնե՞լ PDF ֆայլերի հետ։
+
+Author:
+Հեղինակը.
 
 Automatic
 Ինքնաշխատ
@@ -121,6 +127,9 @@ Book view
 
 Bookmarks\tF12
 Ընտրյալները\tF12
+
+Bytes
+Բայթ
 
 Cancel
 Մերժել
@@ -158,11 +167,17 @@ Couldn't initialize printer
 Couldn't render the page
 Հնարավոր չեղավ ստեղծել էջի պատկերը
 
+Created:
+Ստեղծված է.
+
 Default &Layout:
 Չափը &Լռելայն
 
 Default &Zoom:
 Մեծությունը &Լռելայն
+
+Document Properties
+Փաստաթղթի հատկությունները
 
 Download
 Բեռնել
@@ -184,6 +199,12 @@ Facing
 
 Failed to save a file
 Հնարավոր չէ պահպանել ֆայլում
+
+File Size:
+Ֆայլի չափը.
+
+File:
+Ֆայլ.
 
 Find
 Փնտրել
@@ -224,14 +245,23 @@ Found text at page %d
 Fullscreen\tCtrl-L
 Ամբողջ էկրանով\tCtrl-L
 
+GB
+ԳԲ
+
 Go to page
 Անցնել էջին
 
 Hint: Use the F3 key for finding again
 Փնտրումը կրկնելու համար օգտագործեք F3 կոճակը
 
+KB
+ԿԲ
+
 Last Page\tEnd
 Վերջին էջը\tEnd
+
+MB
+ՄԲ
 
 Main PDF reader can't be changed in portable mode
 Շարժական վիճակում հնարավոր չէ փոխել PDF կարդալու հիմնական ծրագիրը
@@ -244,6 +274,9 @@ Make SumatraPDF my main PDF reader
 
 Match case
 Հաշվի առնել գրանցումները
+
+Modified:
+Փոփոխված.
 
 New version %s is available. Download new version?
 Նոր՝ %s տարբերակը հասանելի է։ Բեռնե՞լ նոր տարբերակը։
@@ -272,6 +305,9 @@ No synchronization file found
 No synchronization info at this position
 Այստեղ չկա սինխրոնիզացնելու համար տեղեկություն
 
+Number of Pages:
+Էջերի քանակը.
+
 OK
 ԼԱՎ
 
@@ -281,11 +317,23 @@ Open
 Open in &Adobe Reader
 Բացել &Adobe Reader-ում
 
+P&roperties...
+Հ&ատկություններ...
+
 PDF Document
 PDF փաստաթուղթ
 
+PDF Producer:
+PDF արտադրողը.
+
+PDF Version:
+PDF-ի տարբերակը.
+
 PDF documents
 PDF փաստաթղթեր
+
+Page Size:
+Էջի չափը.
 
 Page number %u inexistant
 %u էջը գոյություն չունի
@@ -362,6 +410,9 @@ Synchronization file cannot be opened
 Text documents
 Տեքստային փաստաթղթեր
 
+Title:
+Անունը.
+
 Unknown source file (%s)
 Անհայտ ֆայլ (%s)
 
@@ -391,23 +442,4 @@ Zoom factor
 
 [Changes detected; refreshing] %s
 [Հայտնաբերվել են փոփոխություններ, ընթանում է թարմացում] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Title:
 
