@@ -113,7 +113,7 @@ Automatic
 Automatically check for &updates
 Автоматично проверявай за обновления
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Назад\tAlt+<-
 
 Book view
@@ -215,7 +215,7 @@ Fit Widt&h\tCtrl-2
 Fit Width
 Оразмери по ширина
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Напред\tAlt+->
 
 Found text at page %d
@@ -254,7 +254,7 @@ New version available.
 Next Page
 Следваща страница
 
-Next Page\t->
+Next Page\tRight Arrow
 Следваща страница\t->
 
 No matches were found
@@ -299,7 +299,7 @@ Please wait - rendering...
 Previous Page
 Предишна страница
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Предишна страница\t<-
 
 Printing problem.

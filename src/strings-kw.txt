@@ -115,7 +115,7 @@ Awtomatek
 Automatically check for &updates
 Checkya rag nowythyansow yn awtomatek
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 War-lergh\tAlt+<-
 
 Book view
@@ -217,7 +217,7 @@ Fit Widt&h\tCtrl-2
 Fit Width
 Desedha Les
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Yn-rag\tAlt+->
 
 Found text at page %d
@@ -256,7 +256,7 @@ Versyon nowyth parys.
 Next Page
 Nessa Folen
 
-Next Page\t->
+Next Page\tRight Arrow
 Nessa Folen\t->
 
 No matches were found
@@ -304,7 +304,7 @@ Gortos, mar pleg - ow rendra...
 Previous Page
 Folen kyns
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Folen kyns\t<-
 
 Printing problem.

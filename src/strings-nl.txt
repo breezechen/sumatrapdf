@@ -123,7 +123,7 @@ Automatisch
 Automatically check for &updates
 Automatisch controleren op &updates
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Terug\tAlt+<-
 
 Book view
@@ -240,7 +240,7 @@ Passend in &breedte\tCtrl-2
 Fit Width
 Passend in breedte
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Verder\tAlt+->
 
 Found text at page %d
@@ -291,7 +291,7 @@ Nieuwe versie beschikbaar.
 Next Page
 Volgende pagina
 
-Next Page\t->
+Next Page\tRight Arrow
 Volgende pagina\t->
 
 No matches were found
@@ -354,7 +354,7 @@ Een ogenblik geduld - weergeven...
 Previous Page
 Vorige pagina
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Vorige pagina\t<-
 
 Printing problem.

@@ -92,7 +92,7 @@ SumatraPDFயை முன்னிருப்பு PDF படிப்பி�
 Next Page
 அடுத்த பக்கம்
 
-Next Page\t->
+Next Page\tRight Arrow
 அடுத்த பக்கம்\t->
 
 Open
@@ -104,7 +104,7 @@ Page...\tCtrl-G
 Previous Page
 முந்தைய பக்கம்
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 முந்தைய பக்கம்\t<-
 
 Printing problem.
@@ -156,7 +156,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bookmarks\tF12
 #Bytes
@@ -183,7 +183,7 @@ Zoom Out
 #Find Previous
 #Find...\tCtrl-F
 #Find:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #Fullscreen\tCtrl-L
 #GB

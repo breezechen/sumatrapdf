@@ -122,7 +122,7 @@ Automatisch
 Automatically check for &updates
 &Automatisch nach Updates suchen
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 &Zurück\tAlt+<-
 
 Book view
@@ -239,7 +239,7 @@ An &Breite anpassen\tStrg+2
 Fit Width
 An Breite anpassen
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Vor&wärts\tAlt+->
 
 Found text at page %d
@@ -290,7 +290,7 @@ Neuere Version vorhanden.
 Next Page
 &Nächste Seite
 
-Next Page\t->
+Next Page\tRight Arrow
 &Nächste Seite\t->
 
 No matches were found
@@ -353,7 +353,7 @@ Bitte einen Moment Geduld…
 Previous Page
 &Vorherige Seite
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 &Vorherige Seite\t<-
 
 Printing problem.

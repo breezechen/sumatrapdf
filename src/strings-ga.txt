@@ -150,7 +150,7 @@ Tá leagan nua ar fáil.
 Next Page
 Leathanach Ar Aghaidh
 
-Next Page\t->
+Next Page\tRight Arrow
 Leathanach Ar Aghaidh\t->
 
 No new version available.
@@ -168,7 +168,7 @@ Leathanach:
 Previous Page
 Leathanach Roimhe
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Leathanach Roimhe\t<-
 
 Printing problem.
@@ -224,7 +224,7 @@ Féithigh Amach
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -242,7 +242,7 @@ Féithigh Amach
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

@@ -244,7 +244,7 @@ New version available.
 Next Page
 Pagina successiva
 
-Next Page\t->
+Next Page\tRight Arrow
 Pagina successiva\t->
 
 No matches were found
@@ -289,7 +289,7 @@ Prego attendere - sto renderizzando...
 Previous Page
 Pagina precedente
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Pagina precedente\t<-
 
 Printing problem.
@@ -370,7 +370,7 @@ Fattore ingrandimento
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Continuous book view
@@ -378,7 +378,7 @@ Fattore ingrandimento
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

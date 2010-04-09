@@ -149,7 +149,7 @@ Nova versió disponible.
 Next Page
 Pàgina Següent
 
-Next Page\t->
+Next Page\tRight Arrow
 Pàgina Següent\t->
 
 No new version available.
@@ -167,7 +167,7 @@ Pàgina:
 Previous Page
 Pàgina Anterior
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Pàgina Anterior\t<-
 
 Printing problem.
@@ -224,7 +224,7 @@ Alluntar
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -242,7 +242,7 @@ Alluntar
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

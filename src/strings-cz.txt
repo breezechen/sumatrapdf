@@ -102,7 +102,7 @@ Všechny soubory
 Automatically check for &updates
 &Kontroluj aktualizace automaticky
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Zpět\tAlt+<-
 
 Cancel
@@ -174,7 +174,7 @@ Podle šířky\tCtrl-2
 Fit Width
 Podle šířky
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Vpřed\tAlt+->
 
 Found text at page %d
@@ -195,7 +195,7 @@ Nastavit SumatraPDF jako výchozí PDF čtečku
 Next Page
 Další stránka
 
-Next Page\t->
+Next Page\tRight Arrow
 Další stránka\t->
 
 No matches were found
@@ -240,7 +240,7 @@ Prosím čekejte - renderuji...
 Previous Page
 Předchozí stránka
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Předchozí stránka\t<-
 
 Printing problem.

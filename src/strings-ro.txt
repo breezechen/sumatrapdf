@@ -116,7 +116,7 @@ Potrivire litere mari şi mici
 Next Page
 Pagina următoare
 
-Next Page\t->
+Next Page\tRight Arrow
 Pagina următoare\t->
 
 Open
@@ -131,7 +131,7 @@ Pagina:
 Previous Page
 Pagina anterioară
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Pagina anterioară\t<-
 
 Printing problem.
@@ -183,7 +183,7 @@ Micşorează
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -204,7 +204,7 @@ Micşorează
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

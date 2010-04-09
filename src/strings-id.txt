@@ -113,7 +113,7 @@ Otomatis
 Automatically check for &updates
 Periksa &pemutakhiran secara otomatis
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Kembali\tAlt+<-
 
 Book view
@@ -215,7 +215,7 @@ Sesuaikan dengan &Lebar\tCtrl-2
 Fit Width
 Sesuaikan dengan Lebar
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Berikutnya\tAlt+->
 
 Found text at page %d
@@ -254,7 +254,7 @@ Versi baru telah tersedia
 Next Page
 Halaman Berikutnya
 
-Next Page\t->
+Next Page\tRight Arrow
 Halaman Berikutnya\t->
 
 No matches were found
@@ -302,7 +302,7 @@ Harap tunggu - sedang dalam proses...
 Previous Page
 Halaman Sebelumnya
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Halaman Sebelumnya\t<-
 
 Printing problem.

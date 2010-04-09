@@ -153,7 +153,7 @@ Je k dispozícia nová verzia.
 Next Page
 Ďaľšia strana
 
-Next Page\t->
+Next Page\tRight Arrow
 Ďaľšia strana\t->
 
 No new version available.
@@ -171,7 +171,7 @@ Strana:
 Previous Page
 Predchádzajúca strana
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Predchádzajúca strana\t<-
 
 Printing problem.
@@ -227,7 +227,7 @@ Zmenšiť
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -245,7 +245,7 @@ Zmenšiť
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

@@ -150,7 +150,7 @@ New version available.
 Next Page
 अगले पृष्ठ पर
 
-Next Page\t->
+Next Page\tRight Arrow
 अगले पृष्ठ पर\t->
 
 No new version available.
@@ -168,7 +168,7 @@ Page:
 Previous Page
 पिछले पृष्ठ पर
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 पिछले पृष्ठ पर\t<-
 
 Printing problem.
@@ -224,7 +224,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -242,7 +242,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

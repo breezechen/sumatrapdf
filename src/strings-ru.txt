@@ -121,7 +121,7 @@ Automatic
 Automatically check for &updates
 &Автоматически проверять обновления
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Назад\tAlt+<-
 
 Book view
@@ -238,7 +238,7 @@ Fit Widt&h\tCtrl-2
 Fit Width
 Заполнение по ширине
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Вперед\tAlt+->
 
 Found text at page %d
@@ -289,7 +289,7 @@ New version available.
 Next Page
 Следующая страница
 
-Next Page\t->
+Next Page\tRight Arrow
 Следующая страница\t->
 
 No matches were found
@@ -352,7 +352,7 @@ Please wait - rendering...
 Previous Page
 Предыдущая страница
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Предыдущая страница\t<-
 
 Printing problem.

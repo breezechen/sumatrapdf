@@ -219,7 +219,7 @@ New version available.
 Next Page
 Наступная старонка
 
-Next Page\t->
+Next Page\tRight Arrow
 Наступная старонка\t->
 
 No matches were found
@@ -264,7 +264,7 @@ Please wait - rendering...
 Previous Page
 Папярэдняя старонка
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Папярэдняя старонка\t<-
 
 Printing problem.
@@ -340,7 +340,7 @@ Zoom Out
 #Application:
 #Author:
 #Automatic
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
@@ -351,7 +351,7 @@ Zoom Out
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #Hint: Use the F3 key for finding again
 #KB

@@ -120,7 +120,7 @@ Automatic
 Automatically check for &updates
 Αυτόματος έλεγχος για ενημερώσεις
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Πίσω\tAlt+<-
 
 Book view
@@ -237,7 +237,7 @@ Fit Widt&h\tCtrl-2
 Fit Width
 Πλάτος παραθύρου
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Εμπρός\tAlt+->
 
 Found text at page %d
@@ -288,7 +288,7 @@ New version available.
 Next Page
 Επόμενη σελίδα
 
-Next Page\t->
+Next Page\tRight Arrow
 Επόμενη σελίδα\t->
 
 No matches were found
@@ -351,7 +351,7 @@ Please wait - rendering...
 Previous Page
 Προηγούμενη σελίδα
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Προηγούμενη σελίδα\t<-
 
 Printing problem.

@@ -152,7 +152,7 @@ Nuwe Weergawe Beskikbaar.
 Next Page
 Volgende Bladsy
 
-Next Page\t->
+Next Page\tRight Arrow
 Volgende Bladsy\t->
 
 No new version available.
@@ -170,7 +170,7 @@ Bladsy:
 Previous Page
 Vorige Bladsy
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Vorige Bladsy\t<-
 
 Printing problem.
@@ -226,7 +226,7 @@ Zoem Uit
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -244,7 +244,7 @@ Zoem Uit
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

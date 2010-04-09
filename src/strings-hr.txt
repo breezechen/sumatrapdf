@@ -227,7 +227,7 @@ Dostupna je nova inačica.
 Next Page
 Sljedeća stranica
 
-Next Page\t->
+Next Page\tRight Arrow
 Sljedeća stranica\t->
 
 No matches were found
@@ -272,7 +272,7 @@ Molim pričekajte, iscrtavam...
 Previous Page
 Prethodna stranica
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Prethodna stranica\t<-
 
 Printing problem.
@@ -347,7 +347,7 @@ Umanji
 #Application:
 #Author:
 #Automatic
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
@@ -357,7 +357,7 @@ Umanji
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

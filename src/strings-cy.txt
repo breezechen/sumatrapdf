@@ -249,7 +249,7 @@ Mae fersiwn newydd ar gael.
 Next Page
 Tudalen Nesaf
 
-Next Page\t->
+Next Page\tRight Arrow
 Tudalen Nesaf\t->
 
 No matches were found
@@ -297,7 +297,7 @@ Arhoswch, wrthi'n cyflwyno...
 Previous Page
 Tudalen Flaenorol
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Tudalen Flaenorol\t<-
 
 Printing problem.
@@ -384,13 +384,13 @@ Ffactor Chwyddo
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Bytes
 #Created:
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

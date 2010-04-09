@@ -242,7 +242,7 @@ New version available.
 Next Page
 下一页
 
-Next Page\t->
+Next Page\tRight Arrow
 下一页\t->
 
 No matches were found
@@ -287,7 +287,7 @@ Please wait - rendering...
 Previous Page
 上一页
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 上一页\t<-
 
 Printing problem.
@@ -368,7 +368,7 @@ Zoom factor
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Continuous book view
@@ -376,7 +376,7 @@ Zoom factor
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

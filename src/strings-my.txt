@@ -116,7 +116,7 @@ Hampir sama
 Next Page
 Mukasurat seterusnya
 
-Next Page\t->
+Next Page\tRight Arrow
 Mukasurat seterusnya\t->
 
 Open
@@ -128,7 +128,7 @@ Mukasurat...\tCtrl-G
 Previous Page
 Mukasurat sebelumnya
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Mukasurat sebelumnya\t<-
 
 Printing problem.
@@ -180,7 +180,7 @@ Fokus ke luar
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -201,7 +201,7 @@ Fokus ke luar
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

@@ -108,7 +108,7 @@ Zrób domyślnym programem dla PDF
 Next Page
 Następna strona
 
-Next Page\t->
+Next Page\tRight Arrow
 Następna strona\t->
 
 Open
@@ -123,7 +123,7 @@ Strona:
 Previous Page
 Poprzednia strona
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Poprzednia strona\t<-
 
 Printing problem.
@@ -177,7 +177,7 @@ Pomniejsz
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bookmarks\tF12
 #Bytes
@@ -200,7 +200,7 @@ Pomniejsz
 #Find
 #Find Next
 #Find Previous
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

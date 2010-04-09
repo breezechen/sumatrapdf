@@ -114,7 +114,7 @@ Automatisk
 Automatically check for &updates
 Tjek automatisk for &opdateringer
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Tilbage\tAlt+<-
 
 Book view
@@ -216,7 +216,7 @@ Tilpas &bredde\tCtrl-2
 Fit Width
 Tilpas bredde
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Fremad\tAlt+->
 
 Found text at page %d
@@ -255,7 +255,7 @@ Ny version tilgængelig
 Next Page
 Næste side
 
-Next Page\t->
+Next Page\tRight Arrow
 Næste side\t->
 
 No matches were found
@@ -303,7 +303,7 @@ Vent venligst - renderer...
 Previous Page
 Forrige side
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Forrige side\t<-
 
 Printing problem.

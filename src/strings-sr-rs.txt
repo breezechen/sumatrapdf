@@ -243,7 +243,7 @@ New version available.
 Next Page
 Следећа страна
 
-Next Page\t->
+Next Page\tRight Arrow
 Следећа страна\t->
 
 No matches were found
@@ -291,7 +291,7 @@ Please wait - rendering...
 Previous Page
 Претходна страна
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Претходна страна\t<-
 
 Printing problem.
@@ -378,7 +378,7 @@ Zoom factor
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Continuous book view
@@ -386,7 +386,7 @@ Zoom factor
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

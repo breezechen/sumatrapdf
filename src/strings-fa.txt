@@ -153,7 +153,7 @@ New version available.
 Next Page
 صفحه بعدی
 
-Next Page\t->
+Next Page\tRight Arrow
 صفحه بعدی\t->
 
 No new version available.
@@ -171,7 +171,7 @@ Page:
 Previous Page
 صفحه قبلی
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 صفحه قبلی\t<-
 
 Printing problem.
@@ -227,7 +227,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -245,7 +245,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again
