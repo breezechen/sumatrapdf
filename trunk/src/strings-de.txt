@@ -9,6 +9,7 @@ Lang: de German (Deutsch)
 Contributor: Lars Wohlfahrt (www.eviltux.de)
 Contributor: Christopher Amann
 Contributor: Simon Bünzli (zeniko@gmail.com)
+Contributor: Andreas Hopp (teraflop@arcor.de)
 
 &About
 &Über SumatraPDF
@@ -44,7 +45,7 @@ Nicht &wieder fragen.
 &Vergrößerung:
 
 &Manual
-&Bedienungsanleitung
+&Handbuch
 
 &Match case
 &Groß-/Kleinschreibung beachten
@@ -53,7 +54,7 @@ Nicht &wieder fragen.
 &Nein
 
 &No, thanks
-&Nein, danke
+&Nein danke
 
 &Open\tCtrl-O
 Ö&ffnen…\tStrg+O
@@ -68,7 +69,7 @@ Nicht &wieder fragen.
 &Drucken…\tStrg+P
 
 &Remember these settings for each document
-&Diese Einstellungen für jedes Dokument merken
+&Die Einstellungen gelten für jedes Dokument
 
 &Save as\tCtrl-S
 Speichern &unter…\tStrg+S
@@ -83,7 +84,7 @@ Speichern &unter…\tStrg+S
 &Ansicht
 
 &Visit website
-&SumatraPDF im Internet besuchen
+&SumatraPDF im Internet
 
 &Yes
 &Ja
@@ -106,8 +107,14 @@ Weiteres
 All files
 Alle Dateien
 
+Application:
+Anwendung:
+
 Associate with PDF files?
 Mit PDF-Dateien verknüpfen?
+
+Author:
+Autor:
 
 Automatic
 Automatisch
@@ -124,11 +131,14 @@ Buchansicht
 Bookmarks\tF12
 Lesezeichen\tF12
 
+Bytes
+Byte
+
 Cancel
 Abbrechen
 
 Cannot print this file
-Diese Datei darf nicht gedruckt werden
+Datei kann nicht gedruckt werden
 
 Cannot start inverse search command. Please check the command line in the settings.
 Fehler beim Ausführen des Befehls für die Inverssuche. Bitte überprüfen Sie die Einstellung.
@@ -160,11 +170,17 @@ Der Drucker konnte nicht initialisiert werden
 Couldn't render the page
 Diese Seite kann leider nicht angezeigt werden
 
+Created:
+Erstellt:
+
 Default &Layout:
 &Standardlayout:
 
 Default &Zoom:
 Standard&vergrößerung:
+
+Document Properties
+Dokumenteigenschaften
 
 Download
 Herunterladen
@@ -186,6 +202,12 @@ Doppelseite
 
 Failed to save a file
 Fehler beim Speichern der Datei!
+
+File Size:
+Dateigröße:
+
+File:
+Datei:
 
 Find
 Suchen
@@ -226,14 +248,23 @@ Text auf Seite %d gefunden
 Fullscreen\tCtrl-L
 Vollbild\tStrg+L
 
+GB
+GB
+
 Go to page
 Gehe zu Seite
 
 Hint: Use the F3 key for finding again
 Tipp: F3-Taste verwenden, um weiterzusuchen
 
+KB
+KB
+
 Last Page\tEnd
 &Letzte Seite\tEnde
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 Standardanwendung im portablen Modus nicht veränderbar
@@ -246,6 +277,9 @@ Standardmäßig PDF-Dateien mit SumatraPDF öffnen
 
 Match case
 Groß-/Kleinschreibung beachten
+
+Modified:
+Geändert:
 
 New version %s is available. Download new version?
 Es ist eine neue Version vorhanden. Möchten Sie diese herunterladen?
@@ -260,7 +294,7 @@ Next Page\t->
 &Nächste Seite\t->
 
 No matches were found
-Das Dokument wurde durchsucht
+Suchbegriff nicht gefunden
 
 No new version available.
 Keine neuere Version vorhanden.
@@ -272,7 +306,10 @@ No synchronization file found
 Synchronisationsdatei nicht gefunden
 
 No synchronization info at this position
-Keine Synchronisationsinformationen an diesem Ort
+Keine Synchronisationsinformationen verfügbar
+
+Number of Pages:
+Anzahl der Seiten:
 
 OK
 OK
@@ -283,14 +320,26 @@ Open
 Open in &Adobe Reader
 Mit &Adobe Reader öffnen
 
+P&roperties...
+Eigenschaften...
+
 PDF Document
 PDF-Dokument
+
+PDF Producer:
+PDF Urheber:
+
+PDF Version:
+PDF Version:
 
 PDF documents
 PDF-Dokumente
 
+Page Size:
+Seitengröße:
+
 Page number %u inexistant
-Es gibt keine Seite %u
+Seite %u nicht vorhanden
 
 Page...\tCtrl-G
 &Seite…\tStrg+G
@@ -314,7 +363,7 @@ Properties...
 Eigenschaften...
 
 Remember &opened files
-&Eine Liste der geöffneten Dokumente führen
+&Liste der zuletzt geöffneten Dokumente anlegen
 
 Rotate left\tCtrl-Shift--
 Drehung links\tStrg+Umschalt+-
@@ -329,16 +378,16 @@ Select content with Ctrl+left mouse button
 Inhalte mit Strg+linker Maustaste auswählen
 
 Send by &email...
-Als &E-Mail versenden…
+Per &E-Mail versenden…
 
 Set inverse search command-line
 Befehlszeile für die Inverssuche setzen
 
 Show pages continuously
-Fortlaufend anzeigen
+Seiten fortlaufend anzeigen
 
 Show the &bookmarks sidebar when available
-&Lesezeichen beim Start anzeigen
+&Lesezeichenleiste beim Start anzeigen
 
 Show toolbar
 Werkzeugleiste anzeigen
@@ -364,6 +413,9 @@ Die Synchronisationsdatei kann nicht geöffnet werden
 Text documents
 Text-Dokumente
 
+Title:
+Titel:
+
 Unknown source file (%s)
 Unbekannte Datei (%s)
 
@@ -383,33 +435,14 @@ Zoom
 Zoom
 
 Zoom In
-Reinzoomen
+Vergrößern
 
 Zoom Out
-Rauszoomen
+Verkleinern
 
 Zoom factor
 Zoomfaktor
 
 [Changes detected; refreshing] %s
 [Datei wurde geändert; aktualisiere…] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Title:
 
