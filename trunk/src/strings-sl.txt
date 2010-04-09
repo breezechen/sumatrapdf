@@ -243,7 +243,7 @@ Na voljo je nova različica.
 Next Page
 Naslednja stran
 
-Next Page\t->
+Next Page\tRight Arrow
 Naslednja stran\t->
 
 No matches were found
@@ -288,7 +288,7 @@ Počakajte trenutek, upodobitev poteka ...
 Previous Page
 Predhodna stran
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Predhodna stran\t<-
 
 Printing problem.
@@ -369,7 +369,7 @@ Faktor povečave
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Continuous book view
@@ -377,7 +377,7 @@ Faktor povečave
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

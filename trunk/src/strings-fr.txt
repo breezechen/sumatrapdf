@@ -122,7 +122,7 @@ Automatique
 Automatically check for &updates
 Vérifier &automatiquement les mises à jour
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Retour\tAlt+<-
 
 Book view
@@ -239,7 +239,7 @@ Pleine largeur
 Fit Width
 Pleine largeur
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Avancer\tAlt+->
 
 Found text at page %d
@@ -290,7 +290,7 @@ Une nouvelle version est disponible
 Next Page
 Page suivante
 
-Next Page\t->
+Next Page\tRight Arrow
 Page suivante\t->
 
 No matches were found
@@ -353,7 +353,7 @@ S'il vous plaît attendez - génération...
 Previous Page
 Page précédente
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Page précédente\t<-
 
 Printing problem.

@@ -114,7 +114,7 @@ Automatikus
 Automatically check for &updates
 &Program&frissítések automatikus keresése bekapcsoláskor
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Ugrás vissza\tAlt+<-
 
 Book view
@@ -213,7 +213,7 @@ Oldal&szélesség\tCtrl-2
 Fit Width
 Oldalszélesség
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Ugrás előre\tAlt+->
 
 Found text at page %d
@@ -252,7 +252,7 @@ New version available.
 Next Page
 Következő oldal
 
-Next Page\t->
+Next Page\tRight Arrow
 Következő oldal\t->
 
 No matches were found
@@ -294,7 +294,7 @@ Feldolgozás, kérem várjon
 Previous Page
 Előző oldal
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Előző oldal\t<-
 
 Printing problem.

@@ -149,7 +149,7 @@ Bertsio berria eskuragarri duzu.
 Next Page
 Hurrengo orria
 
-Next Page\t->
+Next Page\tRight Arrow
 Hurrengo orria\t->
 
 No new version available.
@@ -164,7 +164,7 @@ Page...\tCtrl-G
 Previous Page
 Aurreko orria
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Aurreko orria\t<-
 
 Printing problem.
@@ -221,7 +221,7 @@ Zoom-a urruneratu
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -239,7 +239,7 @@ Zoom-a urruneratu
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

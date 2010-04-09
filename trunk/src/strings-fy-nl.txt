@@ -119,7 +119,7 @@ Automatysk
 Automatically check for &updates
 Automatysk kontrolearje op &fernijings
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Tebek\tAlt+<-
 
 Book view
@@ -236,7 +236,7 @@ Passend yn &breedte\tCtrl-2
 Fit Width
 Passend yn breedte
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Fierder\tAlt+->
 
 Found text at page %d
@@ -287,7 +287,7 @@ Nije ferzje beskikber.
 Next Page
 Folgjende side
 
-Next Page\t->
+Next Page\tRight Arrow
 Folgjende side\t->
 
 No matches were found
@@ -350,7 +350,7 @@ In amerijke asjobleaft - werjaan...
 Previous Page
 Foarige side
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Foarige side\t<-
 
 Printing problem.

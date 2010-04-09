@@ -250,7 +250,7 @@ Nyare version tillgänglig.
 Next Page
 Nästa sida
 
-Next Page\t->
+Next Page\tRight Arrow
 Nästa sida\t->
 
 No matches were found
@@ -295,7 +295,7 @@ Ett ögonblick - förbereder...
 Previous Page
 Föregående sida
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Föregående sida\t<-
 
 Printing problem.
@@ -382,13 +382,13 @@ Zoomfaktor
 # Untranslated:
 #Application:
 #Author:
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Bytes
 #Created:
 #Document Properties
 #File Size:
 #File:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #GB
 #KB
 #MB

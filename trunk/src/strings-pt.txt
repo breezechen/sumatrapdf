@@ -114,7 +114,7 @@ Automático
 Automatically check for &updates
 Verificar act&ualizações automaticamente
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 Retroceder\tAlt+<-
 
 Book view
@@ -216,7 +216,7 @@ Ajustar à &Largura\tCtrl-2
 Fit Width
 Ajustar à Largura
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 Avançar\tAlt+->
 
 Found text at page %d
@@ -255,7 +255,7 @@ Nova versão disponível.
 Next Page
 Página Seguinte
 
-Next Page\t->
+Next Page\tRight Arrow
 Página Seguinte\t->
 
 No matches were found
@@ -303,7 +303,7 @@ Por favor aguarde - a processar...
 Previous Page
 Página Anterior
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Página Anterior\t<-
 
 Printing problem.

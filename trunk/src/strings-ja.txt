@@ -113,7 +113,7 @@ Automatic
 Automatically check for &updates
 自動的にチェックする(&U)
 
-Back\tAlt+<-
+Back\tAlt+Left Arrow
 前に戻る\tAlt+←
 
 Book view
@@ -215,7 +215,7 @@ Fit Widt&h\tCtrl-2
 Fit Width
 幅に合わせる
 
-Forward\tAlt+->
+Forward\tAlt+Right Arrow
 次に進む\tAlt+→
 
 Found text at page %d
@@ -254,7 +254,7 @@ New version available.
 Next Page
 次のページ
 
-Next Page\t->
+Next Page\tRight Arrow
 次のページ\t→
 
 No matches were found
@@ -302,7 +302,7 @@ Please wait - rendering...
 Previous Page
 前のページ
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 前のページ\t←
 
 Printing problem.

@@ -137,7 +137,7 @@ New version available.
 Next Page
 หน้าถัดไป
 
-Next Page\t->
+Next Page\tRight Arrow
 หน้าถัดไป\t->
 
 No new version available.
@@ -152,7 +152,7 @@ Page...\tCtrl-G
 Previous Page
 หน้าก่อนหน้า
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 หน้าก่อนหน้า\t<-
 
 Printing problem.
@@ -208,7 +208,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -230,7 +230,7 @@ Zoom Out
 #Find Previous
 #Find...\tCtrl-F
 #Find:
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

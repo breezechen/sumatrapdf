@@ -101,7 +101,7 @@ Make SumatraPDF my main PDF reader
 Next Page
 דף הבא
 
-Next Page\t->
+Next Page\tRight Arrow
 דף הבא\t->
 
 Open
@@ -113,7 +113,7 @@ Page...\tCtrl-G
 Previous Page
 דף קודם
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 דף קודם\t<-
 
 Rotate left\tCtrl-Shift--
@@ -162,7 +162,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bookmarks\tF12
 #Bytes
@@ -187,7 +187,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

@@ -113,7 +113,7 @@ Parinkti SumatraPDF numatytuoju PDF dokumentų skaitytuvu
 Next Page
 Kitas puslapis
 
-Next Page\t->
+Next Page\tRight Arrow
 Kitas puslapis\t->
 
 Open
@@ -125,7 +125,7 @@ Puslapis...\tCtrl-G
 Previous Page
 Ankstesnis puslapis
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Ankstesnis puslapis\t<-
 
 Printing problem.
@@ -177,7 +177,7 @@ Sumažinti
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -198,7 +198,7 @@ Sumažinti
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

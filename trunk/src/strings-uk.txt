@@ -149,7 +149,7 @@ New version available.
 Next Page
 Наступна сторінка
 
-Next Page\t->
+Next Page\tRight Arrow
 Наступна сторінка\t->
 
 No new version available.
@@ -164,7 +164,7 @@ Page...\tCtrl-G
 Previous Page
 Попередня сторінка
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Попередня сторінка\t<-
 
 Printing problem.
@@ -221,7 +221,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -239,7 +239,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

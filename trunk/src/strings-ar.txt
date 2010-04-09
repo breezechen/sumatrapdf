@@ -111,7 +111,7 @@ Match case
 Next Page
 الصفحة التالية
 
-Next Page\t->
+Next Page\tRight Arrow
 الصفحة التالية\t->
 
 Open
@@ -123,7 +123,7 @@ Page...\tCtrl-G
 Previous Page
 الصفحة السابقة
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 الصفحة السابقة\t<-
 
 Printing problem.
@@ -175,7 +175,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bookmarks\tF12
 #Bytes
@@ -198,7 +198,7 @@ Zoom Out
 #File:
 #Find
 #Find Next
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

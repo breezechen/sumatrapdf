@@ -153,7 +153,7 @@ New version available.
 Next Page
 다음 장
 
-Next Page\t->
+Next Page\tRight Arrow
 다음 장\t->
 
 No new version available.
@@ -171,7 +171,7 @@ Page:
 Previous Page
 이전 장
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 이전 장\t<-
 
 Printing problem.
@@ -227,7 +227,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -245,7 +245,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

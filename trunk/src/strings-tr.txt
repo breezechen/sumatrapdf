@@ -116,7 +116,7 @@ Büyük/Küçük harf eşleştir
 Next Page
 Sonraki Sayfa
 
-Next Page\t->
+Next Page\tRight Arrow
 Sonraki Sayfa\t->
 
 Open
@@ -131,7 +131,7 @@ Sayfa:
 Previous Page
 Önceki Sayfa
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Önceki Sayfa\t<-
 
 Printing problem.
@@ -183,7 +183,7 @@ Uzaklaştır
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -204,7 +204,7 @@ Uzaklaştır
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page

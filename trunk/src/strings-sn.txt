@@ -146,7 +146,7 @@ Version idzva ririkuwanika
 Next Page
 Peji yemberi
 
-Next Page\t->
+Next Page\tRight Arrow
 Peji yemberi\t->
 
 No new version available.
@@ -164,7 +164,7 @@ Peji:
 Previous Page
 Peji yesure
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Peji yesure\t<-
 
 Printing problem.
@@ -218,7 +218,7 @@ Duputsa
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -236,7 +236,7 @@ Duputsa
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

@@ -152,7 +152,7 @@ Uusi versio saatavilla.
 Next Page
 Seuraava sivu
 
-Next Page\t->
+Next Page\tRight Arrow
 Seuraava sivu\t->
 
 No new version available.
@@ -170,7 +170,7 @@ Sivu:
 Previous Page
 Edellinen sivu
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Edellinen sivu\t<-
 
 Printing problem.
@@ -223,7 +223,7 @@ Loitonna kauemmaksi
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -241,7 +241,7 @@ Loitonna kauemmaksi
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

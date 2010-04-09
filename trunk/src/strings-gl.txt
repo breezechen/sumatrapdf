@@ -152,7 +152,7 @@ Nova versión dispoñible
 Next Page
 Páxina seguinte
 
-Next Page\t->
+Next Page\tRight Arrow
 Páxina seguinte\t->
 
 No new version available.
@@ -170,7 +170,7 @@ Páxina:
 Previous Page
 Páxina anterior
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Páxina anterior\t<-
 
 Printing problem.
@@ -226,7 +226,7 @@ Afastar zoom
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -244,7 +244,7 @@ Afastar zoom
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

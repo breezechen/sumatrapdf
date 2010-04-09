@@ -500,7 +500,9 @@ void OnMenuProperties(WindowInfo *win)
 
     //AddPdfProperty(win, _TR("Page Size:"), _T("7x36 x 8.97 in"));
 
-    // TODO: don't know what tagged PDF is
+    // TODO: probably needs to extend mupdf to get this information.
+    // Tagged PDF rules are described in 14.8.2 of
+    // http://www.adobe.com/devnet/acrobat/pdfs/PDF32000_2008.pdf
     //AddPdfProperty(win, _T("Tagged PDF:"), _T("No"));
 
     tmp = tstr_printf(_T("%d"), dm->pageCount());
@@ -508,7 +510,9 @@ void OnMenuProperties(WindowInfo *win)
     free(tmp);
 
 
-    // TODO: don't know how to get that. Is it about linearlized PDF?
+    // TODO: this is probably about linearlized PDF. Looks like mupdf would
+    // have to be extended to detect linearlized PDF. The rules are described
+    // in F3.3 of http://www.adobe.com/devnet/acrobat/pdfs/PDF32000_2008.pdf
     //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
 
     free(creationDateStr);

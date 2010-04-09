@@ -167,7 +167,7 @@ New version available.
 Next Page
 下一頁
 
-Next Page\t->
+Next Page\tRight Arrow
 下一頁\t->
 
 No new version available.
@@ -185,7 +185,7 @@ Page:
 Previous Page
 上一頁
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 上一頁\t<-
 
 Printing problem.
@@ -249,7 +249,7 @@ Zoom factor
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -266,7 +266,7 @@ Zoom factor
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

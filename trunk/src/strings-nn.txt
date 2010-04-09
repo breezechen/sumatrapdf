@@ -149,7 +149,7 @@ Ny versjon tilgjengeleg.
 Next Page
 Neste side
 
-Next Page\t->
+Next Page\tRight Arrow
 Neste side\t->
 
 No new version available.
@@ -167,7 +167,7 @@ Side:
 Previous Page
 Førre side
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 Førre side\t<-
 
 Printing problem.
@@ -224,7 +224,7 @@ Zoom ut
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bytes
 #Cancel
@@ -242,7 +242,7 @@ Zoom ut
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Hint: Use the F3 key for finding again

@@ -110,7 +110,7 @@ Make SumatraPDF my main PDF reader
 Next Page
 അടുത്ത താള്‍
 
-Next Page\t->
+Next Page\tRight Arrow
 അടുത്ത താള്‍\t->
 
 Open
@@ -122,7 +122,7 @@ Page...\tCtrl-G
 Previous Page
 മുന്‍പുള്ള താള്‍
 
-Previous Page\t<-
+Previous Page\tLeft Arrow
 മുന്‍പുള്ള താള്‍\t<-
 
 Printing problem.
@@ -174,7 +174,7 @@ Zoom Out
 #Author:
 #Automatic
 #Automatically check for &updates
-#Back\tAlt+<-
+#Back\tAlt+Left Arrow
 #Book view
 #Bookmarks\tF12
 #Bytes
@@ -196,7 +196,7 @@ Zoom Out
 #File Size:
 #File:
 #Find
-#Forward\tAlt+->
+#Forward\tAlt+Right Arrow
 #Found text at page %d
 #GB
 #Go to page
