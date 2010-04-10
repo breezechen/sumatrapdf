@@ -7,6 +7,7 @@
 Lang: id Indonesian (Bahasa Indonesia)
 
 Contributor: Yudi Wibisono (http://yudiwbs.wordpress.com)
+Contributor: Ricki Yani Setiawan
 
 &About
 &Tentang
@@ -104,8 +105,14 @@ Tingkat lanjut
 All files
 Semua berkas
 
+Application:
+Aplikasi
+
 Associate with PDF files?
 Asosiasikan dengan berkas PDF?
+
+Author:
+Pengarang:
 
 Automatic
 Otomatis
@@ -121,6 +128,9 @@ Tampilan buku
 
 Bookmarks\tF12
 Kutipan\tF12
+
+Bytes
+Bytes
 
 Cancel
 Batal
@@ -158,11 +168,17 @@ Tidak dapat menginisialisasi printer
 Couldn't render the page
 Tidak dapat menampilkan halaman
 
+Created:
+Dibuat:
+
 Default &Layout:
 Tampilan &Standar
 
 Default &Zoom:
 Pembesaran &Standar
+
+Document Properties
+Properti Dokumen
 
 Download
 Unduh
@@ -184,6 +200,12 @@ Dua Halaman
 
 Failed to save a file
 Gagal menyimpan berkas
+
+File Size:
+Ukuran Berkas:
+
+File:
+Berkas:
 
 Find
 Cari
@@ -224,14 +246,23 @@ Teks ditemukan pada halaman %d
 Fullscreen\tCtrl-L
 Selayar Penuh\tCtrl-L
 
+GB
+GB
+
 Go to page
 Pergi ke halaman
 
 Hint: Use the F3 key for finding again
 Tips : Gunakan tombol F3 untuk mengulangi pencarian
 
+KB
+KB
+
 Last Page\tEnd
 Halaman Terakhir\tEnd
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 Pembaca PDF utama tidak dapat diubah dalam mode portabel
@@ -244,6 +275,9 @@ Jadikan SumatraPDF sebagai pembaca-PDF utama
 
 Match case
 Cocokkan Huruf Besar-Kecilnya
+
+Modified:
+Dimodifikasi:
 
 New version %s is available. Download new version?
 Versi baru %s telah tersedia. Unduh versi baru ini?
@@ -272,6 +306,9 @@ Tidak ada berkas sinkronisasi ditemukan
 No synchronization info at this position
 Tidak ada informasi sinkronisasi pada lokasi ini
 
+Number of Pages:
+Jumlah halaman:
+
 OK
 OK
 
@@ -281,11 +318,23 @@ Buka
 Open in &Adobe Reader
 Buka di &Adobe Reader
 
+P&roperties...
+P&roperti...
+
 PDF Document
 Berkas PDF
 
+PDF Producer:
+Produser PDF:
+
+PDF Version:
+Versi PDF:
+
 PDF documents
 Berkas-berkas dokumen
+
+Page Size:
+Ukuran Halaman:
 
 Page number %u inexistant
 Halaman %u tidak tersedia
@@ -362,6 +411,9 @@ Berkas sinkronisasi tidak dapat dibuka
 Text documents
 Dokumen-dokumen teks
 
+Title:
+Judul:
+
 Unknown source file (%s)
 Berkas asal (%s) tidak diketahui
 
@@ -391,23 +443,4 @@ Faktor pembesaran
 
 [Changes detected; refreshing] %s
 [Perubahan terdeteksi; muat ulang] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Title:
 
