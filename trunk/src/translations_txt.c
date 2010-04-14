@@ -2549,7 +2549,7 @@ const char *g_transTranslations[] = {
   "Vorige pagina",
   "Vorige pagina\t<-",
   "Probleem bij het afdrukken.",
-  NULL,
+  "Eigenschappen...",
   "Herinner ge&opende bestanden",
   "Linksom draaien\tCtrl-Shift--",
   "Rechtsom draaien\tCtrl-Shift-+",

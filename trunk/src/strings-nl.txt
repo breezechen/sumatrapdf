@@ -11,6 +11,7 @@ Contributor: Kristof Bal
 Contributor: Stephan Paternotte
 Contributor: Marco La Fors
 Contributor: Wim Benes
+Contributor: Ricki Yani Setiawan
 
 &About
 &Over
@@ -360,6 +361,9 @@ Vorige pagina\t<-
 Printing problem.
 Probleem bij het afdrukken.
 
+Properties...
+Eigenschappen...
+
 Remember &opened files
 Herinner ge&opende bestanden
 
@@ -443,7 +447,4 @@ Zoomfactor
 
 [Changes detected; refreshing] %s
 [Bestand gewijzigd; verversen] %s
-
-# Untranslated:
-#Properties...
 
