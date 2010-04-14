@@ -105,8 +105,14 @@ Avançadas
 All files
 Todos os ficheiros
 
+Application:
+Aplicação:
+
 Associate with PDF files?
 Associar a ficheiros PDF?
+
+Author:
+Autor:
 
 Automatic
 Automático
@@ -122,6 +128,9 @@ Book view
 
 Bookmarks\tF12
 Marcadores\tF12
+
+Bytes
+Bytes
 
 Cancel
 Cancelar
@@ -159,11 +168,17 @@ Não foi possível inicializar a impressora
 Couldn't render the page
 Não foi possível processar a página
 
+Created:
+Criado:
+
 Default &Layout:
 Dispo&sição por Omissão:
 
 Default &Zoom:
 &Zoom por Omissão:
+
+Document Properties
+Propriedades do docuemento
 
 Download
 Transferir
@@ -185,6 +200,12 @@ Página dupla
 
 Failed to save a file
 Erro ao guardar o ficheiro
+
+File Size:
+Tamanho do Ficheiro:
+
+File:
+Ficheiro:
 
 Find
 Procurar
@@ -225,14 +246,23 @@ Texto encontrado na página %d
 Fullscreen\tCtrl-L
 Ecrã completo\tCtrl-L
 
+GB
+GB
+
 Go to page
 Ir para a página
 
 Hint: Use the F3 key for finding again
 Dica: prima F3 para procurar a próxima ocorrência
 
+KB
+KB
+
 Last Page\tEnd
 Última Página\tEnd
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 No modo portátil, não é possivel alterar o leitor de PDFs
@@ -245,6 +275,9 @@ Tornar SumatraPDF o leitor de PDFs por omissão
 
 Match case
 Sensível à capitalização
+
+Modified:
+Modificado:
 
 New version %s is available. Download new version?
 Nova versão %s disponível. Transferir nova versão?
@@ -273,6 +306,9 @@ Nenhum ficheiro de sincronização encontrado
 No synchronization info at this position
 Não há informação de sincronização nesta posição
 
+Number of Pages:
+Número de Páginas:
+
 OK
 OK
 
@@ -282,11 +318,23 @@ Abrir
 Open in &Adobe Reader
 Abrir no &Adobe Reader
 
+P&roperties...
+P&ropriedades...
+
 PDF Document
 Documento PDF
 
+PDF Producer:
+Criador do PDF:
+
+PDF Version:
+Versão PDF:
+
 PDF documents
 Documentos PDF
+
+Page Size:
+Tamanho da Página:
 
 Page number %u inexistant
 A página %u não existe
@@ -308,6 +356,9 @@ Página Anterior\t<-
 
 Printing problem.
 Problema de impressão.
+
+Properties...
+Propriedades...
 
 Remember &opened files
 Lembrar ficheiros abert&os
@@ -360,6 +411,9 @@ Não foi possível abrir o ficheiro de sincronização
 Text documents
 Documentos de texto
 
+Title:
+Título:
+
 Unknown source file (%s)
 Ficheiro fonte (%s) desconhecido
 
@@ -389,24 +443,4 @@ Factor de Zoom
 
 [Changes detected; refreshing] %s
 [Mudanças detectadas; actualizando] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Title:
 
