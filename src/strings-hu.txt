@@ -105,8 +105,14 @@ További programbeállítások
 All files
 Minden fájl
 
+Application:
+Alkalmazás:
+
 Associate with PDF files?
 Társítsuk a PDF fájlokkal?
+
+Author:
+Készítő:
 
 Automatic
 Automatikus
@@ -122,6 +128,9 @@ Könyv(Oldalpár címlappal)
 
 Bookmarks\tF12
 Könyvjelzők\tF12
+
+Bytes
+bájt
 
 Cancel
 Mégse
@@ -156,11 +165,17 @@ A nyomtató inicializálása nem sikerült
 Couldn't render the page
 Oldalfeldolgozási hiba
 
+Created:
+Készült:
+
 Default &Layout:
 Oldalmegjelenítési mód:
 
 Default &Zoom:
 Alap nagyítás:
+
+Document Properties
+A dokumentum tulajdonságai
 
 Download
 Letöltés
@@ -182,6 +197,12 @@ Oldalpár
 
 Failed to save a file
 A fájl mentése sikertelen
+
+File Size:
+Méret:
+
+File:
+Fájl:
 
 Find
 Keresés
@@ -222,14 +243,23 @@ Találat a(z) %d. oldalon
 Fullscreen\tCtrl-L
 Teljes képernyő\tCtrl+L
 
+GB
+Gb
+
 Go to page
 Ugrás adott oldalra
 
 Hint: Use the F3 key for finding again
 Tipp: Nyomja meg az F3-at a következő találathoz
 
+KB
+Kb
+
 Last Page\tEnd
 Utolsó oldal\tEnd
+
+MB
+Mb
 
 Main PDF reader can't be changed in portable mode
 Nem tehető alapértelmezett PDF-olvasóvá hordozható módban
@@ -242,6 +272,9 @@ SumatraPDF mint alapértelmezett PDF olvasó
 
 Match case
 Kis- és nagybetűk megkülönböztetése
+
+Modified:
+Módosítva:
 
 New version %s is available. Download new version?
 Új verzió érhető el (%s). Kívánja letölteni?
@@ -264,6 +297,9 @@ Nincs újabb verzió.
 No synchronization info at this position
 Nem található szinkronizálási információ az adott pozícióhoz
 
+Number of Pages:
+Oldalak száma:
+
 OK
 OK
 
@@ -273,11 +309,23 @@ Megny&itás
 Open in &Adobe Reader
 Megnyitás &Adobe Acrobat-ban
 
+P&roperties...
+&Tulajdonságok
+
 PDF Document
 PDF dokumentum
 
+PDF Producer:
+PDF-et létrehozta: 
+
+PDF Version:
+PDF verzió:
+
 PDF documents
 PDF dokumentumok
+
+Page Size:
+Oldalméret
 
 Page number %u inexistant
 A(z) %u oldalszám nem létezik
@@ -299,6 +347,9 @@ Előző oldal\t<-
 
 Printing problem.
 Nyomtatási probléma.
+
+Properties...
+Tulajdonságok...
 
 Remember &opened files
 Korábban megnyitott file-ok listájának tárolása
@@ -345,6 +396,9 @@ Mostantól a Sumatra az alapértelmezett PDF-olvasója
 Synchronization file cannot be opened
 Nem sikerült megnyitni a szinkronizációs fájlt
 
+Title:
+Cím:
+
 Unknown source file (%s)
 Ismeretlen forrásfájl (%s)
 
@@ -376,27 +430,9 @@ Nagyítás mértéke
 [a file megváltozott; frissítés] %s
 
 # Untranslated:
-#Application:
-#Author:
-#Bytes
 #Cannot start inverse search command. Please check the command line in the settings.
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
 #No result found around line %u in file %s
 #No synchronization file found
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
 #Set inverse search command-line
 #Text documents
-#Title:
 
