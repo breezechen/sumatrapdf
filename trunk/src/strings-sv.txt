@@ -9,6 +9,7 @@ Lang: sv Swedish (Svenska)
 Contributor: Linus Persson
 Contributor: Cecilia B
 Contributor: Sebastian Rasmussen
+Contributor: Simon B.
 
 &About
 &Om
@@ -106,8 +107,14 @@ Avancerad
 All files
 Alla filer
 
+Application:
+Programvara:
+
 Associate with PDF files?
 Koppla ihop med PDF-filer?
+
+Author:
+Författare:
 
 Automatic
 Automatiskt
@@ -115,11 +122,17 @@ Automatiskt
 Automatically check for &updates
 Sök automatisk efter &uppdateringar
 
+Back\tAlt+Left Arrow
+Tillbaka\tAlt+Pil vänster
+
 Book view
 Bokuppslag
 
 Bookmarks\tF12
 Bokmärken\tF12
+
+Bytes
+Byte
 
 Cancel
 Avbryt
@@ -157,11 +170,17 @@ Kunde ej använda skrivare
 Couldn't render the page
 Kunde ej visa sidan
 
+Created:
+Skapad:
+
 Default &Layout:
 Förvalt &utseende
 
 Default &Zoom:
 Förvalt &zoomläge
+
+Document Properties
+Dokumentegenskaper
 
 Download
 Ladda &ned
@@ -183,6 +202,12 @@ Uppslag
 
 Failed to save a file
 Kan inte spara filen.
+
+File Size:
+Filstorlek:
+
+File:
+Fil:
 
 Find
 Sök
@@ -214,11 +239,17 @@ Anpassa efter &bredd\tCtrl-2
 Fit Width
 Anpassa efter bredd
 
+Forward\tAlt+Right Arrow
+Framåt\tAlt+Pil höger
+
 Found text at page %d
 Hittade text på sidan %d
 
 Fullscreen\tCtrl-L
 Fullskärm\tCtrl-L
+
+GB
+GB
 
 Go to page
 Gå till sida
@@ -226,8 +257,14 @@ Gå till sida
 Hint: Use the F3 key for finding again
 Tips: Tryck F3 för att söka vidare
 
+KB
+KB
+
 Last Page\tEnd
 Sista sidan\tEnd
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 SumatraPDF kan ej göras förvald i portabelt läge
@@ -240,6 +277,9 @@ Använd SumatraPDF som standardläsare för PDF
 
 Match case
 Matcha versaler/gemener
+
+Modified:
+Ändrad:
 
 New version %s is available. Download new version?
 Nyare version %s tillgänglig. Ladda ner den?
@@ -262,8 +302,14 @@ Ingen ny version tillgänglig.
 No result found around line %u in file %s
 Inget resultat hittades vid rad %u i filen %s
 
+No synchronization file found
+Ingen synkroniseringsfil hittad
+
 No synchronization info at this position
 Synkroniseringsinformation saknas här
+
+Number of Pages:
+Antal sidor:
 
 OK
 OK
@@ -274,11 +320,23 @@ Open
 Open in &Adobe Reader
 Öppna i Adobe &Reader
 
+P&roperties...
+&Egenskaper...
+
 PDF Document
 PDF-dokument
 
+PDF Producer:
+PDF-programvara:
+
+PDF Version:
+PDF-version:
+
 PDF documents
 PDF-dokument
+
+Page Size:
+Sidstorlek:
 
 Page number %u inexistant
 Sidnummer %u finns ej
@@ -301,6 +359,9 @@ Föregående sida\t<-
 Printing problem.
 Utskriftsproblem.
 
+Properties...
+Egenskaper...
+
 Remember &opened files
 Kom ihåg öppnade &filer
 
@@ -315,6 +376,9 @@ Söker %d av %d...
 
 Select content with Ctrl+left mouse button
 Markera med Ctrl + vänster musknapp
+
+Send by &email...
+S&kicka som epost...
 
 Set inverse search command-line
 Sätt motsatt sök-kommandorad
@@ -349,6 +413,9 @@ Synkroniseringsfil kan ej öppnas
 Text documents
 Text-dokument
 
+Title:
+Titel:
+
 Unknown source file (%s)
 Okänd källfil (%s)
 
@@ -378,28 +445,4 @@ Zoomfaktor
 
 [Changes detected; refreshing] %s
 [Ändringar detekterade; uppdaterar] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Back\tAlt+Left Arrow
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#Forward\tAlt+Right Arrow
-#GB
-#KB
-#MB
-#Modified:
-#No synchronization file found
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Send by &email...
-#Title:
 
