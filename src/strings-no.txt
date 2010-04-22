@@ -106,8 +106,14 @@ Avansert
 All files
 Alle filer (*.*)
 
+Application:
+Program:
+
 Associate with PDF files?
 Tilknytt til PDF filer?
+
+Author:
+Forfatter:
 
 Automatic
 Automatisk
@@ -123,6 +129,9 @@ Bokvisning
 
 Bookmarks\tF12
 Bokmerker\tF12
+
+Bytes
+bytes
 
 Cancel
 Avbryt
@@ -160,11 +169,17 @@ Kunne ikke klargjøre skriveren
 Couldn't render the page
 Kunne ikke vise siden
 
+Created:
+Opprettet:
+
 Default &Layout:
 Standard sideoppsett:
 
 Default &Zoom:
 Standard&zoom:
+
+Document Properties
+Dokumentegenskaper
 
 Download
 Nedlasting
@@ -186,6 +201,12 @@ Motstående
 
 Failed to save a file
 Feil ved lagring av filen.
+
+File Size:
+Filstørrelse:
+
+File:
+Fil:
 
 Find
 Søk etter
@@ -226,14 +247,23 @@ Fant tekst på side &d
 Fullscreen\tCtrl-L
 Fullskjerm\tCtrl+L
 
+GB
+GB
+
 Go to page
 Gå til side
 
 Hint: Use the F3 key for finding again
 Tips: Bruk F3 tasten for søk etter neste
 
+KB
+KB
+
 Last Page\tEnd
 Siste side\tEnd
+
+MB
+MB
 
 Main PDF reader can't be changed in portable mode
 Standard pdf-leser kan ikke endres i flyttbar modus
@@ -246,6 +276,9 @@ Bruk SumatraPDF som standard PDF-leser
 
 Match case
 Skill mellom store og små bokstaver
+
+Modified:
+Endret:
 
 New version %s is available. Download new version?
 Ny versjon %s er tilgjenglig. Vil du laste ned ny versjon?
@@ -274,6 +307,9 @@ Ingen synkroniserende fil funnet
 No synchronization info at this position
 Ingen synkroniserings info her
 
+Number of Pages:
+Antall sider:
+
 OK
 OK
 
@@ -283,11 +319,23 @@ Open
 Open in &Adobe Reader
 Åpne i &Adobe Reader
 
+P&roperties...
+E&genskaper...
+
 PDF Document
 PDF Dokument
 
+PDF Producer:
+PDF-produsent:
+
+PDF Version:
+PDF-versjon:
+
 PDF documents
 PDF dokumenter (*.pdf)
+
+Page Size:
+Sidestørrelse:
 
 Page number %u inexistant
 Sidetallet '%u' finnes ikke i dokumentet.
@@ -309,6 +357,9 @@ Forrige side\tPil venstre
 
 Printing problem.
 Problem med utskrift.
+
+Properties...
+Egenskaper...
 
 Remember &opened files
 Husk &åpnede filer
@@ -361,6 +412,9 @@ Synkroniserende fil kan ikke åpnes
 Text documents
 Tekstdokumenter
 
+Title:
+Tittel:
+
 Unknown source file (%s)
 Ukjent kildefil (&s)
 
@@ -390,24 +444,4 @@ Zoom til
 
 [Changes detected; refreshing] %s
 [Endringer oppdaget; oppdaterer] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Bytes
-#Created:
-#Document Properties
-#File Size:
-#File:
-#GB
-#KB
-#MB
-#Modified:
-#Number of Pages:
-#P&roperties...
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Title:
 
