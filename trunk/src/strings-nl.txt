@@ -322,8 +322,8 @@ Openen
 Open in &Adobe Reader
 Openen met &Adobe Reader
 
-P&roperties...
-E&igenschappen...
+P&roperties...\tCtrl-D
+E&igenschappen...\tCtrl-D
 
 PDF Document
 PDF-bestand

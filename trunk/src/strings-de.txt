@@ -320,8 +320,8 @@ Open
 Open in &Adobe Reader
 Mit &Adobe Reader öffnen
 
-P&roperties...
-Eigenschaften...
+P&roperties...\tCtrl-D
+Eigenschaften...\tCtrl-D
 
 PDF Document
 PDF-Dokument

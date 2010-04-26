@@ -309,8 +309,8 @@ Megny&itás
 Open in &Adobe Reader
 Megnyitás &Adobe Acrobat-ban
 
-P&roperties...
-&Tulajdonságok
+P&roperties...\tCtrl-D
+&Tulajdonságok\tCtrl-D
 
 PDF Document
 PDF dokumentum

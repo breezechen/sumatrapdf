@@ -317,8 +317,8 @@ Iepenje
 Open in &Adobe Reader
 Iepenje mei &Adobe Reader
 
-P&roperties...
-E&igenskippen...
+P&roperties...\tCtrl-D
+E&igenskippen...\tCtrl-D
 
 PDF Document
 PDF-bestân

@@ -318,8 +318,8 @@ Open
 Open in &Adobe Reader
 Άνοιγμα με &Adobe Reader
 
-P&roperties...
-&Ιδιότητες...
+P&roperties...\tCtrl-D
+&Ιδιότητες...\tCtrl-D
 
 PDF Document
 Αρχείο PDF

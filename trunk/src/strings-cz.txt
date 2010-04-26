@@ -346,7 +346,7 @@ Zjištěna změna; obnovuji] %s
 #New version available.
 #No new version available.
 #Number of Pages:
-#P&roperties...
+#P&roperties...\tCtrl-D
 #PDF Producer:
 #PDF Version:
 #Page Size:

@@ -405,7 +405,7 @@ Zoom factor
 #MB
 #Modified:
 #Number of Pages:
-#P&roperties...
+#P&roperties...\tCtrl-D
 #PDF Producer:
 #PDF Version:
 #Page Size:

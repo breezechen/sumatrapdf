@@ -383,7 +383,7 @@ Zoom factor
 #Modified:
 #No synchronization file found
 #Number of Pages:
-#P&roperties...
+#P&roperties...\tCtrl-D
 #PDF Producer:
 #PDF Version:
 #Page Size:

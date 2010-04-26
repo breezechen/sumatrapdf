@@ -281,7 +281,7 @@ Zoom factor
 #Number of Pages:
 #OK
 #Open in &Adobe Reader
-#P&roperties...
+#P&roperties...\tCtrl-D
 #PDF Document
 #PDF Producer:
 #PDF Version:
