@@ -318,8 +318,8 @@ Abrir
 Open in &Adobe Reader
 Abrir en &Adobe Reader
 
-P&roperties...
-P&ropriedades...
+P&roperties...\tCtrl-D
+P&ropriedades...\tCtrl-D
 
 PDF Document
 Documento PDF

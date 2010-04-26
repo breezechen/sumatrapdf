@@ -319,8 +319,8 @@ Open
 Open in &Adobe Reader
 Открыть в &Adobe Reader
 
-P&roperties...
-Свойства...
+P&roperties...\tCtrl-D
+Свойства...\tCtrl-D
 
 PDF Document
 PDF-документ

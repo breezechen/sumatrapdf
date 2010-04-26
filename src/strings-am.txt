@@ -317,8 +317,8 @@ Open
 Open in &Adobe Reader
 Բացել &Adobe Reader-ում
 
-P&roperties...
-Հ&ատկություններ...
+P&roperties...\tCtrl-D
+Հ&ատկություններ...\tCtrl-D
 
 PDF Document
 PDF փաստաթուղթ

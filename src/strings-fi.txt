@@ -318,8 +318,8 @@ Avaa
 Open in &Adobe Reader
 Avaa &Adobe Readerissa
 
-P&roperties...
-O&minaisuudet...
+P&roperties...\tCtrl-D
+O&minaisuudet...\tCtrl-D
 
 PDF Document
 PDF-asiakirja

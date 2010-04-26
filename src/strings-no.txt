@@ -319,8 +319,8 @@ Open
 Open in &Adobe Reader
 Åpne i &Adobe Reader
 
-P&roperties...
-E&genskaper...
+P&roperties...\tCtrl-D
+E&genskaper...\tCtrl-D
 
 PDF Document
 PDF Dokument
