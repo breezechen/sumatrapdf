@@ -321,7 +321,7 @@ Open in &Adobe Reader
 Mit &Adobe Reader öffnen
 
 P&roperties...\tCtrl-D
-Eigenschaften...\tCtrl-D
+Eigenschaften...\tStrg+D
 
 PDF Document
 PDF-Dokument
