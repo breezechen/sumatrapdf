@@ -1399,7 +1399,7 @@ pdf_runcsi(pdf_csi *csi, pdf_xref *xref, fz_obj *rdb, fz_stream *file)
 			{
 				return fz_okay;
 			}
-			else if (tok == PDF_TKEYWORD && (!strcmp(buf, "Tc") || !strcmp(buf, "Tw")))
+			else if (tok == PDF_TKEYWORD && (!strcmp(buf, "Tc") || !strcmp(buf, "Tw")) && fz_arraylen(csi->array) > 0)
 			{
 				/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=916  */
 				/* According to the PDF reference, only strings and numbers are  */
