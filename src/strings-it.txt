@@ -9,6 +9,7 @@ Lang: it Italian (Italiano)
 Contributor: Angelo Contardi
 Contributor: iBlawgger
 Contributor: Alessandro Visentin
+Contributor: Alessandro Mariani
 
 &About
 &Informazioni
@@ -106,8 +107,14 @@ Avanzate
 All files
 Tutti i file
 
+Application:
+Applicazione:
+
 Associate with PDF files?
 Associare ai file PDF?
+
+Author:
+Autore:
 
 Automatic
 Automatico
@@ -115,8 +122,17 @@ Automatico
 Automatically check for &updates
 Verifica &automaticamente aggiornamenti
 
+Back\tAlt+Left Arrow
+Indietro\tAlt+Freccia sinistra
+
+Book view
+Vista libro
+
 Bookmarks\tF12
 Segnalibri\tF12
+
+Bytes
+Byte
 
 Cancel
 Annulla
@@ -132,6 +148,9 @@ Cambia lingua (Change language)
 
 Continuous
 Pagina continua
+
+Continuous book view
+Vista libro continua
 
 Continuous facing
 Pagine affiancate continue
@@ -151,11 +170,17 @@ Impossibile inizializzare la stampante
 Couldn't render the page
 Impossibile renderizzare la pagina
 
+Created:
+Creato:
+
 Default &Layout:
 &Vista predeffinita
 
 Default &Zoom:
 &Ingrandimento predefinito
+
+Document Properties
+Proprietà del documento
 
 Download
 Scarica
@@ -177,6 +202,12 @@ Pagine affiancate
 
 Failed to save a file
 Salvataggio del file fallito!
+
+File Size:
+Dimensione del file
+
+File:
+File:
 
 Find
 Trova
@@ -208,11 +239,17 @@ Fit Widt&h\tCtrl-2
 Fit Width
 Larghezza pagina
 
+Forward\tAlt+Right Arrow
+Avanti\tAlt+Freccia destra
+
 Found text at page %d
 Testo trovato a pagina %d
 
 Fullscreen\tCtrl-L
 Schermo intero\tCtrl-L
+
+GB
+GB
 
 Go to page
 Vai a pagina
@@ -220,11 +257,17 @@ Vai a pagina
 Hint: Use the F3 key for finding again
 Ricorda: Usa F3 per trovare nuovamente
 
+KB
+KB
+
 Last Page\tEnd
 Ultima pagina\tEnd
 
+MB
+MB
+
 Main PDF reader can't be changed in portable mode
-Il lettore PDF predefinito non può cambiare in modo portable
+Il lettore PDF predefinito non può cambiare alla modalità portable
 
 Make SumatraPDF default application for PDF files?
 Impostare SumatraPDF come programma predefinito per i file PDF?
@@ -235,11 +278,14 @@ Imposta SumatraPDF come lettore PDF predefinito
 Match case
 Maiuscole/minuscole
 
+Modified:
+Modificato:
+
 New version %s is available. Download new version?
-È disponibile la versione %s. Scaricare la nuova versione?
+E' disponibile la versione %s. Scaricare la nuova versione?
 
 New version available.
-È disponibile una nuova versione.
+E' disponibile una nuova versione.
 
 Next Page
 Pagina successiva
@@ -256,8 +302,14 @@ Nessun aggiornamento disponibile
 No result found around line %u in file %s
 Nessun risultato trovato intorno alla riga %u nel file %s
 
+No synchronization file found
+Non è stato trovato il file di sincronizzazione
+
 No synchronization info at this position
 Niente informazioni di sincronizzazione in questa posizione
+
+Number of Pages:
+Numero di pagine:
 
 OK
 OK
@@ -268,11 +320,23 @@ Apri
 Open in &Adobe Reader
 Apri in &Adobe Reader
 
+P&roperties...\tCtrl-D
+P&roprietà...\tCtrl-D
+
 PDF Document
 Documento PDF
 
+PDF Producer:
+Produttore PDF:
+
+PDF Version:
+Versione PDF:
+
 PDF documents
 Documenti PDF
+
+Page Size:
+Dimensione pagina:
 
 Page number %u inexistant
 Pagina numero  %u inesistente
@@ -295,6 +359,9 @@ Pagina precedente\t<-
 Printing problem.
 Problema di stampa.
 
+Properties...
+Proprietà...
+
 Remember &opened files
 R&icorda i file aperti
 
@@ -310,8 +377,14 @@ In ricerca %d di %d...
 Select content with Ctrl+left mouse button
 Seleziona contenuti con Ctrl+tasto destro del mouse
 
+Send by &email...
+Invia via &mail...
+
 Set inverse search command-line
 Imposta comando di ricerca inversa
+
+Show pages continuously
+Mostra le pagine in modo continuo
 
 Show the &bookmarks sidebar when available
 Mostra la &barra dei segnalibri quando è disponibile
@@ -336,6 +409,12 @@ SumatraPDF dev'essere ora il lettore PDF predefinito
 
 Synchronization file cannot be opened
 Il file di sincronizzazione non può essere aperto
+
+Text documents
+Documenti di testo
+
+Title:
+Titolo:
 
 Unknown source file (%s)
 File sorgente ignoto
@@ -366,32 +445,4 @@ Fattore ingrandimento
 
 [Changes detected; refreshing] %s
 [Cambiamenti rilevati; in aggiornamento] %s
-
-# Untranslated:
-#Application:
-#Author:
-#Back\tAlt+Left Arrow
-#Book view
-#Bytes
-#Continuous book view
-#Created:
-#Document Properties
-#File Size:
-#File:
-#Forward\tAlt+Right Arrow
-#GB
-#KB
-#MB
-#Modified:
-#No synchronization file found
-#Number of Pages:
-#P&roperties...\tCtrl-D
-#PDF Producer:
-#PDF Version:
-#Page Size:
-#Properties...
-#Send by &email...
-#Show pages continuously
-#Text documents
-#Title:
 
