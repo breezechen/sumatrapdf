@@ -1399,6 +1399,15 @@ pdf_runcsi(pdf_csi *csi, pdf_xref *xref, fz_obj *rdb, fz_stream *file)
 			{
 				return fz_okay;
 			}
+			else if (tok == PDF_TKEYWORD && (!strcmp(buf, "Tc") || !strcmp(buf, "Tw")))
+			{
+				/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=916  */
+				/* According to the PDF reference, only strings and numbers are  */
+				/* allowed inside TJ array arguments; nonetheless some producers */
+				/* seem to include Tc and Tw commands inside them. Ignore these  */
+				/* for now (and consider respecting them for later).             */
+				fz_dropobj(csi->array->u.a.items[--csi->array->u.a.len]);
+			}
 			else
 			{
 				clearstack(csi);
