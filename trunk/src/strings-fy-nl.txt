@@ -440,6 +440,3 @@ Zoomfaktor
 [Changes detected; refreshing] %s
 [Bestân wizige; ferfarskje] %s
 
-# Untranslated:
-#Properties...
-

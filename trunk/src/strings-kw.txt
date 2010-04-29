@@ -408,6 +408,5 @@ Faktor-zoum
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Title:
 

@@ -368,7 +368,6 @@ Umanji
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Select content with Ctrl+left mouse button
 #Send by &email...
 #Show pages continuously

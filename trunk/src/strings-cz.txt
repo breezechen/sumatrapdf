@@ -350,7 +350,6 @@ Zjištěna změna; obnovuji] %s
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Send by &email...
 #Set inverse search command-line
 #Show pages continuously
