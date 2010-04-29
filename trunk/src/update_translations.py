@@ -286,6 +286,7 @@ def gen_and_upload_js(strings_dict, langs, contributors):
     s3UploadDataPublic(js, S3_JS_NAME)
 
 def get_untranslated_as_list(untranslated_dict):
+    # TODO: could be shorted if implemented with sets?
     untranslated = []
     for l in untranslated_dict.values():
         for el in l:

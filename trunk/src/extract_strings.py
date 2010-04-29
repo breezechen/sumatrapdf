@@ -2,6 +2,7 @@ import codecs
 import os
 import os.path
 import re
+import sets
 import sys
 
 """
@@ -35,6 +36,11 @@ def is_lang_line(l): return l.startswith(LANG_TXT)
 def is_separator_line(l): return l == "-"
 def is_comment_line(l): return l.startswith("#")
 def is_contributor_line(l): return l.startswith(CONTRIBUTOR_TXT)
+
+def seq_uniq(seq): 
+    # Not order preserving
+    set = sets.Set(seq) 
+    return list(set)
 
 def line_strip_newline(l, newline_chars="\r\n"):
     while True:
@@ -296,25 +302,22 @@ def dump_diffs(strings_dict, strings):
 def langs_sort_func(x,y):
     return cmp(len(y[1]),len(x[1]))
 
+# strings_dict maps a string to a list of [lang, translations...] list
 def dump_missing_per_language(strings, strings_dict, dump_strings=False):
     untranslated_dict = {}
     for lang in get_lang_list(strings_dict):
         untranslated = []
-        for txt in strings_dict.keys():
-            if txt in TRANSLATION_EXCEPTIONS: continue
-            translations = strings_dict[txt]
-            found_translation = False
+        for s in strings:
+            if s in TRANSLATION_EXCEPTIONS: continue
+            translations = strings_dict[s]
+            found = False
             for tr in translations:
                 tr_lang = tr[0]
                 if lang == tr_lang:
-                    found_translation = True
+                    found = True
                     break
-            if not found_translation:
-                untranslated.append(txt)
-        # add strings that only exist in C file as untranslated
-        for s in strings:
-          if s not in strings_dict.keys() and s not in untranslated:
-            untranslated.append(s)
+            if not found and s not in untranslated: 
+                untranslated.append(s)
         untranslated_dict[lang] = untranslated
     items = untranslated_dict.items()
     items.sort(langs_sort_func)
