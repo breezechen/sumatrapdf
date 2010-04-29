@@ -1557,6 +1557,13 @@ static void WindowInfoList_Remove(WindowInfo *to_remove);
 
 static void WindowInfo_Delete(WindowInfo *win)
 {
+    // must DestroyWindow(win->hwndPdfProperties) before removing win from
+    // the list of properties beacuse WM_DESTROY handler needs to find
+    // WindowInfo for its HWND
+    if (win->hwndPdfProperties) {
+        DestroyWindow(win->hwndPdfProperties);
+        assert(NULL == win->hwndPdfProperties);
+    }
     WindowInfoList_Remove(win);
 
     if (win->dm) {
@@ -1577,10 +1584,6 @@ static void WindowInfo_Delete(WindowInfo *win)
     if (win->findStatusThread) {
         CloseHandle(win->findStatusThread);
         win->findStatusThread = NULL;
-    }
-    if (win->hwndPdfProperties) {
-        DestroyWindow(win->hwndPdfProperties);
-        assert(NULL == win->hwndPdfProperties);
     }
     FreePdfProperties(win);
     WindowInfo_Dib_Deinit(win);
