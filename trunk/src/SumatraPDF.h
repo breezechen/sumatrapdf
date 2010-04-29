@@ -230,6 +230,7 @@ public:
     HWND            hwndSpliter;
     HWND            hwndTracker;
     HWND            hwndInfotip;
+    HWND            hwndPdfProperties;
 
     bool            infotipVisible;
     HMENU           hMenu;
@@ -304,7 +305,6 @@ public:
     TCHAR *         title;
     int             currPageNo;
 
-    HWND            hwndPdfProperties;
     PdfPropertiesLayoutEl   pdfProperties[MAX_PDF_PROPERTIES];
     int                     pdfPropertiesCount;
 
