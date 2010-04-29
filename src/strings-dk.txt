@@ -407,6 +407,5 @@ Zoom faktor
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Title:
 

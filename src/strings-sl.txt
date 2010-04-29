@@ -388,7 +388,6 @@ Faktor povečave
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Send by &email...
 #Show pages continuously
 #Text documents

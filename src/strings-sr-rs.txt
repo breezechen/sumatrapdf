@@ -396,7 +396,6 @@ Zoom factor
 #PDF Producer:
 #PDF Version:
 #Page Size:
-#Properties...
 #Send by &email...
 #Title:
 
