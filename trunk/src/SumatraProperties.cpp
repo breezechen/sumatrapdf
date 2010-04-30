@@ -28,6 +28,80 @@ static uint64_t WinFileSizeGet(const TCHAR *file_path)
     return res;
 }
 
+// code from sqlite (utf.c), in public domain
+#define WRITE_UTF8(zOut, c) {                          \
+  if( c<0x00080 ){                                     \
+    *zOut++ = (u8)(c&0xFF);                            \
+  }                                                    \
+  else if( c<0x00800 ){                                \
+    *zOut++ = 0xC0 + (u8)((c>>6)&0x1F);                \
+    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
+  }                                                    \
+  else if( c<0x10000 ){                                \
+    *zOut++ = 0xE0 + (u8)((c>>12)&0x0F);               \
+    *zOut++ = 0x80 + (u8)((c>>6) & 0x3F);              \
+    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
+  }else{                                               \
+    *zOut++ = 0xF0 + (u8)((c>>18) & 0x07);             \
+    *zOut++ = 0x80 + (u8)((c>>12) & 0x3F);             \
+    *zOut++ = 0x80 + (u8)((c>>6) & 0x3F);              \
+    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
+  }                                                    \
+}
+
+static bool IsUtf16be(u8* s, unsigned short len) {
+    if (len < 2) {
+        return false;
+    }
+    if (len % 2 != 0) {
+        return false;
+    }
+    if ((0xfe == s[0]) && (0xff == s[1])) {
+        return true;
+    }
+    return false;
+}
+
+static char *Utf16beToUtf8(u8* s, unsigned short len) {
+    int char_count = (len - 2) / 2; // 2 for BOM, 2 bytes per character
+    s += 2;
+    len -= 2;
+    // utf8 uses max 4 bytes per 1 character and we need zero termination
+    int dst_max_bytes = char_count * 4 + 1;
+    u8 *dst = (u8*)malloc(dst_max_bytes);
+    if (!dst) {
+        return NULL;
+    }
+    u8 *res = dst;
+    u32 c, c1, c2;
+    while (len != 0) {
+        c1 = *s++;
+        c1 = c1 << 8;
+        c2 = *s++;
+        c = c1 | c2;
+        WRITE_UTF8(dst, c);
+        len -= 2;
+    }
+    *dst = 0;
+    return (char*)res;
+}
+
+static char *fz_toutf8(fz_obj *obj) {
+    obj = fz_resolveindirect(obj);
+    if (!obj || (obj->kind != FZ_STRING)) {
+        return str_dup("");
+    }
+
+    unsigned short len = obj->u.s.len;
+    char *s = obj->u.s.buf;
+    if (IsUtf16be((u8*)s, len)) {
+        return Utf16beToUtf8((u8*)s, len);
+    }
+    // TODO: it's possible we need to support other utf encodings
+    // like utf16le, but we'll wait until we have a PDF that needs that
+    return str_dup(obj->u.s.buf);
+}
+
 static char *PdfDateParseInt(char *s, int numDigits, int *valOut) {
     int n = 0;
     while (numDigits > 0) {
@@ -442,23 +516,23 @@ void OnMenuProperties(WindowInfo *win)
     if (info) {
         title = fz_dictgets(info, "Title");
         if (title) {
-            titleStr = fz_tostrbuf(title);
+            titleStr = fz_toutf8(title);
         }
         author = fz_dictgets(info, "Author");
         if (author) {
-            authorStr = fz_tostrbuf(author);
+            authorStr = fz_toutf8(author);
         }
         subject = fz_dictgets(info, "Subject");
         if (subject) {
-            subjectStr = fz_tostrbuf(subject);
+            subjectStr = fz_toutf8(subject);
         }
         producer = fz_dictgets(info, "Producer");
         if (producer) {
-            producerStr = fz_tostrbuf(producer);
+            producerStr = fz_toutf8(producer);
         }
         creator = fz_dictgets(info, "Creator");
         if (creator) {
-            creatorStr = fz_tostrbuf(creator);
+            creatorStr = fz_toutf8(creator);
         }
         creationDate = fz_dictgets(info, "CreationDate");
         creationDateStr = PdfDateToDisplay(creationDate);
@@ -514,6 +588,12 @@ void OnMenuProperties(WindowInfo *win)
     // have to be extended to detect linearlized PDF. The rules are described
     // in F3.3 of http://www.adobe.com/devnet/acrobat/pdfs/PDF32000_2008.pdf
     //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
+
+    free(titleStr);
+    free(authorStr);
+    free(subjectStr);
+    free(producerStr);
+    free(creatorStr);
 
     free(creationDateStr);
     free(modDateStr);
