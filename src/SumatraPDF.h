@@ -66,6 +66,11 @@
 #include "PdfSync.h"
 #include "translations.h"
 
+typedef unsigned char u8;
+typedef unsigned long u32;
+
+CASSERT(sizeof(u32) == 4, u32_is_4_bytes)
+
 #define KB 1024
 #define MB 1024*1024
 #define GB 1024*1024*1024
