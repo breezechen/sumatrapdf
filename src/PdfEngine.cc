@@ -501,6 +501,7 @@ void PdfEngine::linkifyPageText(pdf_page *page)
     if (!pageText)
         return;
 
+    pdf_link *firstLink = page->links;
     for (TCHAR *start = pageText; *start; start++) {
         TCHAR *end;
         fz_rect bbox;
@@ -521,15 +522,15 @@ void PdfEngine::linkifyPageText(pdf_page *page)
             end--;
         *end = 0;
 
-        // make sure that no other link is associated with this word
+        // make sure that no other link is associated with this area
         bbox.x0 = coords[start - pageText].x0;
         bbox.y0 = coords[start - pageText].y0;
         bbox.x1 = coords[end - pageText - 1].x1;
         bbox.y1 = coords[end - pageText - 1].y1;
-        for (pdf_link *link = page->links; link && start < end; link = link->next) {
-            /* fz_rect isect = fz_intersectrects(bbox, link->rect);
-            if (0 != memcmp(&isect, &fz_emptyrect, sizeof(fz_rect)))
-                start = end; */
+        for (pdf_link *link = firstLink; link && *start; link = link->next) {
+            fz_bbox isect = fz_intersectbbox(fz_roundrect(bbox), fz_roundrect(link->rect));
+            if ((isect.x1 - isect.x0) != 0 && (isect.y1 - isect.y0) != 0)
+                start = end;
         }
 
         // add the link, if it's a new one (ignoring www. links without a toplevel domain)
