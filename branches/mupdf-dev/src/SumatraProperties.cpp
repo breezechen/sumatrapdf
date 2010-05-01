@@ -434,7 +434,7 @@ void OnMenuProperties(WindowInfo *win)
     FreePdfProperties(win);
 
     xref = dm->pdfEngine->_xref;
-    info = xref->info;
+    info = fz_dictgets(xref->trailer, "Info");;
 
     if (!fz_isdict(info)) {
         info = NULL;

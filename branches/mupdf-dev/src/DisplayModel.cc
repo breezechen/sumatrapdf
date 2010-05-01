@@ -1572,7 +1572,7 @@ void DisplayModel::goToNamedDest(const char *name)
  * into a newly allocated buffer (which the caller needs to free()). */
 TCHAR *DisplayModel::getTextInRegion(int pageNo, RectD *region)
 {
-    fz_irect *coords;
+    fz_bbox *coords;
     TCHAR *pageText = pdfEngine->ExtractPageText(pageNo, _T("\n\n"), &coords);
     if (!pageText)
         return NULL;
@@ -1582,7 +1582,7 @@ TCHAR *DisplayModel::getTextInRegion(int pageNo, RectD *region)
     TCHAR *result = (TCHAR *)malloc((lstrlen(pageText) + 1) * sizeof(TCHAR)), *dest = result;
     for (TCHAR *src = pageText; *src; src++) {
         if (*src != '\n') {
-            fz_irect *bbox = &coords[src - pageText];
+            fz_bbox *bbox = &coords[src - pageText];
             RectI rect = { bbox->x0, bbox->y0, bbox->x1 - bbox->x0, bbox->y1 - bbox->y0 };
             if (RectI_Intersect(&regionI, &rect, NULL)) {
                 *dest++ = *src;
