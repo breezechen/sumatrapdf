@@ -486,7 +486,7 @@ pdf_loadtextfromtree(pdf_textline **outp, fz_tree *tree, fz_matrix ctm)
 	root = pdf_newtextline();
 	line = root;
 
-	error = extracttext_norec(&line, tree->root, ctm, &oldpt);
+	error = extracttext(&line, tree->root, ctm, &oldpt);
 	if (error)
 	{
 		pdf_droptextline(root);
