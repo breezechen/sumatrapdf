@@ -143,8 +143,8 @@ public:
     int        findPageNo(fz_obj *dest);
     fz_obj    *getNamedDest(const char *name);
     char     * getPageLayoutName(void);
-    TCHAR    * PdfEngine::ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE), fz_irect **coords_out=NULL);
-    TCHAR    * PdfEngine::ExtractPageText(int pageNo, TCHAR *lineSep=_T(DOS_NEWLINE), fz_irect **coords_out=NULL) {
+    TCHAR    * PdfEngine::ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE), fz_bbox **coords_out=NULL);
+    TCHAR    * PdfEngine::ExtractPageText(int pageNo, TCHAR *lineSep=_T(DOS_NEWLINE), fz_bbox **coords_out=NULL) {
         return ExtractPageText(getPdfPage(pageNo), lineSep, coords_out);
     };
 
@@ -164,7 +164,7 @@ private:
 
     pdf_outline *   _outline;
     PdfPage *       _pages;
-    fz_renderer *   _rast;
+    fz_glyphcache * _drawcache;
 };
 
 #endif

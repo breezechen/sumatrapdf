@@ -6258,7 +6258,8 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             return WM_HSCROLL_HANDLED;
 
         case WM_MOUSELEAVE:
-            win->hwndTracker = NULL;
+            if (win)
+                win->hwndTracker = NULL;
             return 0;
 
         case WM_MOUSEMOVE:

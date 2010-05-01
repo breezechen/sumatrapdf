@@ -26,13 +26,14 @@ struct pdfapp_s
 	char *doctitle;
 	pdf_xref *xref;
 	pdf_outline *outline;
-	fz_renderer *rast;
 	int pagecount;
+	fz_glyphcache *cache;
 
 	/* current view params */
 	float zoom;
 	int rotate;
 	fz_pixmap *image;
+	fz_textspan *text;
 
 	/* current page params */
 	int pageno;
@@ -56,7 +57,7 @@ struct pdfapp_s
 
 	int iscopying;
 	int selx, sely;
-	fz_irect selr;
+	fz_bbox selr;
 
 	/* client context storage */
 	void *userdata;
