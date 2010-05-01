@@ -1103,7 +1103,7 @@ const char *g_transTranslations[] = {
   "\303\226&ffnen\342\200\246",
   "Mit &Adobe Reader \303\266ffnen",
   NULL,
-  "Eigenschaften...\tStrg+D",
+  "Ei&genschaften...\tStrg+D",
   "PDF-Dokument",
   "PDF Urheber:",
   NULL,

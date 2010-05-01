@@ -44,8 +44,8 @@ BEGIN
       VALUE "OriginalFilename", "SumatraPDF.exe\0"
       VALUE "ProductName",      "SumatraPDF\0"
       VALUE "ProductVersion",   VER_RESOURCE_STR
-      VALUE "Comments",			"SumatraPDF viewer\0"
-      VALUE "CompanyName", 		"Krzysztof Kowalczyk\0"
+      VALUE "Comments",         "SumatraPDF viewer\0"
+      VALUE "CompanyName",      "Krzysztof Kowalczyk\0"
     END
   END
 END
@@ -69,7 +69,7 @@ IDI_PDFDOC              ICON                    "PdfDoc.ico"
 IDC_SUMATRAPDF ACCELERATORS 
 BEGIN
     "C",            IDM_COPY_SELECTION,     VIRTKEY, CONTROL
-    "D",			IDM_PROPERTIES,         VIRTKEY, CONTROL
+    "D",            IDM_PROPERTIES,         VIRTKEY, CONTROL
     "F",            IDM_FIND_FIRST,         VIRTKEY, CONTROL
     "G",            IDM_GOTO_PAGE,          VIRTKEY, CONTROL
     "L",            IDM_VIEW_FULLSCREEN,    VIRTKEY, CONTROL
