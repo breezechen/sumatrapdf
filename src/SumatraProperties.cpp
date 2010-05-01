@@ -141,24 +141,25 @@ static TCHAR *PdfDateToDisplay(fz_obj *dateObj) {
     int ret;
     TCHAR *tmp;
     TCHAR buf[512];
+    char *s;
     int cchBufLen = dimof(buf);
 
     if (!dateObj) {
         return NULL;
     }
-    char *s = fz_tostrbuf(dateObj);
+    s = fz_toutf8(dateObj);
     if (!s) {
         return NULL;
     }
     ok = PdfDateParse(s, &date);
     if (!ok) {
-        return utf8_to_tstr(s);
+        goto Error;
     }
 
     ret = GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &date, NULL, buf, cchBufLen);
     if (0 == ret) {
         // GetDateFormat() failed
-        return utf8_to_tstr(s);
+        goto Error;
     }
     tmp = buf + ret - 1;
     *tmp++ = _T(' ');
@@ -166,9 +167,14 @@ static TCHAR *PdfDateToDisplay(fz_obj *dateObj) {
     ret = GetTimeFormat(LOCALE_USER_DEFAULT, 0, &date, NULL, tmp, cchBufLen);
     if (0 == ret) {
         // GetTimeFormat() failed
-        return utf8_to_tstr(s);
+        goto Error;
     }
+    free(s);
     return tstr_dup(buf);
+Error:
+    tmp = utf8_to_tstr(s);
+    free(s);
+    return tmp;
 }
 
 // format a number with a given thousand separator e.g. it turns 1234 into "1,234"

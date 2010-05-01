@@ -13,9 +13,8 @@ comments at the end of strings file for each language.
 
 C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraAbout.cpp", "SumatraProperties.cpp", "SumatraDialogs.cc"]
 translation_pattern = r'_TRN?\("(.*?)"\)'
-STRINGS_FILE = "strings_obsolete.txt"
-SCRIPT_PATH = os.path.realpath(".")
-STRINGS_PATH = SCRIPT_PATH
+STRINGS_PATH = os.path.realpath("strings")
+STRINGS_FILE = os.path.join(STRINGS_PATH, "strings_obsolete.txt")
 
 # strings that don't need to be translated
 TRANSLATION_EXCEPTIONS = ["6400%", "3200%", "1600%", "800%", "400%", "200%", "150%", "100%", "125%", "50%", "25%", "12.5%", "8.33%"]
@@ -86,11 +85,10 @@ def assert_unique_translation(curr_trans, lang, line_no):
         assert lang != lang2, "Duplicate translation in lang '%s' at line %d" % (lang, line_no)
 
 # Extract language code (e.g. "br") from language translation file name
-# (e.g. "strings-br.txt"). Returns None if file name doesn't fit expected pattern
+# (e.g. "br.txt" or "sr-sr.txt"). Returns None if file name doesn't fit expected pattern
 def lang_code_from_file_name(file_name):
-    if not file_name.startswith("strings-"): return None
-    if not file_name.endswith(".txt"): return None
-    return file_name[len("strings-"):-len(".txt")]
+	match = re.match(r"(\w{2,3}(?:-\w{2,3})?)\.txt", file_name)
+	return match and match.group(1)
 
 # The structure of strings file should be: comments section at the beginning of the file,
 # Lang: and Contributor: lines, translations, (optional) comments sectin at the end of the file
@@ -166,13 +164,12 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
 # 'langs' is an array of language definition tuples. First item in a tuple
 # is language iso code (e.g. "en" or "sp-rs" and second is language name
 def load_strings_file_new():
-    files_path = STRINGS_PATH
     strings_dict = {}
     langs_dict = { "en" : "English" }
     contributors_dict = {}
-    lang_codes = [lang_code_from_file_name(f) for f in os.listdir(files_path) if lang_code_from_file_name(f) is not None]
+    lang_codes = [lang_code_from_file_name(f) for f in os.listdir(STRINGS_PATH) if lang_code_from_file_name(f) is not None]
     for lang_code in lang_codes:
-        path = os.path.join(files_path, "strings-" + lang_code + ".txt")
+        path = os.path.join(STRINGS_PATH, lang_code + ".txt")
         load_one_strings_file(path, lang_code, strings_dict, langs_dict, contributors_dict)
     for s in TRANSLATION_EXCEPTIONS:
         if s not in strings_dict:
@@ -351,7 +348,7 @@ def gen_translations_for_languages(strings_dict):
     return translations_for_language
 
 def gen_strings_file_for_lang(lang_id, lang_name, translations, contributors, untranslated):
-    file_name = "strings-" + lang_id + ".txt"
+    file_name = os.path.join(STRINGS_PATH, lang_id + ".txt")
     trans = translations[lang_id]
     fo = codecs.open(file_name, "w", "utf-8-sig")
     fo.write("# Translations for %s (%s) language\n" % (lang_name, lang_id))
