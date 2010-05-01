@@ -72,8 +72,8 @@ typedef unsigned long u32;
 CASSERT(sizeof(u32) == 4, u32_is_4_bytes)
 
 #define KB 1024
-#define MB 1024*1024
-#define GB 1024*1024*1024
+#define MB (1024*KB)
+#define GB (1024*MB)
 
 #define APP_NAME_STR            _T("SumatraPDF")
 #define CMD_ARG_SEND_CRASHDUMP _T("/sendcrashdump")
@@ -376,6 +376,7 @@ void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect);
 
 void FreePdfProperties(WindowInfo *win);
 void OnMenuProperties(WindowInfo *win);
+void CopyPropertiesToClipboard(WindowInfo *win);
 LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif

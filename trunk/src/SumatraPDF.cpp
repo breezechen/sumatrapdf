@@ -6606,6 +6606,8 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     // Don't break the shortcut for text boxes
                     if (win->hwndFindBox == GetFocus() || win->hwndPageBox == GetFocus())
                         SendMessage(GetFocus(), WM_COPY, 0, 0);
+                    else if (win->hwndPdfProperties == GetForegroundWindow())
+                        CopyPropertiesToClipboard(win);
                     else if (win->selectionOnPage)
                         CopySelectionToClipboard(win);
                     else

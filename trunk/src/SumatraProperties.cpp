@@ -28,78 +28,54 @@ static uint64_t WinFileSizeGet(const TCHAR *file_path)
     return res;
 }
 
-// code from sqlite (utf.c), in public domain
-#define WRITE_UTF8(zOut, c) {                          \
-  if( c<0x00080 ){                                     \
-    *zOut++ = (u8)(c&0xFF);                            \
-  }                                                    \
-  else if( c<0x00800 ){                                \
-    *zOut++ = 0xC0 + (u8)((c>>6)&0x1F);                \
-    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
-  }                                                    \
-  else if( c<0x10000 ){                                \
-    *zOut++ = 0xE0 + (u8)((c>>12)&0x0F);               \
-    *zOut++ = 0x80 + (u8)((c>>6) & 0x3F);              \
-    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
-  }else{                                               \
-    *zOut++ = 0xF0 + (u8)((c>>18) & 0x07);             \
-    *zOut++ = 0x80 + (u8)((c>>12) & 0x3F);             \
-    *zOut++ = 0x80 + (u8)((c>>6) & 0x3F);              \
-    *zOut++ = 0x80 + (u8)(c & 0x3F);                   \
-  }                                                    \
-}
-
 static bool IsUtf16be(u8* s, unsigned short len) {
-    if (len < 2) {
+    if (len < 2)
         return false;
-    }
-    if (len % 2 != 0) {
+    if (len % 2 != 0)
         return false;
-    }
-    if ((0xfe == s[0]) && (0xff == s[1])) {
+    if ((0xfe == s[0]) && (0xff == s[1]))
         return true;
-    }
     return false;
 }
 
-static char *Utf16beToUtf8(u8* s, unsigned short len) {
-    int char_count = (len - 2) / 2; // 2 for BOM, 2 bytes per character
-    s += 2;
-    len -= 2;
-    // utf8 uses max 4 bytes per 1 character and we need zero termination
-    int dst_max_bytes = char_count * 4 + 1;
-    u8 *dst = (u8*)malloc(dst_max_bytes);
-    if (!dst) {
-        return NULL;
-    }
-    u8 *res = dst;
-    u32 c, c1, c2;
-    while (len != 0) {
-        c1 = *s++;
-        c1 = c1 << 8;
-        c2 = *s++;
-        c = c1 | c2;
-        WRITE_UTF8(dst, c);
-        len -= 2;
-    }
-    *dst = 0;
-    return (char*)res;
+static bool IsUtf16le(u8* s, unsigned short len) {
+    if (len < 2)
+        return false;
+    if (len % 2 != 0)
+        return false;
+    if ((0xff == s[0]) && (0xfe == s[1]))
+        return true;
+    return false;
 }
 
-static char *fz_toutf8(fz_obj *obj) {
-    obj = fz_resolveindirect(obj);
-    if (!obj || (obj->kind != FZ_STRING)) {
-        return str_dup("");
-    }
+#define SWAPWORD(x)	MAKEWORD(HIBYTE(x), LOBYTE(x))
 
-    unsigned short len = obj->u.s.len;
-    char *s = obj->u.s.buf;
-    if (IsUtf16be((u8*)s, len)) {
-        return Utf16beToUtf8((u8*)s, len);
-    }
-    // TODO: it's possible we need to support other utf encodings
-    // like utf16le, but we'll wait until we have a PDF that needs that
-    return str_dup(obj->u.s.buf);
+static char *Utf16beToUtf8(u8* s, unsigned short len) {
+    WCHAR *utf16 = (WCHAR *)malloc(len + 2);
+    memcpy(utf16, s, len);
+
+    // convert from big- to little-endian
+    for (int i = 0; i < len / 2; i++)
+        utf16[i] = SWAPWORD(utf16[i]);
+    utf16[len / 2] = '\0';
+
+    char *utf8 = wstr_to_utf8(utf16 + 1);
+    free(utf16);
+    return utf8;
+}
+
+// Note: returns NULL instead of an empty string
+static char *fz_toutf8(fz_obj *obj) {
+    int len = fz_tostrlen(obj);
+    char *s = fz_tostrbuf(obj);
+
+    if (IsUtf16be((u8*)s, len))
+        return len > 2 ? Utf16beToUtf8((u8*)s, len) : NULL;
+    if (IsUtf16le((u8*)s, len))
+        return len > 2 ? wstr_to_utf8(((WCHAR *)s) + 1) : NULL;
+    // TODO: it's possible we need to support other utf encodings,
+    // but we'll wait until we have a PDF that needs that
+    return len > 0 ? str_dup(s) : NULL;
 }
 
 static char *PdfDateParseInt(char *s, int numDigits, int *valOut) {
@@ -195,43 +171,25 @@ static TCHAR *PdfDateToDisplay(fz_obj *dateObj) {
     return tstr_dup(buf);
 }
 
-static void TstrReverse(TCHAR *s) {
-    TCHAR *e = s + tstr_len(s) - 1;
-    while (s < e) {
-        TCHAR tmp = *s;
-        *s = *e;
-        *e = tmp;
-        ++s; --e;
-    }
-}
-
-// format a number with a given thousand separator e.g. it turns
-// 1234 into "1,234"
-// TODO: due to how we do it (string reverse step) it only works correctly
-// if thousandSep is a single character. Not sure if that's true for all locales.
+// format a number with a given thousand separator e.g. it turns 1234 into "1,234"
 // Caller needs to free() the result.
-static TCHAR *FormatNumWithThousandSep(uint64_t num, TCHAR *thousandSep) {
-    TCHAR buf[32];
-    TCHAR buf2[64];
+static TCHAR *FormatNumWithThousandSep(uint64_t num) {
+    TCHAR buf[32], buf2[64], thousandSep[4];
+
     _sntprintf(buf, dimof(buf), _T("%I64d"), num);
-    // go from end and add thousandSep every 3 chars,
-    // then reverse to get the final string
-    TCHAR *src = buf + tstr_len(buf) - 1;
-    TCHAR *dst = buf2;
-    int pos = 3;
-    while (src >= buf) {
-        *dst++ = *src--;
-        --pos;
-        if (0 == pos && src > buf) {
-            TCHAR *tmp = thousandSep;
-            while (*tmp) {
-                *dst++ = *tmp++;
-            }
-            pos = 3;
+    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, thousandSep, dimof(thousandSep));
+    
+    TCHAR *src = buf, *dst = buf2;
+    int len = lstrlen(src);
+    while (*src) {
+        *dst++ = *src++;
+        if (*src && (len - (src - buf)) % 3 == 0) {
+            lstrcpy(dst, thousandSep);
+            dst += lstrlen(thousandSep);
         }
     }
-    *dst = 0;
-    TstrReverse(buf2);
+    *dst = '\0';
+
     return tstr_dup(buf2);
 }
 
@@ -244,10 +202,10 @@ static TCHAR *FormatSizeSuccint(uint64_t size) {
     const TCHAR *unit;
 
     double s = (double)size;
-    if (s > (double)GB) {
+    if (size > GB) {
         s = s / (double)GB;
         unit = _TR("GB");
-    } else if (s > (double)MB) {
+    } else if (size > MB) {
         s = s / (double)MB;
         unit = _TR("MB");
     } else {
@@ -257,57 +215,28 @@ static TCHAR *FormatSizeSuccint(uint64_t size) {
 
     // TODO: probably should use locale's decimal separator
     _sntprintf(buf, sizeof(buf), _T("%.2f"), s);
-    // we might end up with ".00" suffix or ".*0" suffix, which we don't want
+    // we might end up with ".?0" suffix, which we don't want
     tmp = buf + tstr_len(buf) - 1;
-    if (*tmp == '0') {
-        if (tmp[-1] == '0') {
-            --tmp;
-            --tmp;
-        }
-    } else {
-        ++tmp;
-    }
+    if (*tmp == '0')
+        *tmp = '\0';
 
-    *tmp++ = ' ';
-    while (*unit) {
-        *tmp++ = *unit++;
-    }
-    *tmp = 0;
-    return tstr_dup(buf);
+    return tstr_printf(_T("%s %s"), buf, unit);
 }
 
 // format file size in a readable way e.g. 1348258 is shown
 // as "1.29 MB (1,348,258 Bytes)"
 // Caller needs to free the result
 static TCHAR *FormatPdfSize(uint64_t size) {
-    TCHAR res[128];
-    TCHAR thousandSep[32];
-    TCHAR *n1, *n2, *dst;
-    const TCHAR *src;
-    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, thousandSep, dimof(thousandSep));
+    TCHAR *n1, *n2, *result;
+
     n1 = FormatSizeSuccint(size);
-    n2 = FormatNumWithThousandSep(size, thousandSep);
-    dst = res;
-    src = n1;
-    while (*src) {
-        *dst++ = *src++;
-    }
-    *dst++ = ' ';
-    *dst++ = '(';
-    src = n2;
-    while (*src) {
-        *dst++ = *src++;
-    }
-    *dst++ = ' ';
-    src = _TR("Bytes");
-    while (*src) {
-        *dst++ = *src++;
-    }
-    *dst++ = ')';
-    *dst = 0;
+    n2 = FormatNumWithThousandSep(size);
+    result = tstr_printf(_T("%s (%s %s)"), n1, n2, _TR("Bytes"));
+
     free(n1);
     free(n2);
-    return tstr_dup(res);
+
+    return result;
 }
 
 static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *right) {
@@ -319,13 +248,11 @@ static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const TCHAR *righ
     ++win->pdfPropertiesCount;
 }
 
-#ifdef UNICODE
-static void AddPdfProperty(WindowInfo *win, const TCHAR *left, const char *right) {
+static void AddPdfPropertyUtf8(WindowInfo *win, const TCHAR *left, const char *right) {
     TCHAR *rightTxt = utf8_to_tstr(right);
     AddPdfProperty(win, left, rightTxt);
     free(rightTxt);
 }
-#endif
 
 void FreePdfProperties(WindowInfo *win)
 {
@@ -545,22 +472,28 @@ void OnMenuProperties(WindowInfo *win)
         AddPdfProperty(win, _TR("File:"), win->dm->fileName());
     }
     if (titleStr) {
-        AddPdfProperty(win, _TR("Title:"), titleStr);
+        AddPdfPropertyUtf8(win, _TR("Title:"), titleStr);
+        free(titleStr);
     }
     if (authorStr) {
-        AddPdfProperty(win, _TR("Author:"), authorStr);
+        AddPdfPropertyUtf8(win, _TR("Author:"), authorStr);
+        free(authorStr);
     }
     if (creationDateStr) {
         AddPdfProperty(win, _TR("Created:"), creationDateStr);
+        free(creationDateStr);
     }
     if (modDateStr) {
         AddPdfProperty(win, _TR("Modified:"), modDateStr);
+        free(modDateStr);
     }
     if (creatorStr) {
-        AddPdfProperty(win, _TR("Application:"), creatorStr);
+        AddPdfPropertyUtf8(win, _TR("Application:"), creatorStr);
+        free(creatorStr);
     }
     if (producerStr) {
-        AddPdfProperty(win, _TR("PDF Producer:"), producerStr);
+        AddPdfPropertyUtf8(win, _TR("PDF Producer:"), producerStr);
+        free(producerStr);
     }
 
     tmp = tstr_printf(_T("%d.%d"), xref->version / 10, xref->version % 10);
@@ -589,14 +522,9 @@ void OnMenuProperties(WindowInfo *win)
     // in F3.3 of http://www.adobe.com/devnet/acrobat/pdfs/PDF32000_2008.pdf
     //AddPdfProperty(win, _T("Fast Web View:"), _T("No"));
 
-    free(titleStr);
-    free(authorStr);
+    // TODO: also display subject?
     free(subjectStr);
-    free(producerStr);
-    free(creatorStr);
 
-    free(creationDateStr);
-    free(modDateStr);
     CreatePropertiesWindow(win);
 }
 
@@ -664,6 +592,39 @@ static void OnPaintProperties(HWND hwnd)
     UpdatePropertiesLayout(hwnd, hdc, &rc);
     DrawProperties(hwnd, hdc, &rc);
     EndPaint(hwnd, &ps);
+}
+
+void CopyPropertiesToClipboard(WindowInfo *win)
+{
+    TCHAR *result = tstr_dup(_T(""));
+
+    // just concatenate all the properties into a multi-line string
+    for (INT i = 0; i < win->pdfPropertiesCount; i++) {
+        TCHAR *newResult = tstr_printf(_T("%s%s %s\r\n"), result, win->pdfProperties[i].leftTxt, win->pdfProperties[i].rightTxt);
+        free(result);
+        if (!newResult)
+            return;
+        result = newResult;
+    }
+
+    if (OpenClipboard(NULL)) {
+        HGLOBAL handle = GlobalAlloc(GMEM_MOVEABLE, (lstrlen(result) + 1) * sizeof(TCHAR));
+        if (handle) {
+            TCHAR *selText = (TCHAR *)GlobalLock(handle);
+            lstrcpy(selText, result);
+            GlobalUnlock(handle);
+
+            EmptyClipboard();
+#ifdef UNICODE
+            SetClipboardData(CF_UNICODETEXT, handle);
+#else
+            SetClipboardData(CF_TEXT, handle);
+#endif
+        }
+        CloseClipboard();
+    }
+
+    free(result);
 }
 
 LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
