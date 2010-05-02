@@ -160,94 +160,6 @@ fz_debugtextspan(fz_textspan *span)
 		fz_debugtextspan(span->next);
 }
 
-static void
-fz_textextractspan(fz_textspan **last, fz_text *text, fz_matrix ctm, fz_point *pen)
-{
-	fz_font *font = text->font;
-	fz_matrix tm = text->trm;
-	fz_matrix inv = fz_invertmatrix(text->trm);
-	float size = fz_matrixexpansion(text->trm);
-	fz_matrix trm;
-	float dx, dy;
-	fz_rect rect;
-	fz_point p;
-	float adv;
-	int i, fterr;
-
- 	if (text->len == 0)
-		return;
-
-	if (font->ftface)
-	{
-		FT_Set_Transform(font->ftface, NULL, NULL);
-		fterr = FT_Set_Char_Size(font->ftface, 64, 64, 72, 72);
-		if (fterr)
-			fz_warn("freetype set character size: %s", ft_errorstring(fterr));
-	}
-
-	for (i = 0; i < text->len; i++)
-	{
-		/* Get point in user space to perform heuristic space and newspan tests */
-		p.x = text->els[i].x;
-		p.y = text->els[i].y;
-		p = fz_transformpoint(inv, p);
-		dx = pen->x - p.x;
-		dy = pen->y - p.y;
-		if (pen->x == -1 && pen->y == -1)
-			dx = dy = 0;
-		*pen = p;
-
-		/* Get advance width and update pen position */
-		if (font->ftface)
-		{
-			FT_Fixed ftadv;
-			fterr = FT_Get_Advance(font->ftface, text->els[i].gid,
-				FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING,
-				&ftadv);
-			if (fterr)
-				fz_warn("freetype get advance (gid %d): %s", text->els[i].gid, ft_errorstring(fterr));
-			adv = ftadv / 65536.0;
-			pen->x += adv;
-		}
-		else
-		{
-			adv = font->t3widths[text->els[i].gid];
-			pen->x += adv;
-		}
-
-		/* Get bbox in device space */
-		tm.e = text->els[i].x;
-		tm.f = text->els[i].y;
-		trm = fz_concat(tm, ctm);
-
-		rect.x0 = 0.0;
-		rect.y0 = 0.0;
-		rect.x1 = adv;
-		rect.y1 = 1.0;
-		rect = fz_transformrect(trm, rect);
-
-		/* Add to the text span */
-		/* if (fabs(dy) > 0.001) */ if (fabs(dy) > 0.27) /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
-		{
-			fz_addtextnewline(last, font, size);
-		}
-		else if (fabs(dx) > 0.15 && (*last)->len > 0 && (*last)->text[(*last)->len - 1].c != ' ') /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
-		{
-			fz_rect spacerect;
-			spacerect.x0 = -fabs(dx);
-			spacerect.y0 = 0.0;
-			spacerect.x1 = 0.0;
-			spacerect.y1 = 1.0;
-			spacerect = fz_transformrect(trm, spacerect);
-			fz_addtextchar(last, font, size, ' ', fz_roundrect(spacerect));
-		}
-		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=788 */
-		/* add one or several characters */
-		for (fterr = 1; fterr <= text->els[i].ucs[0]; fterr++)
-			fz_addtextchar(last, font, size, text->els[i].ucs[fterr], fz_roundrect(rect));
-	}
-}
-
 /***** various string fixups *****/
 static void
 ensurespanlength(fz_textspan *span, int mincap)
@@ -321,7 +233,7 @@ ornatecharacter(int ornate, int character)
 #define ISRIGHTTOLEFTCHAR(c) ((0x0590 <= (c) && (c) <= 0x05FF) || (0x0600 <= (c) && (c) <= 0x06FF) || (0x0750 <= (c) && (c) <= 0x077F) || (0xFB50 <= (c) && (c) <= 0xFDFF) || (0xFE70 <= (c) && (c) <= 0xFEFF))
 
 static void
-fixuptextspans(fz_textspan *span)
+fixuptextspan(fz_textspan *span)
 {
 	for (; span; span = span->next)
 	{
@@ -382,13 +294,102 @@ fixuptextspans(fz_textspan *span)
 /***** various string fixups *****/
 
 static void
+fz_textextractspan(fz_textspan **last, fz_text *text, fz_matrix ctm, fz_point *pen)
+{
+	fz_font *font = text->font;
+	fz_matrix tm = text->trm;
+	fz_matrix inv = fz_invertmatrix(text->trm);
+	float size = fz_matrixexpansion(text->trm);
+	fz_matrix trm;
+	float dx, dy;
+	fz_rect rect;
+	fz_point p;
+	float adv;
+	int i, fterr;
+	fz_textspan *firstSpan = *last;
+
+ 	if (text->len == 0)
+		return;
+
+	if (font->ftface)
+	{
+		FT_Set_Transform(font->ftface, NULL, NULL);
+		fterr = FT_Set_Char_Size(font->ftface, 64, 64, 72, 72);
+		if (fterr)
+			fz_warn("freetype set character size: %s", ft_errorstring(fterr));
+	}
+
+	for (i = 0; i < text->len; i++)
+	{
+		/* Get point in user space to perform heuristic space and newspan tests */
+		p.x = text->els[i].x;
+		p.y = text->els[i].y;
+		p = fz_transformpoint(inv, p);
+		dx = pen->x - p.x;
+		dy = pen->y - p.y;
+		if (pen->x == -1 && pen->y == -1)
+			dx = dy = 0;
+		*pen = p;
+
+		/* Get advance width and update pen position */
+		if (font->ftface)
+		{
+			FT_Fixed ftadv;
+			fterr = FT_Get_Advance(font->ftface, text->els[i].gid,
+				FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING,
+				&ftadv);
+			if (fterr)
+				fz_warn("freetype get advance (gid %d): %s", text->els[i].gid, ft_errorstring(fterr));
+			adv = ftadv / 65536.0;
+			pen->x += adv;
+		}
+		else
+		{
+			adv = font->t3widths[text->els[i].gid];
+			pen->x += adv;
+		}
+
+		/* Get bbox in device space */
+		tm.e = text->els[i].x;
+		tm.f = text->els[i].y;
+		trm = fz_concat(tm, ctm);
+
+		rect.x0 = 0.0;
+		rect.y0 = 0.0;
+		rect.x1 = adv;
+		rect.y1 = 1.0;
+		rect = fz_transformrect(trm, rect);
+
+		/* Add to the text span */
+		/* if (fabs(dy) > 0.001) */ if (fabs(dy) > 0.27) /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
+		{
+			fz_addtextnewline(last, font, size);
+		}
+		else if (fabs(dx) > 0.15 && (*last)->len > 0 && (*last)->text[(*last)->len - 1].c != ' ') /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
+		{
+			fz_rect spacerect;
+			spacerect.x0 = -fabs(dx);
+			spacerect.y0 = 0.0;
+			spacerect.x1 = 0.0;
+			spacerect.y1 = 1.0;
+			spacerect = fz_transformrect(trm, spacerect);
+			fz_addtextchar(last, font, size, ' ', fz_roundrect(spacerect));
+		}
+		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=788 */
+		/* add one or several characters */
+		for (fterr = 1; fterr <= text->els[i].ucs[0]; fterr++)
+			fz_addtextchar(last, font, size, text->els[i].ucs[fterr], fz_roundrect(rect));
+	}
+
+	fixuptextspan(firstSpan);
+}
+
+static void
 fz_textfilltext(void *user, fz_text *text, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
 	fz_textdevice *tdev = user;
-	fz_textspan *firstSpan = tdev->span;
 	fz_textextractspan(&tdev->span, text, ctm, &tdev->point);
-	fixuptextspans(firstSpan);
 }
 
 static void
@@ -418,6 +419,9 @@ fz_newtextdevice(fz_textspan *root)
 	dev = fz_newdevice(tdev);
 	dev->freeuser = fz_textfreeuser;
 	dev->filltext = fz_textfilltext;
+	/* TODO: collect text for all text operations? */
+	/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=883 */
+	dev->cliptext = fz_textignoretext;
 	dev->ignoretext = fz_textignoretext;
 	return dev;
 }
