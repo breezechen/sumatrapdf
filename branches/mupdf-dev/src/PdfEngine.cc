@@ -158,12 +158,13 @@ PdfEngine::~PdfEngine()
 
     if (_outline)
         pdf_dropoutline(_outline);
-    if (_xref->store) {
-        pdf_dropstore(_xref->store);
-        _xref->store = NULL;
-    }
-    if (_xref)
+    if (_xref) {
+        if (_xref->store) {
+            pdf_dropstore(_xref->store);
+            _xref->store = NULL;
+        }
         pdf_closexref(_xref);
+    }
     if (_drawcache)
         fz_freeglyphcache(_drawcache);
 

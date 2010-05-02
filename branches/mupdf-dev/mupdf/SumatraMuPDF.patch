@@ -1,6 +1,6 @@
 diff -r 27dbba5ea9e6 fitz/dev_draw.c
 --- a/fitz/dev_draw.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/dev_draw.c	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/dev_draw.c	Sun May 02 03:42:20 2010 +0200
 @@ -828,27 +828,28 @@ fz_drawfreeuser(void *user)
  	fz_freeael(dev->ael);
  	fz_free(dev);
@@ -33,38 +33,14 @@ diff -r 27dbba5ea9e6 fitz/dev_draw.c
  	dev->filltext = fz_drawfilltext;
 diff -r 27dbba5ea9e6 fitz/dev_text.c
 --- a/fitz/dev_text.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/dev_text.c	Sat May 01 23:42:01 2010 +0200
-@@ -222,40 +222,178 @@ fz_textextractspan(fz_textspan **last, f
++++ b/fitz/dev_text.c	Sun May 02 03:42:20 2010 +0200
+@@ -155,29 +155,163 @@ fz_debugtextspan(fz_textspan *span)
  
- 		rect.x0 = 0.0;
- 		rect.y0 = 0.0;
- 		rect.x1 = adv;
- 		rect.y1 = 1.0;
- 		rect = fz_transformrect(trm, rect);
+ 	if (span->eol)
+ 		putchar('\n');
  
- 		/* Add to the text span */
--		if (fabs(dy) > 0.001)
-+		/* if (fabs(dy) > 0.001) */ if (fabs(dy) > 0.27) /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
- 		{
- 			fz_addtextnewline(last, font, size);
- 		}
--		else if (fabs(dx) > 0.2)
-+		else if (fabs(dx) > 0.15 && (*last)->len > 0 && (*last)->text[(*last)->len - 1].c != ' ') /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
- 		{
- 			fz_rect spacerect;
- 			spacerect.x0 = -fabs(dx);
- 			spacerect.y0 = 0.0;
- 			spacerect.x1 = 0.0;
- 			spacerect.y1 = 1.0;
- 			spacerect = fz_transformrect(trm, spacerect);
- 			fz_addtextchar(last, font, size, ' ', fz_roundrect(spacerect));
- 		}
--		fz_addtextchar(last, font, size, text->els[i].ucs, fz_roundrect(rect));
-+		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=788 */
-+		/* add one or several characters */
-+		for (fterr = 1; fterr <= text->els[i].ucs[0]; fterr++)
-+			fz_addtextchar(last, font, size, text->els[i].ucs[fterr], fz_roundrect(rect));
- 	}
+ 	if (span->next)
+ 		fz_debugtextspan(span->next);
  }
  
 +/***** various string fixups *****/
@@ -140,7 +116,7 @@ diff -r 27dbba5ea9e6 fitz/dev_text.c
 +#define ISRIGHTTOLEFTCHAR(c) ((0x0590 <= (c) && (c) <= 0x05FF) || (0x0600 <= (c) && (c) <= 0x06FF) || (0x0750 <= (c) && (c) <= 0x077F) || (0xFB50 <= (c) && (c) <= 0xFDFF) || (0xFE70 <= (c) && (c) <= 0xFEFF))
 +
 +static void
-+fixuptextspans(fz_textspan *span)
++fixuptextspan(fz_textspan *span)
 +{
 +	for (; span; span = span->next)
 +	{
@@ -201,22 +177,69 @@ diff -r 27dbba5ea9e6 fitz/dev_text.c
 +/***** various string fixups *****/
 +
  static void
+ fz_textextractspan(fz_textspan **last, fz_text *text, fz_matrix ctm, fz_point *pen)
+ {
+ 	fz_font *font = text->font;
+ 	fz_matrix tm = text->trm;
+ 	fz_matrix inv = fz_invertmatrix(text->trm);
+ 	float size = fz_matrixexpansion(text->trm);
+ 	fz_matrix trm;
+ 	float dx, dy;
+ 	fz_rect rect;
+ 	fz_point p;
+ 	float adv;
+ 	int i, fterr;
++	fz_textspan *firstSpan = *last;
+ 
+  	if (text->len == 0)
+ 		return;
+ 
+ 	if (font->ftface)
+ 	{
+ 		FT_Set_Transform(font->ftface, NULL, NULL);
+ 		fterr = FT_Set_Char_Size(font->ftface, 64, 64, 72, 72);
+@@ -222,32 +356,37 @@ fz_textextractspan(fz_textspan **last, f
+ 
+ 		rect.x0 = 0.0;
+ 		rect.y0 = 0.0;
+ 		rect.x1 = adv;
+ 		rect.y1 = 1.0;
+ 		rect = fz_transformrect(trm, rect);
+ 
+ 		/* Add to the text span */
+-		if (fabs(dy) > 0.001)
++		/* if (fabs(dy) > 0.001) */ if (fabs(dy) > 0.27) /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
+ 		{
+ 			fz_addtextnewline(last, font, size);
+ 		}
+-		else if (fabs(dx) > 0.2)
++		else if (fabs(dx) > 0.15 && (*last)->len > 0 && (*last)->text[(*last)->len - 1].c != ' ') /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=687 */
+ 		{
+ 			fz_rect spacerect;
+ 			spacerect.x0 = -fabs(dx);
+ 			spacerect.y0 = 0.0;
+ 			spacerect.x1 = 0.0;
+ 			spacerect.y1 = 1.0;
+ 			spacerect = fz_transformrect(trm, spacerect);
+ 			fz_addtextchar(last, font, size, ' ', fz_roundrect(spacerect));
+ 		}
+-		fz_addtextchar(last, font, size, text->els[i].ucs, fz_roundrect(rect));
++		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=788 */
++		/* add one or several characters */
++		for (fterr = 1; fterr <= text->els[i].ucs[0]; fterr++)
++			fz_addtextchar(last, font, size, text->els[i].ucs[fterr], fz_roundrect(rect));
+ 	}
++
++	fixuptextspan(firstSpan);
+ }
+ 
+ static void
  fz_textfilltext(void *user, fz_text *text, fz_matrix ctm,
  	fz_colorspace *colorspace, float *color, float alpha)
  {
  	fz_textdevice *tdev = user;
-+	fz_textspan *firstSpan = tdev->span;
  	fz_textextractspan(&tdev->span, text, ctm, &tdev->point);
-+	fixuptextspans(firstSpan);
- }
- 
- static void
- fz_textignoretext(void *user, fz_text *text, fz_matrix ctm)
- {
- 	fz_textdevice *tdev = user;
- 	fz_textextractspan(&tdev->span, text, ctm, &tdev->point);
- }
-@@ -266,19 +404,20 @@ fz_textfreeuser(void *user)
+@@ -266,19 +405,23 @@ fz_textfreeuser(void *user)
  	fz_textdevice *tdev = user;
  	tdev->span->eol = 1;
  	fz_free(tdev);
@@ -235,12 +258,15 @@ diff -r 27dbba5ea9e6 fitz/dev_text.c
 +	dev = fz_newdevice(tdev);
  	dev->freeuser = fz_textfreeuser;
  	dev->filltext = fz_textfilltext;
++	/* TODO: collect text for all text operations? */
++	/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=883 */
++	dev->cliptext = fz_textignoretext;
  	dev->ignoretext = fz_textignoretext;
  	return dev;
  }
 diff -r 27dbba5ea9e6 fitz/filt_flate.c
 --- a/fitz/filt_flate.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/filt_flate.c	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/filt_flate.c	Sun May 02 03:42:20 2010 +0200
 @@ -89,16 +89,21 @@ fz_processflated(fz_filter *f, fz_buffer
  	zp->next_out = out->wp;
  	zp->avail_out = out->ep - out->wp;
@@ -265,7 +291,7 @@ diff -r 27dbba5ea9e6 fitz/filt_flate.c
  	}
 diff -r 27dbba5ea9e6 fitz/fitz_base.h
 --- a/fitz/fitz_base.h	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/fitz_base.h	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/fitz_base.h	Sun May 02 03:42:20 2010 +0200
 @@ -1,15 +1,21 @@
  /*
   * Include the basic standard libc headers.
@@ -290,7 +316,7 @@ diff -r 27dbba5ea9e6 fitz/fitz_base.h
  #include <limits.h>	/* INT_MIN, MAX ... */
 diff -r 27dbba5ea9e6 fitz/fitz_res.h
 --- a/fitz/fitz_res.h	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/fitz_res.h	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/fitz_res.h	Sun May 02 03:42:20 2010 +0200
 @@ -250,29 +250,29 @@ void fz_debugpath(fz_path *, int indent)
   */
  
@@ -325,7 +351,7 @@ diff -r 27dbba5ea9e6 fitz/fitz_res.h
   * Colorspace resources.
 diff -r 27dbba5ea9e6 fitz/res_font.c
 --- a/fitz/res_font.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/res_font.c	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/res_font.c	Sun May 02 03:42:20 2010 +0200
 @@ -52,17 +52,17 @@ fz_dropfont(fz_font *font)
  	if (font && --font->refs == 0)
  	{
@@ -347,7 +373,7 @@ diff -r 27dbba5ea9e6 fitz/res_font.c
  			if (fterr)
 diff -r 27dbba5ea9e6 fitz/res_text.c
 --- a/fitz/res_text.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/res_text.c	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/res_text.c	Sun May 02 03:42:20 2010 +0200
 @@ -94,20 +94,24 @@ fz_growtext(fz_text *text, int n)
  	if (text->len + n < text->cap)
  		return;
@@ -377,7 +403,7 @@ diff -r 27dbba5ea9e6 fitz/res_text.c
  {
 diff -r 27dbba5ea9e6 fitz/stm_open.c
 --- a/fitz/stm_open.c	Sat May 01 14:31:12 2010 +0200
-+++ b/fitz/stm_open.c	Sat May 01 23:42:01 2010 +0200
++++ b/fitz/stm_open.c	Sun May 02 03:42:20 2010 +0200
 @@ -56,16 +56,50 @@ fz_dropstream(fz_stream *stm)
  			break;
  		}
@@ -431,7 +457,7 @@ diff -r 27dbba5ea9e6 fitz/stm_open.c
  
 diff -r 27dbba5ea9e6 mupdf/mupdf.h
 --- a/mupdf/mupdf.h	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/mupdf.h	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/mupdf.h	Sun May 02 03:42:20 2010 +0200
 @@ -484,16 +484,17 @@ typedef struct pdf_link_s pdf_link;
  typedef struct pdf_comment_s pdf_comment;
  typedef struct pdf_widget_s pdf_widget;
@@ -452,7 +478,7 @@ diff -r 27dbba5ea9e6 mupdf/mupdf.h
  	pdf_link *next;
 diff -r 27dbba5ea9e6 mupdf/pdf_annot.c
 --- a/mupdf/pdf_annot.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_annot.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_annot.c	Sun May 02 03:42:20 2010 +0200
 @@ -10,16 +10,18 @@ pdf_newlink(pdf_linkkind kind, fz_rect b
  	link->dest = fz_keepobj(dest);
  	link->next = nil;
@@ -498,7 +524,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_annot.c
  	pdf_logpage("}\n");
 diff -r 27dbba5ea9e6 mupdf/pdf_build.c
 --- a/mupdf/pdf_build.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_build.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_build.c	Sun May 02 03:42:20 2010 +0200
 @@ -1,10 +1,12 @@
  #include "fitz.h"
  #include "mupdf.h"
@@ -589,7 +615,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_build.c
  
 diff -r 27dbba5ea9e6 mupdf/pdf_cmap.c
 --- a/mupdf/pdf_cmap.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_cmap.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_cmap.c	Sun May 02 03:42:20 2010 +0200
 @@ -371,17 +371,19 @@ pdf_lookupcmap(pdf_cmap *cmap, int cpt)
  		else if (cpt > cmap->ranges[m].high)
  			l = m + 1;
@@ -613,7 +639,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_cmap.c
  	return -1;
 diff -r 27dbba5ea9e6 mupdf/pdf_cmap_parse.c
 --- a/mupdf/pdf_cmap_parse.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_cmap_parse.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_cmap_parse.c	Sun May 02 03:42:20 2010 +0200
 @@ -387,18 +387,19 @@ pdf_parsecmap(pdf_cmap **cmapp, fz_strea
  
  	strcpy(key, ".notdef");
@@ -638,7 +664,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_cmap_parse.c
  			if (!strcmp(buf, "CMapName"))
 diff -r 27dbba5ea9e6 mupdf/pdf_colorspace.c
 --- a/mupdf/pdf_colorspace.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_colorspace.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_colorspace.c	Sun May 02 03:42:20 2010 +0200
 @@ -147,16 +147,77 @@ void pdf_convpixmap(fz_colorspace *ss, f
  		if (ds == pdf_devicegray) fastcmyktogray(sp, dp);
  		else if (ds == pdf_devicergb) fastcmyktorgb(sp, dp);
@@ -742,7 +768,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_colorspace.c
  }
 diff -r 27dbba5ea9e6 mupdf/pdf_font.c
 --- a/mupdf/pdf_font.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_font.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_font.c	Sun May 02 03:42:20 2010 +0200
 @@ -1,14 +1,27 @@
  #include "fitz.h"
  #include "mupdf.h"
@@ -984,7 +1010,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_font.c
  static fz_error
 diff -r 27dbba5ea9e6 mupdf/pdf_fontfile.c
 --- a/mupdf/pdf_fontfile.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_fontfile.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_fontfile.c	Sun May 02 03:42:20 2010 +0200
 @@ -27,17 +27,17 @@ extern const unsigned char pdf_font_Nimb
  extern const unsigned int  pdf_font_NimbusSanL_Regu_cff_len;
  extern const unsigned char pdf_font_NimbusSanL_ReguItal_cff_buf[];
@@ -1748,7 +1774,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_fontfile.c
  	if (fontdesc->flags & FD_FIXED)
 diff -r 27dbba5ea9e6 mupdf/pdf_function.c
 --- a/mupdf/pdf_function.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_function.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_function.c	Sun May 02 03:42:20 2010 +0200
 @@ -461,16 +461,19 @@ loadpostscriptfunc(pdf_function *func, p
  	int codeptr;
  
@@ -1771,7 +1797,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_function.c
  	func->u.p.cap = 0;
 diff -r 27dbba5ea9e6 mupdf/pdf_image.c
 --- a/mupdf/pdf_image.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_image.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_image.c	Sun May 02 03:42:20 2010 +0200
 @@ -524,16 +524,22 @@ pdf_loadtile(pdf_image *src, fz_pixmap *
  		case 2: bpcfact = 85; break;
  		case 4: bpcfact = 17; break;
@@ -1797,7 +1823,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_image.c
  			int high = src->indexed->high;
 diff -r 27dbba5ea9e6 mupdf/pdf_interpret.c
 --- a/mupdf/pdf_interpret.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_interpret.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_interpret.c	Sun May 02 03:42:20 2010 +0200
 @@ -221,23 +221,32 @@ pdf_runinlineimage(pdf_csi *csi, fz_obj 
  	char buf[256];
  	pdf_token_e tok;
@@ -1879,7 +1905,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_interpret.c
  		else switch (tok)
 diff -r 27dbba5ea9e6 mupdf/pdf_lex.c
 --- a/mupdf/pdf_lex.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_lex.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_lex.c	Sun May 02 03:42:20 2010 +0200
 @@ -221,17 +221,18 @@ lexhexstring(fz_stream *f, char *buf, in
  			}
  			else
@@ -1902,7 +1928,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_lex.c
  {
 diff -r 27dbba5ea9e6 mupdf/pdf_open.c
 --- a/mupdf/pdf_open.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_open.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_open.c	Sun May 02 03:42:20 2010 +0200
 @@ -43,24 +43,35 @@ pdf_readstartxref(pdf_xref *xref)
  	int t, n;
  	int i;
@@ -2029,7 +2055,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_open.c
  		if (error)
 diff -r 27dbba5ea9e6 mupdf/pdf_repair.c
 --- a/mupdf/pdf_repair.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_repair.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_repair.c	Sun May 02 03:42:20 2010 +0200
 @@ -52,18 +52,18 @@ fz_repairobj(fz_stream *file, char *buf,
  
  		obj = fz_dictgets(dict, "Length");
@@ -2053,7 +2079,7 @@ diff -r 27dbba5ea9e6 mupdf/pdf_repair.c
  		tok != PDF_TERROR &&
 diff -r 27dbba5ea9e6 mupdf/pdf_unicode.c
 --- a/mupdf/pdf_unicode.c	Sat May 01 14:31:12 2010 +0200
-+++ b/mupdf/pdf_unicode.c	Sat May 01 23:42:01 2010 +0200
++++ b/mupdf/pdf_unicode.c	Sun May 02 03:42:20 2010 +0200
 @@ -23,28 +23,40 @@ pdf_loadtounicode(pdf_fontdesc *font, pd
  		if (error)
  			return fz_rethrow(error, "cannot load embedded cmap");
