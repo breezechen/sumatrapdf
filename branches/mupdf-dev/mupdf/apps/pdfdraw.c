@@ -126,6 +126,8 @@ static void drawfreepage(void)
 	drawpage = nil;
 
 	flushxref();
+	/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=691283 */
+	if (drawcache) fz_evictglyphcache(drawcache);
 
 	/* Flush resources between pages.
 	 * TODO: should check memory usage before deciding to do this.

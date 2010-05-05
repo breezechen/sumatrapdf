@@ -198,11 +198,11 @@ LIBS_OBJS = \
 
 LIBS_OBJS = $(LIBS_OBJS) $(OPENJPEG_OBJS)
 
-PDFAPP_OBJS = $(LIBS_OBJS) $(O)\pdfapp.obj $(O)\winmain.obj
-
-PDFAPP_APP = $(O)\pdfapp.exe
-PDFAPP_PDB = $(O)\pdfapp.pdb
-PDFAPP_MAP = $(O)\pdfapp.map
+PDFAPP_RES = $(O)\pdfview.res
+PDFAPP_OBJS = $(LIBS_OBJS) $(O)\win_main.obj $(O)\pdfapp.obj $(PDFAPP_RES)
+PDFAPP_APP = $(O)\pdfview.exe
+PDFAPP_PDB = $(O)\pdfview.pdb
+PDFAPP_MAP = $(O)\pdfview.map
 
 PDFBENCH_OBJS = $(LIBS_OBJS) $(O)\pdfbench.obj
 PDFBENCH_APP = $(O)\pdfbench.exe
@@ -245,7 +245,7 @@ FONTDUMP_APP = $(O)\fontdump.exe
 FONTDUMP_PDB = $(O)\fontdump.pdb
 FONTDUMP_MAP = $(O)\fontdump.map
 
-all: $(O) $(CMAPDUMP_APP) $(PDFBENCH_APP) $(PDFDRAW_APP) $(PDFSHOW_APP) $(PDFCLEAN_APP) $(PDFINFO_APP) $(PDFEXTRACT_APP)
+all: $(O) $(CMAPDUMP_APP) $(PDFDRAW_APP) $(PDFSHOW_APP) $(PDFCLEAN_APP) $(PDFINFO_APP) $(PDFEXTRACT_APP) $(PDFBENCH_APP) $(PDFAPP_APP)
 
 clean: force
 	-rmdir /S /Q $(O)
@@ -256,6 +256,9 @@ cleanall: force
 
 $(O): force
 	@if not exist $(O) mkdir $(O)
+
+$(PDFAPP_RES): $(FITZ_DIR)\apps\win_res.rc
+	rc /r /fo$(PDFAPP_RES) $(FITZ_DIR)\apps\win_res.rc
 
 $(O)\cmap_tounicode.obj: $(O)\cmap_tounicode.c
 $(O)\cmap_cns.obj: $(O)\cmap_cns.c
@@ -610,12 +613,6 @@ $(PDFEXTRACT_APP): $(PDFEXTRACT_OBJS)
 
 # fitz directories
 {$(FITZ_DIR)\apps\}.c{$(O)}.obj::
-	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
-
-{$(FITZ_DIR)\apps\common\}.c{$(O)}.obj::
-	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
-
-{$(FITZ_DIR)\apps\windows\}.c{$(O)}.obj::
 	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
 
 {$(FITZ_DIR)\mupdf\}.c{$(O)}.obj::
