@@ -236,7 +236,6 @@ pdf_showpattern(pdf_csi *csi, pdf_pattern *pat, fz_rect bbox, int what)
 
 	for (y = y0; y < y1; y++)
 	{
-
 		for (x = x0; x < x1; x++)
 		{
 			gstate->ctm = fz_concat(fz_translate(x * pat->xstep, y * pat->ystep), ptm);
@@ -560,7 +559,7 @@ pdf_showglyph(pdf_csi *csi, int cid)
 	/* fall back to ncidtoucs if the char wasn't in tounicode */
 	if (ucs[1] < 0 && cid < fontdesc->ncidtoucs)
 		ucs[1] = fontdesc->cidtoucs[cid];
-	if (ucs[1] < 0)
+	if (ucs[1] <= 0)
 		ucs[1] = '?';
 
 	gid = pdf_fontcidtogid(fontdesc, cid);
