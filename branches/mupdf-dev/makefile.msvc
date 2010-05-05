@@ -28,7 +28,7 @@ FITZ_DIR=mupdf
 
 ZLIB_DIR=$(EXTLIBSDIR)ext\zlib-1.2.3
 FREETYPE_DIR=$(EXTLIBSDIR)ext\freetype2
-JPEG_DIR=$(EXTLIBSDIR)ext\jpeg6b
+JPEG_DIR=$(EXTLIBSDIR)ext\jpeg-8a
 OPENJPEG_DIR=$(EXTLIBSDIR)ext\openjpeg-1.3\libopenjpeg
 JBIG2_DIR=$(EXTLIBSDIR)ext\jbig2dec
 
@@ -150,15 +150,16 @@ ZLIB_OBJS = \
 	$(O)\gzio.obj
 
 JPEG_OBJS = \
-	$(O)\jcapimin.obj $(O)\jcapistd.obj $(O)\jccoefct.obj $(O)\jccolor.obj $(O)\jcdctmgr.obj $(O)\jchuff.obj \
-	$(O)\jcinit.obj $(O)\jcmainct.obj $(O)\jcmarker.obj $(O)\jcmaster.obj $(O)\jcomapi.obj $(O)\jcparam.obj \
-	$(O)\jcphuff.obj $(O)\jcprepct.obj $(O)\jcsample.obj $(O)\jctrans.obj $(O)\jdapimin.obj $(O)\jdapistd.obj \
-	$(O)\jdatadst.obj $(O)\jdatasrc.obj $(O)\jdcoefct.obj $(O)\jdcolor.obj $(O)\jddctmgr.obj $(O)\jdhuff.obj \
-	$(O)\jdinput.obj $(O)\jdmainct.obj $(O)\jdmarker.obj $(O)\jdmaster.obj $(O)\jdmerge.obj $(O)\jdphuff.obj \
-	$(O)\jdpostct.obj $(O)\jdsample.obj $(O)\jdtrans.obj $(O)\jerror.obj $(O)\jfdctflt.obj $(O)\jfdctfst.obj \
-	$(O)\jfdctint.obj $(O)\jidctflt.obj $(O)\jidctfst.obj $(O)\jidctint.obj $(O)\jidctred.obj $(O)\jquant1.obj \
-	$(O)\jquant2.obj $(O)\jutils.obj $(O)\jmemmgr.obj \
-	$(O)\jmemnobs.obj # should I use jmemansi.obj or jmemname.obj ?
+	$(O)\jaricom.obj $(O)\jcomapi.obj $(O)\jutils.obj $(O)\jerror.obj $(O)\jmemmgr.obj \
+	$(O)\jcapimin.obj $(O)\jcapistd.obj $(O)\jcarith.obj $(O)\jctrans.obj $(O)\jcparam.obj \
+	$(O)\jdatadst.obj $(O)\jcinit.obj $(O)\jcmaster.obj $(O)\jcmarker.obj $(O)\jcmainct.obj \
+	$(O)\jcprepct.obj $(O)\jccoefct.obj $(O)\jccolor.obj $(O)\jcsample.obj $(O)\jchuff.obj \
+	$(O)\jcdctmgr.obj $(O)\jfdctfst.obj $(O)\jfdctflt.obj $(O)\jfdctint.obj \
+	$(O)\jdapimin.obj $(O)\jdapistd.obj $(O)\jdarith.obj $(O)\jdtrans.obj $(O)\jdatasrc.obj \
+	$(O)\jdmaster.obj $(O)\jdinput.obj $(O)\jdmarker.obj $(O)\jdhuff.obj $(O)\jdmainct.obj \
+	$(O)\jdcoefct.obj $(O)\jdpostct.obj $(O)\jddctmgr.obj $(O)\jidctfst.obj $(O)\jidctflt.obj \
+	$(O)\jidctint.obj $(O)\jdsample.obj $(O)\jdcolor.obj $(O)\jquant1.obj $(O)\jquant2.obj \
+	$(O)\jdmerge.obj $(O)\jmemnobs.obj # should I use jmemansi.obj or jmemname.obj ?
 
 JBIG2_OBJS = \
 	$(O)\jbig2.obj $(O)\jbig2_arith.obj \
