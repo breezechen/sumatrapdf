@@ -207,7 +207,6 @@ static void img_4o4(FZ_PSRC, FZ_PDST, FZ_PCTM)
 static void img_w4i1o4(byte *argb, FZ_PSRC, FZ_PDST, FZ_PCTM)
 {
 	byte alpha = argb[0];
-	/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=691281 */
 	byte r = argb[1];
 	byte g = argb[2];
 	byte b = argb[3];
