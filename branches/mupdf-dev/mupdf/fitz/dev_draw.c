@@ -855,8 +855,8 @@ fz_drawfreeuser(void *user)
 fz_device *
 fz_newdrawdevice(fz_glyphcache *cache, fz_pixmap *dest)
 {
-	fz_drawdevice *ddev = fz_malloc(sizeof(fz_drawdevice));
 	fz_device *dev;
+	fz_drawdevice *ddev = fz_malloc(sizeof(fz_drawdevice));
 	if (dest->colorspace)
 		ddev->model = fz_keepcolorspace(dest->colorspace);
 	else
