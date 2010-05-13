@@ -534,7 +534,8 @@ void pdfapp_onmouse(pdfapp_t *app, int x, int y, int btn, int modifiers, int sta
 			if (link->kind == PDF_LURI)
 				pdfapp_gotouri(app, link->dest);
 			else if (link->kind == PDF_LGOTO)
-				pdfapp_gotopage(app, link->dest);
+				/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=275 */
+				pdfapp_gotopage(app, fz_arrayget(link->dest, 0));
 			return;
 		}
 	}
