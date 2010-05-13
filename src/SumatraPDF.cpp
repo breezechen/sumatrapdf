@@ -6172,6 +6172,7 @@ void WindowInfo::ShowTocBox()
     SetWindowPos(hwndCanvas, NULL, cx + SPLITTER_DX, cy, cw, ch, SWP_NOZORDER|SWP_SHOWWINDOW);
 Exit:
     dm->_showToc = TRUE;
+    WindowInfo_UpdateTocSelection(this, dm->currentPageNo());
 }
 
 void WindowInfo::HideTocBox()
