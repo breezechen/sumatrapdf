@@ -172,7 +172,6 @@ public:
         hwndPageTotal = NULL;
         hwndTocBox = NULL;
         hwndSpliter = NULL;
-        hwndTracker = NULL;
         hwndInfotip = NULL;
         hwndPdfProperties = NULL;
 
@@ -233,7 +232,6 @@ public:
     HWND            hwndPageTotal;
     HWND            hwndTocBox;
     HWND            hwndSpliter;
-    HWND            hwndTracker;
     HWND            hwndInfotip;
     HWND            hwndPdfProperties;
 
@@ -319,7 +317,6 @@ public:
     void LoadTocTree();
     void ToggleTocBox();
 
-    void TrackMouse(HWND hwnd=NULL);
     void FindStart();
     virtual bool FindUpdateStatus(int count, int total);
     void FocusPageNoEdit();

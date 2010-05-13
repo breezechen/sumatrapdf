@@ -5434,9 +5434,6 @@ static LRESULT CALLBACK WndProcFindBox(HWND hwnd, UINT message, WPARAM wParam, L
             Edit_SetRectNoPaint(hwnd, &r);
         }
     }
-    else if (WM_SETFOCUS == message) {
-        win->hwndTracker = NULL;
-    }
     else if (WM_KEYDOWN == message) {
         if (OnKeydown(win, wParam, lParam, true))
             return 0;
@@ -5704,7 +5701,6 @@ static LRESULT CALLBACK WndProcPageBox(HWND hwnd, UINT message, WPARAM wParam, L
         PostMessage(hwnd, UWM_PAGE_SET_FOCUS, 0, 0);
     } else if (UWM_PAGE_SET_FOCUS == message) {
         Edit_SetSel(hwnd, 0, -1);
-        win->hwndTracker = NULL;
     } else if (WM_KEYDOWN == message) {
         if (OnKeydown(win, wParam, lParam, true))
             return 0;
@@ -5929,7 +5925,6 @@ static LRESULT CALLBACK WndProcSpliter(HWND hwnd, UINT message, WPARAM wParam, L
 
 void WindowInfo::FindStart()
 {
-    hwndTracker = NULL;
     SendMessage(hwndFindBox, EM_SETSEL, 0, -1);
     SetFocus(hwndFindBox);
 }
@@ -5943,34 +5938,11 @@ bool WindowInfo::FindUpdateStatus(int current, int total)
     return !findCanceled;
 }
 
-void WindowInfo::TrackMouse(HWND tracker)
-{
-    if (!tracker)
-        tracker = hwndCanvas;
-    if (hwndFrame != GetActiveWindow() || hwndFindBox == GetFocus() || hwndPageBox == GetFocus() || hwndTracker == tracker)
-        return;
-
-    TRACKMOUSEEVENT tme = { sizeof(tme) };
-    tme.dwFlags = TME_LEAVE;
-    tme.hwndTrack = hwndTracker = tracker;
-    TrackMouseEvent(&tme);
-    if (tracker == hwndCanvas)
-        SetFocus(hwndFrame);
-    else
-        SetFocus(hwndTocBox);
-}
-
 static WNDPROC DefWndProcTocBox = NULL;
 static LRESULT CALLBACK WndProcTocBox(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     WindowInfo *win = WindowInfo_FindByHwnd(hwnd);
     switch (message) {
-        case WM_MOUSELEAVE:
-            win->hwndTracker = NULL;
-            return 0;
-        case WM_MOUSEMOVE:
-            win->TrackMouse(hwnd);
-            break;
         case WM_CHAR:
             if (VK_ESCAPE == wParam && gGlobalPrefs.m_escToExit)
                 DestroyWindow(win->hwndFrame);
@@ -6136,17 +6108,21 @@ void WindowInfo::ToggleTocBox()
 {
     if (!dm)
         return;
-    if (!dm->_showToc)
+    if (!dm->_showToc) {
         ShowTocBox();
-    else
+        SetFocus(hwndTocBox);
+    } else {
         HideTocBox();
+    }
     MenuUpdateBookmarksStateForWindow(this);
 }
 
 void WindowInfo::ShowTocBox()
 {
-    if (!dm->hasTocTree())
-        goto Exit;
+    if (!dm->hasTocTree()) {
+        dm->_showToc = TRUE;
+        return;
+    }
 
     LoadTocTree();
 
@@ -6170,7 +6146,7 @@ void WindowInfo::ShowTocBox()
     SetWindowPos(hwndTocBox, NULL, 0, cy, cx, ch, SWP_NOZORDER|SWP_SHOWWINDOW);
     SetWindowPos(hwndSpliter, NULL, cx, cy, SPLITTER_DX, ch, SWP_NOZORDER|SWP_SHOWWINDOW);
     SetWindowPos(hwndCanvas, NULL, cx + SPLITTER_DX, cy, cw, ch, SWP_NOZORDER|SWP_SHOWWINDOW);
-Exit:
+
     dm->_showToc = TRUE;
     WindowInfo_UpdateTocSelection(this, dm->currentPageNo());
 }
@@ -6185,6 +6161,9 @@ void WindowInfo::HideTocBox()
 
     if (gGlobalPrefs.m_showToolbar && !fullScreen)
         cy = gReBarDy + gReBarDyFrame;
+
+    if (GetFocus() == hwndTocBox)
+        SetFocus(hwndCanvas);
 
     SetWindowPos(hwndCanvas, NULL, 0, cy, cw, ch - cy, SWP_NOZORDER);
     ShowWindow(hwndTocBox, SW_HIDE);
@@ -6286,16 +6265,9 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             OnHScroll(win, wParam);
             return WM_HSCROLL_HANDLED;
 
-        case WM_MOUSELEAVE:
-            if (win)
-                win->hwndTracker = NULL;
-            return 0;
-
         case WM_MOUSEMOVE:
-            if (win) {
-                win->TrackMouse(hwnd);
+            if (win)
                 OnMouseMove(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
-            }
             break;
 
         case WM_LBUTTONDBLCLK:
