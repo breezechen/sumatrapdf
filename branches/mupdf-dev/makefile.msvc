@@ -692,6 +692,9 @@ $(PDFEXTRACT_APP): $(PDFEXTRACT_OBJS)
 {$(FITZ_DIR)\apps\}.c{$(O)}.obj::
 	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
 
+$(O)\win_main.obj: $(FITZ_DIR)\apps\win_main.c
+	$(CC) $(FITZ_CFLAGS) /U "UNICODE" /Fo$(O)\ /Fd$(O)\vc80.pdb  $**
+
 {$(FITZ_DIR)\mupdf\}.c{$(O)}.obj::
 	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
 
