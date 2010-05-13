@@ -1891,67 +1891,53 @@ static void MenuToolbarUpdateStateForAllWindows(void) {
 }
 
 #define MIN_WIN_DX 50
-#define MAX_WIN_DX 4096
 #define MIN_WIN_DY 50
-#define MAX_WIN_DY 4096
 
-static bool IsWindowVisibleOnAMonitor(int x, int y, int dx, int dy)
+static void EnsureWindowVisibility(int *x, int *y, int *dx, int *dy)
 {
-    // check whether the lower half of the window's title bar is
-    // inside a visible area (supports multiple monitors)
-    RECT caption;
-    int captionDy = GetSystemMetrics(SM_CYCAPTION);
-    SetRect(&caption, x, y + captionDy / 2, x + dx, y + captionDy);
+    RECT rc = { *x, *y, *x + *dy, *y + *dy };
 
-    return NULL != MonitorFromRect(&caption, MONITOR_DEFAULTTONULL);
+    // adjust to the work-area of the current monitor (not necessarily the primary one)
+    MONITORINFO mi = { 0 };
+    mi.cbSize = sizeof(mi);
+    if (!GetMonitorInfo(MonitorFromRect(&rc, MONITOR_DEFAULTTONEAREST), &mi))
+        SystemParametersInfo(SPI_GETWORKAREA, 0, &mi.rcWork, 0);
+
+    // make sure that the window is neither too small nor bigger than the monitor
+    if (*dx < MIN_WIN_DX || *dx > rect_dx(&mi.rcWork))
+        *dx = rect_dy(&mi.rcWork) * DEF_PAGE_RATIO;
+    if (*dy < MIN_WIN_DY || *dy > rect_dy(&mi.rcWork))
+        *dy = rect_dy(&mi.rcWork);
+
+    // check whether the lower half of the window's title bar is
+    // inside a visible working area
+    int captionDy = GetSystemMetrics(SM_CYCAPTION);
+    rc.bottom = rc.top + captionDy;
+    rc.top += captionDy / 2;
+    if (!IntersectRect(&mi.rcMonitor, &mi.rcWork, &rc)) {
+        *x = mi.rcWork.left + CW_USEDEFAULT;
+        *y = mi.rcWork.top + CW_USEDEFAULT;
+    }
 }
 
 static WindowInfo* WindowInfo_CreateEmpty(void) {
     HWND        hwndFrame, hwndCanvas;
     WindowInfo* win;
 
-    /* TODO: maybe adjustement of size and position should be outside of this function */
     RECT workArea;
     SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
-    int defPageDy = rect_dy(&workArea);
-    int defPageDx = defPageDy * DEF_PAGE_RATIO;
-
     int winX = CW_USEDEFAULT;
     int winY = workArea.top;
+    int winDy = rect_dy(&workArea);
+    int winDx = winDy * DEF_PAGE_RATIO;
+
     if (DEFAULT_WIN_POS != gGlobalPrefs.m_windowPosX) {
         winX = gGlobalPrefs.m_windowPosX;
         winY = gGlobalPrefs.m_windowPosY;
-    }
-
-    int winDx = defPageDx;
-    if (DEFAULT_WIN_POS != gGlobalPrefs.m_windowDx) {
         winDx = gGlobalPrefs.m_windowDx;
-        if (winDx < MIN_WIN_DX || winDx > MAX_WIN_DX)
-            winDx = defPageDx;
-    }
-    
-    int winDy = defPageDy;
-    if (DEFAULT_WIN_POS != gGlobalPrefs.m_windowDy) {
         winDy = gGlobalPrefs.m_windowDy;
-        if (winDy < MIN_WIN_DY || winDy > MAX_WIN_DY)
-            winDy = defPageDy;
-    }
-    
-    if (winX != CW_USEDEFAULT && winY != CW_USEDEFAULT) {
-        if (!IsWindowVisibleOnAMonitor(winX, winY, winDx, winDy)) {
-            RECT rc;
-            rc.left = winX;
-            rc.top = winY;
-            rc.right = rc.left+ winDx;
-            rc.bottom = rc.top + winDy;
-            
-            MONITORINFO mi;
-            mi.cbSize = sizeof(mi);
-            GetMonitorInfo(MonitorFromRect(&rc, MONITOR_DEFAULTTONEAREST), &mi);
-            
-            winX = mi.rcMonitor.left + CW_USEDEFAULT;
-            winY = mi.rcMonitor.top + CW_USEDEFAULT;
-        }
+
+        EnsureWindowVisibility(&winX, &winY, &winDx, &winDy);
     }
 
     hwndFrame = CreateWindow(
@@ -2238,12 +2224,7 @@ static void CheckPositionAndSize(DisplayState* ds)
         ds->windowDy = gGlobalPrefs.m_windowDy;
     }
 
-    if (ds->windowDx < MIN_WIN_DX || ds->windowDx > MAX_WIN_DX ||
-        ds->windowDy < MIN_WIN_DY || ds->windowDy > MAX_WIN_DY ||
-        !IsWindowVisibleOnAMonitor(ds->windowX, ds->windowY, ds->windowDx, ds->windowDy)) {
-        ds->windowX = CW_USEDEFAULT;
-        ds->windowY = CW_USEDEFAULT;
-    }
+    EnsureWindowVisibility(&ds->windowX, &ds->windowY, &ds->windowDx, &ds->windowDy);
 }
 
 static void AdjustRemovableDriveLetter(TCHAR *path)
