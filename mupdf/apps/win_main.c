@@ -1,6 +1,3 @@
-#undef _UNICODE
-#undef UNICODE
-
 #include <fitz.h>
 #include <mupdf.h>
 #include "pdfapp.h"
@@ -185,7 +182,7 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	char buf[256];
 	pdf_xref *xref = gapp.xref;
-	fz_obj *obj, *info;
+	fz_obj *info, *obj;
 
 	switch(message)
 	{
@@ -222,7 +219,8 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetDlgItemTextA(hwnd, 0x13, "n/a");
 		}
 
-		if (!(info = fz_dictgets(xref->trailer, "Info")))
+		info = fz_dictgets(xref->trailer, "Info");
+		if (!info)
 			return TRUE;
 
 #define SETUCS(ID) \
