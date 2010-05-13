@@ -426,6 +426,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\mupdf\fitz\dev_bbox.c"
+					>
+				</File>
+				<File
 					RelativePath=".\mupdf\fitz\dev_draw.c"
 					>
 				</File>

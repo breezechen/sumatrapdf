@@ -183,8 +183,8 @@ FITZ_DRAW_OBJS = \
 FITZ_OBJS = \
 	$(O)\base_memory.obj $(O)\base_error.obj $(O)\base_hash.obj $(O)\base_matrix.obj \
 	$(O)\base_rect.obj $(O)\base_unicode.obj $(O)\base_string.obj $(O)\base_cpudep.obj \
-	$(O)\dev_draw.obj $(O)\dev_list.obj $(O)\dev_null.obj $(O)\dev_text.obj $(O)\dev_trace.obj \
-	$(O)\crypt_aes.obj $(O)\crypt_arc4.obj $(O)\crypt_md5.obj \
+	$(O)\dev_draw.obj $(O)\dev_bbox.obj $(O)\dev_list.obj $(O)\dev_null.obj $(O)\dev_text.obj \
+	$(O)\dev_trace.obj $(O)\crypt_aes.obj $(O)\crypt_arc4.obj $(O)\crypt_md5.obj \
 	$(O)\filt_aesd.obj $(O)\filt_arc4.obj $(O)\filt_basic.obj $(O)\filt_faxd.obj \
 	$(O)\filt_faxdtab.obj $(O)\filt_flate.obj $(O)\filt_jbig2d.obj $(O)\filt_jpxd.obj \
 	$(O)\filt_lzwd.obj $(O)\filt_pipeline.obj $(O)\filt_predict.obj \
