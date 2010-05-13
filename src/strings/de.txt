@@ -363,7 +363,7 @@ Properties...
 Eigenschaften...
 
 Remember &opened files
-&Liste der zuletzt geöffneten Dokumente anlegen
+Liste der &zuletzt geöffneten Dokumente anlegen
 
 Rotate left\tCtrl-Shift--
 Drehung links\tStrg+Umschalt+-

@@ -6163,7 +6163,7 @@ void WindowInfo::HideTocBox()
         cy = gReBarDy + gReBarDyFrame;
 
     if (GetFocus() == hwndTocBox)
-        SetFocus(hwndCanvas);
+        SetFocus(hwndFrame);
 
     SetWindowPos(hwndCanvas, NULL, 0, cy, cw, ch - cy, SWP_NOZORDER);
     ShowWindow(hwndTocBox, SW_HIDE);
