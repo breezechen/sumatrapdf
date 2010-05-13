@@ -3952,6 +3952,51 @@ Error:
     EndDoc(hdc);
 }
 
+#ifndef ID_APPLY_NOW
+#define ID_APPLY_NOW 0x3021
+#endif
+
+static LRESULT CALLBACK DisableApplyBtnWndProc(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+{
+    if (uiMsg == WM_ENABLE)
+        EnableWindow(hWnd, FALSE);
+
+    WNDPROC nextWndProc = (WNDPROC)GetWindowLongPtr(hWnd, GWL_USERDATA);
+    return CallWindowProc(nextWndProc, hWnd, uiMsg, wParam, lParam);
+}
+
+/* minimal IPrintDialogCallback implementation for hiding the useless Apply button */
+class ApplyButtonDiablingCallback : public IPrintDialogCallback
+{
+public:
+    ApplyButtonDiablingCallback() : m_cRef(0) { };
+    STDMETHODIMP QueryInterface(REFIID riid, void **ppv) {
+        if (riid == IID_IUnknown || riid == IID_IPrintDialogCallback) {
+            *ppv = static_cast<IUnknown*>(this);
+            this->AddRef();
+            return S_OK;
+        }
+        *ppv = NULL;
+        return E_NOINTERFACE;
+    };
+    STDMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&m_cRef); };
+    STDMETHODIMP_(ULONG) Release() { return InterlockedDecrement(&m_cRef); };
+    STDMETHODIMP HandleMessage(HWND hDlg, UINT uiMsg, WPARAM wParam, LPARAM lParam, LRESULT *pResult) {
+        if (uiMsg == WM_INITDIALOG) {
+            HWND hPropSheetContainer = GetParent(GetParent(hDlg));
+            HWND hApplyButton = GetDlgItem(hPropSheetContainer, ID_APPLY_NOW);
+            WNDPROC nextWndProc = (WNDPROC)SetWindowLongPtr(hApplyButton, GWL_WNDPROC, (LONG_PTR)DisableApplyBtnWndProc);
+            SetWindowLongPtr(hApplyButton, GWL_USERDATA, (LONG_PTR)nextWndProc);
+        }
+        return S_FALSE;
+    };
+    STDMETHODIMP InitDone() { return E_NOTIMPL; };
+    STDMETHODIMP SelectionChange() { return E_NOTIMPL; };
+protected:
+    LONG m_cRef;
+    WNDPROC m_wndProc;
+};
+
 /* Show Print Dialog box to allow user to select the printer
 and the pages to print.
 
@@ -4008,6 +4053,7 @@ static void OnMenuPrint(WindowInfo *win)
     pd.nMinPage = 1;
     pd.nMaxPage = dm->pageCount();
     pd.nStartPage = START_PAGE_GENERAL;
+    pd.lpCallback = new ApplyButtonDiablingCallback();
 
     if (PrintDlgEx(&pd) == S_OK) {
         if (pd.dwResultAction==PD_RESULT_PRINT) {
@@ -4042,6 +4088,7 @@ static void OnMenuPrint(WindowInfo *win)
     }
 
     free(ppr);
+    free(pd.lpCallback);
     if (pd.hDC != NULL) DeleteDC(pd.hDC);
     if (pd.hDevNames != NULL) GlobalFree(pd.hDevNames);
     if (pd.hDevMode != NULL) GlobalFree(pd.hDevMode);
