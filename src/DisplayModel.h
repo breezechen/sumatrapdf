@@ -293,6 +293,8 @@ protected:
     /* called when we decide that the display needs to be redrawn */
     void            repaintDisplay(bool delayed);
 
+    void            goToPdfDest(fz_obj *dest);
+
     PdfSearch *     _pdfSearch;
     DisplayMode     _displayMode; /* TODO: not used yet */
     /* In non-continuous mode is the first page from a PDF file that we're
