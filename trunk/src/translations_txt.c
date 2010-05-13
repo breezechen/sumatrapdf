@@ -1117,7 +1117,7 @@ const char *g_transTranslations[] = {
   "&Vorherige Seite\t<-",
   "Druckerproblem",
   "Eigenschaften...",
-  "&Liste der zuletzt ge\303\266ffneten Dokumente anlegen",
+  "Liste der &zuletzt ge\303\266ffneten Dokumente anlegen",
   "Drehung links\tStrg+Umschalt+-",
   "Drehung rechts\tStrg+Umschalt++",
   "Suche auf Seite %d von %d\342\200\246",
