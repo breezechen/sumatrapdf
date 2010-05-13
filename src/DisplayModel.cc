@@ -373,6 +373,15 @@ int DisplayModel::currentPageNo(void) const
         }
     }
 
+    /* if no page is visible, default to either the first or the last one */
+    if (INVALID_PAGE_NO == mostVisiblePage) {
+        PdfPageInfo *pageInfo = getPageInfo(1);
+        if (this->areaOffset.y > pageInfo->currPosY + pageInfo->currDy)
+            mostVisiblePage = pageCount();
+        else
+            mostVisiblePage = 1;
+    }
+
     return mostVisiblePage;
 }
 
@@ -920,9 +929,12 @@ void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)
         changeStartPage(pageNo);
     }
     //DBG_OUT("DisplayModel::goToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    PdfPageInfo * pageInfo = getPageInfo(pageNo);
     if (-1 != scrollX)
         areaOffset.x = (double)scrollX;
-    PdfPageInfo * pageInfo = getPageInfo(pageNo);
+    // make sure to not display the blank space beside the first page in cover mode
+    else if (-1 == scrollX && 1 == pageNo && displayModeShowCover(displayMode()))
+        areaOffset.x = pageInfo->currPosX - PADDING_PAGE_BORDER_LEFT;
 
     /* Hack: if an image is smaller in Y axis than the draw area, then we center
        the image by setting pageInfo->currPosY in RecalcPagesInfo. So we shouldn't
@@ -1567,9 +1579,11 @@ void DisplayModel::goToPdfDest(fz_obj *dest)
             scrollY = fz_toint(fz_arrayget(dest, 3));
             cvtUserToScreen(pageNo, &scrollX, &scrollY);
 
-            // goToPage needs scrolling info relative to the page's top-left corner
+            // goToPage needs scrolling info relative to the page's top border
+            // and the page line's left margin
             PdfPageInfo * pageInfo = getPageInfo(pageNo);
-            scrollX += pageInfo->bitmapX;
+            // TODO: These values are not up-to-date, if the page has not been shown yet
+            scrollX += pageInfo->bitmapX + pageInfo->currPosX;
             scrollY += pageInfo->bitmapY;
         }
         goToPage(pageNo, scrollY, true, scrollX);
