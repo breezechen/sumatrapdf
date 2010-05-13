@@ -1535,9 +1535,7 @@ void DisplayModel::goToTocLink(pdf_link* link)
         /* else: unsupported uri type */
         free(path);
     } else if (PDF_LGOTO == link->kind) {
-        int page = pdfEngine->findPageNo(link->dest);
-        if (page > 0)
-            goToPage(page, 0, true);
+        goToPdfDest(link->dest);
     } else if (PDF_LLAUNCH == link->kind && (path = getLinkPath(link))) {
         tstr_trans_chars(path, _T("/"), _T("\\"));
         /* for safety, only handle relative PDF paths and only open them in SumatraPDF */
@@ -1558,14 +1556,29 @@ void DisplayModel::handleLink(PdfLink *link)
     goToTocLink(link->link);
 }
 
+void DisplayModel::goToPdfDest(fz_obj *dest)
+{
+    int pageNo = pdfEngine->findPageNo(dest);
+    if (pageNo > 0) {
+        double scrollY = 0, scrollX = -1;
+        fz_obj *obj = fz_arrayget(dest, 1);
+        if (fz_isname(obj) && !strcmp(fz_toname(obj), "XYZ")) {
+            scrollX = fz_toint(fz_arrayget(dest, 2));
+            scrollY = fz_toint(fz_arrayget(dest, 3));
+            cvtUserToScreen(pageNo, &scrollX, &scrollY);
+
+            // goToPage needs scrolling info relative to the page's top-left corner
+            PdfPageInfo * pageInfo = getPageInfo(pageNo);
+            scrollX += pageInfo->bitmapX;
+            scrollY += pageInfo->bitmapY;
+        }
+        goToPage(pageNo, scrollY, true, scrollX);
+    }
+}
+
 void DisplayModel::goToNamedDest(const char *name)
 {
-    int page = 1;
-    fz_obj *dest = pdfEngine->getNamedDest(name);
-    if (dest)
-        page = pdfEngine->findPageNo(dest);
-    if (page > 0)
-        goToPage(page, 0, true);
+    goToPdfDest(pdfEngine->getNamedDest(name));
 }
 
 /* Given <region> (in user coordinates ) on page <pageNo>, copies text in that region
