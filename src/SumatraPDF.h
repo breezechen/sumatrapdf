@@ -200,6 +200,7 @@ public:
         hdcDoubleBuffer = NULL;
         bmpDoubleBuffer = NULL;
         title = NULL;
+        loadedFilePath = NULL;
         currPageNo = 0;
         pdfPropertiesCount = 0;
     }
@@ -219,6 +220,7 @@ public:
     WindowInfo *    next;
     WinState        state;
     bool            needrefresh; // true if the view of the PDF is not synchronized with the content of the file on disk
+    TCHAR *         loadedFilePath;
 
     DisplayModel *  dm;
     HWND            hwndFrame;
