@@ -178,9 +178,10 @@ bool PdfEngine::load(const TCHAR *fileName, WindowInfo *win, bool tryrepair)
     _windowInfo = win;
     setFileName(fileName);
 
-    char *utf8path = tstr_to_utf8(fileName);
-    _xref = pdf_openxref(utf8path);
-    free(utf8path);
+    int fd = _topen(fileName, O_BINARY | O_RDONLY);
+    if (-1 == fd)
+        return false;
+    _xref = pdf_openxref(fz_openfile(fd));
     if (!_xref)
         return false;
 
