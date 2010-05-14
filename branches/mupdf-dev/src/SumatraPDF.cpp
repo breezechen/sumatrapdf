@@ -1592,6 +1592,8 @@ static void WindowInfo_Delete(WindowInfo *win)
     DeleteOldSelectionInfo(win);
 
     free(win->title);
+    if (win->loadedFilePath)
+        free(win->loadedFilePath);
 
     delete win;
 }
@@ -1837,10 +1839,11 @@ static void MenuUpdateStateForWindow(WindowInfo *win) {
     static UINT menusToDisableIfNoPdf[] = {
         IDM_VIEW_ROTATE_LEFT, IDM_VIEW_ROTATE_RIGHT, IDM_GOTO_NEXT_PAGE, IDM_GOTO_PREV_PAGE,
         IDM_GOTO_FIRST_PAGE, IDM_GOTO_LAST_PAGE, IDM_GOTO_NAV_BACK, IDM_GOTO_NAV_FORWARD,
-        IDM_GOTO_PAGE, IDM_FIND_FIRST, IDM_SAVEAS, IDM_VIEW_WITH_ACROBAT, IDM_SEND_BY_EMAIL,
+        IDM_GOTO_PAGE, IDM_FIND_FIRST, IDM_SAVEAS, IDM_SEND_BY_EMAIL,
         IDM_COPY_SELECTION, IDM_PROPERTIES };
 
     bool fileCloseEnabled = FileCloseMenuEnabled();
+    assert(!fileCloseEnabled == !win->loadedFilePath);
     HMENU hmenu = win->hMenu;
     if (fileCloseEnabled)
         EnableMenuItem(hmenu, IDM_CLOSE, MF_BYCOMMAND | MF_ENABLED);
@@ -1854,6 +1857,11 @@ static void MenuUpdateStateForWindow(WindowInfo *win) {
         EnableMenuItem(hmenu, IDM_PRINT, MF_BYCOMMAND | MF_ENABLED);
     else
         EnableMenuItem(hmenu, IDM_PRINT, MF_BYCOMMAND | MF_GRAYED);
+
+    if (CanViewWithAcrobat(win))
+        EnableMenuItem(hmenu, IDM_VIEW_WITH_ACROBAT, MF_BYCOMMAND | MF_ENABLED);
+    else
+        EnableMenuItem(hmenu, IDM_VIEW_WITH_ACROBAT, MF_BYCOMMAND | MF_GRAYED);
 
     MenuUpdateBookmarksStateForWindow(win);
     MenuUpdateShowToolbarStateForWindow(win);
@@ -2069,6 +2077,9 @@ static bool LoadPdfIntoWindow(
 
     win->dm = DisplayModel_CreateFromFileName(fileName,
         totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, win, tryrepair);
+    if (win->loadedFilePath)
+        free(win->loadedFilePath);
+    win->loadedFilePath = tstr_dup(fileName);
 
     if (!win->dm) {
         //DBG_OUT("failed to load file %s\n", fileName); <- fileName is now Unicode
@@ -3774,6 +3785,10 @@ static void CloseWindow(WindowInfo *win, bool quitIfLast)
         WindowInfo_AbortFinding(win);
         delete win->dm;
         win->dm = NULL;
+        if (win->loadedFilePath) {
+            free(win->loadedFilePath);
+            win->loadedFilePath = NULL;
+        }
         if (win->hwndPdfProperties) {
             DestroyWindow(win->hwndPdfProperties);
             assert(NULL == win->hwndPdfProperties);
@@ -4395,7 +4410,7 @@ static DWORD GetFileVersion(TCHAR *path)
 static bool CanViewWithAcrobat(WindowInfo *win)
 {
     // Requirements: a valid filename and a valid path to Adobe Reader
-    if (win && (!WindowInfo_PdfLoaded(win) || !file_exists(win->dm->fileName())))
+    if (win && (!win->loadedFilePath || !file_exists(win->loadedFilePath)))
         return false;
     return GetAcrobatPath() != NULL;
 }
@@ -4404,7 +4419,7 @@ static void ViewWithAcrobat(WindowInfo *win)
 {
     if (gRestrictedUse) return;
 
-    if (!WindowInfo_PdfLoaded(win))
+    if (!win || !win->loadedFilePath)
         return;
 
     TCHAR acrobatPath[MAX_PATH];
@@ -4416,7 +4431,9 @@ static void ViewWithAcrobat(WindowInfo *win)
     //   /A "page=%d&zoom=%.1f,%d,%d&..." <filename>
     // see http://www.adobe.com/devnet/acrobat/pdfs/pdf_open_parameters.pdf
     // TODO: Also set zoom factor and scroll to current position?
-    if (HIWORD(GetFileVersion(acrobatPath)) >= 6)
+    if (!win->dm)
+        params = tstr_printf(_T("\"%s\""), win->loadedFilePath);
+    else if (HIWORD(GetFileVersion(acrobatPath)) >= 6)
         params = tstr_printf(_T("/A \"page=%d\" \"%s\""), win->dm->currentPageNo(), win->dm->fileName());
     else
         params = tstr_printf(_T("\"%s\""), win->dm->fileName());
