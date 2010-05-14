@@ -11,13 +11,20 @@ static fz_error pdf_getpageinfo(pdf_xref *xref, fz_obj *dict, fz_rect *bboxp, in
     int rotate;
     fz_obj *obj;
 
-    obj = fz_dictgets(dict, "CropBox");
-    if (!obj)
-        obj = fz_dictgets(dict, "MediaBox");
-
+    obj = fz_dictgets(dict, "MediaBox");
     if (!fz_isarray(obj))
         return fz_throw("syntaxerror: Page missing MediaBox");
     bbox = pdf_torect(obj);
+
+    obj = fz_dictgets(dict, "CropBox");
+    if (obj && fz_isarray(obj)) {
+        // crop MediaBox to CropBox
+        fz_rect cropbox = pdf_torect(obj);
+        bbox.x0 = MAX(bbox.x0, cropbox.x0);
+        bbox.x1 = MIN(bbox.x1, cropbox.x1);
+        bbox.y0 = MAX(bbox.y0, cropbox.y0);
+        bbox.y1 = MIN(bbox.y1, cropbox.y1);
+    }
 
     //pdf_logpage("bbox [%g %g %g %g]\n", bbox.x0, bbox.y0, bbox.x1, bbox.y1);
 
