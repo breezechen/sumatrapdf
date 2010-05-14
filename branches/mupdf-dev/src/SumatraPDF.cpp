@@ -1638,7 +1638,8 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     
     HDC hdc = GetDC(hwndFrame);
     win->dpi = GetDeviceCaps(hdc, LOGPIXELSY);
-    win->uiDPIFactor = win->dpi * 1.0 / USER_DEFAULT_SCREEN_DPI + 0.5;
+    // round untypical resolutions up to the nearest quarter
+    win->uiDPIFactor = ceil(win->dpi * 4.0 / USER_DEFAULT_SCREEN_DPI) / 4.0;
     ReleaseDC(hwndFrame, hdc);
 
     return win;
@@ -5592,6 +5593,7 @@ SIZE TextSizeInHwnd(HWND hwnd, const TCHAR *txt)
     return sz;
 }
 
+#define TOOLBAR_MIN_ICON_SIZE 16
 #define FIND_BOX_WIDTH 160
 #define FIND_BOX_PADDING 3
 static void UpdateToolbarFindText(WindowInfo *win)
@@ -5627,10 +5629,11 @@ static void UpdateToolbarFindText(WindowInfo *win)
 static void CreateFindBox(WindowInfo *win, HINSTANCE hInst)
 {
     HWND findBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
-                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor, 16 * win->uiDPIFactor + 4, win->hwndToolbar, (HMENU)0, hInst, NULL);
+                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor, TOOLBAR_MIN_ICON_SIZE * win->uiDPIFactor + 4,
+                            win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND find = CreateWindowEx(0, WC_EDIT, _T(""), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
-                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor - 2, 16 * win->uiDPIFactor + 2,
+                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor - 2, TOOLBAR_MIN_ICON_SIZE * win->uiDPIFactor + 2,
                             win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
@@ -5755,10 +5758,11 @@ static void UpdateToolbarPageText(WindowInfo *win, int pageCount)
 static void CreatePageBox(WindowInfo *win, HINSTANCE hInst)
 {
     HWND pageBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
-                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor, 16 * win->uiDPIFactor + 4, win->hwndToolbar, (HMENU)0, hInst, NULL);
+                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor, TOOLBAR_MIN_ICON_SIZE * win->uiDPIFactor + 4,
+                            win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND page = CreateWindowEx(0, WC_EDIT, _T("0"), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_NUMBER | ES_RIGHT,
-                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor - 2, 16 * win->uiDPIFactor + 2,
+                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor - 2, TOOLBAR_MIN_ICON_SIZE * win->uiDPIFactor + 2,
                             win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
@@ -5809,19 +5813,12 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst) {
     HBITMAP hbmp = LoadExternalBitmap(hInst, _T("toolbar_8.bmp"), IDB_TOOLBAR);
     BITMAP bmp;
     GetObject(hbmp, sizeof(BITMAP), &bmp);
-    /* stretch the toolbar bitmaps for higher DPI settings */
-    if (win->uiDPIFactor != 1) {
-        HDC hdcSrc = CreateCompatibleDC(NULL);
-        HDC hdcDest = CreateCompatibleDC(NULL);
-        HGDIOBJ hbmpOld = SelectObject(hdcSrc, hbmp);
-        hbmp = CreateBitmap(bmp.bmWidth * win->uiDPIFactor, bmp.bmHeight * win->uiDPIFactor, bmp.bmPlanes, bmp.bmBitsPixel, NULL);
-        DeleteObject(SelectObject(hdcDest, hbmp));
-        StretchBlt(hdcDest, 0, 0, bmp.bmWidth * win->uiDPIFactor, bmp.bmHeight * win->uiDPIFactor, hdcSrc, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
-        DeleteObject(SelectObject(hdcSrc, hbmpOld));
-        DeleteDC(hdcSrc);
-        DeleteDC(hdcDest);
+    // stretch the toolbar bitmaps for higher DPI settings
+    // TODO: get nicely interpolated versions of the toolbar icons for higher resolutions
+    if (win->uiDPIFactor > 1 && bmp.bmHeight < TOOLBAR_MIN_ICON_SIZE * win->uiDPIFactor) {
         bmp.bmWidth *= win->uiDPIFactor;
         bmp.bmHeight *= win->uiDPIFactor;
+        hbmp = (HBITMAP)CopyImage(hbmp, IMAGE_BITMAP, bmp.bmWidth, bmp.bmHeight, LR_COPYDELETEORG);
     }
     // Assume square icons
     himl = ImageList_Create(bmp.bmHeight, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);

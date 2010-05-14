@@ -181,7 +181,7 @@ public:
         hMenu = NULL;
         hdc = NULL;
         dpi = USER_DEFAULT_SCREEN_DPI;
-        uiDPIFactor = 1;
+        uiDPIFactor = 1.0;
         findThread = NULL;
         findCanceled = false;
         findPercent = 0;
@@ -244,7 +244,7 @@ public:
     HDC             hdc;
     BITMAPINFO *    dibInfo;
     int             dpi;
-    int             uiDPIFactor;
+    float           uiDPIFactor;
 
     HANDLE          findThread;
     bool            findCanceled;
