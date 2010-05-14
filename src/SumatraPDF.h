@@ -15,6 +15,8 @@
 
 #ifndef _WIN32_WINNT 
 #define _WIN32_WINNT 0x0500
+// the following is only defined for _WIN32_WINNT >= 0x0600
+#define USER_DEFAULT_SCREEN_DPI 96
 #endif
 
 #ifndef _WIN32_WINDOWS
@@ -178,7 +180,8 @@ public:
         infotipVisible = false;
         hMenu = NULL;
         hdc = NULL;
-        dpi = 96;
+        dpi = USER_DEFAULT_SCREEN_DPI;
+        uiDPIFactor = 1;
         findThread = NULL;
         findCanceled = false;
         findPercent = 0;
@@ -241,6 +244,7 @@ public:
     HDC             hdc;
     BITMAPINFO *    dibInfo;
     int             dpi;
+    int             uiDPIFactor;
 
     HANDLE          findThread;
     bool            findCanceled;

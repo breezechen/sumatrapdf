@@ -1637,7 +1637,8 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     win->mouseAction = MA_IDLE;
     
     HDC hdc = GetDC(hwndFrame);
-    win->dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+    win->dpi = GetDeviceCaps(hdc, LOGPIXELSY);
+    win->uiDPIFactor = win->dpi * 1.0 / USER_DEFAULT_SCREEN_DPI + 0.5;
     ReleaseDC(hwndFrame, hdc);
 
     return win;
@@ -2331,18 +2332,16 @@ HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize)
     if (!GetObject(font_dc, sizeof(LOGFONT), &lf))
         return NULL;
 
-    lf.lfHeight = (LONG)-fontSize;
     lf.lfWidth = 0;
-    //lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+    lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), USER_DEFAULT_SCREEN_DPI);
     lf.lfItalic = FALSE;
     lf.lfUnderline = FALSE;
     lf.lfStrikeOut = FALSE;
     lf.lfCharSet = DEFAULT_CHARSET;
     lf.lfOutPrecision = OUT_TT_PRECIS;
     lf.lfQuality = DEFAULT_QUALITY;
-    //lf.lfQuality = CLEARTYPE_QUALITY;
     lf.lfPitchAndFamily = DEFAULT_PITCH;    
-    _tcscpy_s(lf.lfFaceName, LF_FACESIZE, fontName);
+    lstrcpyn(lf.lfFaceName, fontName, LF_FACESIZE);
     lf.lfWeight = FW_DONTCARE;
     font = CreateFontIndirect(&lf);
     return font;
@@ -4970,8 +4969,8 @@ static void WindowInfo_ShowMessage_Asynch(WindowInfo *win, const TCHAR *message,
         DrawText(hdc, message, -1, &rc, DT_CALCRECT | DT_SINGLELINE);
         SelectObject(hdc, oldFont);
         ReleaseDC(win->hwndFindStatus, hdc);
-        rc.right += MulDiv(15, win->dpi, 96);
-        rc.bottom = MulDiv(23, win->dpi, 96);
+        rc.right += MulDiv(15, win->dpi, USER_DEFAULT_SCREEN_DPI);
+        rc.bottom = MulDiv(23, win->dpi, USER_DEFAULT_SCREEN_DPI);
         AdjustWindowRectEx(&rc, GetWindowLong(win->hwndFindStatus, GWL_STYLE), FALSE, GetWindowLong(win->hwndFindStatus, GWL_EXSTYLE));
         MoveWindow(win->hwndFindStatus, FIND_STATUS_MARGIN + rc.left, FIND_STATUS_MARGIN + rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE);
     }
@@ -5063,7 +5062,7 @@ static void WindowInfo_ShowFindStatus(WindowInfo *win)
 {
     LPARAM disable = (LPARAM)MAKELONG(0,0);
 
-    MoveWindow(win->hwndFindStatus, FIND_STATUS_MARGIN, FIND_STATUS_MARGIN, MulDiv(FIND_STATUS_WIDTH, win->dpi, 96), MulDiv(23, win->dpi, 96) + FIND_STATUS_PROGRESS_HEIGHT + 8, false);
+    MoveWindow(win->hwndFindStatus, FIND_STATUS_MARGIN, FIND_STATUS_MARGIN, MulDiv(FIND_STATUS_WIDTH, win->dpi, USER_DEFAULT_SCREEN_DPI), MulDiv(23, win->dpi, USER_DEFAULT_SCREEN_DPI) + FIND_STATUS_PROGRESS_HEIGHT + 8, false);
     ShowWindow(win->hwndFindStatus, SW_SHOWNA);
     win->findStatusVisible = true;
 
@@ -5081,7 +5080,7 @@ static void WindowInfo_HideFindStatus(WindowInfo *win, bool canceled=false)
     SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_MATCH, enable);
 
     // resize the window, in case another message has been displayed in the meantime
-    MoveWindow(win->hwndFindStatus, FIND_STATUS_MARGIN, FIND_STATUS_MARGIN, MulDiv(FIND_STATUS_WIDTH, win->dpi, 96), MulDiv(23, win->dpi, 96) + FIND_STATUS_PROGRESS_HEIGHT + 8, false);
+    MoveWindow(win->hwndFindStatus, FIND_STATUS_MARGIN, FIND_STATUS_MARGIN, MulDiv(FIND_STATUS_WIDTH, win->dpi, USER_DEFAULT_SCREEN_DPI), MulDiv(23, win->dpi, USER_DEFAULT_SCREEN_DPI) + FIND_STATUS_PROGRESS_HEIGHT + 8, false);
     if (canceled)
         WindowInfo_ShowMessage_Asynch(win, NULL, false);
     else if (!win->dm->bFoundText)
@@ -5553,8 +5552,8 @@ static LRESULT CALLBACK WndProcFindStatus(HWND hwnd, UINT message, WPARAM wParam
         rect.top += 4;
         DrawText(hdc, text, lstrlen(text), &rect, DT_LEFT);
         
-        int width = MulDiv(FIND_STATUS_WIDTH, win->dpi, 96) - 20;
-        rect.top += MulDiv(20, win->dpi, 96);
+        int width = MulDiv(FIND_STATUS_WIDTH, win->dpi, USER_DEFAULT_SCREEN_DPI) - 20;
+        rect.top += MulDiv(20, win->dpi, USER_DEFAULT_SCREEN_DPI);
         rect.bottom = rect.top + FIND_STATUS_PROGRESS_HEIGHT;
         rect.right = rect.left + width;
         PaintRectangle(hdc, &rect);
@@ -5602,6 +5601,7 @@ static void UpdateToolbarFindText(WindowInfo *win)
 
     RECT findWndRect;
     GetWindowRect(win->hwndFindBg, &findWndRect);
+    int findWndDx = rect_dx(&findWndRect);
     int findWndDy = rect_dy(&findWndRect);
 
     RECT r;
@@ -5613,24 +5613,24 @@ static void UpdateToolbarFindText(WindowInfo *win)
     size.cx += 6;
 
     MoveWindow(win->hwndFindText, pos_x, (findWndDy - size.cy + 1) / 2 + pos_y, size.cx, size.cy, true);
-    MoveWindow(win->hwndFindBg, pos_x + size.cx, pos_y, FIND_BOX_WIDTH, findWndDy, false);
+    MoveWindow(win->hwndFindBg, pos_x + size.cx, pos_y, findWndDx, findWndDy, false);
     MoveWindow(win->hwndFindBox, pos_x + size.cx + FIND_BOX_PADDING, (findWndDy - size.cy + 1) / 2 + pos_y,
-        FIND_BOX_WIDTH - 1.5 * FIND_BOX_PADDING, size.cy, false);
+        findWndDx - 1.5 * FIND_BOX_PADDING, size.cy, false);
 
     TBBUTTONINFO bi;
     bi.cbSize = sizeof(bi);
     bi.dwMask = TBIF_SIZE;
-    bi.cx = size.cx + FIND_BOX_WIDTH + 12;
+    bi.cx = size.cx + findWndDx + 12;
     SendMessage(win->hwndToolbar, TB_SETBUTTONINFO, IDM_FIND_FIRST, (LPARAM)&bi);
 }
 
 static void CreateFindBox(WindowInfo *win, HINSTANCE hInst)
 {
     HWND findBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
-                            0, 1, FIND_BOX_WIDTH, 20, win->hwndToolbar, (HMENU)0, hInst, NULL);
+                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor, 16 * win->uiDPIFactor + 4, win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND find = CreateWindowEx(0, WC_EDIT, _T(""), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
-                            0, 1, FIND_BOX_WIDTH - 2, 18,
+                            0, 1, FIND_BOX_WIDTH * win->uiDPIFactor - 2, 16 * win->uiDPIFactor + 2,
                             win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
@@ -5719,6 +5719,7 @@ static void UpdateToolbarPageText(WindowInfo *win, int pageCount)
 
     RECT pageWndRect;
     GetWindowRect(win->hwndPageBg, &pageWndRect);
+    int pageWndDx = rect_dx(&pageWndRect);
     int pageWndDy = rect_dy(&pageWndRect);
 
     RECT r;
@@ -5739,25 +5740,25 @@ static void UpdateToolbarPageText(WindowInfo *win, int pageCount)
     size2.cx += 6;
 
     MoveWindow(win->hwndPageText, pos_x, (pageWndDy - size.cy + 1) / 2 + pos_y, size.cx, size.cy, true);
-    MoveWindow(win->hwndPageBg, pos_x + size.cx, pos_y, PAGE_BOX_WIDTH, pageWndDy, false);
+    MoveWindow(win->hwndPageBg, pos_x + size.cx, pos_y, pageWndDx, pageWndDy, false);
     MoveWindow(win->hwndPageBox, pos_x + size.cx + FIND_BOX_PADDING, (pageWndDy - size.cy + 1) / 2 + pos_y,
-        PAGE_BOX_WIDTH - 1.5 * FIND_BOX_PADDING, size.cy, false);
-    MoveWindow(win->hwndPageTotal, pos_x + size.cx + PAGE_BOX_WIDTH, (pageWndDy - size.cy + 1) / 2 + pos_y, size2.cx, size.cy, false);
+        pageWndDx - 1.5 * FIND_BOX_PADDING, size.cy, false);
+    MoveWindow(win->hwndPageTotal, pos_x + size.cx + pageWndDx, (pageWndDy - size.cy + 1) / 2 + pos_y, size2.cx, size.cy, false);
 
     TBBUTTONINFO bi;
     bi.cbSize = sizeof(bi);
     bi.dwMask = TBIF_SIZE;
-    bi.cx = size.cx + PAGE_BOX_WIDTH + size2.cx + 12;
+    bi.cx = size.cx + pageWndDx + size2.cx + 12;
     SendMessage(win->hwndToolbar, TB_SETBUTTONINFO, IDM_GOTO_PAGE, (LPARAM)&bi);
 }
 
 static void CreatePageBox(WindowInfo *win, HINSTANCE hInst)
 {
     HWND pageBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
-                            0, 1, PAGE_BOX_WIDTH, 20, win->hwndToolbar, (HMENU)0, hInst, NULL);
+                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor, 16 * win->uiDPIFactor + 4, win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND page = CreateWindowEx(0, WC_EDIT, _T("0"), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_NUMBER | ES_RIGHT,
-                            0, 1, PAGE_BOX_WIDTH - 2, 18,
+                            0, 1, PAGE_BOX_WIDTH * win->uiDPIFactor - 2, 16 * win->uiDPIFactor + 2,
                             win->hwndToolbar, (HMENU)0, hInst, NULL);
 
     HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
@@ -5808,6 +5809,20 @@ static void CreateToolbar(WindowInfo *win, HINSTANCE hInst) {
     HBITMAP hbmp = LoadExternalBitmap(hInst, _T("toolbar_8.bmp"), IDB_TOOLBAR);
     BITMAP bmp;
     GetObject(hbmp, sizeof(BITMAP), &bmp);
+    /* stretch the toolbar bitmaps for higher DPI settings */
+    if (win->uiDPIFactor != 1) {
+        HDC hdcSrc = CreateCompatibleDC(NULL);
+        HDC hdcDest = CreateCompatibleDC(NULL);
+        HGDIOBJ hbmpOld = SelectObject(hdcSrc, hbmp);
+        hbmp = CreateBitmap(bmp.bmWidth * win->uiDPIFactor, bmp.bmHeight * win->uiDPIFactor, bmp.bmPlanes, bmp.bmBitsPixel, NULL);
+        DeleteObject(SelectObject(hdcDest, hbmp));
+        StretchBlt(hdcDest, 0, 0, bmp.bmWidth * win->uiDPIFactor, bmp.bmHeight * win->uiDPIFactor, hdcSrc, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
+        DeleteObject(SelectObject(hdcSrc, hbmpOld));
+        DeleteDC(hdcSrc);
+        DeleteDC(hdcDest);
+        bmp.bmWidth *= win->uiDPIFactor;
+        bmp.bmHeight *= win->uiDPIFactor;
+    }
     // Assume square icons
     himl = ImageList_Create(bmp.bmHeight, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
     ImageList_AddMasked(himl, hbmp, RGB(255, 0, 255));
@@ -7350,6 +7365,8 @@ static void EnableNx(void)
    }
 }
 
+typedef BOOL (WINAPI *procSetProcessDPIAware)(VOID);
+
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     TStrList *          argListRoot;
@@ -7378,6 +7395,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     UNREFERENCED_PARAMETER(hPrevInstance);
 
     EnableNx();
+#ifdef _DEBUG
+    // in release builds, DPI-awareness is enabled through the manifest
+    HMODULE hUser32 = LoadLibrary(_T("user32.dll"));
+    if (hUser32) {
+        procSetProcessDPIAware SetProcessDPIAware;
+        if ((SetProcessDPIAware = GetProcAddress(hUser32, "SetProcessDPIAware")))
+            SetProcessDPIAware();
+        FreeLibrary(hUser32);
+    }
+#endif
 
     u_DoAllTests();
 
