@@ -230,9 +230,8 @@ DecryptedOk:
     // error might prevent loading some pdfs that would
     // otherwise get displayed
 
-    _pages = (PdfPage *)malloc(sizeof(PdfPage) * _pageCount);
-    memset(_pages, 0, sizeof(PdfPage) * _pageCount);
-    return true;
+    _pages = (PdfPage *)calloc(_pageCount, sizeof(PdfPage));
+    return _pageCount > 0;
 }
 
 PdfTocItem *PdfEngine::buildTocTree(pdf_outline *entry)
