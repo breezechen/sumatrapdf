@@ -3464,14 +3464,16 @@ static void OnDraggingStop(WindowInfo *win, int x, int y)
         ReleaseCapture();
     }
 
-    /* if we had a selection and this was just a click, hide selection */
-    if (!didDragMouse && win->showSelection)
-        ClearSearch(win);
-
     if (win->linkOnLastButtonDown && win->dm->linkAtPosition(x, y) == win->linkOnLastButtonDown) {
         win->dm->handleLink(win->linkOnLastButtonDown);
         SetCursor(gCursorArrow);
     }
+    /* if we had a selection and this was just a click, hide selection */
+    else if (!didDragMouse && win->showSelection)
+        ClearSearch(win);
+    else if (!didDragMouse && win->fullScreen)
+        win->dm->goToNextPage(0);
+
     win->linkOnLastButtonDown = NULL;
 }
 
@@ -3601,7 +3603,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y, int key)
     win->mouseAction = MA_IDLE;
 }
 
-static void OnMouseMiddleButtonDown(WindowInfo *win, int x, int y)
+static void OnMouseMiddleButtonDown(WindowInfo *win, int x, int y, int key)
 {
     assert(win);
     if (!win) return;
@@ -3619,6 +3621,12 @@ static void OnMouseMiddleButtonDown(WindowInfo *win, int x, int y)
     } else {
         win->mouseAction = MA_IDLE;
     }
+}
+
+static void OnMouseRightButtonClick(WindowInfo *win, int x, int y, int key)
+{
+    if (win->fullScreen && win->dm)
+        win->dm->goToPrevPage(0);
 }
 
 #define ABOUT_ANIM_TIMER_ID 15
@@ -6300,8 +6308,14 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             break;
 
         case WM_LBUTTONDBLCLK:
-            if (win)
+            if (win) {
+#ifndef _TEX_ENHANCEMENT
+                if (win->fullScreen)
+                    OnMouseLeftButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
+                else
+#endif
                 OnMouseLeftButtonDblClk(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
+            }
             break;
 
         case WM_LBUTTONDOWN:
@@ -6319,9 +6333,14 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             {
                 SetTimer(hwnd, SMOOTHSCROLL_TIMER_ID, SMOOTHSCROLL_DELAY_IN_MS, NULL);
                 // TODO: Create window that shows location of initial click for reference
-                OnMouseMiddleButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                OnMouseMiddleButtonDown(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
             }
             return 0;
+
+        case WM_RBUTTONUP:
+            if (win)
+                OnMouseRightButtonClick(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), wParam);
+            break;
 
         case WM_SETCURSOR:
             if (win && WS_ABOUT == win->state) {
