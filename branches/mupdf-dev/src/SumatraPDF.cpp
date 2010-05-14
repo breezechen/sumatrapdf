@@ -1916,8 +1916,8 @@ static void EnsureWindowVisibility(int *x, int *y, int *dx, int *dy)
     rc.bottom = rc.top + captionDy;
     rc.top += captionDy / 2;
     if (!IntersectRect(&mi.rcMonitor, &mi.rcWork, &rc)) {
-        *x = mi.rcWork.left + CW_USEDEFAULT;
-        *y = mi.rcWork.top + CW_USEDEFAULT;
+        *x = mi.rcWork.left;
+        *y = mi.rcWork.top;
     }
 }
 
@@ -1928,7 +1928,7 @@ static WindowInfo* WindowInfo_CreateEmpty(void) {
     RECT workArea;
     SystemParametersInfo(SPI_GETWORKAREA, 0, &workArea, 0);
     int winX = CW_USEDEFAULT;
-    int winY = workArea.top;
+    int winY = CW_USEDEFAULT;
     int winDy = rect_dy(&workArea);
     int winDx = winDy * DEF_PAGE_RATIO;
 

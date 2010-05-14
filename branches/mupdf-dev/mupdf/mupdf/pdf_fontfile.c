@@ -128,11 +128,11 @@ static const struct
 #define MAX_FACENAME	128
 
 // Note: the font face must be the first field so that the structure
-//       can be considered a simple string for searching
+//       can be treated like a simple string for searching
 typedef struct pdf_fontmapMS_s
 {
 	char fontface[MAX_FACENAME]; // UTF-8 encoded
-	char fontpath[MAX_PATH * 2]; // UTF-8 encoded (when compiled with _UNICODE)
+	char fontpath[MAX_PATH];     // ANSI encoded
 	int index;
 } pdf_fontmapMS;
 
@@ -472,25 +472,29 @@ parseTTF(fz_stream *file, int offset, int index, char *path)
 static fz_error
 parseTTFs(char *path)
 {
-	fz_stream *file = nil;
-	fz_error err = fz_openrfile(&file, path);
-	if (!err)
-		err = parseTTF(file, 0, 0, path);
+	fz_error err;
+	fz_stream *file = fz_openfile(open(path, O_BINARY | O_RDONLY));
+	if (!file)
+		return fz_throw("fonterror : %s not found", path);
 
-	if (file)
-		fz_dropstream(file);
+	err = parseTTF(file, 0, 0, path);
+	fz_dropstream(file);
 	return err;
 }
 
 static fz_error
 parseTTCs(char *path)
 {
-	fz_stream *file = nil;
 	FONT_COLLECTION fontcollection;
 	ULONG i, numFonts, *offsettable = nil;
+	fz_error err;
 
-	fz_error err = fz_openrfile(&file, path);
-	if (err) goto cleanup;
+	fz_stream *file = fz_openfile(open(path, O_BINARY | O_RDONLY));
+	if (!file)
+	{
+		err = fz_throw("fonterror : %s not found", path);
+		goto cleanup;
+	}
 
 	err = safe_read(file, (char *)&fontcollection, sizeof(FONT_COLLECTION));
 	if (err) goto cleanup;
@@ -533,7 +537,7 @@ static fz_error
 pdf_createfontlistMS()
 {
 	TCHAR szFontDir[MAX_PATH], szFile[MAX_PATH];
-	char szPathUtf8[MAX_PATH * 3], *fileExt;
+	char szPathAnsi[MAX_PATH], *fileExt;
 	HANDLE hList;
 	WIN32_FIND_DATA FileData;
 
@@ -559,16 +563,16 @@ pdf_createfontlistMS()
 			// Get the full path for sub directory
 			_stprintf_s(szFile, MAX_PATH, _T("%s%s"), szFontDir, FileData.cFileName);
 #ifdef _UNICODE
-			WideCharToMultiByte(CP_UTF8, 0, szFile, -1, szPathUtf8, sizeof(szPathUtf8), NULL, NULL);
+			// FreeType uses fopen and thus requires the path to be in the ANSI code page
+			WideCharToMultiByte(CP_ACP, 0, szFile, -1, szPathAnsi, sizeof(szPathAnsi), NULL, NULL);
 #else
-			// fz_openrfile falls back to the ANSI code page if the string isn't proper UTF-8
-			strcpy(szPathUtf8, szFile);
+			strcpy(szPathAnsi, szFile);
 #endif
-			fileExt = szPathUtf8 + strlen(szPathUtf8) - 4;
+			fileExt = szPathAnsi + strlen(szPathAnsi) - 4;
 			if (!stricmp(fileExt, ".ttc"))
-				parseTTCs(szPathUtf8);
+				parseTTCs(szPathAnsi);
 			else if (!stricmp(fileExt, ".ttf") || !stricmp(fileExt, ".otf"))
-				parseTTFs(szPathUtf8);
+				parseTTFs(szPathAnsi);
 			// ignore errors occurring while parsing a given font file
 		}
 	} while (FindNextFile(hList, &FileData));
@@ -589,11 +593,11 @@ pdf_createfontlistMS()
 		if (hFile != INVALID_HANDLE_VALUE)
 		{
 #ifdef _UNICODE
-			WideCharToMultiByte(CP_UTF8, 0, szFile, -1, szPathUtf8, sizeof(szPathUtf8), NULL, NULL);
+			WideCharToMultiByte(CP_ACP, 0, szFile, -1, szPathAnsi, sizeof(szPathAnsi), NULL, NULL);
 #else
-			strcpy(szPathUtf8, szFile);
+			strcpy(szPathAnsi, szFile);
 #endif
-			insertmapping(&fontlistMS, "DroidSansFallback", szPathUtf8, 0);
+			insertmapping(&fontlistMS, "DroidSansFallback", szPathAnsi, 0);
 			CloseHandle(hFile);
 		}
 	}
@@ -662,6 +666,7 @@ loadwindowsfont(pdf_fontdesc *font, char *fontname)
 	if (!found)
 		return !fz_okay;
 
+	// TODO: use fz_newfontfrombuffer so that fontpath can be a proper TCHAR[]
 	error = fz_newfontfromfile(&font->font, found->fontpath, found->index);
 	if (error)
 		return fz_rethrow(error, "cannot load freetype font from a file %s", found->fontpath);

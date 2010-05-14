@@ -590,8 +590,7 @@ $(SUMATRA_APP): $(LIBS_OBJS) $(SUMATRA_OBJS)
 $(PDFAPP_APP): $(PDFAPP_OBJS)
 	$(LD) $(LDFLAGS) /OUT:$(PDFAPP_APP) /PDB:$(PDFAPP_PDB) \
 	$(PDFAPP_OBJS) $(LIBS) \
-	/MAP:$(PDFAPP_MAP) \
-	/SUBSYSTEM:CONSOLE
+	/MAP:$(PDFAPP_MAP)
 
 $(PDFEXTRACT_APP): $(PDFEXTRACT_OBJS)
 	$(LD) $(LDFLAGS) /OUT:$(PDFEXTRACT_APP) /PDB:$(PDFEXTRACT_PDB) \
@@ -691,9 +690,6 @@ $(PDFEXTRACT_APP): $(PDFEXTRACT_OBJS)
 # fitz directories
 {$(FITZ_DIR)\apps\}.c{$(O)}.obj::
 	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
-
-$(O)\win_main.obj: $(FITZ_DIR)\apps\win_main.c
-	$(CC) $(FITZ_CFLAGS) /U "UNICODE" /Fo$(O)\ /Fd$(O)\vc80.pdb  $**
 
 {$(FITZ_DIR)\mupdf\}.c{$(O)}.obj::
 	$(CC) $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
