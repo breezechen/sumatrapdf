@@ -188,7 +188,9 @@ bool PdfEngine::load(const TCHAR *fileName, WindowInfo *win, bool tryrepair)
     int fd = _topen(fileName, O_BINARY | O_RDONLY);
     if (-1 == fd)
         return false;
-    _xref = pdf_openxref(fz_openfile(fd));
+    fz_stream *file = fz_openfile(fd);
+    _xref = pdf_openxref(file);
+    fz_dropstream(file);
     if (!_xref)
         return false;
 
