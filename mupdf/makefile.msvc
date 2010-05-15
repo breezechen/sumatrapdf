@@ -10,7 +10,9 @@ CFG=dbg
 !endif
 
 # O is directory where object and binary files go
+!if "$(O)"==""
 O = obj-$(CFG)-win
+!endif
 
 # To over-ride location of fitz/mupdf sources, define FITZ_DIR
 # e.g.:
@@ -246,7 +248,7 @@ FONTDUMP_APP = $(O)\fontdump.exe
 FONTDUMP_PDB = $(O)\fontdump.pdb
 FONTDUMP_MAP = $(O)\fontdump.map
 
-all: $(O) $(CMAPDUMP_APP) $(PDFDRAW_APP) $(PDFSHOW_APP) $(PDFCLEAN_APP) $(PDFINFO_APP) $(PDFEXTRACT_APP) $(PDFBENCH_APP) $(PDFAPP_APP)
+all: $(O) $(PDFDRAW_APP) $(PDFSHOW_APP) $(PDFCLEAN_APP) $(PDFINFO_APP) $(PDFEXTRACT_APP) $(PDFBENCH_APP) $(PDFAPP_APP)
 
 clean: force
 	-rmdir /S /Q $(O)
