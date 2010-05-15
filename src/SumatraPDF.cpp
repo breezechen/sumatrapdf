@@ -3913,14 +3913,12 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int nPag
             SizeD sSize = (rotation % 180) == 0 ? SizeD(r->dx, r->dy) : SizeD(r->dy, r->dx);
 
             double zoom = min((double)printAreaWidth / sSize.dx(), (double)printAreaHeight / sSize.dy());
-            int printAreaDx = zoom * sSize.dx(), printAreaDy = zoom * sSize.dy();
-
             RenderedBitmap *bmp = pdfEngine->renderBitmap(pr->nFromPage, 100.0 * zoom, dm->rotation(), &clipRegion, NULL, NULL);
             if (!bmp)
                 goto Error; /* most likely ran out of memory */
 
-            bmp->stretchDIBits(hdc, leftMargin + (printAreaWidth - printAreaDx) / 2,
-                topMargin + (printAreaHeight - printAreaDy) / 2, printAreaDx, printAreaDy);
+            bmp->stretchDIBits(hdc, leftMargin + (printAreaWidth - bmp->dx()) / 2,
+                topMargin + (printAreaHeight - bmp->dy()) / 2, bmp->dx(), bmp->dy());
             delete bmp;
             if (EndPage(hdc) <= 0) {
                 AbortDoc(hdc);
@@ -3954,14 +3952,12 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode, int nPag
 
             // try to use correct zoom values (scale down to fit the physical page, though)
             double zoom = min(dpiFactor, min((double)printAreaWidth / pSize.dx(), (double)printAreaHeight / pSize.dy()));
-            int printAreaDx = zoom * pSize.dx(), printAreaDy = zoom * pSize.dy();
-
             RenderedBitmap *bmp = pdfEngine->renderBitmap(pageNo, 100.0 * zoom, rotation, NULL, NULL, NULL);
             if (!bmp)
                 goto Error; /* most likely ran out of memory */
 
-            bmp->stretchDIBits(hdc, (printAreaWidth - printAreaDx) / 2,
-                (printAreaHeight - printAreaDy) / 2, printAreaDx, printAreaDy);
+            bmp->stretchDIBits(hdc, (printAreaWidth - bmp->dx()) / 2,
+                (printAreaHeight - bmp->dy()) / 2, bmp->dx(), bmp->dy());
             delete bmp;
             if (EndPage(hdc) <= 0) {
                 AbortDoc(hdc);
