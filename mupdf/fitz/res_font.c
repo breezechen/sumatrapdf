@@ -365,6 +365,8 @@ fz_rendert3glyph(fz_font *font, int gid, fz_matrix trm)
 		return NULL;
 
 	ctm = fz_concat(font->t3matrix, trm);
+	/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=746 */
+	if (fz_isrectilinear(ctm) && ctm.b < FLT_EPSILON) ctm.b = FLT_EPSILON;
 	dev = fz_newbboxdevice(&bbox);
 	error = font->t3runcontentstream(dev, ctm, font->t3xref, font->t3resources, contents);
 	if (error)
