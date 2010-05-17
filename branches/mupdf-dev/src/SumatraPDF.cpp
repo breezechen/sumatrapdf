@@ -6253,7 +6253,7 @@ static void CreateInfotipForPdfLink(WindowInfo *win, PdfLink *link, AboutLayoutI
         rect_set(&ti.rect, link->rectCanvas.x, link->rectCanvas.y, link->rectCanvas.dx, link->rectCanvas.dy);
         ti.lpszText = win->dm->getLinkPath(link->link);
         if (ti.lpszText) {
-            SendMessage(win->hwndInfotip, TTM_ADDTOOL, 0, (LPARAM)&ti);
+            SendMessage(win->hwndInfotip, win->infotipVisible ? TTM_NEWTOOLRECT : TTM_ADDTOOL, 0, (LPARAM)&ti);
             free(ti.lpszText);
             win->infotipVisible = true;
             return;
@@ -6262,7 +6262,7 @@ static void CreateInfotipForPdfLink(WindowInfo *win, PdfLink *link, AboutLayoutI
     if (aboutEl && aboutEl->url) {
         rect_set(&ti.rect, aboutEl->rightTxtPosX, aboutEl->rightTxtPosY, aboutEl->rightTxtDx, aboutEl->rightTxtDy);
         ti.lpszText = (TCHAR *)aboutEl->url;
-        SendMessage(win->hwndInfotip, TTM_ADDTOOL, 0, (LPARAM)&ti);
+        SendMessage(win->hwndInfotip, win->infotipVisible ? TTM_NEWTOOLRECT : TTM_ADDTOOL, 0, (LPARAM)&ti);
         win->infotipVisible = true;
         return;
     }
