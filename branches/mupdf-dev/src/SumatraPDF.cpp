@@ -5261,6 +5261,9 @@ static void OnChar(WindowInfo *win, int key)
     if ('q' == key) {
         CloseWindow(win, TRUE);
         return;
+    } else if ('r' == key && !win->dm && win->loadedFilePath) {
+        LoadPdf(win->loadedFilePath, win);
+        return;
     }
 
     if (!win->dm)
