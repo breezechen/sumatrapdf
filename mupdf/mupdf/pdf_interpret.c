@@ -909,6 +909,9 @@ Lsetcolor:
 			if (!subtype)
 				return fz_throw("no XObject subtype specified");
 
+			if (!strcmp(fz_toname(subtype), "Form") && fz_dictgets(obj, "Subtype2"))
+				subtype = fz_dictgets(obj, "Subtype2");
+
 			if (!strcmp(fz_toname(subtype), "Form"))
 			{
 				pdf_xobject *xobj;
@@ -1286,6 +1289,7 @@ pdf_runcsifile(pdf_csi *csi, fz_obj *rdb, fz_stream *file, char *buf, int buflen
 
 		else switch (tok)
 		{
+		case PDF_TENDSTREAM:
 		case PDF_TEOF:
 			return fz_okay;
 

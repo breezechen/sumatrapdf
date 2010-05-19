@@ -222,6 +222,21 @@ fz_sortgel(fz_gel *gel)
 	}
 }
 
+int
+fz_isrectgel(fz_gel *gel)
+{
+	/* a rectangular path is converted into two vertical edges of identical height */
+	if (gel->len == 2)
+	{
+		fz_edge *a = gel->edges + 0;
+		fz_edge *b = gel->edges + 1;
+		return a->y == b->y && a->h == b->h &&
+			a->xmove == 0 && a->adjup == 0 &&
+			b->xmove == 0 && b->adjup == 0;
+	}
+	return 0;
+}
+
 /*
  * Active Edge List -- keep track of active edges while sweeping
  */
@@ -285,8 +300,6 @@ insertael(fz_ael *ael, fz_gel *gel, int y, int *e)
 		if (ael->len + 1 == ael->cap) {
 			int newcap = ael->cap + 64;
 			fz_edge **newedges = fz_realloc(ael->edges, sizeof(fz_edge*) * newcap);
-			if (!newedges)
-				return fz_rethrow(-1, "out of memory");
 			ael->edges = newedges;
 			ael->cap = newcap;
 		}
@@ -456,9 +469,6 @@ fz_scanconvert(fz_gel *gel, fz_ael *ael, int eofill, fz_bbox clip,
 		return fz_okay;
 
 	deltas = fz_malloc(xmax - xmin + 1);
-	if (!deltas)
-		return fz_rethrow(-1, "out of memory");
-
 	memset(deltas, 0, xmax - xmin + 1);
 
 	e = 0;
