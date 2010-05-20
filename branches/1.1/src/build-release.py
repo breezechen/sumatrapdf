@@ -55,9 +55,6 @@ SCRIPT_DIR = os.path.dirname(__file__)
 if SCRIPT_DIR == "":
   SCRIPT_DIR = os.getcwd()
 
-DEFAULT_SRC_DIR  = os.path.join("c:\\", "kjk", "src", "sumatrapdf")
-DEFAULT_SRC_DIR2 = os.path.join("c:\\", "Users", "kkowalczyk", "src", "sumatrapdf")
-
 S3_BUCKET = "kjkpub"
 g_s3conn = None
 
@@ -137,15 +134,6 @@ def direxists(path):
     #print("%s path exists but is not a dir" % path)
     return False
 
-def get_src_dir():
-  srcdir = DEFAULT_SRC_DIR
-  if not direxists(srcdir):
-    srcdir = DEFAULT_SRC_DIR2
-  if not direxists(srcdir):
-    print("Neither %s nor %s dir exists" % (DEFAULT_SRC_DIR, DEFAULT_SRC_DIR2))
-    sys.exit(1)
-  return srcdir
-
 def main():
   log("Starting build-release.py")
 
@@ -156,18 +144,12 @@ def main():
     s3dir = "tmp"
     log("Will upload to tmp s3")
 
-  if len(args) > 2:
+  if len(args) != 1:
     usage()
-  if 2 == len(sys.argv):
-    srcdir = sys.argv[1]
-  else:
-    srcdir = get_src_dir()
 
-  if not direxists(srcdir):
-    log("'%s' directory doesn't exist" % srcdir)
-    sys.exit(1)
+  os.chdir("..")
+  srcdir = os.getcwd()
 
-  os.chdir(srcdir)
   ver = extract_sumatra_version(os.path.join("src", "Version.h"))
   log("Version: '%s'" % ver)
 
@@ -209,10 +191,10 @@ def main():
   ensure_path_exists(builds_dir)
 
   local_exe = os.path.join(builds_dir, "SumatraPDF-%s.exe" % ver)
-  local_exe_no_ver = os.path.join(builds_dir, "SumatraPDF.exe")
+  local_exe_uncompr = os.path.join(builds_dir, "SumatraPDF-uncompr.exe")
   local_pdb = os.path.join(builds_dir, "SumatraPDF-%s.pdb" % ver)
   shutil.copy(tmp_exe, local_exe)
-  shutil.copy(tmp_exe, local_exe_no_ver)
+  shutil.copy(tmp_exe, local_exe_uncompr)
   shutil.copy(tmp_pdb, local_pdb)
 
   os.chdir(builds_dir)
@@ -226,6 +208,7 @@ def main():
   log("upx finished")
 
   log("zip started")
+  shutil.copy("SumatraPDF-%s.exe" % ver, "SumatraPDF.exe")
   run_cmd_throw("zip", "-0", "SumatraPDF-%s.zip" % ver, "SumatraPDF.exe")
   log("zip finished")
 
@@ -239,7 +222,7 @@ def main():
   ensure_path_exists(local_installer_exe)
 
   if upload or upload_tmp:
-    s3UploadFilePublic(local_exe, remote_exe)
+    s3UploadFilePublic(local_exe_uncompr, remote_exe)
     s3UploadFilePublic(local_pdb, remote_pdb)
     s3UploadFilePublic(local_zip, remote_zip)
     s3UploadFilePublic(local_installer_exe, remote_installer_exe)
