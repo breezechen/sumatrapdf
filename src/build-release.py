@@ -21,7 +21,19 @@ import subprocess
 import sys
 import time
 
-def import_boto():
+def test_for_flag(args, arg):
+  try:
+    pos = args.index(arg)
+  except:
+    return False
+  del args[pos]
+  return True
+
+args = sys.argv
+upload = test_for_flag(args, "-upload")
+upload_tmp = test_for_flag(args, "-uploadtmp")
+
+if upload:
   try:
     import boto.s3
     from boto.s3.key import Key
@@ -134,20 +146,9 @@ def get_src_dir():
     sys.exit(1)
   return srcdir
 
-def test_for_flag(args, arg):
-  try:
-    pos = args.index(arg)
-  except:
-    return False
-  del args[pos]
-  return True
-
 def main():
   log("Starting build-release.py")
-  args = sys.argv
 
-  upload = test_for_flag(args, "-upload")
-  upload_tmp = test_for_flag(args, "-uploadtmp")
   s3dir = "rel"
   if upload:
     log("Will upload to s3")
@@ -176,7 +177,6 @@ def main():
   remote_installer_exe = "sumatrapdf/%s/SumatraPDF-%s-install.exe" % (s3dir, ver)
 
   if upload:
-    import_boto()
     ensure_s3_doesnt_exist(remote_exe)
     ensure_s3_doesnt_exist(remote_pdb)
     ensure_s3_doesnt_exist(remote_zip)
