@@ -15,6 +15,8 @@
 
 #ifndef _WIN32_WINNT 
 #define _WIN32_WINNT 0x0500
+// the following is only defined for _WIN32_WINNT >= 0x0600
+#define USER_DEFAULT_SCREEN_DPI 96
 #endif
 
 #ifndef _WIN32_WINDOWS
@@ -172,14 +174,14 @@ public:
         hwndPageTotal = NULL;
         hwndTocBox = NULL;
         hwndSpliter = NULL;
-        hwndTracker = NULL;
         hwndInfotip = NULL;
         hwndPdfProperties = NULL;
 
         infotipVisible = false;
         hMenu = NULL;
         hdc = NULL;
-        dpi = 96;
+        dpi = USER_DEFAULT_SCREEN_DPI;
+        uiDPIFactor = 1.0;
         findThread = NULL;
         findCanceled = false;
         findPercent = 0;
@@ -198,6 +200,7 @@ public:
         hdcDoubleBuffer = NULL;
         bmpDoubleBuffer = NULL;
         title = NULL;
+        loadedFilePath = NULL;
         currPageNo = 0;
         pdfPropertiesCount = 0;
     }
@@ -217,6 +220,7 @@ public:
     WindowInfo *    next;
     WinState        state;
     bool            needrefresh; // true if the view of the PDF is not synchronized with the content of the file on disk
+    TCHAR *         loadedFilePath;
 
     DisplayModel *  dm;
     HWND            hwndFrame;
@@ -233,7 +237,6 @@ public:
     HWND            hwndPageTotal;
     HWND            hwndTocBox;
     HWND            hwndSpliter;
-    HWND            hwndTracker;
     HWND            hwndInfotip;
     HWND            hwndPdfProperties;
 
@@ -243,6 +246,7 @@ public:
     HDC             hdc;
     BITMAPINFO *    dibInfo;
     int             dpi;
+    float           uiDPIFactor;
 
     HANDLE          findThread;
     bool            findCanceled;
@@ -319,7 +323,6 @@ public:
     void LoadTocTree();
     void ToggleTocBox();
 
-    void TrackMouse(HWND hwnd=NULL);
     void FindStart();
     virtual bool FindUpdateStatus(int count, int total);
     void FocusPageNoEdit();

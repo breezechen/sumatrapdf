@@ -373,6 +373,15 @@ int DisplayModel::currentPageNo(void) const
         }
     }
 
+    /* if no page is visible, default to either the first or the last one */
+    if (INVALID_PAGE_NO == mostVisiblePage) {
+        PdfPageInfo *pageInfo = getPageInfo(1);
+        if (this->areaOffset.y > pageInfo->currPosY + pageInfo->currDy)
+            mostVisiblePage = pageCount();
+        else
+            mostVisiblePage = 1;
+    }
+
     return mostVisiblePage;
 }
 
@@ -416,15 +425,13 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
     double      pageDx=0, pageDy=0;
     int         currDxInt, currDyInt;
     double      totalAreaDx, totalAreaDy;
-    double      areaPerPageDx;
-    double      thisRowDx;
     double      rowMaxPageDy;
     double      offX, offY;
     double      pageOffX;
-    int         columnsLeft;
     int         pageInARow;
     int         columns;
     double      newAreaOffsetX;
+    int       * columnOffsets;
 
     assert(_pagesInfo);
     if (!_pagesInfo)
@@ -440,7 +447,6 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
     setZoomVirtual(zoomVirtual);
 
 //    DBG_OUT("DisplayModel::relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n", pageCount, dm->zoomReal, dm->zoomVirtual);
-    totalAreaDx = 0;
 
     if (0 == currZoomReal)
         newAreaOffsetX = 0.0;
@@ -451,7 +457,8 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
        rotation, columns parameters. You can think of it as a simple
        table layout i.e. rows with a fixed number of columns. */
     columns = columnsFromDisplayMode(displayMode());
-    columnsLeft = columns;
+    columnOffsets = (int *)calloc(columns, sizeof(int));
+    pageInARow = 0;
     currPosX = PADDING_PAGE_BORDER_LEFT;
     rowMaxPageDy = 0;
     for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
@@ -468,37 +475,20 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
 
         if (rowMaxPageDy < pageInfo->currDy)
             rowMaxPageDy = pageInfo->currDy;
-
-        pageInfo->currPosX = currPosX;
         pageInfo->currPosY = currPosY;
-        /* set position of the next page to be after this page with padding.
-           Note: for the last page we don't want padding so we'll have to
-           substract it when we create new page */
-        currPosX += (pageInfo->currDx + PADDING_BETWEEN_PAGES_X);
 
-        if (displayModeShowCover(displayMode()) && pageNo == 1 && columnsLeft > 1) {
-            if (displayModeContinuous(displayMode()) || drawAreaSize.dx() >= currPosX + pageInfo->currDx) {
-                /* leave the very first spot empty when showing the cover page */
-                pageInfo->currPosX = currPosX;
-                currPosX += (pageInfo->currDx + PADDING_BETWEEN_PAGES_X);
-                // center the cover page in non-continuous mode
-                if (!displayModeContinuous(displayMode()))
-                    currPosX -= (pageInfo->currDx + PADDING_BETWEEN_PAGES_X) / 2;
-            }
-            columnsLeft--;
-        }
+        if (displayModeShowCover(displayMode()) && pageNo == 1 && columns - pageInARow > 1)
+            pageInARow++;
+        if (columnOffsets[pageInARow] < pageInfo->currDx)
+            columnOffsets[pageInARow] = pageInfo->currDx;
 
-        --columnsLeft;
-        assert(columnsLeft >= 0);
-        if (0 == columnsLeft) {
+        pageInARow++;
+        assert(pageInARow <= columns);
+        if (pageInARow == columns) {
             /* starting next row */
             currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
             rowMaxPageDy = 0;
-            thisRowDx = currPosX - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
-            if (totalAreaDx < thisRowDx)
-                totalAreaDx = thisRowDx;
-            columnsLeft = columns;
-            currPosX = PADDING_PAGE_BORDER_LEFT;
+            pageInARow = 0;
         }
 /*        DBG_OUT("  page = %3d, (x=%3d, y=%5d, dx=%4d, dy=%4d) orig=(dx=%d,dy=%d)\n",
             pageNo, (int)pageInfo->currPosX, (int)pageInfo->currPosY,
@@ -506,44 +496,43 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
                     (int)pageDx, (int)pageDy); */
     }
 
-    if (columnsLeft < columns) {
+    if (pageInARow != 0)
         /* this is a partial row */
         currPosY += rowMaxPageDy + PADDING_BETWEEN_PAGES_Y;
-        thisRowDx = currPosX + (pageInfo->currDx + PADDING_BETWEEN_PAGES_X) - PADDING_BETWEEN_PAGES_X + PADDING_PAGE_BORDER_RIGHT;
-        if (totalAreaDx < thisRowDx)
-            totalAreaDx = thisRowDx;
-    }
+    totalAreaDx = PADDING_PAGE_BORDER_LEFT + columnOffsets[0] + (columns == 2 ? PADDING_BETWEEN_PAGES_X + columnOffsets[1] : 0) + PADDING_PAGE_BORDER_RIGHT;
 
     /* since pages can be smaller than the drawing area, center them in x axis */
+    offX = 0;
     if (totalAreaDx < drawAreaSize.dx()) {
         areaOffset.x = 0.0;
-        offX = (drawAreaSize.dx() - totalAreaDx) / 2.0 + PADDING_PAGE_BORDER_LEFT;
-        assert(offX >= 0.0);
-        areaPerPageDx = totalAreaDx - PADDING_PAGE_BORDER_LEFT - PADDING_PAGE_BORDER_RIGHT;
-        areaPerPageDx = areaPerPageDx - (PADDING_BETWEEN_PAGES_X * (columns - 1));
-        areaPerPageDx = floor(areaPerPageDx / columns);
+        offX = (drawAreaSize.dx() - totalAreaDx) / 2.0;
         totalAreaDx = drawAreaSize.dx();
-        pageInARow = 0;
-        for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
-            pageInfo = getPageInfo(pageNo);
-            if (!pageInfo->shown) {
-                assert(!pageInfo->visible);
-                continue;
-            }
-            if (displayModeShowCover(displayMode()) && pageNo == 1 && columns > 1)
-                pageInARow++;
-            pageOffX = (pageInARow * (PADDING_BETWEEN_PAGES_X + areaPerPageDx));
-            // center the cover page in non-continuous mode
-            if (displayModeShowCover(displayMode()) && pageNo == 1 && columns > 1 && !displayModeContinuous(displayMode()))
-                pageOffX /= 2;
-            pageOffX += (areaPerPageDx - pageInfo->currDx) / 2;
-            assert(pageOffX >= 0.0);
-            pageInfo->currPosX = pageOffX + offX;
-            ++pageInARow;
-            if (pageInARow == columns)
-                pageInARow = 0;
+    }
+    assert(offX >= 0.0);
+    pageInARow = 0;
+    pageOffX = offX + PADDING_PAGE_BORDER_LEFT;
+    for (pageNo = 1; pageNo <= pageCount(); ++pageNo) {
+        pageInfo = getPageInfo(pageNo);
+        if (!pageInfo->shown) {
+            assert(!pageInfo->visible);
+            continue;
+        }
+        // leave first spot empty in cover page mode
+        if (displayModeShowCover(displayMode()) && pageNo == 1)
+            pageOffX += columnOffsets[pageInARow++] + PADDING_BETWEEN_PAGES_X;
+        pageInfo->currPosX = pageOffX + (columnOffsets[pageInARow] - pageInfo->currDx) / 2;
+        // center the cover page over the first two spots in non-continuous mode
+        if (displayModeShowCover(displayMode()) && pageNo == 1 && !displayModeContinuous(displayMode()))
+            pageInfo->currPosX = offX + PADDING_PAGE_BORDER_LEFT + (columnOffsets[0] + PADDING_BETWEEN_PAGES_X + columnOffsets[1] - pageInfo->currDx) / 2;
+        pageOffX += columnOffsets[pageInARow++] + PADDING_BETWEEN_PAGES_X;
+        assert(pageOffX >= 0 && pageInfo->currPosX >= 0);
+
+        if (pageInARow == columns) {
+            pageOffX = offX + PADDING_PAGE_BORDER_LEFT;
+            pageInARow = 0;
         }
     }
+    free(columnOffsets);
 
     /* if after resizing we would have blank space on the right due to x offset
        being too much, make x offset smaller so that there's no blank space */
@@ -920,9 +909,12 @@ void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)
         changeStartPage(pageNo);
     }
     //DBG_OUT("DisplayModel::goToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
+    PdfPageInfo * pageInfo = getPageInfo(pageNo);
     if (-1 != scrollX)
         areaOffset.x = (double)scrollX;
-    PdfPageInfo * pageInfo = getPageInfo(pageNo);
+    // make sure to not display the blank space beside the first page in cover mode
+    else if (-1 == scrollX && 1 == pageNo && displayModeShowCover(displayMode()))
+        areaOffset.x = pageInfo->currPosX - PADDING_PAGE_BORDER_LEFT;
 
     /* Hack: if an image is smaller in Y axis than the draw area, then we center
        the image by setting pageInfo->currPosY in RecalcPagesInfo. So we shouldn't
@@ -1567,9 +1559,11 @@ void DisplayModel::goToPdfDest(fz_obj *dest)
             scrollY = fz_toint(fz_arrayget(dest, 3));
             cvtUserToScreen(pageNo, &scrollX, &scrollY);
 
-            // goToPage needs scrolling info relative to the page's top-left corner
+            // goToPage needs scrolling info relative to the page's top border
+            // and the page line's left margin
             PdfPageInfo * pageInfo = getPageInfo(pageNo);
-            scrollX += pageInfo->bitmapX;
+            // TODO: These values are not up-to-date, if the page has not been shown yet
+            scrollX += pageInfo->bitmapX + pageInfo->currPosX;
             scrollY += pageInfo->bitmapY;
         }
         goToPage(pageNo, scrollY, true, scrollX);
@@ -1585,7 +1579,7 @@ void DisplayModel::goToNamedDest(const char *name)
  * into a newly allocated buffer (which the caller needs to free()). */
 TCHAR *DisplayModel::getTextInRegion(int pageNo, RectD *region)
 {
-    fz_irect *coords;
+    fz_bbox *coords;
     TCHAR *pageText = pdfEngine->ExtractPageText(pageNo, _T("\n\n"), &coords);
     if (!pageText)
         return NULL;
@@ -1595,7 +1589,7 @@ TCHAR *DisplayModel::getTextInRegion(int pageNo, RectD *region)
     TCHAR *result = (TCHAR *)malloc((lstrlen(pageText) + 1) * sizeof(TCHAR)), *dest = result;
     for (TCHAR *src = pageText; *src; src++) {
         if (*src != '\n') {
-            fz_irect *bbox = &coords[src - pageText];
+            fz_bbox *bbox = &coords[src - pageText];
             RectI rect = { bbox->x0, bbox->y0, bbox->x1 - bbox->x0, bbox->y1 - bbox->y0 };
             if (RectI_Intersect(&regionI, &rect, NULL)) {
                 *dest++ = *src;

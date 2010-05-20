@@ -3,7 +3,6 @@ Things to for 1.1 release:
 * finish new language detection code
 
 Maybe for 1.1:
-* update jpeg lib to latest 8a
 * a button to switch mouse between dragging and text selection, like in Adobe Reader
   and FoxIt. The current way with Ctrl is not discoverable enough
 * add menu option to create a crashdump on crash and submit it to a website

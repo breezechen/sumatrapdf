@@ -131,7 +131,7 @@ typedef struct ScrollState {
 class DisplayModel
 {
 public:
-    DisplayModel(DisplayMode displayMode, int dpi=96);
+    DisplayModel(DisplayMode displayMode, int dpi=USER_DEFAULT_SCREEN_DPI);
     ~DisplayModel();
 
     RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
