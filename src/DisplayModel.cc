@@ -441,6 +441,9 @@ void DisplayModel::setZoomVirtual(double zoomVirtual)
         this->_zoomReal = minZoom;
     } else if (ZOOM_FIT_CONTENT == zoomVirtual) {
         double newZoom = zoomRealFromVirtualForPage(zoomVirtual, currentPageNo());
+        // limit zooming in to 800% on almost empty pages
+        if (newZoom > 800)
+            newZoom = 800;
         // don't zoom in by just a few pixels (throwing away a prerendered page)
         if (newZoom < this->_zoomReal || this->_zoomReal / newZoom < 0.95)
             this->_zoomReal = newZoom;
@@ -1180,6 +1183,10 @@ void DisplayModel::zoomTo(double zoomVirtual, POINT *fixPt)
             if (!cvtScreenToUser(&center.page, &center.x, &center.y))
                 fixPt = NULL;
         }
+
+        if (ZOOM_FIT_CONTENT == zoomVirtual)
+            // setScrollState's first call to goToPage will already scroll to fit
+            ss.x = ss.y = -1;
 
         //DBG_OUT("DisplayModel::zoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
         relayout(zoomVirtual, rotation());
