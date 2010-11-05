@@ -284,7 +284,7 @@ Find:
 Keresés:
 
 Fit &Content\tCtrl-3
-&Tartalom
+&Tartalom\tCtrl-3
 
 Fit &Page\tCtrl-0
 &Teljes oldal\tCtrl-0
