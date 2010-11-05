@@ -1744,10 +1744,10 @@ const char *g_transTranslations[] = {
   "K\303\266vetkez\305\221 keres\303\251se",
   "El\305\221z\305\221 keres\303\251se",
   "Keres\303\251s:",
-  NULL,
+  "&Tartalom",
   "&Teljes oldal\tCtrl-0",
   "Oldal&sz\303\251less\303\251g\tCtrl-2",
-  NULL,
+  "Tartalom",
   "Teljes oldal",
   "Oldalsz\303\251less\303\251g",
   "Tal\303\241lat a(z) %d. oldalon",
@@ -1816,7 +1816,7 @@ const char *g_transTranslations[] = {
   "Kicsiny\303\255t\303\251s",
   "Nagy\303\255t\303\241s m\303\251rt\303\251ke",
   "[a file megv\303\241ltozott; friss\303\255t\303\251s] %s",
-  "Tartalom v\303\241g\303\263lapra",
+  "Sz\303\266veg v\303\241g\303\263lapra",
   "Nyomtat\303\241s",
 
   /* Translations for language lt */
