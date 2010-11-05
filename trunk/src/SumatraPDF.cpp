@@ -2,13 +2,17 @@
    License: GPLv3 */
 
 #include "SumatraPDF.h"
+#include "RenderCache.h"
 
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
 #include "FileHistory.h"
 
+#include "str_strsafe.h"
 #include "WinUtil.hpp"
+#include "Http.h"
 
+#include "translations.h"
 #include "Version.h"
 
 // those are defined here instead of resource.h to avoid

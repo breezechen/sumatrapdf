@@ -42,7 +42,6 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include "resource.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -57,15 +56,13 @@
 #include "base_util.h"
 #include "file_util.h"
 #include "geom_util.h"
-#include "str_strsafe.h"
 #include "win_util.h"
 #include "tstr_util.h"
-#include "Http.h"
 
+#include "Resource.h"
 #include "DisplayModel.h"
 #include "FileWatch.h"
 #include "PdfSync.h"
-#include "translations.h"
 
 #define KB 1024
 #define MB (1024*KB)

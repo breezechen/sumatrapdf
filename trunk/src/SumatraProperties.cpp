@@ -3,6 +3,7 @@
 
 #include "SumatraPDF.h"
 #include "AppPrefs.h"
+#include "translations.h"
 
 #define PROPERTIES_LEFT_RIGHT_SPACE_DX 8
 #define PROPERTIES_RECT_PADDING     8
