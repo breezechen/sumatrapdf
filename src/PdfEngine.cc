@@ -58,6 +58,24 @@ fz_error pdf_runpagefortarget(pdf_xref *xref, pdf_page *page, fz_device *dev, fz
     return error;
 }
 
+fz_pixmap *fz_newpixmap_nullonoom(fz_colorspace *colorspace, int x, int y, int w, int h)
+{
+    // make sure not to request too large a pixmap, as MuPDF just aborts on OOM;
+    // instead we get a 1*h sized pixmap and try to resize it manually and just
+    // fail to render if we run out of memory.
+    fz_pixmap *image = fz_newpixmap(fz_devicergb, x, y, 1, h);
+
+    image->w = w;
+    free(image->samples);
+    image->samples = (unsigned char *)malloc(w * h * image->n);
+    if (!image->samples) {
+        fz_droppixmap(image);
+        image = NULL;
+    }
+
+    return image;
+}
+
 HBITMAP fz_pixtobitmap(HDC hDC, fz_pixmap *pixmap, BOOL paletted)
 {
     int w, h, rows8;
@@ -73,7 +91,9 @@ HBITMAP fz_pixtobitmap(HDC hDC, fz_pixmap *pixmap, BOOL paletted)
     h = pixmap->h;
     
     /* abgr is a GDI compatible format */
-    bgrPixmap = fz_newpixmap(fz_devicebgr, pixmap->x, pixmap->y, w, h);
+    bgrPixmap = fz_newpixmap_nullonoom(fz_devicebgr, pixmap->x, pixmap->y, w, h);
+    if (!bgrPixmap)
+        return NULL;
     fz_convertpixmap(pixmap, bgrPixmap);
     pixmap = bgrPixmap;
     
@@ -612,14 +632,9 @@ RenderedBitmap *PdfEngine::renderBitmap(
         return new RenderedBitmap(hbmp, w, h);
     }
 
-    // make sure not to request too large a pixmap, as MuPDF just aborts on OOM;
-    // instead we get a 1*y sized pixmap and try to resize it manually and just
-    // fail to render if we run out of memory.
-    fz_pixmap *image = fz_newpixmap(fz_devicergb, bbox.x0, bbox.y0, 1, bbox.y1 - bbox.y0);
-    image->w = bbox.x1 - bbox.x0;
-    free(image->samples);
-    image->samples = (unsigned char *)malloc(image->w * image->h * image->n);
-    if (!image->samples)
+    fz_pixmap *image = fz_newpixmap_nullonoom(fz_devicergb,
+        bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0);
+    if (!image)
         return NULL;
 
     fz_clearpixmap(image, 0xFF); // initialize white background
