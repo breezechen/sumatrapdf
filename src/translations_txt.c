@@ -1744,7 +1744,7 @@ const char *g_transTranslations[] = {
   "K\303\266vetkez\305\221 keres\303\251se",
   "El\305\221z\305\221 keres\303\251se",
   "Keres\303\251s:",
-  "&Tartalom",
+  "&Tartalom\tCtrl-3",
   "&Teljes oldal\tCtrl-0",
   "Oldal&sz\303\251less\303\251g\tCtrl-2",
   "Tartalom",
