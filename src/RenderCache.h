@@ -5,6 +5,8 @@
 
 #include "DisplayModel.h"
 
+#define RENDER_DELAY_UNDEFINED ((UINT)-1)
+
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
    and corresponding rendered bitmap.
@@ -27,21 +29,62 @@ typedef struct {
     DWORD           timestamp;
 } PageRenderRequest;
 
-/* Lock protecting both bitmap cache and page render queue */
-void              LockCache();
-void              UnlockCache();
+#define MAX_PAGE_REQUESTS 8
 
-void              RenderQueue_Add(DisplayModel *dm, int pageNo);
-extern void       RenderQueue_RemoveForDisplayModel(DisplayModel *dm);
-extern void       cancelRenderingForDisplayModel(DisplayModel *dm);
+// keep this value reasonably low, else we'll run
+// out of GDI memory when caching many larger bitmaps
+#define MAX_BITMAPS_CACHED 64
 
-BitmapCacheEntry *BitmapCache_Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel=INVALID_ZOOM);
-bool              BitmapCache_Exists(DisplayModel *dm, int pageNo, int rotation, double zoomLevel);
-void              BitmapCache_Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
-                                  RenderedBitmap *bitmap, double renderTime);
-bool              BitmapCache_FreePage(DisplayModel *dm=NULL, int pageNo=-1);
-bool              BitmapCache_FreeForDisplayModel(DisplayModel *dm);
-void              BitmapCache_KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
-bool              BitmapCache_FreeNotVisible(void);
+class RenderCache
+{
+private:
+    BitmapCacheEntry *  _cache[MAX_BITMAPS_CACHED];
+    int                 _cacheCount;
+    CRITICAL_SECTION    _access;
+
+    PageRenderRequest   _requests[MAX_PAGE_REQUESTS];
+    int                 _requestCount;
+    HANDLE              _renderThread;
+    HANDLE              _queueClearedEvent;
+    PageRenderRequest * _curReq;
+
+public:
+    HANDLE              renderSemaphore;
+    HANDLE              clearQueueEvent;
+
+    /* point these to the actual preferences for live updates */
+    BOOL              * invertColors;
+    bool              * useGdiRenderer;
+
+    RenderCache(void);
+    ~RenderCache(void);
+
+    /* Lock protecting both bitmap cache and page render queue */
+    void                Lock(void) { EnterCriticalSection(&_access); }
+    void                Unlock(void) { LeaveCriticalSection(&_access); }
+
+    BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel=INVALID_ZOOM);
+    void                Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
+                            RenderedBitmap *bitmap, double renderTime);
+    bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1);
+    bool                FreeForDisplayModel(DisplayModel *dm);
+    void                KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
+    bool                FreeNotVisible(void);
+
+    void                Render(DisplayModel *dm, int pageNo);
+    bool                IsRenderQueueFull(void) const {
+        return _requestCount == MAX_PAGE_REQUESTS;
+    }
+    UINT                GetRenderDelay(DisplayModel *dm, int pageNo);
+    bool                GetNextRequest(PageRenderRequest *req);
+    bool                ClearCurrentRequest(void);
+    void                ClearRequests(void);
+    void                CancelRendering(DisplayModel *dm);
+    void                ClearPageRenderRequests();
+
+private:
+    void                Free(BitmapCacheEntry *entry);
+    void                ClearQueueForDisplayModel(DisplayModel *dm);
+};
 
 #endif

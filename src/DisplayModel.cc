@@ -44,12 +44,6 @@
 */
 
 #include "SumatraPDF.h"
-#include "DisplayModel.h"
-#include "RenderCache.h"
-
-#include <assert.h>
-#include <math.h>
-#include <stdlib.h>
 
 #ifndef DEBUG
 #define PREDICTIVE_RENDER 1
@@ -208,9 +202,7 @@ DisplayModel::DisplayModel(DisplayMode displayMode, int dpi)
 DisplayModel::~DisplayModel()
 {
     _dontRenderFlag = true;
-    RenderQueue_RemoveForDisplayModel(this);
-    BitmapCache_FreeForDisplayModel(this);
-    cancelRenderingForDisplayModel(this);
+    clearAllRenderings();
 
     free(_pagesInfo);
     free(_navHistory);
@@ -814,12 +806,6 @@ int DisplayModel::getPdfLinks(int pageNo, pdf_link **links)
     for (int i = 0; i < count; i++)
         (*links)[i].rect = rectCvtUserToScreen(pageNo, (*links)[i].rect);
     return count;
-}
-
-/* Send the request to render a given page to a rendering thread */
-void DisplayModel::startRenderingPage(int pageNo)
-{
-    RenderQueue_Add(this, pageNo);
 }
 
 void DisplayModel::renderVisibleParts(void)
