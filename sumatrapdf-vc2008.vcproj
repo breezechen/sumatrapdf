@@ -122,6 +122,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\MemSegment.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\MemSegment.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\PdfEngine.cc"
 				>
 			</File>
@@ -147,6 +155,14 @@
 			</File>
 			<File
 				RelativePath=".\src\PdftestWinPreview.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\RenderCache.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\RenderCache.h"
 				>
 			</File>
 			<File
