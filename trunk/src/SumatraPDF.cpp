@@ -32,11 +32,6 @@
 #endif
 #define USE_GDI_FOR_PRINTING
 
-/* Define if you want to conserve memory by always freeing cached bitmaps
-   for pages not visible. Disabling this might lead to pages not rendering
-   due to insufficient (GDI) memory. */
-#define CONSERVE_MEMORY
-
 /* undefine if you don't want to use memory consuming double-buffering for rendering the PDF */
 #define DOUBLE_BUFFER
 
@@ -161,15 +156,7 @@ static HBITMAP                      gBitmapReloadingCue;
 static TCHAR *                      gBenchFileName;
 static int                          gBenchPageNum = INVALID_PAGE_NO;
 
-#define MAX_PAGE_REQUESTS 8
-static PageRenderRequest            gPageRenderRequests[MAX_PAGE_REQUESTS];
-static int                          gPageRenderRequestsCount = 0;
-
-static HANDLE                       gPageRenderThreadHandle;
-static HANDLE                       gPageRenderSem;
-static HANDLE                       gPageRenderClearQueue;
-static HANDLE                       gPageRenderQueueCleared;
-static PageRenderRequest *          gCurPageRenderReq;
+static RenderCache                  gRenderCache;
 
 static int                          gReBarDy;
 static int                          gReBarDyFrame;
@@ -795,183 +782,6 @@ void LaunchBrowser(const TCHAR *url)
 {
     if (gRestrictedUse) return;
     launch_url(url);
-}
-
-static BOOL pageRenderAbortCb(void *data)
-{
-    PageRenderRequest *req = (PageRenderRequest*)data;
-    if (!req->abort)
-        return FALSE;
-
-    DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
-    return TRUE;
-}
-
-void RenderQueue_RemoveForDisplayModel(DisplayModel *dm) {
-    LockCache();
-    int reqCount = gPageRenderRequestsCount;
-    int curPos = 0;
-    for (int i = 0; i < reqCount; i++) {
-        PageRenderRequest *req = &(gPageRenderRequests[i]);
-        bool shouldRemove = (req->dm == dm);
-        if (i != curPos)
-            gPageRenderRequests[curPos] = gPageRenderRequests[i];
-        if (shouldRemove)
-            --gPageRenderRequestsCount;
-        else
-            ++curPos;
-    }
-    UnlockCache();
-}
-
-/* Wait until rendering of a page beloging to <dm> has finished. */
-/* TODO: this might take some time, would be good to show a dialog to let the
-   user know he has to wait until we finish */
-void cancelRenderingForDisplayModel(DisplayModel *dm) {
-
-    DBG_OUT("cancelRenderingForDisplayModel()\n");
-    bool renderingFinished = false;;
-    for (;;) {
-        LockCache();
-        if (!gCurPageRenderReq || (gCurPageRenderReq->dm != dm))
-            renderingFinished = true;
-        else
-            gCurPageRenderReq->abort = TRUE;
-        UnlockCache();
-        if (renderingFinished)
-            break;
-        /* TODO: busy loop is not good, but I don't have a better idea */
-        sleep_milliseconds(500);
-    }
-}
-
-/* Render a bitmap for page <pageNo> in <dm>. */
-void RenderQueue_Add(DisplayModel *dm, int pageNo) {
-    DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
-    assert(dm);
-    if (!dm || dm->_dontRenderFlag) goto Exit;
-
-    LockCache();
-    int rotation = dm->rotation();
-    normalizeRotation(&rotation);
-    double zoomLevel = dm->zoomReal(pageNo);
-
-    if (gCurPageRenderReq && 
-        (gCurPageRenderReq->pageNo == pageNo) && (gCurPageRenderReq->dm == dm)) {
-        if ((gCurPageRenderReq->zoomLevel != zoomLevel) || (gCurPageRenderReq->rotation != rotation)) {
-            /* Currently rendered page is for the same page but with different zoom
-            or rotation, so abort it */
-            DBG_OUT("  aborting rendering\n");
-            gCurPageRenderReq->abort = TRUE;
-        } else {
-            /* we're already rendering exactly the same page */
-            DBG_OUT("  already rendering this page\n");
-            goto LeaveCsAndExit;
-        }
-    }
-
-    for (int i=0; i < gPageRenderRequestsCount; i++) {
-        PageRenderRequest* req = &(gPageRenderRequests[i]);
-        if ((req->pageNo == pageNo) && (req->dm == dm)) {
-            if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
-                /* Request with exactly the same parameters already queued for
-                   rendering. Move it to the top of the queue so that it'll
-                   be rendered faster. */
-                PageRenderRequest tmp;
-                tmp = gPageRenderRequests[gPageRenderRequestsCount-1];
-                gPageRenderRequests[gPageRenderRequestsCount-1] = *req;
-                *req = tmp;
-                DBG_OUT("  already queued\n");
-                goto LeaveCsAndExit;
-            } else {
-                /* There was a request queued for the same page but with different
-                   zoom or rotation, so only replace this request */
-                DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
-                req->zoomLevel = zoomLevel;
-                req->rotation = rotation;
-                goto LeaveCsAndExit;
-            
-            }
-        }
-    }
-
-    if (BitmapCache_Exists(dm, pageNo, rotation, zoomLevel)) {
-        /* This page has already been rendered in the correct dimensions
-           and isn't about to be rerendered in different dimensions */
-        goto LeaveCsAndExit;
-    }
-
-    PageRenderRequest* newRequest;
-    /* add request to the queue */
-    if (gPageRenderRequestsCount == MAX_PAGE_REQUESTS) {
-        /* queue is full -> remove the oldest items on the queue */
-        memmove(&(gPageRenderRequests[0]), &(gPageRenderRequests[1]), sizeof(PageRenderRequest)*(MAX_PAGE_REQUESTS-1));
-        newRequest = &(gPageRenderRequests[MAX_PAGE_REQUESTS-1]);
-    } else {
-        newRequest = &(gPageRenderRequests[gPageRenderRequestsCount]);
-        gPageRenderRequestsCount++;
-    }
-    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
-    newRequest->dm = dm;
-    newRequest->pageNo = pageNo;
-    newRequest->zoomLevel = zoomLevel;
-    newRequest->rotation = rotation;
-    newRequest->abort = FALSE;
-    newRequest->timestamp = GetTickCount();
-
-    UnlockCache();
-
-    /* tell rendering thread there's a new request to render */
-    LONG  prevCount;
-    ReleaseSemaphore(gPageRenderSem, 1, &prevCount);
-Exit:
-    return;
-LeaveCsAndExit:
-    UnlockCache();
-    return;
-}
-
-#define RENDER_DELAY_UNDEFINED ((UINT)-1)
-
-UINT RenderQueue_GetDelay(DisplayModel *dm, int pageNo)
-{
-    bool foundReq = false;
-    DWORD timestamp;
-
-    LockCache();
-    if (gCurPageRenderReq && gCurPageRenderReq->pageNo == pageNo && gCurPageRenderReq->dm == dm) {
-        timestamp = gCurPageRenderReq->timestamp;
-        foundReq = true;
-    }
-    for (int i = 0; !foundReq && i < gPageRenderRequestsCount; i++) {
-        if (gPageRenderRequests[i].pageNo == pageNo && gPageRenderRequests[i].dm == dm) {
-            timestamp = gPageRenderRequests[i].timestamp;
-            foundReq = true;
-        }
-    }
-    UnlockCache();
-
-    if (!foundReq)
-        return RENDER_DELAY_UNDEFINED;
-    return GetTickCount() - timestamp;
-}
-
-void RenderQueue_Pop(PageRenderRequest *req)
-{
-    LockCache();
-    assert(gPageRenderRequestsCount > 0);
-    assert(gPageRenderRequestsCount <= MAX_PAGE_REQUESTS);
-    --gPageRenderRequestsCount;
-    *req = gPageRenderRequests[gPageRenderRequestsCount];
-    assert(gPageRenderRequestsCount >= 0);
-    UnlockCache();
-}
-
-void RenderQueue_Clear()
-{
-    LockCache();
-    gPageRenderRequestsCount = 0;
-    UnlockCache();
 }
 
 static void MenuUpdateDisplayMode(WindowInfo *win)
@@ -1669,10 +1479,8 @@ static void WindowInfo_Delete(WindowInfo *win)
     }
     WindowInfoList_Remove(win);
 
-    if (win->dm) {
-        RenderQueue_RemoveForDisplayModel(win->dm);
-        cancelRenderingForDisplayModel(win->dm);
-    }
+    if (win->dm)
+        gRenderCache.CancelRendering(win->dm);
     WindowInfo_AbortFinding(win);
     delete win->dm;
     win->dm = NULL;
@@ -2161,13 +1969,6 @@ static void RecalcSelectionPosition (WindowInfo *win) {
     }
 }
 
-// Clear all the requests from the PageRender queue.
-static void ClearPageRenderRequests()
-{
-    SetEvent(gPageRenderClearQueue);
-    WaitForSingleObject(gPageRenderQueueCleared, INFINITE);
-}
-
 static bool LoadPdfIntoWindow(
     const TCHAR *fileName, // path to the PDF
     WindowInfo *win,       // destination window
@@ -2230,16 +2031,16 @@ static bool LoadPdfIntoWindow(
         if (!tryrepair) {
             win->dm = previousmodel;
         } else {
-            ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
+            gRenderCache.ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
             delete previousmodel;
             win->state = WS_ERROR_LOADING_PDF;
             win_set_text(win->hwndFrame, FilePath_GetBaseName(fileName));
             goto Error;
         }
     } else {
-        ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
+        gRenderCache.ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
         if (previousmodel && tstr_eq(win->dm->fileName(), previousmodel->fileName()))
-            BitmapCache_KeepForDisplayModel(previousmodel, win->dm);
+            gRenderCache.KeepForDisplayModel(previousmodel, win->dm);
         delete previousmodel;
         win->needrefresh = false;
     }
@@ -2594,8 +2395,19 @@ static void triggerRepaintDisplay(WindowInfo* win, UINT delay=0)
 
 void DisplayModel::repaintDisplay()
 {
-    WindowInfo* win = (WindowInfo*)appData();
+    WindowInfo* win = (WindowInfo *)appData();
     triggerRepaintDisplay(win);
+}
+
+/* Send the request to render a given page to a rendering thread */
+void DisplayModel::startRenderingPage(int pageNo)
+{
+    gRenderCache.Render(this, pageNo);
+}
+
+void DisplayModel::clearAllRenderings(void)
+{
+    gRenderCache.FreeForDisplayModel(this);
 }
 
 void DisplayModel::setScrollbarsState(void)
@@ -3316,15 +3128,15 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         if (!pageInfo->shown)
             continue;
 
-        LockCache();
-        BitmapCacheEntry *entry = BitmapCache_Find(dm, pageNo, dm->rotation(), dm->zoomReal());
+        gRenderCache.Lock();
+        BitmapCacheEntry *entry = gRenderCache.Find(dm, pageNo, dm->rotation(), dm->zoomReal());
         UINT renderDelay = 0;
 
         if (!entry) {
-            entry = BitmapCache_Find(dm, pageNo, dm->rotation());
-            renderDelay = RenderQueue_GetDelay(dm, pageNo);
-            if (RENDER_DELAY_UNDEFINED == renderDelay && gPageRenderRequestsCount < MAX_PAGE_REQUESTS)
-                RenderQueue_Add(dm, pageNo);
+            entry = gRenderCache.Find(dm, pageNo, dm->rotation());
+            renderDelay = gRenderCache.GetRenderDelay(dm, pageNo);
+            if (RENDER_DELAY_UNDEFINED == renderDelay && !gRenderCache.IsRenderQueueFull())
+                gRenderCache.Render(dm, pageNo);
         }
         RenderedBitmap *renderedBmp = entry ? entry->bitmap : NULL;
         HBITMAP hbmp = renderedBmp ? renderedBmp->getBitmap() : NULL;
@@ -3347,7 +3159,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             }
             SelectObject(hdc, origFont);
             Win32_Font_Delete(fontRightTxt);
-            UnlockCache();
+            gRenderCache.Unlock();
             continue;
         }
 
@@ -3381,7 +3193,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             DeleteDC(bmpDC);
         }
 
-        UnlockCache();
+        gRenderCache.Unlock();
     }
 
     if (win->showSelection)
@@ -4084,8 +3896,7 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
 
     // rendering for the same DisplayModel is not thread-safe
     // TODO: in fitz, propably rendering anything might not be thread-safe
-    RenderQueue_RemoveForDisplayModel(dm);
-    cancelRenderingForDisplayModel(dm);
+    gRenderCache.CancelRendering(dm);
 
     SetMapMode(hdc, MM_TEXT);
 
@@ -7476,100 +7287,6 @@ static void VStrList_FromCmdLine(VStrList *strList, TCHAR *cmdLine)
     }
 }
 
-static DWORD WINAPI PageRenderThread(PVOID data)
-{
-    PageRenderRequest   req;
-    RenderedBitmap *    bmp;
-
-    DBG_OUT("PageRenderThread() started\n");
-    while (1) {
-        //DBG_OUT("Worker: wait\n");
-        LockCache();
-        gCurPageRenderReq = NULL;
-        int count = gPageRenderRequestsCount;
-        UnlockCache();
-        if (0 == count) {
-            HANDLE handles[2] = { gPageRenderSem, gPageRenderClearQueue };
-            DWORD waitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-            // Is it a page render request?
-            if (WAIT_OBJECT_0 == waitResult) {
-            }
-            // is it a 'clear requests' request?
-            else if (WAIT_OBJECT_0+1 == waitResult) {
-                RenderQueue_Clear();
-                // Signal that the queue is cleared
-                SetEvent(gPageRenderQueueCleared);
-            }
-            else {
-                DBG_OUT("  WaitForSingleObject() failed\n");
-                continue;
-            }
-        }
-        if (0 == gPageRenderRequestsCount) {
-            continue;
-        }
-        LockCache();
-        RenderQueue_Pop(&req);
-        gCurPageRenderReq = &req;
-        UnlockCache();
-        DBG_OUT("PageRenderThread(): dequeued %d\n", req.pageNo);
-        if (!req.dm->pageVisibleNearby(req.pageNo)) {
-            DBG_OUT("PageRenderThread(): not rendering because not visible\n");
-            continue;
-        }
-        if (req.dm->_dontRenderFlag) {
-            DBG_OUT("PageRenderThread(): not rendering because of _dontRenderFlag\n");
-            continue;
-        }
-        assert(!req.abort);
-        MsTimer renderTimer;
-        bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, NULL, pageRenderAbortCb, (void*)&req, Target_View, gUseGdiRenderer);
-        renderTimer.stop();
-        LockCache();
-        gCurPageRenderReq = NULL;
-        UnlockCache();
-        if (req.abort) {
-            delete bmp;
-            continue;
-        }
-        if (bmp && gGlobalPrefs.m_invertColors)
-            bmp->invertColors();
-        if (bmp)
-            DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
-        else
-            DBG_OUT("PageRenderThread(): failed to render a bitmap of page %d\n", req.pageNo);
-        double renderTime = renderTimer.timeInMs();
-        BitmapCache_Add(req.dm, req.pageNo, req.rotation, req.zoomLevel, bmp, renderTime);
-#ifdef CONSERVE_MEMORY
-        BitmapCache_FreeNotVisible();
-#endif
-        WindowInfo* win = (WindowInfo*)req.dm->appData();
-        triggerRepaintDisplay(win);
-    }
-    DBG_OUT("PageRenderThread() finished\n");
-    return 0;
-}
-
-static void CreatePageRenderThread(void)
-{
-    LONG semMaxCount = 1000; /* don't really know what the limit should be */
-    assert(NULL == gPageRenderThreadHandle);
-
-    gPageRenderSem = CreateSemaphore(NULL, 0, semMaxCount, NULL);
-    gPageRenderClearQueue = CreateEvent(NULL, FALSE, FALSE, NULL);
-    gPageRenderQueueCleared = CreateEvent(NULL, FALSE, FALSE, NULL);
-    gPageRenderThreadHandle = CreateThread(NULL, 0, PageRenderThread, NULL, 0, 0);
-    assert(NULL != gPageRenderThreadHandle);
-}
-
-static void FreePageRenderThread(void)
-{
-    CloseHandle(gPageRenderThreadHandle);
-    CloseHandle(gPageRenderQueueCleared);
-    CloseHandle(gPageRenderClearQueue);
-    CloseHandle(gPageRenderSem);
-}
-
 static void PrintFile(WindowInfo *win, const TCHAR *printerName)
 {
     TCHAR       devstring[256];      // array for WIN.INI data 
@@ -8028,7 +7745,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     fz_accelerate();
 
-    CreatePageRenderThread();
+    gRenderCache.invertColors = &gGlobalPrefs.m_invertColors;
+    gRenderCache.useGdiRenderer = &gUseGdiRenderer;
+
     if (NULL != gBenchFileName) {
         win = LoadPdf(gBenchFileName);
         if (win && WS_SHOWING_PDF == win->state)
@@ -8162,8 +7881,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     
 Exit:
     free(gBenchFileName);
-
-    FreePageRenderThread();
 
     WindowInfoList_DeleteAll();
     FileHistoryList_Free(&gFileHistoryRoot);

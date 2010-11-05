@@ -301,9 +301,13 @@ protected:
     void            setScrollbarsState(void);
     /* called when a page number changes */
     void            pageChanged(void);
+    /* called when this DisplayModel is destroyed */
+    void            clearAllRenderings(void);
+public:
     /* called when we decide that the display needs to be redrawn */
-    void            repaintDisplay();
+    void            repaintDisplay(void);
 
+protected:
     void            goToPdfDest(fz_obj *dest);
 
     PdfSearch *     _pdfSearch;
