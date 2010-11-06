@@ -2,6 +2,7 @@
    License: GPLv3 */
 
 #include "SumatraPDF.h"
+#include "SumatraProperties.h"
 #include "AppPrefs.h"
 #include "translations.h"
 
