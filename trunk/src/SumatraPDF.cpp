@@ -6,6 +6,8 @@
 
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
+#include "SumatraProperties.h"
+#include "SumatraAbout.h"
 #include "FileHistory.h"
 
 #include "str_strsafe.h"

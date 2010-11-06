@@ -381,53 +381,12 @@ WindowInfo* WindowInfo_FindByHwnd(HWND hwnd);
 WindowInfo* WindowInfoList_Find(LPTSTR file);
 WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, TCHAR *windowTitle=NULL);
 void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
-LPTSTR AutoDetectInverseSearchCommands(HWND hwndCombo=NULL);
-
-bool IsRunningInPortableMode(void);
-bool IsExeAssociatedWithPdfExtension(void);
-void AssociateExeWithPdfExtension();
 
 HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize);
 void Win32_Font_Delete(HFONT font);
-void LaunchBrowser(const TCHAR *url);
 
 extern HCURSOR gCursorHand;
 extern bool gRestrictedUse;
 extern HINSTANCE ghinst;
-
-// In SumatraAbout.cpp
-#define ABOUT_CLASS_NAME        _T("SUMATRA_PDF_ABOUT")
-
-typedef struct AboutLayoutInfoEl {
-    /* static data, must be provided */
-    const TCHAR *   leftTxt;
-    const TCHAR *   rightTxt;
-    const TCHAR *   url;
-
-    /* data calculated by the layout */
-    int             leftTxtPosX;
-    int             leftTxtPosY;
-    int             leftTxtDx;
-    int             leftTxtDy;
-
-    int             rightTxtPosX;
-    int             rightTxtPosY;
-    int             rightTxtDx;
-    int             rightTxtDy;
-} AboutLayoutInfoEl;
-
-void DrawAbout(HWND hwnd, HDC hdc, RECT *rect);
-void OnMenuAbout();
-LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el=NULL);
-void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect);
-
-// In SumatraProperties.cpp
-#define PROPERTIES_CLASS_NAME   _T("SUMATRA_PDF_PROPERTIES")
-
-void FreePdfProperties(WindowInfo *win);
-void OnMenuProperties(WindowInfo *win);
-void CopyPropertiesToClipboard(WindowInfo *win);
-LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif
