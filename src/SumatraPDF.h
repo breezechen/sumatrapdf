@@ -41,6 +41,7 @@
 #endif
 
 #include <windows.h>
+#include <windowsx.h>
 #include <tchar.h>
 
 #include <assert.h>
@@ -48,10 +49,6 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <direct.h>
-
-#include <windowsx.h>
-#include <shellapi.h>
-#include <shlobj.h>
 
 #include "base_util.h"
 #include "file_util.h"
@@ -64,24 +61,7 @@
 #include "FileWatch.h"
 #include "PdfSync.h"
 
-#define KB 1024
-#define MB (1024*KB)
-#define GB (1024*MB)
-
 #define APP_NAME_STR            _T("SumatraPDF")
-#define CMD_ARG_SEND_CRASHDUMP  _T("/sendcrashdump")
-
-#define COL_WHITE RGB(0xff,0xff,0xff)
-#define COL_BLACK RGB(0,0,0)
-#define COL_BLUE_LINK RGB(0,0x20,0xa0)
-#define COL_WINDOW_BG RGB(0xcc, 0xcc, 0xcc)
-#define COL_WINDOW_SHADOW RGB(0x40, 0x40, 0x40)
-#define COL_PAGE_FRAME RGB(0x88, 0x88, 0x88)
-
-#define LEFT_TXT_FONT           _T("Arial")
-#define LEFT_TXT_FONT_SIZE      12
-#define RIGHT_TXT_FONT          _T("Arial Black")
-#define RIGHT_TXT_FONT_SIZE     12
 
 /* Current state of a window:
   - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
@@ -381,6 +361,15 @@ WindowInfo* WindowInfo_FindByHwnd(HWND hwnd);
 WindowInfo* WindowInfoList_Find(LPTSTR file);
 WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, TCHAR *windowTitle=NULL);
 void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
+
+/* styling for About/Properties windows */
+
+#define LEFT_TXT_FONT           _T("Arial")
+#define LEFT_TXT_FONT_SIZE      12
+#define RIGHT_TXT_FONT          _T("Arial Black")
+#define RIGHT_TXT_FONT_SIZE     12
+
+#define COL_BLUE_LINK RGB(0,0x20,0xa0)
 
 HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize);
 void Win32_Font_Delete(HFONT font);

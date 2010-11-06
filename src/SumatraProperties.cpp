@@ -554,7 +554,7 @@ static void DrawProperties(HWND hwnd, HDC hdc, RECT *rect)
     SelectObject(hdc, penBorder);
 #endif
 
-    SetTextColor(hdc, COL_BLACK);
+    SetTextColor(hdc, WIN_COL_BLACK);
 
     /* render text on the left*/
     (HFONT)SelectObject(hdc, fontLeftTxt);
