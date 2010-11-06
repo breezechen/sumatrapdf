@@ -153,7 +153,6 @@ protected:
     const TCHAR *_fileName;
     char *_decryptionKey;
     int _pageCount;
-    WindowInfo *_windowInfo;
 
     CRITICAL_SECTION _xrefAccess;
     pdf_xref *      _xref;

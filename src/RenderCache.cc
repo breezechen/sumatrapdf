@@ -14,20 +14,27 @@ static DWORD WINAPI PageRenderThread(LPVOID data);
 RenderCache::RenderCache(void)
     : _cacheCount(0), _requestCount(0), invertColors(NULL), useGdiRenderer(NULL)
 {
-    InitializeCriticalSection(&_access);
+    InitializeCriticalSection(&_cacheAccess);
+    InitializeCriticalSection(&_requestAccess);
 
-    LONG semMaxCount = 1000; /* don't really know what the limit should be */
-    renderSemaphore = CreateSemaphore(NULL, 0, semMaxCount, NULL);
+    startRendering = CreateEvent(NULL, FALSE, FALSE, NULL);
     _renderThread = CreateThread(NULL, 0, PageRenderThread, this, 0, 0);
     assert(NULL != _renderThread);
 }
 
 RenderCache::~RenderCache(void)
 {
-    CloseHandle(_renderThread);
-    CloseHandle(renderSemaphore);
+    EnterCriticalSection(&_requestAccess);
+    EnterCriticalSection(&_cacheAccess);
 
-    DeleteCriticalSection(&_access);
+    CloseHandle(_renderThread);
+    CloseHandle(startRendering);
+    assert(NULL == _curReq && 0 == _requestCount);
+
+    LeaveCriticalSection(&_requestAccess);
+    DeleteCriticalSection(&_requestAccess);
+    LeaveCriticalSection(&_cacheAccess);
+    DeleteCriticalSection(&_cacheAccess);
 }
 
 /* Find a bitmap for a page defined by <dm> and <pageNo> and optionally also
@@ -36,7 +43,7 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
 {
     BitmapCacheEntry *entry;
     normalizeRotation(&rotation);
-    Lock();
+    EnterCriticalSection(&_cacheAccess);
     for (int i = 0; i < _cacheCount; i++) {
         entry = _cache[i];
         if ((dm == entry->dm) && (pageNo == entry->pageNo) && (rotation == entry->rotation) &&
@@ -46,19 +53,19 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
     }
     entry = NULL;
 Exit:
-    Unlock();
+    LeaveCriticalSection(&_cacheAccess);
     return entry;
 }
 
 void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, RenderedBitmap *bitmap, double renderTime)
 {
-    assert(_cacheCount <= MAX_BITMAPS_CACHED);
     assert(dm);
     assert(validRotation(rotation));
 
     normalizeRotation(&rotation);
     DBG_OUT("BitmapCache_Add(pageNo=%d, rotation=%d, zoomLevel=%.2f%%)\n", pageNo, rotation, zoomLevel);
-    Lock();
+    EnterCriticalSection(&_cacheAccess);
+    assert(_cacheCount <= MAX_BITMAPS_CACHED);
 
     /* It's possible there still is a cached bitmap with different zoomLevel/rotation */
     FreePage(dm, pageNo);
@@ -89,7 +96,7 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
     else
         _cacheCount++;
     dm->ageStore();
-    Unlock();
+    LeaveCriticalSection(&_cacheAccess);
 }
 
 /* Free all bitmaps in the cache that are of a specific page (or all pages
@@ -97,7 +104,7 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
    at least one item. */
 bool RenderCache::FreePage(DisplayModel *dm, int pageNo)
 {
-    Lock();
+    EnterCriticalSection(&_cacheAccess);
     int cacheCount = _cacheCount;
     bool freedSomething = false;
     int curPos = 0;
@@ -128,7 +135,7 @@ bool RenderCache::FreePage(DisplayModel *dm, int pageNo)
             curPos++;
     }
 
-    Unlock();
+    LeaveCriticalSection(&_cacheAccess);
     if (freedSomething)
         DBG_OUT("\n");
     return freedSomething;
@@ -136,7 +143,7 @@ bool RenderCache::FreePage(DisplayModel *dm, int pageNo)
 
 void RenderCache::KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm)
 {
-    Lock();
+    EnterCriticalSection(&_cacheAccess);
     for (int i = 0; i < _cacheCount; i++) {
         // keep the cached bitmaps for visible pages to avoid flickering during a reload
         if (_cache[i]->dm == oldDm && oldDm->pageVisible(_cache[i]->pageNo)) {
@@ -146,7 +153,7 @@ void RenderCache::KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm)
             _cache[i]->bitmap->outOfDate = true;
         }
     }
-    Unlock();
+    LeaveCriticalSection(&_cacheAccess);
 }
 
 /* Free all bitmaps cached for a given <dm>. Returns TRUE if freed
@@ -178,7 +185,7 @@ void RenderCache::Render(DisplayModel *dm, int pageNo)
     assert(dm);
     if (!dm || dm->_dontRenderFlag) goto Exit;
 
-    Lock();
+    EnterCriticalSection(&_requestAccess);
     int rotation = dm->rotation();
     normalizeRotation(&rotation);
     double zoomLevel = dm->zoomReal(pageNo);
@@ -245,15 +252,14 @@ void RenderCache::Render(DisplayModel *dm, int pageNo)
     newRequest->abort = FALSE;
     newRequest->timestamp = GetTickCount();
 
-    Unlock();
+    LeaveCriticalSection(&_requestAccess);
 
     /* tell rendering thread there's a new request to render */
-    LONG  prevCount;
-    ReleaseSemaphore(renderSemaphore, 1, &prevCount);
+    SetEvent(startRendering);
 Exit:
     return;
 LeaveCsAndExit:
-    Unlock();
+    LeaveCriticalSection(&_requestAccess);
     return;
 }
 
@@ -262,7 +268,7 @@ UINT RenderCache::GetRenderDelay(DisplayModel *dm, int pageNo)
     bool foundReq = false;
     DWORD timestamp;
 
-    Lock();
+    EnterCriticalSection(&_requestAccess);
     if (_curReq && _curReq->pageNo == pageNo && _curReq->dm == dm) {
         timestamp = _curReq->timestamp;
         foundReq = true;
@@ -273,7 +279,7 @@ UINT RenderCache::GetRenderDelay(DisplayModel *dm, int pageNo)
             foundReq = true;
         }
     }
-    Unlock();
+    LeaveCriticalSection(&_requestAccess);
 
     if (!foundReq)
         return RENDER_DELAY_UNDEFINED;
@@ -282,9 +288,9 @@ UINT RenderCache::GetRenderDelay(DisplayModel *dm, int pageNo)
 
 bool RenderCache::GetNextRequest(PageRenderRequest *req)
 {
-    Lock();
+    EnterCriticalSection(&_requestAccess);
     if (_requestCount == 0) {
-        Unlock();
+        LeaveCriticalSection(&_requestAccess);
         return false;
     }
 
@@ -294,17 +300,18 @@ bool RenderCache::GetNextRequest(PageRenderRequest *req)
     *req = _requests[_requestCount];
     _curReq = req;
     assert(_requestCount >= 0);
-    Unlock();
+    assert(!req->abort);
+    LeaveCriticalSection(&_requestAccess);
 
     return true;
 }
 
 bool RenderCache::ClearCurrentRequest(void)
 {
-    Lock();
+    EnterCriticalSection(&_requestAccess);
     _curReq = NULL;
     bool isQueueEmpty = _requestCount == 0;
-    Unlock();
+    LeaveCriticalSection(&_requestAccess);
 
     return isQueueEmpty;
 }
@@ -318,16 +325,16 @@ void RenderCache::CancelRendering(DisplayModel *dm)
     ClearQueueForDisplayModel(dm);
 
     for (;;) {
-        Lock();
+        EnterCriticalSection(&_requestAccess);
         if (!_curReq || (_curReq->dm != dm)) {
             // to be on the safe side
             ClearQueueForDisplayModel(dm);
-            Unlock();
+            LeaveCriticalSection(&_requestAccess);
             return;
         }
 
         _curReq->abort = TRUE;
-        Unlock();
+        LeaveCriticalSection(&_requestAccess);
 
         /* TODO: busy loop is not good, but I don't have a better idea */
         sleep_milliseconds(50);
@@ -336,7 +343,7 @@ void RenderCache::CancelRendering(DisplayModel *dm)
 
 void RenderCache::ClearQueueForDisplayModel(DisplayModel *dm)
 {
-    Lock();
+    EnterCriticalSection(&_requestAccess);
     int reqCount = _requestCount;
     int curPos = 0;
     for (int i = 0; i < reqCount; i++) {
@@ -349,7 +356,7 @@ void RenderCache::ClearQueueForDisplayModel(DisplayModel *dm)
         else
             curPos++;
     }
-    Unlock();
+    LeaveCriticalSection(&_requestAccess);
 }
 
 
@@ -371,7 +378,7 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
     for (;;) {
         //DBG_OUT("Worker: wait\n");
         if (cache->ClearCurrentRequest()) {
-            DWORD waitResult = WaitForSingleObject(cache->renderSemaphore, INFINITE);
+            DWORD waitResult = WaitForSingleObject(cache->startRendering, INFINITE);
             // Is it not a page render request?
             if (WAIT_OBJECT_0 != waitResult) {
                 DBG_OUT("  WaitForSingleObject() failed\n");
@@ -391,7 +398,6 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
             continue;
         }
 
-        assert(!req.abort);
         MsTimer renderTimer;
         bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, NULL, pageRenderAbortCb, (void*)&req, Target_View, cache->useGdiRenderer && *cache->useGdiRenderer);
         renderTimer.stop();
@@ -423,7 +429,9 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
 UINT RenderCache::Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
                         PdfPageInfo *pageInfo, bool *renderOutOfDateCue)
 {
-    Lock();
+    // ensure that the BitmapCacheEntry remains valid until it's been used
+    EnterCriticalSection(&_cacheAccess);
+
     BitmapCacheEntry *entry = Find(dm, pageNo, dm->rotation(), dm->zoomReal());
     UINT renderDelay = 0;
 
@@ -441,7 +449,7 @@ UINT RenderCache::Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
             renderDelay = RENDER_DELAY_FAILED;
         else if (0 == renderDelay)
             renderDelay = 1;
-        Unlock();
+        LeaveCriticalSection(&_cacheAccess);
         return renderDelay;
     }
 
@@ -469,6 +477,6 @@ UINT RenderCache::Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
     if (renderOutOfDateCue)
         *renderOutOfDateCue = renderedBmp->outOfDate;
 
-    Unlock();
+    LeaveCriticalSection(&_cacheAccess);
     return 0;
 }

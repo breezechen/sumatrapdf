@@ -41,15 +41,16 @@ class RenderCache
 private:
     BitmapCacheEntry *  _cache[MAX_BITMAPS_CACHED];
     int                 _cacheCount;
-    CRITICAL_SECTION    _access;
+    CRITICAL_SECTION    _cacheAccess;
 
     PageRenderRequest   _requests[MAX_PAGE_REQUESTS];
     int                 _requestCount;
-    HANDLE              _renderThread;
     PageRenderRequest * _curReq;
+    CRITICAL_SECTION    _requestAccess;
+    HANDLE              _renderThread;
 
 public:
-    HANDLE              renderSemaphore;
+    HANDLE              startRendering;
 
     /* point these to the actual preferences for live updates */
     BOOL              * invertColors;
@@ -72,10 +73,6 @@ public:
     bool                FreeNotVisible(void);
 
 private:
-    /* Lock protecting both bitmap cache and page render queue */
-    void                Lock(void) { EnterCriticalSection(&_access); }
-    void                Unlock(void) { LeaveCriticalSection(&_access); }
-
     bool                IsRenderQueueFull(void) const {
         return _requestCount == MAX_PAGE_REQUESTS;
     }
