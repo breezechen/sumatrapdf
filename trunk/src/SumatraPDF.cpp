@@ -10,6 +10,7 @@
 #include "SumatraAbout.h"
 #include "FileHistory.h"
 
+#include <shlobj.h>
 #include "str_strsafe.h"
 #include "WinUtil.hpp"
 #include "Http.h"
@@ -97,7 +98,10 @@ static bool             gUseGdiRenderer = false;
 #define ABOUT_BG_COLOR          RGB(255,242,0)
 #endif
 
-#define COL_FWDSEARCH_BG        RGB(101,129,255)
+#define COL_WINDOW_BG           RGB(0xcc, 0xcc, 0xcc)
+#define COL_WINDOW_SHADOW       RGB(0x40, 0x40, 0x40)
+#define COL_PAGE_FRAME          RGB(0x88, 0x88, 0x88)
+#define COL_FWDSEARCH_BG        RGB(0x65, 0x81 ,0xff)
 
 #define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
 #define CANVAS_CLASS_NAME       _T("SUMATRA_PDF_CANVAS")
@@ -3139,7 +3143,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         if (renderDelay) {
             HFONT fontRightTxt = Win32_Font_GetSimple(hdc, _T("MS Shell Dlg"), 14);
             HFONT origFont = (HFONT)SelectObject(hdc, fontRightTxt); /* Just to remember the orig font */
-            SetTextColor(hdc, gGlobalPrefs.m_invertColors ? COL_WHITE : COL_BLACK);
+            SetTextColor(hdc, gGlobalPrefs.m_invertColors ? WIN_COL_WHITE : WIN_COL_BLACK);
             if (renderDelay != RENDER_DELAY_FAILED) {
                 if (renderDelay < REPAINT_MESSAGE_DELAY_IN_MS)
                     triggerRepaintDisplay(win, REPAINT_MESSAGE_DELAY_IN_MS / 4);
@@ -7230,8 +7234,8 @@ static BOOL InstanceInit(HINSTANCE hInstance, int nCmdShow)
         gCursorHand = LoadCursor(ghinst, MAKEINTRESOURCE(IDC_CURSORDRAG));
     gCursorDrag  = LoadCursor(ghinst, MAKEINTRESOURCE(IDC_CURSORDRAG));
     gBrushBg     = CreateSolidBrush(COL_WINDOW_BG);
-    gBrushWhite  = CreateSolidBrush(COL_WHITE);
-    gBrushBlack  = CreateSolidBrush(COL_BLACK);
+    gBrushWhite  = CreateSolidBrush(WIN_COL_WHITE);
+    gBrushBlack  = CreateSolidBrush(WIN_COL_BLACK);
     gBrushShadow = CreateSolidBrush(COL_WINDOW_SHADOW);
 
     NONCLIENTMETRICS ncm = {0};
