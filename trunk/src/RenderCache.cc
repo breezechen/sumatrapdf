@@ -18,8 +18,6 @@ RenderCache::RenderCache(void)
 
     LONG semMaxCount = 1000; /* don't really know what the limit should be */
     renderSemaphore = CreateSemaphore(NULL, 0, semMaxCount, NULL);
-    clearQueueEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-    _queueClearedEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     _renderThread = CreateThread(NULL, 0, PageRenderThread, this, 0, 0);
     assert(NULL != _renderThread);
 }
@@ -27,8 +25,6 @@ RenderCache::RenderCache(void)
 RenderCache::~RenderCache(void)
 {
     CloseHandle(_renderThread);
-    CloseHandle(_queueClearedEvent);
-    CloseHandle(clearQueueEvent);
     CloseHandle(renderSemaphore);
 
     DeleteCriticalSection(&_access);
@@ -157,7 +153,6 @@ void RenderCache::KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm)
    at least one item. */
 bool RenderCache::FreeForDisplayModel(DisplayModel *dm)
 {
-    CancelRendering(dm);
     return FreePage(dm);
 }
 
@@ -314,37 +309,29 @@ bool RenderCache::ClearCurrentRequest(void)
     return isQueueEmpty;
 }
 
-void RenderCache::ClearRequests(void)
-{
-    Lock();
-    _requestCount = 0;
-    Unlock();
-
-    // Signal that the queue is cleared
-    SetEvent(_queueClearedEvent);
-}
-
 /* Wait until rendering of a page beloging to <dm> has finished. */
 /* TODO: this might take some time, would be good to show a dialog to let the
    user know he has to wait until we finish */
 void RenderCache::CancelRendering(DisplayModel *dm)
 {
     DBG_OUT("cancelRenderingForDisplayModel()\n");
-    bool renderingFinished = false;
-    while (!renderingFinished) {
+    ClearQueueForDisplayModel(dm);
+
+    for (;;) {
         Lock();
-        if (!_curReq || (_curReq->dm != dm))
-            renderingFinished = true;
-        else
-            _curReq->abort = TRUE;
+        if (!_curReq || (_curReq->dm != dm)) {
+            // to be on the safe side
+            ClearQueueForDisplayModel(dm);
+            Unlock();
+            return;
+        }
+
+        _curReq->abort = TRUE;
         Unlock();
 
         /* TODO: busy loop is not good, but I don't have a better idea */
-        if (!renderingFinished)
-            sleep_milliseconds(100);
+        sleep_milliseconds(50);
     }
-
-    ClearQueueForDisplayModel(dm);
 }
 
 void RenderCache::ClearQueueForDisplayModel(DisplayModel *dm)
@@ -365,22 +352,13 @@ void RenderCache::ClearQueueForDisplayModel(DisplayModel *dm)
     Unlock();
 }
 
-// Clear all the requests from the PageRender queue.
-void RenderCache::ClearPageRenderRequests()
-{
-    SetEvent(clearQueueEvent);
-    WaitForSingleObject(_queueClearedEvent, INFINITE);
-}
-
 
 static BOOL pageRenderAbortCb(LPVOID data)
 {
     PageRenderRequest *req = (PageRenderRequest *)data;
-    if (!req->abort)
-        return FALSE;
-
-    DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
-    return TRUE;
+    if (req->abort)
+        DBG_OUT("Rendering of page %d aborted\n", req->pageNo);
+    return req->abort;
 }
 
 static DWORD WINAPI PageRenderThread(LPVOID data)
@@ -393,14 +371,9 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
     for (;;) {
         //DBG_OUT("Worker: wait\n");
         if (cache->ClearCurrentRequest()) {
-            HANDLE handles[2] = { cache->renderSemaphore, cache->clearQueueEvent };
-            DWORD waitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-            // is it a 'clear requests' request?
-            if (WAIT_OBJECT_0+1 == waitResult) {
-                cache->ClearRequests();
-            }
+            DWORD waitResult = WaitForSingleObject(cache->renderSemaphore, INFINITE);
             // Is it not a page render request?
-            else if (WAIT_OBJECT_0 != waitResult) {
+            if (WAIT_OBJECT_0 != waitResult) {
                 DBG_OUT("  WaitForSingleObject() failed\n");
                 continue;
             }
@@ -443,5 +416,59 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
     }
 
     DBG_OUT("PageRenderThread() finished\n");
+    return 0;
+}
+
+
+UINT RenderCache::Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
+                        PdfPageInfo *pageInfo, bool *renderOutOfDateCue)
+{
+    Lock();
+    BitmapCacheEntry *entry = Find(dm, pageNo, dm->rotation(), dm->zoomReal());
+    UINT renderDelay = 0;
+
+    if (!entry) {
+        entry = Find(dm, pageNo, dm->rotation());
+        renderDelay = GetRenderDelay(dm, pageNo);
+        if (RENDER_DELAY_UNDEFINED == renderDelay && !IsRenderQueueFull())
+            Render(dm, pageNo);
+    }
+    RenderedBitmap *renderedBmp = entry ? entry->bitmap : NULL;
+    HBITMAP hbmp = renderedBmp ? renderedBmp->getBitmap() : NULL;
+
+    if (!hbmp) {
+        if (entry)
+            renderDelay = RENDER_DELAY_FAILED;
+        else if (0 == renderDelay)
+            renderDelay = 1;
+        Unlock();
+        return renderDelay;
+    }
+
+    DBG_OUT("page %d ", pageNo);
+
+    HDC bmpDC = CreateCompatibleDC(hdc);
+    if (bmpDC) {
+        int renderedBmpDx = renderedBmp->dx();
+        int renderedBmpDy = renderedBmp->dy();
+        int xSrc = (int)pageInfo->bitmapX;
+        int ySrc = (int)pageInfo->bitmapY;
+        float factor = min(1.0 * renderedBmpDx / pageInfo->currDx, 1.0 * renderedBmpDy / pageInfo->currDy);
+
+        SelectObject(bmpDC, hbmp);
+        if (factor != 1.0)
+            StretchBlt(hdc, bounds->left, bounds->top, rect_dx(bounds), rect_dy(bounds),
+                bmpDC, xSrc * factor, ySrc * factor, rect_dx(bounds) * factor, rect_dy(bounds) * factor, SRCCOPY);
+        else
+            BitBlt(hdc, bounds->left, bounds->top, rect_dx(bounds), rect_dy(bounds),
+                bmpDC, xSrc, ySrc, SRCCOPY);
+
+        DeleteDC(bmpDC);
+    }
+
+    if (renderOutOfDateCue)
+        *renderOutOfDateCue = renderedBmp->outOfDate;
+
+    Unlock();
     return 0;
 }

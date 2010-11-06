@@ -6,6 +6,7 @@
 #include "DisplayModel.h"
 
 #define RENDER_DELAY_UNDEFINED ((UINT)-1)
+#define RENDER_DELAY_FAILED    ((UINT)-2)
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
@@ -25,7 +26,7 @@ typedef struct {
     int             pageNo;
     int             rotation;
     double          zoomLevel;
-    int             abort;
+    BOOL            abort;
     DWORD           timestamp;
 } PageRenderRequest;
 
@@ -45,12 +46,10 @@ private:
     PageRenderRequest   _requests[MAX_PAGE_REQUESTS];
     int                 _requestCount;
     HANDLE              _renderThread;
-    HANDLE              _queueClearedEvent;
     PageRenderRequest * _curReq;
 
 public:
     HANDLE              renderSemaphore;
-    HANDLE              clearQueueEvent;
 
     /* point these to the actual preferences for live updates */
     BOOL              * invertColors;
@@ -59,32 +58,33 @@ public:
     RenderCache(void);
     ~RenderCache(void);
 
+    void                Render(DisplayModel *dm, int pageNo);
+    void                CancelRendering(DisplayModel *dm);
+    bool                FreeForDisplayModel(DisplayModel *dm);
+    void                KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
+    UINT                Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
+                              PdfPageInfo *pageInfo, bool *renderOutOfDateCue);
+
+    bool                ClearCurrentRequest(void);
+    bool                GetNextRequest(PageRenderRequest *req);
+    void                Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
+                            RenderedBitmap *bitmap, double renderTime);
+    bool                FreeNotVisible(void);
+
+private:
     /* Lock protecting both bitmap cache and page render queue */
     void                Lock(void) { EnterCriticalSection(&_access); }
     void                Unlock(void) { LeaveCriticalSection(&_access); }
 
-    BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel=INVALID_ZOOM);
-    void                Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
-                            RenderedBitmap *bitmap, double renderTime);
-    bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1);
-    bool                FreeForDisplayModel(DisplayModel *dm);
-    void                KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
-    bool                FreeNotVisible(void);
-
-    void                Render(DisplayModel *dm, int pageNo);
     bool                IsRenderQueueFull(void) const {
         return _requestCount == MAX_PAGE_REQUESTS;
     }
     UINT                GetRenderDelay(DisplayModel *dm, int pageNo);
-    bool                GetNextRequest(PageRenderRequest *req);
-    bool                ClearCurrentRequest(void);
-    void                ClearRequests(void);
-    void                CancelRendering(DisplayModel *dm);
-    void                ClearPageRenderRequests();
-
-private:
-    void                Free(BitmapCacheEntry *entry);
     void                ClearQueueForDisplayModel(DisplayModel *dm);
+
+    BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel=INVALID_ZOOM);
+    bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1);
+    void                Free(BitmapCacheEntry *entry);
 };
 
 #endif

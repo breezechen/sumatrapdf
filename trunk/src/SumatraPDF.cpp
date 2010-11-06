@@ -2031,14 +2031,14 @@ static bool LoadPdfIntoWindow(
         if (!tryrepair) {
             win->dm = previousmodel;
         } else {
-            gRenderCache.ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
+            gRenderCache.CancelRendering(previousmodel); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
             delete previousmodel;
             win->state = WS_ERROR_LOADING_PDF;
             win_set_text(win->hwndFrame, FilePath_GetBaseName(fileName));
             goto Error;
         }
     } else {
-        gRenderCache.ClearPageRenderRequests(); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
+        gRenderCache.CancelRendering(previousmodel); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
         if (previousmodel && tstr_eq(win->dm->fileName(), previousmodel->fileName()))
             gRenderCache.KeepForDisplayModel(previousmodel, win->dm);
         delete previousmodel;
@@ -2407,6 +2407,7 @@ void DisplayModel::startRenderingPage(int pageNo)
 
 void DisplayModel::clearAllRenderings(void)
 {
+    gRenderCache.CancelRendering(this);
     gRenderCache.FreeForDisplayModel(this);
 }
 
@@ -3128,26 +3129,16 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
         if (!pageInfo->shown)
             continue;
 
-        gRenderCache.Lock();
-        BitmapCacheEntry *entry = gRenderCache.Find(dm, pageNo, dm->rotation(), dm->zoomReal());
-        UINT renderDelay = 0;
-
-        if (!entry) {
-            entry = gRenderCache.Find(dm, pageNo, dm->rotation());
-            renderDelay = gRenderCache.GetRenderDelay(dm, pageNo);
-            if (RENDER_DELAY_UNDEFINED == renderDelay && !gRenderCache.IsRenderQueueFull())
-                gRenderCache.Render(dm, pageNo);
-        }
-        RenderedBitmap *renderedBmp = entry ? entry->bitmap : NULL;
-        HBITMAP hbmp = renderedBmp ? renderedBmp->getBitmap() : NULL;
-
         PaintPageFrameAndShadow(hdc, pageInfo, PM_ENABLED == win->presentation, &bounds);
 
-        if (!hbmp) {
+        bool renderOutOfDateCue = false;
+        UINT renderDelay = gRenderCache.Paint(hdc, &bounds, dm, pageNo, pageInfo, &renderOutOfDateCue);
+
+        if (renderDelay) {
             HFONT fontRightTxt = Win32_Font_GetSimple(hdc, _T("MS Shell Dlg"), 14);
             HFONT origFont = (HFONT)SelectObject(hdc, fontRightTxt); /* Just to remember the orig font */
             SetTextColor(hdc, gGlobalPrefs.m_invertColors ? COL_WHITE : COL_BLACK);
-            if (!entry) {
+            if (renderDelay != RENDER_DELAY_FAILED) {
                 if (renderDelay < REPAINT_MESSAGE_DELAY_IN_MS)
                     triggerRepaintDisplay(win, REPAINT_MESSAGE_DELAY_IN_MS / 4);
                 else
@@ -3159,41 +3150,23 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             }
             SelectObject(hdc, origFont);
             Win32_Font_Delete(fontRightTxt);
-            gRenderCache.Unlock();
             continue;
         }
 
-        DBG_OUT("page %d ", pageNo);
+        if (!renderOutOfDateCue)
+            continue;
 
         HDC bmpDC = CreateCompatibleDC(hdc);
         if (bmpDC) {
-            int renderedBmpDx = renderedBmp->dx();
-            int renderedBmpDy = renderedBmp->dy();
-            int xSrc = (int)pageInfo->bitmapX;
-            int ySrc = (int)pageInfo->bitmapY;
-            float factor = min(1.0 * renderedBmpDx / pageInfo->currDx, 1.0 * renderedBmpDy / pageInfo->currDy);
-
-            SelectObject(bmpDC, hbmp);
-            if (factor != 1.0)
-                StretchBlt(hdc, bounds.left, bounds.top, rect_dx(&bounds), rect_dy(&bounds),
-                    bmpDC, xSrc * factor, ySrc * factor, rect_dx(&bounds) * factor, rect_dy(&bounds) * factor, SRCCOPY);
-            else
-                BitBlt(hdc, bounds.left, bounds.top, rect_dx(&bounds), rect_dy(&bounds),
-                    bmpDC, xSrc, ySrc, SRCCOPY);
-
-            if (renderedBmp->outOfDate) {
-                SelectObject(bmpDC, gBitmapReloadingCue);
-                int size = 16 * win->uiDPIFactor;
-                int cx = min(rect_dx(&bounds), 2 * size), cy = min(rect_dy(&bounds), 2 * size);
-                StretchBlt(hdc, bounds.right - min((cx + size) / 2, cx),
-                    bounds.top + max((cy - size) / 2, 0), min(cx, size), min(cy, size),
-                    bmpDC, 0, 0, 16, 16, SRCCOPY);
-            }
+            SelectObject(bmpDC, gBitmapReloadingCue);
+            int size = 16 * win->uiDPIFactor;
+            int cx = min(rect_dx(&bounds), 2 * size), cy = min(rect_dy(&bounds), 2 * size);
+            StretchBlt(hdc, bounds.right - min((cx + size) / 2, cx),
+                bounds.top + max((cy - size) / 2, 0), min(cx, size), min(cy, size),
+                bmpDC, 0, 0, 16, 16, SRCCOPY);
 
             DeleteDC(bmpDC);
         }
-
-        gRenderCache.Unlock();
     }
 
     if (win->showSelection)
@@ -3875,8 +3848,7 @@ static bool CheckPrinterStretchDibSupport(HWND hwndForMsgBox, HDC hdc)
 #endif
 }
 
-// TODO: make it run in a background thread by constructing new PdfEngine()
-// from a file name - this should be thread safe
+// TODO: make it run in a background thread
 static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
                           int nPageRanges, LPPRINTPAGERANGE pr,
                           enum PrintRangeAdv rangeAdv=PrintRangeAll,
@@ -3893,10 +3865,6 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
 
     if (StartDoc(hdc, &di) <= 0)
         return;
-
-    // rendering for the same DisplayModel is not thread-safe
-    // TODO: in fitz, propably rendering anything might not be thread-safe
-    gRenderCache.CancelRendering(dm);
 
     SetMapMode(hdc, MM_TEXT);
 
