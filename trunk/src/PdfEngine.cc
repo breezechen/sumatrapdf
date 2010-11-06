@@ -63,7 +63,7 @@ fz_pixmap *fz_newpixmap_nullonoom(fz_colorspace *colorspace, int x, int y, int w
     // make sure not to request too large a pixmap, as MuPDF just aborts on OOM;
     // instead we get a 1*h sized pixmap and try to resize it manually and just
     // fail to render if we run out of memory.
-    fz_pixmap *image = fz_newpixmap(fz_devicergb, x, y, 1, h);
+    fz_pixmap *image = fz_newpixmap(colorspace, x, y, 1, h);
 
     image->w = w;
     free(image->samples);
