@@ -2,9 +2,7 @@
    License: GPLv3 */
 
 #include "SumatraPDF.h"
-#include "SumatraProperties.h"
 #include "AppPrefs.h"
-#include "translations.h"
 
 #define PROPERTIES_LEFT_RIGHT_SPACE_DX 8
 #define PROPERTIES_RECT_PADDING     8
@@ -554,7 +552,7 @@ static void DrawProperties(HWND hwnd, HDC hdc, RECT *rect)
     SelectObject(hdc, penBorder);
 #endif
 
-    SetTextColor(hdc, WIN_COL_BLACK);
+    SetTextColor(hdc, COL_BLACK);
 
     /* render text on the left*/
     (HFONT)SelectObject(hdc, fontLeftTxt);

@@ -122,14 +122,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\MemSegment.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\MemSegment.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\PdfEngine.cc"
 				>
 			</File>
@@ -158,23 +150,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\RenderCache.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\src\RenderCache.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\Resource.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\SumatraAbout.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraAbout.h"
 				>
 			</File>
 			<File
@@ -195,10 +175,6 @@
 			</File>
 			<File
 				RelativePath=".\src\SumatraProperties.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraProperties.h"
 				>
 			</File>
 			<File

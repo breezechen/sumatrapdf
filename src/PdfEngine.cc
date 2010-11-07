@@ -63,7 +63,7 @@ fz_pixmap *fz_newpixmap_nullonoom(fz_colorspace *colorspace, int x, int y, int w
     // make sure not to request too large a pixmap, as MuPDF just aborts on OOM;
     // instead we get a 1*h sized pixmap and try to resize it manually and just
     // fail to render if we run out of memory.
-    fz_pixmap *image = fz_newpixmap(colorspace, x, y, 1, h);
+    fz_pixmap *image = fz_newpixmap(fz_devicergb, x, y, 1, h);
 
     image->w = w;
     free(image->samples);
@@ -262,6 +262,7 @@ PdfEngine::PdfEngine() :
         , _attachments(NULL)
         , _pages(NULL)
         , _drawcache(NULL)
+        , _windowInfo(NULL)
         , _decryptionKey(NULL)
 {
     InitializeCriticalSection(&_pagesAccess);
@@ -270,9 +271,7 @@ PdfEngine::PdfEngine() :
 
 PdfEngine::~PdfEngine()
 {
-    EnterCriticalSection(&_xrefAccess);
     EnterCriticalSection(&_pagesAccess);
-
     if (_pages) {
         for (int i=0; i < _pageCount; i++) {
             if (_pages[i])
@@ -280,29 +279,30 @@ PdfEngine::~PdfEngine()
         }
         free(_pages);
     }
+    LeaveCriticalSection(&_pagesAccess);
+    DeleteCriticalSection(&_pagesAccess);
 
     if (_outline)
         pdf_freeoutline(_outline);
     if (_attachments)
         pdf_freeoutline(_attachments);
 
+    EnterCriticalSection(&_xrefAccess);
     if (_xref)
         pdf_freexref(_xref);
+    LeaveCriticalSection(&_xrefAccess);
+    DeleteCriticalSection(&_xrefAccess);
 
     if (_drawcache)
         fz_freeglyphcache(_drawcache);
     free((void*)_fileName);
     free((void*)_decryptionKey);
-
-    LeaveCriticalSection(&_xrefAccess);
-    DeleteCriticalSection(&_xrefAccess);
-    LeaveCriticalSection(&_pagesAccess);
-    DeleteCriticalSection(&_pagesAccess);
 }
 
 bool PdfEngine::load(const TCHAR *fileName, WindowInfo *win, bool tryrepair)
 {
     fz_error error;
+    _windowInfo = win;
     assert(!_fileName);
     _fileName = tstr_dup(fileName);
 
