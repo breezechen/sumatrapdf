@@ -2167,6 +2167,9 @@ Error:
     // This should only happen after everything else is ready
     if ((is_new_window || placeWindow) && showWin && showAsFullScreen)
         WindowInfo_EnterFullscreen(win);
+    if (!is_new_window && win->presentation && win->dm)
+        win->dm->setPresentationMode(true);
+
     return true;
 }
 

@@ -964,6 +964,8 @@ void DisplayModel::setPresentationMode(bool enable)
     else {
         _padding = &gDisplaySettings;
         changeDisplayMode(_presDisplayMode);
+        if (!ValidZoomVirtual(_presZoomVirtual))
+            _presZoomVirtual = _zoomVirtual;
         zoomTo(_presZoomVirtual);
     }
 }
