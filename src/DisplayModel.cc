@@ -328,7 +328,7 @@ double DisplayModel::zoomRealFromVirtualForPage(double zoomVirtual, int pageNo)
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
     bool fitToContent = (ZOOM_FIT_CONTENT == zoomVirtual);
     if (fitToContent && fz_isemptyrect(pageInfo->contentBox))
-        pageInfo->contentBox = pdfEngine->pageContentSize(pageNo);
+        pageInfo->contentBox = pdfEngine->pageContentBox(pageNo);
     pageSizeAfterRotation(pageInfo, rotation(), &pageDx, &pageDy, fitToContent);
 
     assert(0 != (int)pageDx);
@@ -657,8 +657,9 @@ void DisplayModel::recalcVisibleParts(void)
         pageRect.dy = (int)pageInfo->currDy;
         pageInfo->visible = 0;
 
-        if (pageRect.dx * pageRect.dy > 0 && RectI_Intersect(&pageRect, &drawAreaRect, &intersect)) {
-            pageInfo->visible = 1.0 * intersect.dx * intersect.dy / (pageRect.dx * pageRect.dy);
+        if (pageRect.dx > 0 && pageRect.dy > 0 && RectI_Intersect(&pageRect, &drawAreaRect, &intersect)) {
+            // use pageInfo->currDx instead of pageRect.dx, as integer multiplication could overflow
+            pageInfo->visible = 1.0 * intersect.dx * intersect.dy / (pageInfo->currDx * pageInfo->currDy);
             
             pageInfo->bitmapX = (int) ((double)intersect.x - pageInfo->currPosX);
             assert(pageInfo->bitmapX >= 0);
@@ -856,7 +857,7 @@ void DisplayModel::getContentStart(int pageNo, int *x, int *y)
 {
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
     if (fz_isemptyrect(pageInfo->contentBox))
-        pageInfo->contentBox = pdfEngine->pageContentSize(pageNo);
+        pageInfo->contentBox = pdfEngine->pageContentBox(pageNo);
     if (fz_isemptyrect(pageInfo->contentBox)) {
         *x = *y = 0;
         return;

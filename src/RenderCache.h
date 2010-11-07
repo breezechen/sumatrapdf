@@ -7,6 +7,21 @@
 
 #define RENDER_DELAY_UNDEFINED ((UINT)-1)
 #define RENDER_DELAY_FAILED    ((UINT)-2)
+#define INVALID_TILE_RES       ((USHORT)-1)
+
+// TODO: figure out more optimal tile size (e.g. screen or canvas size?)
+#define TILE_MAX_W 1000
+#define TILE_MAX_H 1000
+
+/* A page is split into tiles of at most TILE_MAX_W x TILE_MAX_H pixels.
+ * A given tile starts at (col / 2^res * page_width, row / 2^res * page_height). */
+typedef struct TilePosition {
+    USHORT res, row, col;
+
+    bool operator==(TilePosition other) {
+        return res == other.res && row == other.row && col == other.col;
+    }
+} TilePosition;
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
@@ -18,7 +33,7 @@ typedef struct {
   int            rotation;
   double         zoomLevel;
   RenderedBitmap *bitmap;
-  double         renderTime;
+  TilePosition   tile;
 } BitmapCacheEntry;
 
 typedef struct {
@@ -26,6 +41,7 @@ typedef struct {
     int             pageNo;
     int             rotation;
     double          zoomLevel;
+    TilePosition    tile;
     BOOL            abort;
     DWORD           timestamp;
 } PageRenderRequest;
@@ -50,8 +66,6 @@ private:
     HANDLE              _renderThread;
 
 public:
-    HANDLE              startRendering;
-
     /* point these to the actual preferences for live updates */
     BOOL              * invertColors;
     bool              * useGdiRenderer;
@@ -66,22 +80,34 @@ public:
     UINT                Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
                               PdfPageInfo *pageInfo, bool *renderOutOfDateCue);
 
+public:
+    /* Interface for page rendering thread */
+    HANDLE              startRendering;
+
     bool                ClearCurrentRequest(void);
     bool                GetNextRequest(PageRenderRequest *req);
     void                Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
-                            RenderedBitmap *bitmap, double renderTime);
+                            TilePosition tile, RenderedBitmap *bitmap);
     bool                FreeNotVisible(void);
 
 private:
     bool                IsRenderQueueFull(void) const {
-        return _requestCount == MAX_PAGE_REQUESTS;
-    }
-    UINT                GetRenderDelay(DisplayModel *dm, int pageNo);
+                            return _requestCount == MAX_PAGE_REQUESTS;
+                        }
+    UINT                GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile);
+    void                Render(DisplayModel *dm, int pageNo, TilePosition tile);
     void                ClearQueueForDisplayModel(DisplayModel *dm);
 
-    BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel=INVALID_ZOOM);
-    bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1);
-    void                Free(BitmapCacheEntry *entry);
+    BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
+                             double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
+    bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1, TilePosition *tile=NULL);
+
+    UINT                PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,
+                                  TilePosition tile, RectI *tileOnScreen, bool renderMissing,
+                                  bool *renderOutOfDateCue, bool *renderedReplacement);
+    UINT                PaintTiles(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
+                                   RectI *pageOnScreen, USHORT tileRes, bool renderMissing,
+                                   bool *renderOutOfDateCue, bool *renderedReplacement);
 };
 
 #endif
