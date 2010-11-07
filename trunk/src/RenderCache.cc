@@ -490,10 +490,9 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
         }
 
         fz_rect pageRect = GetTileRect(req.dm->pdfEngine, req.pageNo, req.rotation, req.zoomLevel * 0.01, req.tile);
-        // GDI+ seems to render quicker at high zoom levels
-        bool useGdiRenderer = cache->useGdiRenderer && *cache->useGdiRenderer || req.zoomLevel > 3200.0;
         bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, &pageRect,
-                                   pageRenderAbortCb, (void*)&req, Target_View, useGdiRenderer);
+                                   pageRenderAbortCb, (void*)&req, Target_View,
+                                   cache->useGdiRenderer && *cache->useGdiRenderer);
         cache->ClearCurrentRequest();
         if (req.abort) {
             delete bmp;
