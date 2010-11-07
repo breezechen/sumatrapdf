@@ -96,7 +96,8 @@ private:
                         }
     UINT                GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile);
     void                Render(DisplayModel *dm, int pageNo, TilePosition tile);
-    void                ClearQueueForDisplayModel(DisplayModel *dm);
+    void                ClearQueueForDisplayModel(DisplayModel *dm, int pageNo=INVALID_PAGE_NO,
+                                                  TilePosition *tile=NULL);
 
     BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
                              double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);

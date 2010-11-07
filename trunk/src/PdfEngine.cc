@@ -541,16 +541,15 @@ fz_error PdfEngine::runPage(pdf_page *page, fz_device *dev, fz_matrix ctm, Rende
     fz_error error = fz_okay;
     PdfPageRun *run;
 
-    // TODO: glyphs sometimes fail to render when reusing a displaylist too often
-    if (0 && Target_View == target && (run = getPageRun(page, !cacheRun))) {
+    EnterCriticalSection(&_xrefAccess);
+    if (Target_View == target && (run = getPageRun(page, !cacheRun))) {
         fz_executedisplaylist(run->list, dev, ctm);
         dropPageRun(run);
     }
     else {
-        EnterCriticalSection(&_xrefAccess);
         error = pdf_runpagefortarget(_xref, page, dev, ctm, target);
-        LeaveCriticalSection(&_xrefAccess);
     }
+    LeaveCriticalSection(&_xrefAccess);
     fz_freedevice(dev);
 
     return error;
@@ -685,7 +684,7 @@ RenderedBitmap *PdfEngine::renderBitmap(
     pdf_page* page = getPdfPage(pageNo);
     if (!page)
         return NULL;
-    zoomReal = zoomReal / 100.0;
+    zoomReal = zoomReal * 0.01;
     fz_matrix ctm = viewctm(page, zoomReal, rotation);
     if (!pageRect)
         pageRect = &page->mediabox;
@@ -765,7 +764,7 @@ int PdfEngine::getPdfLinks(int pageNo, pdf_link **links)
 void PdfEngine::linkifyPageText(pdf_page *page)
 {
     fz_bbox *coords;
-    TCHAR *pageText = ExtractPageText(page, _T(" "), &coords);
+    TCHAR *pageText = ExtractPageText(page, _T(" "), &coords, Target_View, true);
     if (!pageText)
         return;
 
@@ -839,13 +838,13 @@ void PdfEngine::linkifyPageText(pdf_page *page)
     free(pageText);
 }
 
-TCHAR *PdfEngine::ExtractPageText(pdf_page *page, TCHAR *lineSep, fz_bbox **coords_out, RenderTarget target)
+TCHAR *PdfEngine::ExtractPageText(pdf_page *page, TCHAR *lineSep, fz_bbox **coords_out, RenderTarget target, bool cacheRun)
 {
     if (!page)
         return NULL;
 
     fz_textspan *text = fz_newtextspan();
-    fz_error error = runPage(page, fz_newtextdevice(text), fz_identity, target, false);
+    fz_error error = runPage(page, fz_newtextdevice(text), fz_identity, target, cacheRun);
     if (fz_okay != error) {
         fz_freetextspan(text);
         return NULL;
