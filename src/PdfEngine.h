@@ -173,11 +173,14 @@ protected:
     bool            renderPage(HDC hDC, pdf_page *page, RECT *screenRect,
                                fz_matrix *ctm=NULL, double zoomReal=0, int rotation=0,
                                fz_rect *pageRect=NULL, RenderTarget target=Target_View);
-    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE), fz_bbox **coords_out=NULL, RenderTarget target=Target_View);
+    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE),
+                                    fz_bbox **coords_out=NULL, RenderTarget target=Target_View,
+                                    bool cacheRun=false);
 
     PdfPageRun    * _runCache[MAX_PAGE_RUN_CACHE];
     PdfPageRun    * getPageRun(pdf_page *page, bool tryOnly=false);
-    fz_error        runPage(pdf_page *page, fz_device *dev, fz_matrix ctm, RenderTarget target=Target_View, bool cacheRun=true);
+    fz_error        runPage(pdf_page *page, fz_device *dev, fz_matrix ctm,
+                            RenderTarget target=Target_View, bool cacheRun=true);
     void            dropPageRun(PdfPageRun *run, bool forceRemove=false);
 
     PdfTocItem    * buildTocTree(pdf_outline *entry);

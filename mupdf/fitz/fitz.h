@@ -687,8 +687,8 @@ struct fz_font_s
 	int *widthtable;
 
 	/* SumatraPDF */
-	const char *_data; /* font file content or file path */
-	int _data_len;     /* 0 for file paths               */
+	const char *_data; /* font file content or file path                */
+	int _data_len;     /* 0 for file paths, -1 for "not needed by GDI+" */
 };
 
 fz_error fz_newfreetypefont(fz_font **fontp, char *name, int substitute);
