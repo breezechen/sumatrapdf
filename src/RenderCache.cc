@@ -108,9 +108,9 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
 }
 
 // get the (user) coordinates of a specific tile
-static fz_rect GetTileRect(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition tile)
+static fz_rect GetTileRect(PdfEngine *engine, int pageNo, int rotation, float zoom, TilePosition tile)
 {
-    fz_rect mediabox = dm->pdfEngine->pageMediabox(pageNo);
+    fz_rect mediabox = engine->pageMediabox(pageNo);
 
     if (tile.res && tile.res != INVALID_TILE_RES) {
         double width = (mediabox.x1 - mediabox.x0) / (1 << tile.res);
@@ -121,7 +121,7 @@ static fz_rect GetTileRect(DisplayModel *dm, int pageNo, int rotation, float zoo
         mediabox.y1 = mediabox.y0 + height;
     }
 
-    fz_matrix ctm = dm->pdfEngine->viewctm(pageNo, zoom, rotation);
+    fz_matrix ctm = engine->viewctm(pageNo, zoom, rotation);
     fz_bbox pixelbox = fz_roundrect(fz_transformrect(ctm, mediabox));
     fz_rect mbox2 = mediabox;
     mediabox.x0 = pixelbox.x0; mediabox.x1 = pixelbox.x1;
@@ -131,9 +131,9 @@ static fz_rect GetTileRect(DisplayModel *dm, int pageNo, int rotation, float zoo
     return mediabox;
 }
 
-static RectI GetTileOnScreen(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition tile, fz_matrix ctm)
+static RectI GetTileOnScreen(PdfEngine *engine, int pageNo, int rotation, float zoom, TilePosition tile, fz_matrix ctm)
 {
-    fz_rect mediabox = GetTileRect(dm, pageNo, rotation, zoom, tile);
+    fz_rect mediabox = GetTileRect(engine, pageNo, rotation, zoom, tile);
     fz_bbox bbox = fz_roundrect(fz_transformrect(ctm, mediabox));
     RectI tileOnScreen = { bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0 };
     return tileOnScreen;
@@ -143,11 +143,12 @@ static bool IsTileVisible(DisplayModel *dm, int pageNo, int rotation, float zoom
 {
     PdfPageInfo *pageInfo = dm->getPageInfo(pageNo);
     fz_matrix ctm = dm->pdfEngine->viewctm(pageNo, zoom, rotation);
-    RectI tileOnScreen = GetTileOnScreen(dm, pageNo, rotation, zoom, tile, ctm);
+    ctm = fz_concat(ctm, fz_translate(pageInfo->pageOnScreen.x, pageInfo->pageOnScreen.y));
+    RectI tileOnScreen = GetTileOnScreen(dm->pdfEngine, pageNo, rotation, zoom, tile, ctm);
     // consider nearby tiles visible depending on the fuzz factor
     tileOnScreen.x -= tileOnScreen.dx * fuzz * 0.5; tileOnScreen.dx *= fuzz + 1;
     tileOnScreen.y -= tileOnScreen.dy * fuzz * 0.5; tileOnScreen.dy *= fuzz + 1;
-    RectI screen = { pageInfo->bitmapX, pageInfo->bitmapY, pageInfo->bitmapDx, pageInfo->bitmapDy };
+    RectI screen = { 0, 0, dm->drawAreaSize.dxI(), dm->drawAreaSize.dyI() };
     return RectI_Intersect(&tileOnScreen, &screen, NULL) != 0;
 }
 
@@ -180,7 +181,7 @@ bool RenderCache::FreePage(DisplayModel *dm, int pageNo, TilePosition *tile)
             shouldFree = !entry->dm->pageVisibleNearby(entry->pageNo);
             if (!shouldFree && entry->tile.res > 1)
                 shouldFree = !IsTileVisible(entry->dm, entry->pageNo, entry->rotation,
-                                            entry->zoomLevel * 0.01, entry->tile, 1.0);
+                                            entry->zoomLevel * 0.01, entry->tile, 2.0);
         }
 
         if (shouldFree) {
@@ -482,7 +483,7 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
             continue;
         }
 
-        fz_rect pageRect = GetTileRect(req.dm, req.pageNo, req.rotation, req.zoomLevel * 0.01, req.tile);
+        fz_rect pageRect = GetTileRect(req.dm->pdfEngine, req.pageNo, req.rotation, req.zoomLevel * 0.01, req.tile);
         // GDI+ seems to render quicker at high zoom levels
         bool useGdiRenderer = cache->useGdiRenderer && *cache->useGdiRenderer || req.zoomLevel > 3200.0;
         bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, &pageRect,
@@ -587,7 +588,7 @@ UINT RenderCache::PaintTiles(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo
     UINT renderTimeMin = (UINT)-1;
     for (tile.row = 0; tile.row < tileCount; tile.row++) {
         for (tile.col = 0; tile.col < tileCount; tile.col++) {
-            RectI tileOnScreen = GetTileOnScreen(dm, pageNo, rotation, zoom, tile, ctm);
+            RectI tileOnScreen = GetTileOnScreen(dm->pdfEngine, pageNo, rotation, zoom, tile, ctm);
             if (RectI_Intersect(&tileOnScreen, pageOnScreen, &isectPOS) &&
                 RectI_Intersect(&screen, &isectPOS, &isect)) {
                 UINT renderTime = PaintTile(hdc, &isect, dm, pageNo, tile, &isectPOS, renderMissing, renderOutOfDateCue, renderedReplacement);
@@ -606,16 +607,16 @@ UINT RenderCache::Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
 
     USHORT tileRes = GetTileRes(dm, pageNo);
     bool renderedReplacement;
-    UINT renderTimeMin = (UINT)-1;
+    UINT renderTime = RENDER_DELAY_UNDEFINED, renderTimeMin = renderTime = RENDER_DELAY_UNDEFINED;
     for (int res = 0; res <= tileRes; res++) {
         renderedReplacement = false;
-        UINT renderTime = PaintTiles(hdc, bounds, dm, pageNo, &pageInfo->pageOnScreen,
-                                     res, res == tileRes, renderOutOfDateCue, &renderedReplacement);
+        renderTime = PaintTiles(hdc, bounds, dm, pageNo, &pageInfo->pageOnScreen,
+                                res, res == tileRes, renderOutOfDateCue, &renderedReplacement);
         renderTimeMin = min(renderTime, renderTimeMin);
     }
 
 #ifdef CONSERVE_MEMORY
-    if (!renderedReplacement) {
+    if (0 == renderTime && !renderedReplacement) {
         // free tiles with different resolution
         TilePosition tile = { tileRes, -1, 0 };
         FreePage(dm, pageNo, &tile);
