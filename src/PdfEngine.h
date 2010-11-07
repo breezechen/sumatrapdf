@@ -18,17 +18,9 @@ class WindowInfo;
 #define INVALID_ROTATION    -1
 /* one PDF user space unit equals 1/72 inch */
 #define PDF_FILE_DPI        72.0
-// number of page content trees to cache for quicker rendering
-#define MAX_PAGE_RUN_CACHE  8
 
 /* certain OCGs will only be rendered for some of these (e.g. watermarks) */
 enum RenderTarget { Target_View, Target_Print, Target_Export };
-
-typedef struct {
-    pdf_page *page;
-    fz_displaylist *list;
-    int refs;
-} PdfPageRun;
 
 class PdfTocItem {
 public:
@@ -123,8 +115,7 @@ public:
     bool load(const TCHAR *fileName, WindowInfo *windowInfo, bool tryrepair);
     int pageRotation(int pageNo);
     SizeD pageSize(int pageNo);
-    fz_rect pageMediabox(int pageNo);
-    fz_bbox pageContentBox(int pageNo);
+    fz_bbox pageContentSize(int pageNo);
     RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
                          fz_rect *pageRect, /* if NULL: defaults to the page's mediabox */
                          BOOL (*abortCheckCbkA)(void *data),
@@ -162,9 +153,8 @@ protected:
     const TCHAR *_fileName;
     char *_decryptionKey;
     int _pageCount;
+    WindowInfo *_windowInfo;
 
-    // make sure to never ask for _pagesAccess in an _xrefAccess
-    // protected critical section in order to avoid deadlocks
     CRITICAL_SECTION _xrefAccess;
     pdf_xref *      _xref;
 
@@ -175,16 +165,7 @@ protected:
     bool            renderPage(HDC hDC, pdf_page *page, RECT *screenRect,
                                fz_matrix *ctm=NULL, double zoomReal=0, int rotation=0,
                                fz_rect *pageRect=NULL, RenderTarget target=Target_View);
-    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE),
-                                    fz_bbox **coords_out=NULL, RenderTarget target=Target_View,
-                                    bool cacheRun=false);
-
-    PdfPageRun    * _runCache[MAX_PAGE_RUN_CACHE];
-    PdfPageRun    * getPageRun(pdf_page *page, bool tryOnly=false);
-    fz_error        runPage(pdf_page *page, fz_device *dev, fz_matrix ctm,
-                            RenderTarget target=Target_View, fz_rect bounds=fz_infiniterect,
-                            bool cacheRun=true);
-    void            dropPageRun(PdfPageRun *run, bool forceRemove=false);
+    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE), fz_bbox **coords_out=NULL, RenderTarget target=Target_View);
 
     PdfTocItem    * buildTocTree(pdf_outline *entry);
     void            linkifyPageText(pdf_page *page);

@@ -631,7 +631,4 @@ $(PDFEXTRACT_APP): $(PDFEXTRACT_OBJS)
 {$(O)\}.c{$(O)}.obj::
 	$(CC) /TC $(FITZ_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb  $<
 
-$(FITZ_OBJS) $(FITZ_DRAW_OBJS): $(FITZ_DIR)\fitz\fitz.h
-$(MUPDF_OBJS): $(FITZ_DIR)\fitz\fitz.h $(FITZ_DIR)\mupdf\mupdf.h
-
 force: ;

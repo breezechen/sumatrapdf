@@ -687,8 +687,8 @@ struct fz_font_s
 	int *widthtable;
 
 	/* SumatraPDF */
-	const char *_data; /* font file content or file path                */
-	int _data_len;     /* 0 for file paths, -1 for "not needed by GDI+" */
+	const char *_data; /* font file content or file path */
+	int _data_len;     /* 0 for file paths               */
 };
 
 fz_error fz_newfreetypefont(fz_font **fontp, char *name, int substitute);
@@ -1044,8 +1044,6 @@ fz_displaylist *fz_newdisplaylist(void);
 void fz_freedisplaylist(fz_displaylist *list);
 fz_device *fz_newlistdevice(fz_displaylist *list);
 void fz_executedisplaylist(fz_displaylist *list, fz_device *dev, fz_matrix ctm);
-/* SumatraPDF: speed up drawing by executing only nodes within visible bounds */
-void fz_executedisplaylist2(fz_displaylist *list, fz_device *dev, fz_matrix ctm, fz_bbox bounds);
 
 /*
  * Function pointers for plotting functions.
