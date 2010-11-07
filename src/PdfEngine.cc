@@ -271,8 +271,8 @@ PdfEngine::PdfEngine() :
 
 PdfEngine::~PdfEngine()
 {
-    EnterCriticalSection(&_xrefAccess);
     EnterCriticalSection(&_pagesAccess);
+    EnterCriticalSection(&_xrefAccess);
 
     if (_pages) {
         for (int i=0; i < _pageCount; i++) {
@@ -541,15 +541,17 @@ fz_error PdfEngine::runPage(pdf_page *page, fz_device *dev, fz_matrix ctm, Rende
     fz_error error = fz_okay;
     PdfPageRun *run;
 
-    EnterCriticalSection(&_xrefAccess);
     if (Target_View == target && (run = getPageRun(page, !cacheRun))) {
+        EnterCriticalSection(&_xrefAccess);
         fz_executedisplaylist2(run->list, dev, ctm, fz_roundrect(bounds));
+        LeaveCriticalSection(&_xrefAccess);
         dropPageRun(run);
     }
     else {
+        EnterCriticalSection(&_xrefAccess);
         error = pdf_runpagefortarget(_xref, page, dev, ctm, target);
+        LeaveCriticalSection(&_xrefAccess);
     }
-    LeaveCriticalSection(&_xrefAccess);
     fz_freedevice(dev);
 
     return error;

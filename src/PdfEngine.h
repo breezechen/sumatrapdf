@@ -163,6 +163,8 @@ protected:
     char *_decryptionKey;
     int _pageCount;
 
+    // make sure to never ask for _pagesAccess in an _xrefAccess
+    // protected critical section in order to avoid deadlocks
     CRITICAL_SECTION _xrefAccess;
     pdf_xref *      _xref;
 
