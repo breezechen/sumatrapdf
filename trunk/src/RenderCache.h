@@ -106,6 +106,8 @@ private:
     BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
                              double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
     void                DropCacheEntry(BitmapCacheEntry *entry);
+    bool                Exists(DisplayModel *dm, int pageNo, int rotation,
+                               double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
     bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1, TilePosition *tile=NULL);
 
     UINT                PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,
