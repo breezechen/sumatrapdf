@@ -212,7 +212,7 @@ fz_newfontfrombuffer(fz_font **fontp, unsigned char *data, int len, int index)
 	font = fz_newfont();
 
 	/* SumatraPDF: make sure that the buffer isn't freed with the font descriptor */
-	font->_data = malloc(len);
+	font->_data = fz_malloc(len);
 	memcpy((void *)font->_data, data, len);
 	font->_data_len = len;
 

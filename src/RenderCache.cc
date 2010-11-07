@@ -29,7 +29,7 @@ RenderCache::~RenderCache(void)
 
     CloseHandle(_renderThread);
     CloseHandle(startRendering);
-    assert(NULL == _curReq && 0 == _requestCount);
+    assert(!_curReq && 0 == _requestCount && 0 == _cacheCount);
 
     LeaveCriticalSection(&_cacheAccess);
     DeleteCriticalSection(&_cacheAccess);
@@ -57,6 +57,14 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
 Exit:
     LeaveCriticalSection(&_cacheAccess);
     return entry;
+}
+
+bool RenderCache::Exists(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition *tile)
+{
+    BitmapCacheEntry *entry = Find(dm, pageNo, rotation, zoomLevel, tile);
+    if (entry)
+        DropCacheEntry(entry);
+    return entry != NULL;
 }
 
 void RenderCache::DropCacheEntry(BitmapCacheEntry *entry)
@@ -318,7 +326,7 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
         }
     }
 
-    if (Find(dm, pageNo, rotation, zoomLevel, &tile)) {
+    if (Exists(dm, pageNo, rotation, zoomLevel, &tile)) {
         /* This page has already been rendered in the correct dimensions
            and isn't about to be rerendered in different dimensions */
         goto LeaveCsAndExit;

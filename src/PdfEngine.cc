@@ -287,13 +287,17 @@ PdfEngine::~PdfEngine()
     if (_attachments)
         pdf_freeoutline(_attachments);
 
-    if (_xref)
+    if (_xref) {
         pdf_freexref(_xref);
+        _xref = NULL;
+    }
 
     if (_drawcache)
         fz_freeglyphcache(_drawcache);
-    while (_runCache[0])
+    while (_runCache[0]) {
+        assert(_runCache[0]->refs == 1);
         dropPageRun(_runCache[0], true);
+    }
     free((void*)_fileName);
     free((void*)_decryptionKey);
 
@@ -521,10 +525,12 @@ PdfPageRun *PdfEngine::getPageRun(pdf_page *page, bool tryOnly)
             PdfPageRun newRun = { page, list, 1 };
             result = _runCache[i] = (PdfPageRun *)_memdup(&newRun);
         }
+        else
+            fz_freedisplaylist(list);
     }
     else {
         // keep the list Least Recently Used first
-        while (++i < MAX_PAGE_RUN_CACHE && _runCache[i]) {
+        for (; i < MAX_PAGE_RUN_CACHE && _runCache[i]; i++) {
             _runCache[i-1] = _runCache[i];
             _runCache[i] = result;
         }
