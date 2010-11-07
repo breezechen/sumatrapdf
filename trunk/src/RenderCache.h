@@ -34,6 +34,7 @@ typedef struct {
   double         zoomLevel;
   RenderedBitmap *bitmap;
   TilePosition   tile;
+  int            refs;
 } BitmapCacheEntry;
 
 typedef struct {
@@ -57,6 +58,8 @@ class RenderCache
 private:
     BitmapCacheEntry *  _cache[MAX_BITMAPS_CACHED];
     int                 _cacheCount;
+    // make sure to never ask for _requestAccess in a _cacheAccess
+    // protected critical section in order to avoid deadlocks
     CRITICAL_SECTION    _cacheAccess;
 
     PageRenderRequest   _requests[MAX_PAGE_REQUESTS];
@@ -101,6 +104,7 @@ private:
 
     BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
                              double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
+    void                DropCacheEntry(BitmapCacheEntry *entry);
     bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1, TilePosition *tile=NULL);
 
     UINT                PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,

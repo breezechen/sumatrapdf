@@ -31,14 +31,15 @@ RenderCache::~RenderCache(void)
     CloseHandle(startRendering);
     assert(NULL == _curReq && 0 == _requestCount);
 
-    LeaveCriticalSection(&_requestAccess);
-    DeleteCriticalSection(&_requestAccess);
     LeaveCriticalSection(&_cacheAccess);
     DeleteCriticalSection(&_cacheAccess);
+    LeaveCriticalSection(&_requestAccess);
+    DeleteCriticalSection(&_requestAccess);
 }
 
 /* Find a bitmap for a page defined by <dm> and <pageNo> and optionally also
-   <rotation> and <zoomLevel> in the cache */
+   <rotation> and <zoomLevel> in the cache - call DropCacheEntry when you
+   no longer need a found entry. */
 BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition *tile)
 {
     BitmapCacheEntry *entry;
@@ -48,6 +49,7 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
         entry = _cache[i];
         if ((dm == entry->dm) && (pageNo == entry->pageNo) && (rotation == entry->rotation) &&
             (INVALID_ZOOM == zoomLevel || zoomLevel == entry->zoomLevel) && (!tile || entry->tile == *tile)) {
+            entry->refs++;
             goto Exit;
         }
     }
@@ -57,12 +59,16 @@ Exit:
     return entry;
 }
 
-static void FreeCacheEntry(BitmapCacheEntry *entry)
+void RenderCache::DropCacheEntry(BitmapCacheEntry *entry)
 {
     assert(entry);
     if (!entry) return;
-    delete entry->bitmap;
-    free((void*)entry);
+    EnterCriticalSection(&_cacheAccess);
+    if (0 == --entry->refs) {
+        delete entry->bitmap;
+        free(entry);
+    }
+    LeaveCriticalSection(&_cacheAccess);
 }
 
 void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition tile, RenderedBitmap *bitmap)
@@ -82,7 +88,7 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
         // free an invisible page of the same DisplayModel ...
         for (int i = 0; i < _cacheCount; i++) {
             if (_cache[i]->dm == dm && !dm->pageVisibleNearby(_cache[i]->pageNo)) {
-                FreeCacheEntry(_cache[i]);
+                DropCacheEntry(_cache[i]);
                 _cacheCount--;
                 memmove(&_cache[i], &_cache[i + 1], (_cacheCount - i) * sizeof(_cache[0]));
                 break;
@@ -90,13 +96,13 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
         }
         // ... or just the oldest cached page
         if (_cacheCount >= MAX_BITMAPS_CACHED) {
-            FreeCacheEntry(_cache[0]);
+            DropCacheEntry(_cache[0]);
             _cacheCount--;
             memmove(&_cache[0], &_cache[1], _cacheCount * sizeof(_cache[0]));
         }
     }
 
-    BitmapCacheEntry entry = { dm, pageNo, rotation, zoomLevel, bitmap, tile };
+    BitmapCacheEntry entry = { dm, pageNo, rotation, zoomLevel, bitmap, tile, 1 };
     _cache[_cacheCount] = (BitmapCacheEntry *)_memdup(&entry);
     assert(_cache[_cacheCount]);
     if (!_cache[_cacheCount])
@@ -189,7 +195,7 @@ bool RenderCache::FreePage(DisplayModel *dm, int pageNo, TilePosition *tile)
                 DBG_OUT("BitmapCache_FreePage(%#x, %d) ", dm, pageNo);
             DBG_OUT("freed %d ", entry->pageNo);
             freedSomething = true;
-            FreeCacheEntry(entry);
+            DropCacheEntry(entry);
             _cache[i] = NULL;
             _cacheCount--;
         }
@@ -516,9 +522,6 @@ UINT RenderCache::PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo
                             TilePosition tile, RectI *tileOnScreen, bool renderMissing,
                             bool *renderOutOfDateCue, bool *renderedReplacement)
 {
-    // ensure that the BitmapCacheEntry remains valid until it's been used
-    EnterCriticalSection(&_cacheAccess);
-
     BitmapCacheEntry *entry = Find(dm, pageNo, dm->rotation(), dm->zoomReal(), &tile);
     UINT renderDelay = 0;
 
@@ -538,7 +541,8 @@ UINT RenderCache::PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo
             renderDelay = RENDER_DELAY_FAILED;
         else if (0 == renderDelay)
             renderDelay = 1;
-        LeaveCriticalSection(&_cacheAccess);
+        if (entry)
+            DropCacheEntry(entry);
         return renderDelay;
     }
 
@@ -566,7 +570,7 @@ UINT RenderCache::PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo
     if (renderOutOfDateCue)
         *renderOutOfDateCue = renderedBmp->outOfDate;
 
-    LeaveCriticalSection(&_cacheAccess);
+    DropCacheEntry(entry);
     return 0;
 }
 
