@@ -688,11 +688,15 @@ RenderedBitmap *PdfEngine::renderBitmap(
     pdf_page* page = getPdfPage(pageNo);
     if (!page)
         return NULL;
-    zoomReal = zoomReal * 0.01;
+    zoomReal *= 0.01;
     fz_matrix ctm = viewctm(page, zoomReal, rotation);
     if (!pageRect)
         pageRect = &page->mediabox;
     fz_bbox bbox = fz_roundrect(fz_transformrect(ctm, *pageRect));
+
+    // GDI+ seems to render quicker and more reliable at high zoom levels
+    if (zoomReal > 40.0)
+        useGdi = true;
 
     if (useGdi) {
         int w = bbox.x1 - bbox.x0, h = bbox.y1 - bbox.y0;
