@@ -180,7 +180,8 @@ protected:
     PdfPageRun    * _runCache[MAX_PAGE_RUN_CACHE];
     PdfPageRun    * getPageRun(pdf_page *page, bool tryOnly=false);
     fz_error        runPage(pdf_page *page, fz_device *dev, fz_matrix ctm,
-                            RenderTarget target=Target_View, bool cacheRun=true);
+                            RenderTarget target=Target_View, fz_rect bounds=fz_infiniterect,
+                            bool cacheRun=true);
     void            dropPageRun(PdfPageRun *run, bool forceRemove=false);
 
     PdfTocItem    * buildTocTree(pdf_outline *entry);

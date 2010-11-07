@@ -1044,6 +1044,8 @@ fz_displaylist *fz_newdisplaylist(void);
 void fz_freedisplaylist(fz_displaylist *list);
 fz_device *fz_newlistdevice(fz_displaylist *list);
 void fz_executedisplaylist(fz_displaylist *list, fz_device *dev, fz_matrix ctm);
+/* SumatraPDF: speed up drawing by executing only nodes within visible bounds */
+void fz_executedisplaylist2(fz_displaylist *list, fz_device *dev, fz_matrix ctm, fz_bbox bounds);
 
 /*
  * Function pointers for plotting functions.

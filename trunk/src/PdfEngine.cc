@@ -536,14 +536,14 @@ PdfPageRun *PdfEngine::getPageRun(pdf_page *page, bool tryOnly)
     return result;
 }
 
-fz_error PdfEngine::runPage(pdf_page *page, fz_device *dev, fz_matrix ctm, RenderTarget target, bool cacheRun)
+fz_error PdfEngine::runPage(pdf_page *page, fz_device *dev, fz_matrix ctm, RenderTarget target, fz_rect bounds, bool cacheRun)
 {
     fz_error error = fz_okay;
     PdfPageRun *run;
 
     EnterCriticalSection(&_xrefAccess);
     if (Target_View == target && (run = getPageRun(page, !cacheRun))) {
-        fz_executedisplaylist(run->list, dev, ctm);
+        fz_executedisplaylist2(run->list, dev, ctm, fz_roundrect(bounds));
         dropPageRun(run);
     }
     else {
@@ -608,7 +608,7 @@ fz_bbox PdfEngine::pageContentBox(int pageNo)
         return fz_emptybbox;
 
     fz_bbox bbox;
-    fz_error error = runPage(page, fz_newbboxdevice(&bbox), fz_identity, Target_View, false);
+    fz_error error = runPage(page, fz_newbboxdevice(&bbox), fz_identity, Target_View, page->mediabox, false);
     if (error != fz_okay)
         return fz_emptybbox;
 
@@ -652,13 +652,15 @@ bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix 
         return false;
 
     fz_matrix ctm2;
+    if (!pageRect)
+        pageRect = &page->mediabox;
     if (!ctm) {
-        float zoom = zoomReal / 100.0;
+        float zoom = zoomReal * 0.01;
         if (!zoom)
             zoom = min(1.0 * (screenRect->right - screenRect->left) / (page->mediabox.x1 - page->mediabox.x0),
                        1.0 * (screenRect->bottom - screenRect->top) / (page->mediabox.y1 - page->mediabox.y0));
         ctm2 = viewctm(page, zoom, rotation);
-        fz_bbox bbox = fz_roundrect(fz_transformrect(ctm2, pageRect ? *pageRect : page->mediabox));
+        fz_bbox bbox = fz_roundrect(fz_transformrect(ctm2, *pageRect));
         ctm2 = fz_concat(ctm2, fz_translate(screenRect->left - bbox.x0, screenRect->top - bbox.y0));
         ctm = &ctm2;
     }
@@ -668,7 +670,7 @@ bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix 
     DeleteObject(bgBrush);
 
     fz_bbox clipBox = { screenRect->left, screenRect->top, screenRect->right, screenRect->bottom };
-    fz_error error = runPage(page, fz_newgdiplusdevice(hDC, clipBox), *ctm, target);
+    fz_error error = runPage(page, fz_newgdiplusdevice(hDC, clipBox), *ctm, target, *pageRect);
 
     return fz_okay == error;
 }
@@ -701,7 +703,7 @@ RenderedBitmap *PdfEngine::renderBitmap(
         DeleteObject(SelectObject(hDCMem, hbmp));
 
         RECT rc = { 0, 0, w, h };
-        bool success = renderPage(hDCMem, page, &rc, &ctm, 0, 0, NULL, target);
+        bool success = renderPage(hDCMem, page, &rc, &ctm, 0, 0, pageRect, target);
         DeleteDC(hDCMem);
         ReleaseDC(NULL, hDC);
         if (!success) {
@@ -720,7 +722,7 @@ RenderedBitmap *PdfEngine::renderBitmap(
     if (!_drawcache)
         _drawcache = fz_newglyphcache();
 
-    fz_error error = runPage(page, fz_newdrawdevice(_drawcache, image), ctm, target);
+    fz_error error = runPage(page, fz_newdrawdevice(_drawcache, image), ctm, target, *pageRect);
     RenderedBitmap *bitmap = NULL;
     if (!error) {
         HDC hDC = GetDC(NULL);
@@ -844,7 +846,7 @@ TCHAR *PdfEngine::ExtractPageText(pdf_page *page, TCHAR *lineSep, fz_bbox **coor
         return NULL;
 
     fz_textspan *text = fz_newtextspan();
-    fz_error error = runPage(page, fz_newtextdevice(text), fz_identity, target, cacheRun);
+    fz_error error = runPage(page, fz_newtextdevice(text), fz_identity, target, page->mediabox, cacheRun);
     if (fz_okay != error) {
         fz_freetextspan(text);
         return NULL;
