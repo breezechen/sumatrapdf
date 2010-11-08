@@ -2,6 +2,7 @@
    License: GPLv3 */
 
 #include "SumatraPDF.h"
+#include "WindowInfo.h"
 #include "RenderCache.h"
 
 #include "AppPrefs.h"
@@ -1447,7 +1448,7 @@ static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
     SelectObject(win->hdcDoubleBuffer, win->bmpDoubleBuffer);
     /* fill out everything with background color */
     RECT r;
-    rect_set(&r, 0, 0, win->winDx(), win->winDy());
+    SetRect(&r, 0, 0, win->winDx(), win->winDy());
     FillRect(win->hdcDoubleBuffer, &r, win->presentation ? gBrushBlack : gBrushBg);
     win->hdcToDraw = win->hdcDoubleBuffer;
 #endif
@@ -3077,10 +3078,10 @@ static void PaintPageFrameAndShadow(HDC hdc, PdfPageInfo * pageInfo, bool presen
 {
     int xDest = pageInfo->screenX;
     int yDest = pageInfo->screenY;
-    int bmpDx = pageInfo->bitmapDx;
-    int bmpDy = pageInfo->bitmapDy;
+    int bmpDx = pageInfo->bitmap.dx;
+    int bmpDy = pageInfo->bitmap.dy;
 
-    rect_set(bounds, xDest, yDest, bmpDx, bmpDy);
+    SetRect(bounds, xDest, yDest, xDest + bmpDx, yDest + bmpDy);
 
     // Frame info
     int fx = xDest - BORDER_SIZE, fy = yDest - BORDER_SIZE;
@@ -3090,19 +3091,19 @@ static void PaintPageFrameAndShadow(HDC hdc, PdfPageInfo * pageInfo, bool presen
     int sx = fx + SHADOW_OFFSET, sy = fy + SHADOW_OFFSET, sw = fw, sh = fh;
     if (xDest <= 0) {
         // the left of the page isn't visible, so start the shadow at the left
-        int diff = min(pageInfo->bitmapX, SHADOW_OFFSET);
+        int diff = min(pageInfo->bitmap.x, SHADOW_OFFSET);
         sx -= diff; sw += diff;
     }
     if (yDest <= 0) {
         // the top of the page isn't visible, so start the shadow at the top
-        int diff = min(pageInfo->bitmapY, SHADOW_OFFSET);
+        int diff = min(pageInfo->bitmap.y, SHADOW_OFFSET);
         sy -= diff; sh += diff;
     }
 
     // Draw shadow
     if (!presentation) {
         RECT rc;
-        rect_set(&rc, sx, sy, sw, sh);
+        SetRect(&rc, sx, sy, sx + sw, sy + sh);
         FillRect(hdc, &rc, gBrushShadow);
     }
 
@@ -3206,7 +3207,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
                 continue;
 
             RECT rectScreen;
-            rect_set(&rectScreen, isect.x0, isect.y0, isect.x1 - isect.x0, isect.y1 - isect.y0);
+            SetRect(&rectScreen, isect.x0, isect.y0, isect.x1, isect.y1);
             PaintRectangle(hdc, &rectScreen);
         }
         free(links);
@@ -3269,7 +3270,7 @@ static void CopySelectionToClipboard(WindowInfo *win)
     clipRegion.x0 = r->x; clipRegion.x1 = r->x + r->dx;
     clipRegion.y0 = r->y; clipRegion.y1 = r->y + r->dy;
 
-    RenderedBitmap * bmp = win->dm->renderBitmap(selOnPage->pageNo, win->dm->zoomReal(),
+    RenderedBitmap * bmp = win->dm->renderBitmap(selOnPage->pageNo, win->dm->zoomReal() * 0.01,
         win->dm->rotation(), &clipRegion, NULL, NULL, Target_Export, gUseGdiRenderer);
     if (bmp) {
         if (!SetClipboardData(CF_BITMAP, bmp->getBitmap()))
@@ -3922,9 +3923,9 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
                 rc.top = (printAreaHeight - sSize.dy() * zoom) / 2;
                 rc.right = printAreaWidth - rc.left;
                 rc.bottom = printAreaHeight - rc.top;
-                dm->renderPage(hdc, sel->pageNo, &rc, 100.0 * zoom, dm->rotation(), &clipRegion, Target_Print);
+                dm->renderPage(hdc, sel->pageNo, &rc, zoom, dm->rotation(), &clipRegion, Target_Print);
 #else
-                RenderedBitmap *bmp = dm->renderBitmap(sel->pageNo, 100.0 * zoom, dm->rotation(), &clipRegion, NULL, NULL, Target_Print, gUseGdiRenderer);
+                RenderedBitmap *bmp = dm->renderBitmap(sel->pageNo, zoom, dm->rotation(), &clipRegion, NULL, NULL, Target_Print, gUseGdiRenderer);
                 if (bmp) {
                     bmp->stretchDIBits(hdc, (printAreaWidth - bmp->dx()) / 2,
                         (printAreaHeight - bmp->dy()) / 2, bmp->dx(), bmp->dy());
@@ -3980,9 +3981,9 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
             rc.right = printAreaWidth - rc.left;
             rc.bottom = printAreaHeight - rc.top;
             OffsetRect(&rc, -leftMargin, -topMargin);
-            dm->renderPage(hdc, pageNo, &rc, 100.0 * zoom, rotation, NULL, Target_Print);
+            dm->renderPage(hdc, pageNo, &rc, zoom, rotation, NULL, Target_Print);
 #else
-            RenderedBitmap *bmp = dm->renderBitmap(pageNo, 100.0 * zoom, rotation, NULL, NULL, NULL, Target_Print, gUseGdiRenderer);
+            RenderedBitmap *bmp = dm->renderBitmap(pageNo, zoom, rotation, NULL, NULL, NULL, Target_Print, gUseGdiRenderer);
             if (bmp) {
                 // TODO: convert images to grayscale for monochrome printers, so that we always have an 8-bit palette?
                 bmp->stretchDIBits(hdc, (printAreaWidth - bmp->dx()) / 2 - leftMargin,
@@ -5032,12 +5033,7 @@ static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result
 
     DeleteOldSelectionInfo(win);
     for (int i = 0; i < result->len; i++) {
-        RectI rect = {
-            result->rects[i].left,
-            result->rects[i].top,
-            result->rects[i].right - result->rects[i].left,
-            result->rects[i].bottom - result->rects[i].top
-        };
+        RectI rect = RectI_FromRECT(&result->rects[i]);
         assert(result->rects[i].bottom >= result->rects[i].top);
         assert(result->rects[i].right >= result->rects[i].left);
 
@@ -6531,7 +6527,7 @@ static void CreateInfotipForPdfLink(WindowInfo *win, int pageNo, void *linkObj)
     pdf_link *link = (pdf_link *)linkObj;
     if (pageNo > 0 && (ti.lpszText = win->dm->getLinkPath(link))) {
         fz_rect rect = win->dm->rectCvtUserToScreen(pageNo, link->rect);
-        rect_set(&ti.rect, rect.x0, rect.y0, rect.x1 - rect.x0, rect.y1 - rect.y0);
+        SetRect(&ti.rect, rect.x0, rect.y0, rect.x1, rect.y1);
 
         SendMessage(win->hwndInfotip, win->infotipVisible ? TTM_NEWTOOLRECT : TTM_ADDTOOL, 0, (LPARAM)&ti);
         free(ti.lpszText);

@@ -125,16 +125,16 @@ public:
     SizeD pageSize(int pageNo);
     fz_rect pageMediabox(int pageNo);
     fz_bbox pageContentBox(int pageNo);
-    RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+    RenderedBitmap *renderBitmap(int pageNo, float zoom, int rotation,
                          fz_rect *pageRect, /* if NULL: defaults to the page's mediabox */
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA,
                          RenderTarget target=Target_View,
                          bool useGdi=false);
     bool PdfEngine::renderPage(HDC hDC, int pageNo, RECT *screenRect,
-                         fz_matrix *ctm=NULL, double zoomReal=0, int rotation=0,
+                         fz_matrix *ctm=NULL, float zoom=0, int rotation=0,
                          fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
-        return renderPage(hDC, getPdfPage(pageNo), screenRect, ctm, zoomReal, rotation, pageRect, target);
+        return renderPage(hDC, getPdfPage(pageNo), screenRect, ctm, zoom, rotation, pageRect, target);
     }
 
     bool hasPermission(int permission);
@@ -173,7 +173,7 @@ protected:
     pdf_page      * getPdfPage(int pageNo);
     fz_matrix       viewctm(pdf_page *page, float zoom, int rotate);
     bool            renderPage(HDC hDC, pdf_page *page, RECT *screenRect,
-                               fz_matrix *ctm=NULL, double zoomReal=0, int rotation=0,
+                               fz_matrix *ctm=NULL, float zoom=0, int rotation=0,
                                fz_rect *pageRect=NULL, RenderTarget target=Target_View);
     TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE),
                                     fz_bbox **coords_out=NULL, RenderTarget target=Target_View,

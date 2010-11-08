@@ -29,20 +29,20 @@ typedef struct TilePosition {
    and corresponding rendered bitmap.
 */
 typedef struct {
-  DisplayModel * dm;
-  int            pageNo;
-  int            rotation;
-  double         zoomLevel;
-  RenderedBitmap *bitmap;
-  TilePosition   tile;
-  int            refs;
+    DisplayModel * dm;
+    int            pageNo;
+    int            rotation;
+    float          zoom;
+    RenderedBitmap *bitmap;
+    TilePosition   tile;
+    int            refs;
 } BitmapCacheEntry;
 
 typedef struct {
     DisplayModel *  dm;
     int             pageNo;
     int             rotation;
-    double          zoomLevel;
+    float          zoom;
     TilePosition    tile;
     BOOL            abort;
     DWORD           timestamp;
@@ -90,7 +90,7 @@ public:
 
     bool                ClearCurrentRequest(void);
     bool                GetNextRequest(PageRenderRequest *req);
-    void                Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel,
+    void                Add(DisplayModel *dm, int pageNo, int rotation, float zoom,
                             TilePosition tile, RenderedBitmap *bitmap);
     bool                FreeNotVisible(void);
 
@@ -104,10 +104,10 @@ private:
                                                   TilePosition *tile=NULL);
 
     BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
-                             double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
+                             float zoom=INVALID_ZOOM, TilePosition *tile=NULL);
     void                DropCacheEntry(BitmapCacheEntry *entry);
     bool                Exists(DisplayModel *dm, int pageNo, int rotation,
-                               double zoomLevel=INVALID_ZOOM, TilePosition *tile=NULL);
+                               float zoom=INVALID_ZOOM, TilePosition *tile=NULL);
     bool                FreePage(DisplayModel *dm=NULL, int pageNo=-1, TilePosition *tile=NULL);
 
     UINT                PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,

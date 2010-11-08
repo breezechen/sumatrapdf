@@ -654,7 +654,7 @@ fz_matrix PdfEngine::viewctm(int pageNo, float zoom, int rotate)
     return viewctm(&partialPage, zoom, rotate);
 }
 
-bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix *ctm, double zoomReal, int rotation, fz_rect *pageRect, RenderTarget target)
+bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix *ctm, float zoom, int rotation, fz_rect *pageRect, RenderTarget target)
 {
     if (!page)
         return false;
@@ -663,7 +663,6 @@ bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix 
     if (!pageRect)
         pageRect = &page->mediabox;
     if (!ctm) {
-        float zoom = zoomReal * 0.01;
         if (!zoom)
             zoom = min(1.0 * (screenRect->right - screenRect->left) / (page->mediabox.x1 - page->mediabox.x0),
                        1.0 * (screenRect->bottom - screenRect->top) / (page->mediabox.y1 - page->mediabox.y0));
@@ -684,7 +683,7 @@ bool PdfEngine::renderPage(HDC hDC, pdf_page *page, RECT *screenRect, fz_matrix 
 }
 
 RenderedBitmap *PdfEngine::renderBitmap(
-                           int pageNo, double zoomReal, int rotation,
+                           int pageNo, float zoom, int rotation,
                            fz_rect *pageRect,
                            BOOL (*abortCheckCbkA)(void *data),
                            void *abortCheckCbkDataA,
@@ -694,14 +693,13 @@ RenderedBitmap *PdfEngine::renderBitmap(
     pdf_page* page = getPdfPage(pageNo);
     if (!page)
         return NULL;
-    zoomReal *= 0.01;
-    fz_matrix ctm = viewctm(page, zoomReal, rotation);
+    fz_matrix ctm = viewctm(page, zoom, rotation);
     if (!pageRect)
         pageRect = &page->mediabox;
     fz_bbox bbox = fz_roundrect(fz_transformrect(ctm, *pageRect));
 
     // GDI+ seems to render quicker and more reliable at high zoom levels
-    if (zoomReal > 40.0)
+    if (zoom > 40.0)
         useGdi = true;
 
     if (useGdi) {

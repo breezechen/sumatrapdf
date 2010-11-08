@@ -7,6 +7,7 @@
 #include "SumatraPDF.h"
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
+#include "WindowInfo.h"
 
 #include "DisplayModel.h"
 #include "Resource.h"

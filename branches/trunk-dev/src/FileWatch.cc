@@ -1,13 +1,13 @@
 // By william blum, 2008
 #include "SumatraPDF.h"
 #include "FileWatch.h"
-#include "file_util.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <assert.h>
 #include <time.h>
 #include "tstr_util.h"
 #include "base_util.h"
+#include "file_util.h"
 
 // Get the directory name from a full file path and copy it to pszDir
 bool GetDirectory(LPCTSTR pszFile, PTSTR pszDir, size_t cchDir)

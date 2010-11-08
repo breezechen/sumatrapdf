@@ -135,30 +135,34 @@ $(SUMATRA_APP): $(LIBS_OBJS) $(BASEUTILS_OBJS) $(SUMATRA_OBJS)
 ## Header-dependencies for src\*
 # TODO: keep these lists up-to-date automatically
 
-BASEUTILS_H =  baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h \
-               baseutils\tstr_util.h baseutils\str_util.h baseutils\wstr_util.h
+BASEUTILS_H =  baseutils\base_util.h baseutils\tstr_util.h baseutils\str_util.h baseutils\wstr_util.h \
+               baseutils\geom_util.h
 APPPREFS_H =   src\AppPrefs.h src\DisplayState.h
-PDFENGINE_H =  src\PdfEngine.h $(FITZ_DIR)\fitz\fitz.h $(FITZ_DIR)\mupdf\mupdf.h
-SUMATRAPDF_H = $(BASEUTILS_H) $(PDFENGINE_H) src\SumatraPDF.h \
-               baseutils\win_util.h src\DisplayModel.h src\FileWatch.h \
-               src\PdfSync.h src\Resource.h src\DisplayState.h src\PdfSearch.h
+PDFENGINE_H =  $(BASEUTILS_H) src\PdfEngine.h $(FITZ_DIR)\fitz\fitz.h $(FITZ_DIR)\mupdf\mupdf.h
+DISPLAYMODEL_H=$(PDFENGINE_H) src\DisplayModel.h src\PdfSearch.h src\DisplayState.h
+SUMATRAPDF_H = $(BASEUTILS_H) src\SumatraPDF.h baseutils\win_util.h src\Resource.h
+WINDOWINFO_H = $(PDFENGINE_H) $(DISPLAYMODEL_H) src\WindowInfo.h src\FileWatch.h src\PdfSync.h \
+               baseutils\vstrlist.h
 
-$(O)\AppPrefs.obj:     $(BASEUTILS_H) $(APPPREFS_H) baseutils\benc_util.h src\FileHistory.h
-$(O)\DisplayModel.obj: $(SUMATRAPDF_H)
+$(O)\AppPrefs.obj:     $(BASEUTILS_H) $(APPPREFS_H) baseutils\benc_util.h baseutils\file_util.h \
+                       src\FileHistory.h
+$(O)\CrashHandler.obj: $(SUMATRAPDF_H) baseutils\WinUtil.hpp
+$(O)\DisplayModel.obj: $(SUMATRAPDF_H) $(WINDOWINFO_H)
 $(O)\FileHistory.obj:  baseutils\tstr_util.h src\DisplayState.h
-$(O)\FileWatch.obj:    $(SUMATRAPDF_H)
+$(O)\FileWatch.obj:    $(SUMATRAPDF_H) baseutils\file_util.h
 $(O)\Http.obj:         $(SUMATRAPDF_H) src\MemSegment.h
 $(O)\LangMenuDef.obj:  src\Resource.h
-$(O)\PdfEngine.obj:    $(BASEUTILS_H) $(PDFENGINE_H)
-$(O)\PdfSearch.obj:    $(BASEUTILS_H) $(PDFENGINE_H)
-$(O)\PdfSync.obj:      $(SUMATRAPDF_H)
-$(O)\RenderCache.obj:  $(BASEUTILS_H) $(PDFENGINE_H) src\DisplayModel.h src\DisplayState.h src\PdfSearch.h
-$(O)\SumatraAbout.obj: $(SUMATRAPDF_H) $(APPPREFS_H) src\translations.h src\Version.h
-$(O)\SumatraDialogs.obj: $(SUMATRAPDF_H) $(APPPREFS_H) src\LangMenuDef.h src\translations.h
-$(O)\SumatraPDF.obj:   $(SUMATRAPDF_H) $(APPPREFS_H) src\SumatraDialogs.h src\FileHistory.h \
+$(O)\PdfEngine.obj:    $(PDFENGINE_H)
+$(O)\PdfSearch.obj:    $(PDFENGINE_H)
+$(O)\PdfSync.obj:      $(SUMATRAPDF_H) $(WINDOWINFO_H)
+$(O)\RenderCache.obj:  $(DISPLAYMODEL_H)
+$(O)\SumatraAbout.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\translations.h src\Version.h
+$(O)\SumatraDialogs.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\LangMenuDef.h src\translations.h
+$(O)\SumatraPDF.obj:   $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\FileHistory.h \
                        src\Http.h src\RenderCache.h baseutils\WinUtil.hpp baseutils\str_strsafe.h \
-                       src\SumatraProperties.h src\SumatraAbout.h src\translations.h src\Version.h
-$(O)\SumatraProperties.obj: $(SUMATRAPDF_H) $(APPPREFS_H) src\translations.h
+                       src\SumatraDialogs.h src\SumatraProperties.h src\SumatraAbout.h \
+                       src\translations.h src\Version.h
+$(O)\SumatraProperties.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\translations.h
 $(O)\translations.obj: $(BASEUTILS_H)
 
 # all objs depend on the equally named header
