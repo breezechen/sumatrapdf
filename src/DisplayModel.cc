@@ -44,6 +44,8 @@
 */
 
 #include "SumatraPDF.h"
+#include "WindowInfo.h"
+#include "vstrlist.h"
 
 #ifndef DEBUG
 #define PREDICTIVE_RENDER 1
@@ -661,12 +663,11 @@ void DisplayModel::recalcVisibleParts(void)
             // use pageInfo->currDx instead of pageRect.dx, as integer multiplication could overflow
             pageInfo->visible = 1.0 * intersect.dx * intersect.dy / (pageInfo->currDx * pageInfo->currDy);
             
-            pageInfo->bitmapX = (int) ((double)intersect.x - pageInfo->currPosX);
-            assert(pageInfo->bitmapX >= 0);
-            pageInfo->bitmapY = (int) ((double)intersect.y - pageInfo->currPosY);
-            assert(pageInfo->bitmapY >= 0);
-            pageInfo->bitmapDx = intersect.dx;
-            pageInfo->bitmapDy = intersect.dy;
+            pageInfo->bitmap = intersect;
+            pageInfo->bitmap.x = (int) ((double)intersect.x - pageInfo->currPosX);
+            assert(pageInfo->bitmap.x >= 0);
+            pageInfo->bitmap.y = (int) ((double)intersect.y - pageInfo->currPosY);
+            assert(pageInfo->bitmap.y >= 0);
             pageInfo->screenX = (int) ((double)intersect.x - areaOffset.x);
             assert(pageInfo->screenX >= 0);
             assert(pageInfo->screenX <= drawAreaSize.dx());
@@ -674,8 +675,8 @@ void DisplayModel::recalcVisibleParts(void)
             assert(pageInfo->screenX >= 0);
             assert(pageInfo->screenY <= drawAreaSize.dy());
 /*            DBG_OUT("                                  visible page = %d, (x=%3d,y=%3d,dx=%4d,dy=%4d) at (x=%d,y=%d)\n",
-                pageNo, pageInfo->bitmapX, pageInfo->bitmapY,
-                          pageInfo->bitmapDx, pageInfo->bitmapDy,
+                pageNo, pageInfo->bitmap.x, pageInfo->bitmap.y,
+                          pageInfo->bitmap.dx, pageInfo->bitmap.dy,
                           pageInfo->screenX, pageInfo->screenY); */
         }
 
@@ -1004,9 +1005,9 @@ bool DisplayModel::goToPrevPage(int scrollY)
         getContentStart(currPageNo, &topX, &topY);
 
     PdfPageInfo * pageInfo = getPageInfo(currPageNo);
-    if (_zoomVirtual == ZOOM_FIT_CONTENT && pageInfo->bitmapY <= topY)
+    if (_zoomVirtual == ZOOM_FIT_CONTENT && pageInfo->bitmap.y <= topY)
         scrollY = 0; // continue, even though the current page isn't fully visible
-    else if (pageInfo->bitmapY > scrollY && displayModeContinuous(displayMode())) {
+    else if (pageInfo->bitmap.y > scrollY && displayModeContinuous(displayMode())) {
         /* the current page isn't fully visible, so show it first */
         goToPage(currPageNo, scrollY);
         return true;
@@ -1019,7 +1020,7 @@ bool DisplayModel::goToPrevPage(int scrollY)
 
     // scroll to the bottom of the page
     if (-1 == scrollY)
-        scrollY = getPageInfo(firstPageInNewRow)->bitmapDy;
+        scrollY = getPageInfo(firstPageInNewRow)->bitmap.dy;
 
     goToPage(firstPageInNewRow, scrollY);
     return TRUE;
@@ -1556,8 +1557,8 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
     // scroll up to make top side of selection visible
     if (extremes.top < 0) {
         sy = extremes.top - 5;
-        if (sy + pageInfo->screenY + pageInfo->bitmapY < 0)
-            sy = -(pageInfo->screenY + pageInfo->bitmapY);
+        if (sy + pageInfo->screenY + pageInfo->bitmap.y < 0)
+            sy = -(pageInfo->screenY + pageInfo->bitmap.y);
     }
     // scroll down to make top side of selection visible
     else if (extremes.top >= drawAreaSize.dy()) {
@@ -1578,8 +1579,8 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
     // scroll left to make left side of selection visible
     if (extremes.left < 0) {
         sx = extremes.left - 5;
-        if (sx + pageInfo->screenX + pageInfo->bitmapX < 0)
-            sx = -(pageInfo->screenX + pageInfo->bitmapX);
+        if (sx + pageInfo->screenX + pageInfo->bitmap.x < 0)
+            sx = -(pageInfo->screenX + pageInfo->bitmap.x);
     }
     // scroll right to make left side of selection visible
     else if (extremes.left >= drawAreaSize.dx()) {
@@ -1610,8 +1611,8 @@ bool DisplayModel::getScrollState(ScrollState *state)
         return false;
 
     PdfPageInfo *pageInfo = getPageInfo(state->page);
-    state->x = max(pageInfo->screenX - pageInfo->bitmapX, 0);
-    state->y = max(pageInfo->screenY - pageInfo->bitmapY, 0);
+    state->x = max(pageInfo->screenX - pageInfo->bitmap.x, 0);
+    state->y = max(pageInfo->screenY - pageInfo->bitmap.y, 0);
     // Shortcut: don't calculate precise positions, if the
     // page wasn't scrolled right/down at all
     if (pageInfo->screenX > 0 && pageInfo->screenY > 0) {

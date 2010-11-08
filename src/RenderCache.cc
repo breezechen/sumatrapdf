@@ -38,9 +38,9 @@ RenderCache::~RenderCache(void)
 }
 
 /* Find a bitmap for a page defined by <dm> and <pageNo> and optionally also
-   <rotation> and <zoomLevel> in the cache - call DropCacheEntry when you
+   <rotation> and <zoom> in the cache - call DropCacheEntry when you
    no longer need a found entry. */
-BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition *tile)
+BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition *tile)
 {
     BitmapCacheEntry *entry;
     normalizeRotation(&rotation);
@@ -48,7 +48,7 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
     for (int i = 0; i < _cacheCount; i++) {
         entry = _cache[i];
         if ((dm == entry->dm) && (pageNo == entry->pageNo) && (rotation == entry->rotation) &&
-            (INVALID_ZOOM == zoomLevel || zoomLevel == entry->zoomLevel) && (!tile || entry->tile == *tile)) {
+            (INVALID_ZOOM == zoom || zoom == entry->zoom) && (!tile || entry->tile == *tile)) {
             entry->refs++;
             goto Exit;
         }
@@ -59,9 +59,9 @@ Exit:
     return entry;
 }
 
-bool RenderCache::Exists(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition *tile)
+bool RenderCache::Exists(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition *tile)
 {
-    BitmapCacheEntry *entry = Find(dm, pageNo, rotation, zoomLevel, tile);
+    BitmapCacheEntry *entry = Find(dm, pageNo, rotation, zoom, tile);
     if (entry)
         DropCacheEntry(entry);
     return entry != NULL;
@@ -79,17 +79,17 @@ void RenderCache::DropCacheEntry(BitmapCacheEntry *entry)
     LeaveCriticalSection(&_cacheAccess);
 }
 
-void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLevel, TilePosition tile, RenderedBitmap *bitmap)
+void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition tile, RenderedBitmap *bitmap)
 {
     assert(dm);
     assert(validRotation(rotation));
 
     normalizeRotation(&rotation);
-    DBG_OUT("BitmapCache_Add(pageNo=%d, rotation=%d, zoomLevel=%.2f%%)\n", pageNo, rotation, zoomLevel);
+    DBG_OUT("BitmapCache_Add(pageNo=%d, rotation=%d, zoom=%.2f%%)\n", pageNo, rotation, zoom);
     EnterCriticalSection(&_cacheAccess);
     assert(_cacheCount <= MAX_BITMAPS_CACHED);
 
-    /* It's possible there still is a cached bitmap with different zoomLevel/rotation */
+    /* It's possible there still is a cached bitmap with different zoom/rotation */
     FreePage(dm, pageNo, &tile);
 
     if (_cacheCount >= MAX_BITMAPS_CACHED) {
@@ -110,7 +110,7 @@ void RenderCache::Add(DisplayModel *dm, int pageNo, int rotation, double zoomLev
         }
     }
 
-    BitmapCacheEntry entry = { dm, pageNo, rotation, zoomLevel, bitmap, tile, 1 };
+    BitmapCacheEntry entry = { dm, pageNo, rotation, zoom, bitmap, tile, 1 };
     _cache[_cacheCount] = (BitmapCacheEntry *)_memdup(&entry);
     assert(_cache[_cacheCount]);
     if (!_cache[_cacheCount])
@@ -137,7 +137,7 @@ static fz_rect GetTileRect(PdfEngine *engine, int pageNo, int rotation, float zo
 
     fz_matrix ctm = engine->viewctm(pageNo, zoom, rotation);
     fz_bbox pixelbox = fz_roundrect(fz_transformrect(ctm, mediabox));
-    fz_rect mbox2 = mediabox;
+
     mediabox.x0 = pixelbox.x0; mediabox.x1 = pixelbox.x1;
     mediabox.y0 = pixelbox.y0; mediabox.y1 = pixelbox.y1;
     mediabox = fz_transformrect(fz_invertmatrix(ctm), mediabox);
@@ -195,7 +195,7 @@ bool RenderCache::FreePage(DisplayModel *dm, int pageNo, TilePosition *tile)
             shouldFree = !entry->dm->pageVisibleNearby(entry->pageNo);
             if (!shouldFree && entry->tile.res > 1)
                 shouldFree = !IsTileVisible(entry->dm, entry->pageNo, entry->rotation,
-                                            entry->zoomLevel * 0.01, entry->tile, 2.0);
+                                            entry->zoom, entry->tile, 2.0);
         }
 
         if (shouldFree) {
@@ -228,7 +228,7 @@ void RenderCache::KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm)
         if (_cache[i]->dm == oldDm && oldDm->pageVisible(_cache[i]->pageNo) && _cache[i]->bitmap) {
             _cache[i]->dm = newDm;
             // make sure that the page is rerendered eventually
-            _cache[i]->zoomLevel = INVALID_ZOOM;
+            _cache[i]->zoom = INVALID_ZOOM;
             _cache[i]->bitmap->outOfDate = true;
         }
     }
@@ -284,10 +284,10 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
     EnterCriticalSection(&_requestAccess);
     int rotation = dm->rotation();
     normalizeRotation(&rotation);
-    double zoomLevel = dm->zoomReal(pageNo);
+    float zoom = dm->zoomReal(pageNo) * 0.01;
 
     if (_curReq && (_curReq->pageNo == pageNo) && (_curReq->dm == dm) && (_curReq->tile == tile)) {
-        if ((_curReq->zoomLevel != zoomLevel) || (_curReq->rotation != rotation)) {
+        if ((_curReq->zoom != zoom) || (_curReq->rotation != rotation)) {
             /* Currently rendered page is for the same page but with different zoom
             or rotation, so abort it */
             DBG_OUT("  aborting rendering\n");
@@ -305,7 +305,7 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
     for (int i=0; i < _requestCount; i++) {
         PageRenderRequest* req = &(_requests[i]);
         if ((req->pageNo == pageNo) && (req->dm == dm) && (req->tile == tile)) {
-            if ((req->zoomLevel == zoomLevel) && (req->rotation == rotation)) {
+            if ((req->zoom == zoom) && (req->rotation == rotation)) {
                 /* Request with exactly the same parameters already queued for
                    rendering. Move it to the top of the queue so that it'll
                    be rendered faster. */
@@ -319,14 +319,14 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
                 /* There was a request queued for the same page but with different
                    zoom or rotation, so only replace this request */
                 DBG_OUT("Replacing request for page %d with new request\n", req->pageNo);
-                req->zoomLevel = zoomLevel;
+                req->zoom = zoom;
                 req->rotation = rotation;
                 goto LeaveCsAndExit;
             }
         }
     }
 
-    if (Exists(dm, pageNo, rotation, zoomLevel, &tile)) {
+    if (Exists(dm, pageNo, rotation, zoom, &tile)) {
         /* This page has already been rendered in the correct dimensions
            and isn't about to be rerendered in different dimensions */
         goto LeaveCsAndExit;
@@ -346,7 +346,7 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
     newRequest->dm = dm;
     newRequest->pageNo = pageNo;
     newRequest->rotation = rotation;
-    newRequest->zoomLevel = zoomLevel;
+    newRequest->zoom = zoom;
     newRequest->tile = tile;
     newRequest->abort = FALSE;
     newRequest->timestamp = GetTickCount();
@@ -448,7 +448,7 @@ void RenderCache::ClearQueueForDisplayModel(DisplayModel *dm, int pageNo, TilePo
     for (int i = 0; i < reqCount; i++) {
         PageRenderRequest *req = &(_requests[i]);
         bool shouldRemove = req->dm == dm && (pageNo == INVALID_PAGE_NO || req->pageNo == pageNo) &&
-            (!tile || req->tile.res != tile->res || !IsTileVisible(dm, req->pageNo, req->rotation, req->zoomLevel * 0.01, *tile, 0.5));
+            (!tile || req->tile.res != tile->res || !IsTileVisible(dm, req->pageNo, req->rotation, req->zoom, *tile, 0.5));
         if (i != curPos)
             _requests[curPos] = _requests[i];
         if (shouldRemove)
@@ -497,8 +497,8 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
             continue;
         }
 
-        fz_rect pageRect = GetTileRect(req.dm->pdfEngine, req.pageNo, req.rotation, req.zoomLevel * 0.01, req.tile);
-        bmp = req.dm->renderBitmap(req.pageNo, req.zoomLevel, req.rotation, &pageRect,
+        fz_rect pageRect = GetTileRect(req.dm->pdfEngine, req.pageNo, req.rotation, req.zoom, req.tile);
+        bmp = req.dm->renderBitmap(req.pageNo, req.zoom, req.rotation, &pageRect,
                                    pageRenderAbortCb, (void*)&req, Target_View,
                                    cache->useGdiRenderer && *cache->useGdiRenderer);
         cache->ClearCurrentRequest();
@@ -513,7 +513,7 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
             DBG_OUT("PageRenderThread(): finished rendering %d\n", req.pageNo);
         else
             DBG_OUT("PageRenderThread(): failed to render a bitmap of page %d\n", req.pageNo);
-        cache->Add(req.dm, req.pageNo, req.rotation, req.zoomLevel, req.tile, bmp);
+        cache->Add(req.dm, req.pageNo, req.rotation, req.zoom, req.tile, bmp);
 #ifdef CONSERVE_MEMORY
         cache->FreeNotVisible();
 #endif
@@ -590,7 +590,7 @@ UINT RenderCache::PaintTiles(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo
     int tileCount = 1 << tileRes;
 
     TilePosition tile = { tileRes, 0, 0 };
-    RectI screen = { bounds->left, bounds->top, rect_dx(bounds), rect_dy(bounds) };
+    RectI screen = RectI_FromRECT(bounds);
     RectI isectPOS, isect;
 
     fz_matrix ctm = dm->pdfEngine->viewctm(pageNo, zoom, rotation);

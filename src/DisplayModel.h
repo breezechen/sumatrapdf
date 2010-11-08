@@ -3,10 +3,8 @@
 #ifndef _DISPLAY_MODEL_H_
 #define _DISPLAY_MODEL_H_
 
-#include "base_util.h"
-#include "geom_util.h"
-#include "DisplayState.h"
 #include "PdfEngine.h"
+#include "DisplayState.h"
 #include "PdfSearch.h"
 
 #define INVALID_ZOOM        -99
@@ -66,7 +64,7 @@ typedef struct PdfPageInfo {
     /* data that changes due to scrolling. Calculated in DisplayModel_RecalcVisibleParts() */
     double          visible; /* visible ratio of the page (0 = invisible, 1 = fully visible) */
     /* part of the image that should be shown */
-    int             bitmapX, bitmapY, bitmapDx, bitmapDy;
+    RectI           bitmap;
     /* where it should be blitted on the screen */
     int             screenX, screenY;
     /* position of page relative to visible draw area */
@@ -132,19 +130,19 @@ public:
     DisplayModel(DisplayMode displayMode, int dpi=USER_DEFAULT_SCREEN_DPI);
     ~DisplayModel();
 
-    RenderedBitmap *renderBitmap(int pageNo, double zoomReal, int rotation,
+    RenderedBitmap *renderBitmap(int pageNo, float zoom, int rotation,
                          fz_rect *pageRect, /* if NULL: defaults to the page's mediabox */
                          BOOL (*abortCheckCbkA)(void *data),
                          void *abortCheckCbkDataA,
                          RenderTarget target=Target_View,
                          bool useGdi=false) {
         if (!pdfEngine) return NULL;
-        return pdfEngine->renderBitmap(pageNo, zoomReal, rotation, pageRect,
+        return pdfEngine->renderBitmap(pageNo, zoom, rotation, pageRect,
             abortCheckCbkA, abortCheckCbkDataA, target, useGdi);
     }
-    bool renderPage(HDC hDC, int pageNo, RECT *screenRect, double zoomReal=0, int rotation=0, fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
+    bool renderPage(HDC hDC, int pageNo, RECT *screenRect, float zoom=0, int rotation=0, fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
         if (!pdfEngine) return false;
-        return pdfEngine->renderPage(hDC, pageNo, screenRect, NULL, zoomReal, rotation, pageRect, target);
+        return pdfEngine->renderPage(hDC, pageNo, screenRect, NULL, zoom, rotation, pageRect, target);
     }
 
     /* number of pages in PDF document */

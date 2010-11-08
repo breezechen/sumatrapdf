@@ -1,13 +1,13 @@
 /* Copyright Krzysztof Kowalczyk 2006-2009
    License: GPLv3 */
 
-#include "FileHistory.h"
-#include "tstr_util.h"
-
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "FileHistory.h"
+#include "tstr_util.h"
 
 /* Handling of file history list.
 

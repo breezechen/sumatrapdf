@@ -86,6 +86,19 @@ void RectI_FromRectD(RectI *rOut, const RectD *rIn)
     rOut->dy = intFromDouble(rIn->dy);
 }
 
+RECT RECT_FromRectI(RectI *rIn)
+{
+    RECT rOut;
+    SetRect(&rOut, rIn->x, rIn->y, rIn->x + rIn->dx, rIn->y + rIn->dy);
+    return rOut;
+}
+
+RectI RectI_FromRECT(RECT *rIn)
+{
+    RectI rOut = { rIn->left, rIn->top, rIn->right - rIn->left, rIn->bottom - rIn->top };
+    return rOut;
+}
+
 void RectD_Copy(RectD *rOut, const RectD *rIn) {
     rOut->x = (double)rIn->x;
     rOut->y = (double)rIn->y;

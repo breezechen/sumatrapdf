@@ -2,9 +2,8 @@
 // PDF-source synchronizer based on .pdfsync file
 // License: GPLv2
 #include "SumatraPDF.h"
+#include "WindowInfo.h"
 #include "PdfSync.h"
-#include "tstr_util.h"
-#include "geom_util.h"
 #include <shlwapi.h>
 #include <sys/stat.h>
 

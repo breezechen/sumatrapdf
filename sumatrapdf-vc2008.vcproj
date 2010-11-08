@@ -237,6 +237,10 @@
 				RelativePath=".\src\Version.h"
 				>
 			</File>
+			<File
+				RelativePath=".\src\WindowInfo.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -321,6 +325,10 @@
 			</File>
 			<File
 				RelativePath=".\baseutils\tstr_util.h"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\vstrlist.h"
 				>
 			</File>
 			<File

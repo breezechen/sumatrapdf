@@ -3,7 +3,8 @@
 #include <dbghelp.h>
 #include <process.h>
 #include "CrashHandler.h"
-#include "str_util.h"
+#include "base_util.h"
+#include "tstr_util.h"
 #include "WinUtil.hpp"
 
 typedef BOOL WINAPI MiniDumpWriteProc(
