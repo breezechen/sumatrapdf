@@ -168,8 +168,8 @@ public:
        ZOOM_FIT_WIDTH or ZOOM_FIT_CONTENT, whose real value depends on draw area size */
     double zoomVirtual(void) const { return _zoomVirtual; }
 
-    double zoomReal(void) const { return _zoomReal; }
-    double zoomReal(int pageNo);
+    float zoomReal(void) const { return _zoomReal; }
+    float zoomReal(int pageNo);
 
     int startPage(void) const { return _startPage; }
 
@@ -287,7 +287,7 @@ protected:
     void            startRenderingPage(int pageNo);
 
     bool            buildPagesInfo(void);
-    double          zoomRealFromVirtualForPage(double zoomVirtual, int pageNo);
+    float           zoomRealFromVirtualForPage(double zoomVirtual, int pageNo);
     int             firstVisiblePageNo(void) const;
     void            changeStartPage(int startPage);
     void            getContentStart(int pageNo, int *x, int *y);
@@ -328,9 +328,9 @@ protected:
     SizeD           _canvasSize;
     DisplaySettings * _padding;
 
-    /* real zoom value calculated from zoomVirtual. Same as zoomVirtual except
+    /* real zoom value calculated from zoomVirtual. Same as zoomVirtual * 0.01 except
        for ZOOM_FIT_PAGE, ZOOM_FIT_WIDTH and ZOOM_FIT_CONTENT */
-    double          _zoomReal;
+    float           _zoomReal;
     double          _zoomVirtual;
     int             _rotation;
     /* dpi correction factor by which _zoomVirtual has to be multiplied in

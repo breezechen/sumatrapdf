@@ -3061,8 +3061,8 @@ static void PaintForwardSearchMark(WindowInfo *win, HDC hdc) {
         win->dm->rectCvtUserToScreen(win->fwdsearchmarkPage, &recD);
         if (gGlobalPrefs.m_fwdsearchOffset > 0)
         {
-            recD.x = pageInfo->screenX + (double)gGlobalPrefs.m_fwdsearchOffset * win->dm->zoomReal() / 100.0;
-            recD.dx = (gGlobalPrefs.m_fwdsearchWidth > 0 ? (double)gGlobalPrefs.m_fwdsearchWidth : 15.0) * win->dm->zoomReal() / 100.0;
+            recD.x = pageInfo->screenX + (double)gGlobalPrefs.m_fwdsearchOffset * win->dm->zoomReal();
+            recD.dx = (gGlobalPrefs.m_fwdsearchWidth > 0 ? (double)gGlobalPrefs.m_fwdsearchWidth : 15.0) * win->dm->zoomReal();
             recD.y -= 4;
             recD.dy += 8;
         }
@@ -3270,7 +3270,7 @@ static void CopySelectionToClipboard(WindowInfo *win)
     clipRegion.x0 = r->x; clipRegion.x1 = r->x + r->dx;
     clipRegion.y0 = r->y; clipRegion.y1 = r->y + r->dy;
 
-    RenderedBitmap * bmp = win->dm->renderBitmap(selOnPage->pageNo, win->dm->zoomReal() * 0.01,
+    RenderedBitmap * bmp = win->dm->renderBitmap(selOnPage->pageNo, win->dm->zoomReal(),
         win->dm->rotation(), &clipRegion, NULL, NULL, Target_Export, gUseGdiRenderer);
     if (bmp) {
         if (!SetClipboardData(CF_BITMAP, bmp->getBitmap()))
