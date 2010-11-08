@@ -150,6 +150,17 @@ static RectI GetTileOnScreen(PdfEngine *engine, int pageNo, int rotation, float 
     fz_rect mediabox = GetTileRect(engine, pageNo, rotation, zoom, tile);
     fz_bbox bbox = fz_roundrect(fz_transformrect(ctm, mediabox));
     RectI tileOnScreen = { bbox.x0, bbox.y0, bbox.x1 - bbox.x0, bbox.y1 - bbox.y0 };
+
+    rotation += engine->pageRotation(pageNo);
+    normalizeRotation(&rotation);
+    if (rotation != 0) {
+        bbox = fz_roundrect(fz_transformrect(ctm, engine->pageMediabox(pageNo)));
+        if (90 == rotation || 180 == rotation)
+            tileOnScreen.x += bbox.x1 - bbox.x0;
+        if (180 == rotation || 270 == rotation)
+            tileOnScreen.y += bbox.y1 - bbox.y0;
+    }
+
     return tileOnScreen;
 }
 
