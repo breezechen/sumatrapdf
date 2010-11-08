@@ -1389,26 +1389,6 @@ static void WindowInfo_RefreshUpdatedFiles(bool autorefresh) {
 }
 #endif
 
-static bool WindowInfo_Dib_Init(WindowInfo *win) {
-    assert(NULL == win->dibInfo);
-    win->dibInfo = (BITMAPINFO*)malloc(sizeof(BITMAPINFO) + 12);
-    if (!win->dibInfo)
-        return false;
-    win->dibInfo->bmiHeader.biSize = sizeof(win->dibInfo->bmiHeader);
-    win->dibInfo->bmiHeader.biPlanes = 1;
-    win->dibInfo->bmiHeader.biBitCount = 24;
-    win->dibInfo->bmiHeader.biCompression = BI_RGB;
-    win->dibInfo->bmiHeader.biXPelsPerMeter = 2834;
-    win->dibInfo->bmiHeader.biYPelsPerMeter = 2834;
-    win->dibInfo->bmiHeader.biClrUsed = 0;
-    win->dibInfo->bmiHeader.biClrImportant = 0;
-    return true;
-}
-
-static void WindowInfo_Dib_Deinit(WindowInfo *win) {
-    free((void*)win->dibInfo);
-    win->dibInfo = NULL;
-}
 
 static void WindowInfo_DoubleBuffer_Delete(WindowInfo *win) {
     if (win->bmpDoubleBuffer) {
@@ -1502,8 +1482,6 @@ static void WindowInfo_Delete(WindowInfo *win)
         CloseHandle(win->findStatusThread);
         win->findStatusThread = NULL;
     }
-    FreePdfProperties(win);
-    WindowInfo_Dib_Deinit(win);
     WindowInfo_DoubleBuffer_Delete(win);
     DragAcceptFiles(win->hwndCanvas, FALSE);
     DeleteOldSelectionInfo(win);
@@ -1549,9 +1527,6 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     if (!win)
         return NULL;
 
-    if (!WindowInfo_Dib_Init(win))
-        goto Error;
-
     win->state = WS_ABOUT;
     win->hwndFrame = hwndFrame;
     win->mouseAction = MA_IDLE;
@@ -1563,9 +1538,6 @@ static WindowInfo *WindowInfo_New(HWND hwndFrame) {
     ReleaseDC(hwndFrame, hdc);
 
     return win;
-Error:
-    WindowInfo_Delete(win);
-    return NULL;
 }
 
 static void WindowInfoList_Add(WindowInfo *win) {
@@ -6977,7 +6949,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     if (win->hwndFindBox == GetFocus() || win->hwndPageBox == GetFocus())
                         SendMessage(GetFocus(), WM_COPY, 0, 0);
                     else if (win->hwndPdfProperties == GetForegroundWindow())
-                        CopyPropertiesToClipboard(win);
+                        CopyPropertiesToClipboard(win->hwndPdfProperties);
                     else if (win->selectionOnPage)
                         CopySelectionToClipboard(win);
                     else
