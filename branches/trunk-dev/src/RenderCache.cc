@@ -253,11 +253,8 @@ bool RenderCache::FreeNotVisible(void)
 // determine the count of tiles required for a page at a given zoom level
 static USHORT GetTileRes(DisplayModel *dm, int pageNo)
 {
-    int rotation = dm->rotation();
-    float zoom = dm->zoomReal() * 0.01;
-
     fz_rect mediabox = dm->pdfEngine->pageMediabox(pageNo);
-    fz_matrix ctm = dm->pdfEngine->viewctm(pageNo, zoom, rotation);
+    fz_matrix ctm = dm->pdfEngine->viewctm(pageNo, dm->zoomReal(), dm->rotation());
     fz_rect pixelbox = fz_transformrect(ctm, mediabox);
 
     double factorW = (pixelbox.x1 - pixelbox.x0) / TILE_MAX_W;
@@ -284,7 +281,7 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
     EnterCriticalSection(&_requestAccess);
     int rotation = dm->rotation();
     normalizeRotation(&rotation);
-    float zoom = dm->zoomReal(pageNo) * 0.01;
+    float zoom = dm->zoomReal(pageNo);
 
     if (_curReq && (_curReq->pageNo == pageNo) && (_curReq->dm == dm) && (_curReq->tile == tile)) {
         if ((_curReq->zoom != zoom) || (_curReq->rotation != rotation)) {
@@ -586,7 +583,7 @@ UINT RenderCache::PaintTiles(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo
                              bool *renderOutOfDateCue, bool *renderedReplacement)
 {
     int rotation = dm->rotation();
-    float zoom = dm->zoomReal() * 0.01;
+    float zoom = dm->zoomReal();
     int tileCount = 1 << tileRes;
 
     TilePosition tile = { tileRes, 0, 0 };

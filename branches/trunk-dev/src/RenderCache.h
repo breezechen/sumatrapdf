@@ -25,7 +25,7 @@ typedef struct TilePosition {
 } TilePosition;
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
-   that uniquely identifies rendered page (dm, pageNo, rotation, zoomReal)
+   that uniquely identifies rendered page (dm, pageNo, rotation, zoom)
    and corresponding rendered bitmap.
 */
 typedef struct {

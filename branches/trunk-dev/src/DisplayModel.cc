@@ -102,8 +102,8 @@ bool DisplayModel::displayStateFromModel(DisplayState *ds)
         return false;
 
     ds->displayMode = presMode ? _presDisplayMode : displayMode();
-    ds->rotation = rotation();
-    ds->zoomVirtual = presMode ? _presZoomVirtual : zoomVirtual();
+    ds->rotation = _rotation;
+    ds->zoomVirtual = presMode ? _presZoomVirtual : _zoomVirtual;
     ds->showToc = _showToc;
 
     ScrollState ss;
@@ -317,38 +317,34 @@ bool DisplayModel::pageVisibleNearby(int pageNo)
 
 /* Given a zoom level that can include a "virtual" zoom levels like ZOOM_FIT_WIDTH,
    ZOOM_FIT_PAGE or ZOOM_FIT_CONTENT, calculate an absolute zoom level */
-double DisplayModel::zoomRealFromVirtualForPage(double zoomVirtual, int pageNo)
+float DisplayModel::zoomRealFromVirtualForPage(double zoomVirtual, int pageNo)
 {
-    double          zoomX, zoomY, pageDx, pageDy;
-    double          areaForPageDx, areaForPageDy;
-    int             areaForPageDxInt;
-    int             columns;
-
     if (zoomVirtual != ZOOM_FIT_WIDTH && zoomVirtual != ZOOM_FIT_PAGE && zoomVirtual != ZOOM_FIT_CONTENT)
-        return zoomVirtual * this->_dpiFactor;
+        return zoomVirtual * 0.01 * this->_dpiFactor;
 
+    double pageDx, pageDy;
     PdfPageInfo *pageInfo = getPageInfo(pageNo);
     bool fitToContent = (ZOOM_FIT_CONTENT == zoomVirtual);
     if (fitToContent && fz_isemptyrect(pageInfo->contentBox))
         pageInfo->contentBox = pdfEngine->pageContentBox(pageNo);
-    pageSizeAfterRotation(pageInfo, rotation(), &pageDx, &pageDy, fitToContent);
+    pageSizeAfterRotation(pageInfo, _rotation, &pageDx, &pageDy, fitToContent);
 
     assert(0 != (int)pageDx);
     assert(0 != (int)pageDy);
 
-    columns = columnsFromDisplayMode(displayMode());
-    areaForPageDx = (drawAreaSize.dx() - _padding->pageBorderLeft - _padding->pageBorderRight);
+    int columns = columnsFromDisplayMode(displayMode());
+    double areaForPageDx = (drawAreaSize.dx() - _padding->pageBorderLeft - _padding->pageBorderRight);
     areaForPageDx -= _padding->betweenPagesX * (columns - 1);
-    areaForPageDxInt = (int)(areaForPageDx / columns);
+    int areaForPageDxInt = (int)(areaForPageDx / columns);
     areaForPageDx = (double)areaForPageDxInt;
-    areaForPageDy = drawAreaSize.dy() - _padding->pageBorderTop - _padding->pageBorderBottom;
+    int areaForPageDy = drawAreaSize.dy() - _padding->pageBorderTop - _padding->pageBorderBottom;
 
     /* TODO: should use gWinDx if we don't show scrollbarY */
     if (areaForPageDx <= 0 || areaForPageDy <= 0)
         return 0;
 
-    zoomX = (areaForPageDx * 100.0) / (double)pageDx;
-    zoomY = (areaForPageDy * 100.0) / (double)pageDy;
+    float zoomX = areaForPageDx / (double)pageDx;
+    float zoomY = areaForPageDy / (double)pageDy;
 
     if (ZOOM_FIT_WIDTH == zoomVirtual)
         return zoomX;
@@ -414,10 +410,10 @@ void DisplayModel::setZoomVirtual(double zoomVirtual)
         /* we want the same zoom for all pages, so use the smallest zoom
            across the pages so that the largest page fits. In most PDFs all
            pages are the same size anyway */
-        double  minZoom = INVALID_BIG_ZOOM;
+        float minZoom = INVALID_BIG_ZOOM;
         for (int pageNo = 1; pageNo <= pageCount(); pageNo++) {
             if (pageShown(pageNo)) {
-                double thisPageZoom = zoomRealFromVirtualForPage(zoomVirtual, pageNo);
+                float thisPageZoom = zoomRealFromVirtualForPage(zoomVirtual, pageNo);
                 if (minZoom > thisPageZoom)
                     minZoom = thisPageZoom;
             }
@@ -425,18 +421,18 @@ void DisplayModel::setZoomVirtual(double zoomVirtual)
         assert(minZoom != INVALID_BIG_ZOOM);
         this->_zoomReal = minZoom;
     } else if (ZOOM_FIT_CONTENT == zoomVirtual) {
-        double newZoom = zoomRealFromVirtualForPage(zoomVirtual, currentPageNo());
+        float newZoom = zoomRealFromVirtualForPage(zoomVirtual, currentPageNo());
         // limit zooming in to 800% on almost empty pages
-        if (newZoom > 800)
-            newZoom = 800;
+        if (newZoom > 8.0)
+            newZoom = 8.0;
         // don't zoom in by just a few pixels (throwing away a prerendered page)
         if (newZoom < this->_zoomReal || this->_zoomReal / newZoom < 0.95)
             this->_zoomReal = newZoom;
     } else
-        this->_zoomReal = zoomVirtual * this->_dpiFactor;
+        this->_zoomReal = zoomVirtual * 0.01 * this->_dpiFactor;
 }
 
-double DisplayModel::zoomReal(int pageNo)
+float DisplayModel::zoomReal(int pageNo)
 {
     DisplayMode mode = displayMode();
     if (displayModeContinuous(mode))
@@ -480,7 +476,7 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
     _rotation = rotation;
 
     double currPosY = _padding->pageBorderTop;
-    double currZoomReal = _zoomReal;
+    float currZoomReal = _zoomReal;
     setZoomVirtual(zoomVirtual);
 
 //    DBG_OUT("DisplayModel::relayout(), pageCount=%d, zoomReal=%.6f, zoomVirtual=%.2f\n", pageCount, dm->zoomReal, dm->zoomVirtual);
@@ -504,8 +500,8 @@ void DisplayModel::relayout(double zoomVirtual, int rotation)
             continue;
         }
         pageSizeAfterRotation(pageInfo, rotation, &pageDx, &pageDy);
-        currDxInt = (int)(pageDx * _zoomReal * 0.01 + 0.5);
-        currDyInt = (int)(pageDy * _zoomReal * 0.01 + 0.5);
+        currDxInt = (int)(pageDx * _zoomReal + 0.5);
+        currDyInt = (int)(pageDy * _zoomReal + 0.5);
         pageInfo->currDx = (double)currDxInt;
         pageInfo->currDy = (double)currDyInt;
 
@@ -621,7 +617,7 @@ void DisplayModel::changeStartPage(int startPage)
             pageInfo->shown = false;
         pageInfo->visible = 0;
     }
-    relayout(zoomVirtual(), rotation());
+    relayout(_zoomVirtual, _rotation);
 }
 
 /* Given positions of each page in a large sheet that is continous view and
@@ -737,7 +733,7 @@ bool DisplayModel::rectCvtScreenToUser(int *pageNo, RectD *r)
 int DisplayModel::getPageNoByPoint (double x, double y) 
 {
     // no reasonable answer possible, if zoom hasn't been set yet
-    if (!zoomReal())
+    if (!_zoomReal)
         return POINT_OUT_OF_PAGE;
 
     for (int pageNo = 1; pageNo <= pageCount(); ++pageNo) {
@@ -838,7 +834,7 @@ void DisplayModel::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
 
     bool isDocLoaded = getScrollState(&ss);
     setTotalDrawAreaSize(totalDrawAreaSize);
-    relayout(zoomVirtual(), rotation());
+    relayout(_zoomVirtual, _rotation);
     if (isDocLoaded) {
         // when fitting to content, let goToPage do the necessary scrolling
         if (_zoomVirtual != ZOOM_FIT_CONTENT)
@@ -864,7 +860,7 @@ void DisplayModel::getContentStart(int pageNo, int *x, int *y)
         return;
     }
 
-    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal * 0.01, _rotation);
+    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, _rotation);
     fz_rect rect = { pageInfo->contentBox.x0, pageInfo->contentBox.y0,
         pageInfo->contentBox.x1, pageInfo->contentBox.y1 };
     rect = fz_transformrect(ctm, rect);
@@ -947,7 +943,7 @@ void DisplayModel::changeDisplayMode(DisplayMode displayMode)
             pageInfo->shown = true;
             pageInfo->visible = 0;
         }
-        relayout(zoomVirtual(), rotation());
+        relayout(_zoomVirtual, _rotation);
     }
     goToPage(currPageNo, 0);
 }
@@ -1170,7 +1166,7 @@ void DisplayModel::zoomTo(double zoomVirtual, POINT *fixPt)
             ss.x = ss.y = -1;
 
         //DBG_OUT("DisplayModel::zoomTo() zoomVirtual=%.6f\n", _zoomVirtual);
-        relayout(zoomVirtual, rotation());
+        relayout(zoomVirtual, _rotation);
         setScrollState(&ss);
 
         if (fixPt) {
@@ -1187,7 +1183,7 @@ void DisplayModel::zoomTo(double zoomVirtual, POINT *fixPt)
 void DisplayModel::zoomBy(double zoomFactor, POINT *fixPt)
 {
     // zoomTo expects a zoomVirtual, so undo the _dpiFactor here
-    double newZoom = _zoomReal / _dpiFactor * zoomFactor;
+    double newZoom = 100.0 * _zoomReal / _dpiFactor * zoomFactor;
     //DBG_OUT("DisplayModel::zoomBy() zoomReal=%.6f, zoomFactor=%.2f, newZoom=%.2f\n", dm->zoomReal, zoomFactor, newZoom);
     if (newZoom > ZOOM_MAX)
         return;
@@ -1206,14 +1202,14 @@ void DisplayModel::rotateBy(int newRotation)
     if (!validRotation(newRotation))
         return;
 
-    newRotation += rotation();
+    newRotation += _rotation;
     normalizeRotation(&newRotation);
     assert(validRotation(newRotation));
     if (!validRotation(newRotation))
         return;
 
     int currPageNo = currentPageNo();
-    relayout(zoomVirtual(), newRotation);
+    relayout(_zoomVirtual, newRotation);
     goToPage(currPageNo, 0);
 }
 
@@ -1264,17 +1260,11 @@ bool DisplayModel::cvtUserToScreen(int pageNo, double *x, double *y)
     if (!pageInfo)
         return false;
 
-    double zoom = zoomReal();
-    int rot = rotation();
-    fz_point p;
-
+    int rot = _rotation;
     normalizeRotation(&rot);
-    zoom *= 0.01;
 
-    p.x = *x;
-    p.y = *y;
-
-    fz_matrix ctm = pdfEngine->viewctm(pageNo, zoom, rot);
+    fz_point p = { *x, *y };
+    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, rot);
     fz_point tp = fz_transformpoint(ctm, p);
 
     rot += pageInfo->rotation;
@@ -1292,24 +1282,20 @@ bool DisplayModel::cvtUserToScreen(int pageNo, double *x, double *y)
 
 bool DisplayModel::cvtScreenToUser(int *pageNo, double *x, double *y)
 {
-    double zoom = zoomReal();
-    int rot = rotation();
-    fz_point p;
-
-    normalizeRotation(&rot);
-    zoom *= 0.01;
-
     *pageNo = getPageNoByPoint(*x, *y);
     if (*pageNo == POINT_OUT_OF_PAGE) 
         return false;
 
+    int rot = _rotation;
+    normalizeRotation(&rot);
+
     const PdfPageInfo *pageInfo = getPageInfo(*pageNo);
+    fz_point p;
     p.x = *x - 0.5 - pageInfo->currPosX + areaOffset.x;
     p.y = *y - 0.5 - pageInfo->currPosY + areaOffset.y;
 
-    fz_matrix ctm = pdfEngine->viewctm(*pageNo, zoom, rot);
+    fz_matrix ctm = pdfEngine->viewctm(*pageNo, _zoomReal, rot);
     fz_matrix invCtm = fz_invertmatrix(ctm);
-
     fz_point tp = fz_transformpoint(invCtm, p);
 
     rot += pageInfo->rotation;
