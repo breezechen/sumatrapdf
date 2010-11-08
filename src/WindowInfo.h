@@ -43,26 +43,6 @@ typedef struct SelectionOnPage {
                                          * or NULL if such page not exists */
 } SelectionOnPage;
 
-typedef struct PdfPropertiesLayoutEl {
-    /* A property is always in format:
-    Name (left): Value (right) */
-    const TCHAR *   leftTxt;
-    const TCHAR *   rightTxt;
-
-    /* data calculated by the layout */
-    int             leftTxtPosX;
-    int             leftTxtPosY;
-    int             leftTxtDx;
-    int             leftTxtDy;
-
-    int             rightTxtPosX;
-    int             rightTxtPosY;
-    int             rightTxtDx;
-    int             rightTxtDy;
-} PdfPropertiesLayoutEl;
-
-enum { MAX_PDF_PROPERTIES = 128 };
-
 /* Describes information related to one window with (optional) pdf document
    on the screen */
 class WindowInfo : public PdfSearchTracker
@@ -70,7 +50,6 @@ class WindowInfo : public PdfSearchTracker
 public:
     WindowInfo() {
         dm = NULL;
-        dibInfo = NULL;
         next = NULL;
         linkOnLastButtonDown = NULL;
         url = NULL;
@@ -120,7 +99,6 @@ public:
         title = NULL;
         loadedFilePath = NULL;
         currPageNo = 0;
-        pdfPropertiesCount = 0;
         xScrollSpeed = 0;
         yScrollSpeed = 0;
         wheelAccumDelta = 0;
@@ -166,7 +144,6 @@ public:
     HMENU           hMenu;
 
     HDC             hdc;
-    BITMAPINFO *    dibInfo;
     int             dpi;
     float           uiDPIFactor;
 
@@ -242,9 +219,6 @@ public:
     int             wheelAccumDelta;
     UINT_PTR        delayedRepaintTimer;
     bool            resizingTocBox;
-
-    PdfPropertiesLayoutEl   pdfProperties[MAX_PDF_PROPERTIES];
-    int                     pdfPropertiesCount;
 
     void ShowTocBox();
     void HideTocBox();

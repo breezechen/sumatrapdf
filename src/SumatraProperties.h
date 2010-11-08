@@ -8,9 +8,28 @@
 
 enum Magnitudes { KB = 1024, MB = 1024 * KB, GB = 1024 * MB };
 
-void FreePdfProperties(WindowInfo *win);
+typedef struct PdfPropertyEl PdfPropertyEl;
+struct PdfPropertyEl {
+    /* A property is always in format:
+    Name (left): Value (right) */
+    const TCHAR *   leftTxt;
+    const TCHAR *   rightTxt;
+
+    /* data calculated by the layout */
+    RectI           leftPos;
+    RectI           rightPos;
+
+    /* next element in linked list */
+    PdfPropertyEl * next;
+};
+
+typedef struct PdfPropertiesLayout {
+    PdfPropertyEl * first;
+    PdfPropertyEl * last;
+} PdfPropertiesLayout;
+
 void OnMenuProperties(WindowInfo *win);
-void CopyPropertiesToClipboard(WindowInfo *win);
+void CopyPropertiesToClipboard(HWND hwnd);
 LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif
