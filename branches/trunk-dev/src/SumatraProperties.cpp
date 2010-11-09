@@ -201,14 +201,13 @@ static TCHAR *FormatPdfSize(uint64_t size) {
 
 // format page size according to locale (e.g. "29.7 x 20.9 cm" or "11.69 x 8.23 in")
 // Caller needs to free the result
-static TCHAR *FormatPdfPageSize(double width, double height) {
+static TCHAR *FormatPdfPageSize(SizeD size) {
     TCHAR unitSystem[2];
     GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IMEASURE, unitSystem, dimof(unitSystem));
     bool isMetric = unitSystem[0] == '0';
 
-    width *= (isMetric ? 2.54 : 1.0) / PDF_FILE_DPI;
-    height *= (isMetric ? 2.54 : 1.0) / PDF_FILE_DPI;
-
+    double width = size.dx() * (isMetric ? 2.54 : 1.0) / PDF_FILE_DPI;
+    double height = size.dy() * (isMetric ? 2.54 : 1.0) / PDF_FILE_DPI;
     if (((int)(width * 100)) % 100 == 99)
         width += 0.01;
     if (((int)(height * 100)) % 100 == 99)
@@ -259,8 +258,7 @@ static void AddPdfProperty(PdfPropertiesLayout *layoutData, const TCHAR *left, c
 
 static void FreePdfProperties(HWND hwnd)
 {
-    // free the text on the right. Text on left is static, so doesn't need to
-    // be freed
+    // free the text on the right. Text on left is static, so doesn't need to be freed
     PdfPropertiesLayout *layoutData = (PdfPropertiesLayout *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
     assert(layoutData);
     for (PdfPropertyEl *el = layoutData->first; el; ) {
@@ -293,9 +291,7 @@ static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RECT *rect) {
         el->leftPos.dx = txtSize.cx;
         el->leftPos.dy = txtSize.cy;
 
-        // if (i > 0)
-        //    assert(win->pdfProperties[i-1].leftTxtDy == win->pdfProperties[i].leftTxtDy);
-
+        assert(el->leftPos.dy == layoutData->first->leftPos.dy);
         if (el->leftPos.dx > leftMaxDx)
             leftMaxDx = el->leftPos.dx;
     }
@@ -309,9 +305,7 @@ static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RECT *rect) {
         el->rightPos.dx = txtSize.cx;
         el->rightPos.dy = txtSize.cy;
 
-        // if (i > 0)
-        //     assert(win->pdfProperties[i-1].rightTxtDy == win->pdfProperties[i].rightTxtDy);
-
+        assert(el->rightPos.dy == layoutData->first->rightPos.dy);
         if (el->rightPos.dx > rightMaxDx)
             rightMaxDx = el->rightPos.dx;
         lineCount++;
@@ -520,7 +514,7 @@ void OnMenuProperties(WindowInfo *win)
     AddPdfProperty(layoutData, _TR("Number of Pages:"), tmp);
     free(tmp);
 
-    tmp = FormatPdfPageSize(dm->getPageInfo(dm->currentPageNo())->pageDx, dm->getPageInfo(dm->currentPageNo())->pageDy);
+    tmp = FormatPdfPageSize(dm->getPageInfo(dm->currentPageNo())->page);
     AddPdfProperty(layoutData, _TR("Page Size:"), tmp);
     free(tmp);
 
