@@ -415,8 +415,6 @@ LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
             gHwndAbout = NULL;
             break;
 
-        /* TODO: handle mouse move/down/up so that links work */
-
         default:
             return DefWindowProc(hwnd, message, wParam, lParam);
     }

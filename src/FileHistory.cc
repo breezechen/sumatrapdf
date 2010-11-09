@@ -144,7 +144,7 @@ BOOL FileHistoryList_Node_RemoveByFilePath(FileHistoryList **root, const TCHAR *
     assert(filePath);
     if (!filePath) return FALSE;
 
-    /* TODO: traversing the list twice, but it's small so we don't care */
+    /* traversing the list twice, but it's small so we don't care */
     node = FileHistoryList_Node_FindByFilePath(root, filePath);
     if (!node)
         return FALSE;

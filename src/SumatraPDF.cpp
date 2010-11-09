@@ -1424,7 +1424,6 @@ static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
         WindowInfo_DoubleBuffer_Delete(win);
         return false;
     }
-    /* TODO: do I need this ? */
     SelectObject(win->hdcDoubleBuffer, win->bmpDoubleBuffer);
     /* fill out everything with background color */
     RECT r;
@@ -1942,17 +1941,9 @@ static bool LoadPdfIntoWindow(
     if (placeWindow && (gGlobalPrefs.m_globalPrefsOnly || state && state->useGlobalValues))
         state = NULL;
 
-    /* In theory I should get scrollbars sizes using Win32_GetScrollbarSize(&scrollbarYDx, &scrollbarXDy);
-       but scrollbars are not part of the client area on windows so it's better
-       not to have them taken into account by DisplayModelSplash code.
-       TODO: I think it's broken anyway and DisplayModelSplash needs to know if
-             scrollbars are part of client area in order to accomodate windows
-             UI properly */
     DisplayMode displayMode = gGlobalPrefs.m_defaultDisplayMode;
     int startPage = 1;
     ScrollState ss = { 1, -1, -1 };
-    int scrollbarYDx = 0;
-    int scrollbarXDy = 0;
     bool showAsFullScreen = WIN_STATE_FULLSCREEN == gGlobalPrefs.m_windowState;
     int showType = gGlobalPrefs.m_windowState == WIN_STATE_MAXIMIZED || showAsFullScreen ? SW_MAXIMIZE : SW_NORMAL;
 
@@ -1972,15 +1963,14 @@ static bool LoadPdfIntoWindow(
        i.e. GetCanvasSize() caches size of canvas and some code might depend
        on this being a cached value, not the real value at the time of calling */
     win->GetCanvasSize();
-    SizeD totalDrawAreaSize(win->winSize());
 
     DisplayModel *previousmodel = win->dm;
     WindowInfo_AbortFinding(win);
 
     free(win->loadedFilePath);
     win->loadedFilePath = tstr_dup(fileName);
-    win->dm = DisplayModel_CreateFromFileName(fileName,
-        totalDrawAreaSize, scrollbarYDx, scrollbarXDy, displayMode, startPage, win, tryrepair);
+    win->dm = DisplayModel_CreateFromFileName(fileName, win->winSize(),
+        displayMode, startPage, win, tryrepair);
 
     if (!win->dm) {
         //DBG_OUT("failed to load file %s\n", fileName); <- fileName is now Unicode
@@ -2896,7 +2886,7 @@ static void OnUrlDownloaded(WindowInfo *win, HttpReqCtx *ctx)
     }
         
     TCHAR *verTxt = multibyte_to_tstr(txt, CP_ACP);
-    /* TODO: too hackish */
+    /* reduce the string to a single line */
     tstr_trans_chars(verTxt, _T("\r\n"), _T("\0\0"));
     if (CompareVersion(verTxt, UPDATE_CHECK_VER) > 0){
         bool showDialog = true;
@@ -3942,7 +3932,6 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
 #else
             RenderedBitmap *bmp = dm->renderBitmap(pageNo, zoom, rotation, NULL, NULL, NULL, Target_Print, gUseGdiRenderer);
             if (bmp) {
-                // TODO: convert images to grayscale for monochrome printers, so that we always have an 8-bit palette?
                 bmp->stretchDIBits(hdc, (printAreaWidth - bmp->dx()) / 2 - leftMargin,
                     (printAreaHeight - bmp->dy()) / 2 - topMargin, bmp->dx(), bmp->dy());
                 delete bmp;
@@ -4007,7 +3996,7 @@ protected:
 /* Show Print Dialog box to allow user to select the printer
 and the pages to print.
 
-TODO: The following doesn't apply for USE_GDI_FOR_PRINTING
+Note: The following doesn't apply for USE_GDI_FOR_PRINTING
 
 Creates a new dummy page for each page with a large zoom factor,
 and then uses StretchDIBits to copy this to the printer's dc.
@@ -4037,13 +4026,11 @@ static void OnMenuPrint(WindowInfo *win)
     assert(dm);
     if (!dm) return;
 
-    /* printing uses the WindowInfo win that is created for the
-       screen, it may be possible to create a new WindowInfo
-       for printing to so we don't mess with the screen one,
+    /* printing uses the WindowInfo' dm that is created for the
+       screen, it may be possible to create a new PdfEngine
+       for printing so we don't mess with the screen one,
        but the user is not inconvenienced too much, and this
-       way we only need to concern ourselves with one dm.
-       TODO: don't re-use WindowInfo, use a different, synchronious
-       way of creating a bitmap */
+       way we only need to concern ourselves with one dm. */
     ZeroMemory(&pd, sizeof(PRINTDLGEX));
     pd.lStructSize = sizeof(PRINTDLGEX);
     pd.hwndOwner   = win->hwndFrame;
@@ -4684,7 +4671,7 @@ static void OnMenuViewShowHideToolbar(WindowInfo *win)
         gGlobalPrefs.m_showToolbar = TRUE;
 
     // Move the focus out of the toolbar
-    // TODO: do this for all windows
+    // TODO: do this for all windows?
     if (win->hwndFindBox == GetFocus() || win->hwndPageBox == GetFocus())
         SetFocus(win->hwndFrame);
 
@@ -6987,7 +6974,7 @@ InitMouseWheelInfo:
 
         // TODO: I don't understand why WndProcCanvas() doesn't receive this message
         case WM_MOUSEWHEEL:
-            if (!win || !win->dm) /* TODO: check for pdfDoc as well ? */
+            if (!win || !win->dm)
                 break;
 
             // Note: not all mouse drivers correctly report the Ctrl key's state

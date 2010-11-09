@@ -367,9 +367,8 @@ static INT_PTR CALLBACK Dialog_ChangeLanguage_Proc(HWND hDlg, UINT message, WPAR
         data = (Dialog_ChangeLanguage_Data*)lParam;
         assert(data);
         SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)data);
-        /* TODO: for some reason this doesn't work well e.g. when using
-           russion translation, the russian part of window title is garbage (?)
-           not russian text. Maybe I need to change the font ? */
+        // for non-latin languages this depends on the correct fonts being installed,
+        // otherwise all the user will see are squares
         win_set_text(hDlg, _TR("Change Language"));
         langList = GetDlgItem(hDlg, IDC_CHANGE_LANG_LANG_LIST);
         int idx = 0;
