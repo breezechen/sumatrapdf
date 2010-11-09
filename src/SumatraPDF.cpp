@@ -3331,7 +3331,7 @@ static void OnInverseSearch(WindowInfo *win, UINT x, UINT y)
 
     const PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
     TCHAR srcfilepath[MAX_PATH];
-    win->pdfsync->convert_coord_to_internal(&x, &y, (UINT)pageInfo->pageDy, BottomLeft);
+    win->pdfsync->convert_coord_to_internal(&x, &y, pageInfo->page.dyI(), BottomLeft);
     UINT line, col;
     UINT err = win->pdfsync->pdf_to_source(pageNo, x, y, srcfilepath, dimof(srcfilepath),&line,&col); // record 101
     if (err != PDFSYNCERR_SUCCESS) {
@@ -5072,13 +5072,13 @@ void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UI
 
             RectI overallrc;
             RectI rc = rects[0];
-            win->pdfsync->convert_coord_from_internal(&rc, (int)pi->pageDy, BottomLeft);
+            win->pdfsync->convert_coord_from_internal(&rc, pi->page.dyI(), BottomLeft);
 
             overallrc = rc;
             for (UINT i = 0; i <rects.size(); i++)
             {
                 rc = rects[i];
-                win->pdfsync->convert_coord_from_internal(&rc, (int)pi->pageDy, BottomLeft);
+                win->pdfsync->convert_coord_from_internal(&rc, pi->page.dyI(), BottomLeft);
                 overallrc = RectI_Union(overallrc, rc);
                 win->fwdsearchmarkRects.push_back(rc);
             }
@@ -6494,7 +6494,7 @@ static void CreateInfotipForPdfLink(WindowInfo *win, int pageNo, void *linkObj)
 
     AboutLayoutInfoEl *aboutEl = (AboutLayoutInfoEl *)linkObj;
     if (-1 == pageNo && aboutEl->url) {
-        rect_set(&ti.rect, aboutEl->rightTxtPosX, aboutEl->rightTxtPosY, aboutEl->rightTxtDx, aboutEl->rightTxtDy);
+        ti.rect = RECT_FromRectI(&aboutEl->rightPos);
         ti.lpszText = (TCHAR *)aboutEl->url;
         SendMessage(win->hwndInfotip, win->infotipVisible ? TTM_NEWTOOLRECT : TTM_ADDTOOL, 0, (LPARAM)&ti);
         win->infotipVisible = true;

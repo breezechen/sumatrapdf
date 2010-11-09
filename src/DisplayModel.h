@@ -39,8 +39,7 @@ typedef struct DisplaySettings {
 typedef struct PdfPageInfo {
     /* data that is constant for a given page. page size and rotation
        recorded in PDF file */
-    double          pageDx; // TODO: consider SizeD instead of pageDx/pageDy
-    double          pageDy;
+    SizeD           page;
     int             rotation;
 
     /* data that is calculated when needed. actual content size within a page */
@@ -54,13 +53,7 @@ typedef struct PdfPageInfo {
     /* position and size within total area after applying zoom and rotation.
        Represents display rectangle for a given page.
        Calculated in DisplayModel_relayout() */
-
-    /* TODO: change it to RectD ?*/
-    double          currDx;
-    double          currDy;
-    double          currPosX;
-    double          currPosY;
-
+    RectD           currPos;
     /* data that changes due to scrolling. Calculated in DisplayModel_RecalcVisibleParts() */
     double          visible; /* visible ratio of the page (0 = invisible, 1 = fully visible) */
     /* part of the image that should be shown */

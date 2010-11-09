@@ -13,21 +13,14 @@ typedef struct AboutLayoutInfoEl {
     const TCHAR *   url;
 
     /* data calculated by the layout */
-    int             leftTxtPosX;
-    int             leftTxtPosY;
-    int             leftTxtDx;
-    int             leftTxtDy;
-
-    int             rightTxtPosX;
-    int             rightTxtPosY;
-    int             rightTxtDx;
-    int             rightTxtDy;
+    RectI           leftPos;
+    RectI           rightPos;
 } AboutLayoutInfoEl;
 
 void DrawAbout(HWND hwnd, HDC hdc, RECT *rect);
 void OnMenuAbout();
 LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el=NULL);
+const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el_out=NULL);
 void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect);
 
 // in SumatraPDF.cpp
