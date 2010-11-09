@@ -1519,27 +1519,6 @@ WindowInfo* WindowInfo_FindByHwnd(HWND hwnd)
     return NULL;
 }
 
-static WindowInfo *WindowInfo_New(HWND hwndFrame) {
-    WindowInfo * win = WindowInfo_FindByHwnd(hwndFrame);
-    assert(!win);
-
-    win = new WindowInfo();
-    if (!win)
-        return NULL;
-
-    win->state = WS_ABOUT;
-    win->hwndFrame = hwndFrame;
-    win->mouseAction = MA_IDLE;
-    
-    HDC hdc = GetDC(hwndFrame);
-    win->dpi = GetDeviceCaps(hdc, LOGPIXELSY);
-    // round untypical resolutions up to the nearest quarter
-    win->uiDPIFactor = ceil(win->dpi * 4.0 / USER_DEFAULT_SCREEN_DPI) / 4.0;
-    ReleaseDC(hwndFrame, hdc);
-
-    return win;
-}
-
 static void WindowInfoList_Add(WindowInfo *win) {
     win->next = gWindowList;
     gWindowList = win;
@@ -1870,7 +1849,8 @@ static WindowInfo* WindowInfo_CreateEmpty(void) {
     if (!hwndFrame)
         return NULL;
 
-    win = WindowInfo_New(hwndFrame);
+    assert(!WindowInfo_FindByHwnd(hwndFrame));
+    win = new WindowInfo(hwndFrame);
 
     hwndCanvas = CreateWindowEx(
             WS_EX_STATICEDGE, 
