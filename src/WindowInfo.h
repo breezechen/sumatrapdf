@@ -48,7 +48,10 @@ typedef struct SelectionOnPage {
 class WindowInfo : public PdfSearchTracker
 {
 public:
-    WindowInfo() {
+    WindowInfo(HWND hwnd) {
+        state = WS_ABOUT;
+        hwndFrame = hwnd;
+
         dm = NULL;
         next = NULL;
         linkOnLastButtonDown = NULL;
@@ -57,7 +60,6 @@ public:
         tocLoaded = false;
         fullScreen = false;
         presentation = PM_DISABLED;
-        hwndFrame = NULL;
         hwndCanvas = NULL;
         hwndToolbar = NULL;
         hwndReBar = NULL;
@@ -77,8 +79,6 @@ public:
         infotipVisible = false;
         hMenu = NULL;
         hdc = NULL;
-        dpi = USER_DEFAULT_SCREEN_DPI;
-        uiDPIFactor = 1.0;
         findThread = NULL;
         findCanceled = false;
         findPercent = 0;
@@ -104,6 +104,12 @@ public:
         wheelAccumDelta = 0;
         delayedRepaintTimer = 0;
         resizingTocBox = false;
+
+        HDC hdcFrame = GetDC(hwndFrame);
+        dpi = GetDeviceCaps(hdcFrame, LOGPIXELSY);
+        // round untypical resolutions up to the nearest quarter
+        uiDPIFactor = ceil(dpi * 4.0 / USER_DEFAULT_SCREEN_DPI) / 4.0;
+        ReleaseDC(hwndFrame, hdcFrame);
     }
     
     void GetCanvasSize() { 

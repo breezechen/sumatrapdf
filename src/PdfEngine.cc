@@ -638,7 +638,7 @@ fz_matrix PdfEngine::viewctm(pdf_page *page, float zoom, int rotate)
     fz_matrix ctm = fz_identity;
 
     rotate = (rotate + page->rotate) % 360;
-    if (rotate < 0) rotate + 360;
+    if (rotate < 0) rotate = rotate + 360;
     if (90 == rotate)
         ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y0));
     else if (180 == rotate)
