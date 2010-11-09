@@ -864,11 +864,6 @@ void DisplayModel::getContentStart(int pageNo, int *x, int *y)
     fz_rect rect = { pageInfo->contentBox.x0, pageInfo->contentBox.y0,
         pageInfo->contentBox.x1, pageInfo->contentBox.y1 };
     rect = fz_transformrect(ctm, rect);
-
-    *x = min(rect.x0, rect.x1);
-    if (*x < 0) *x += pageInfo->currDx;
-    *y = min(rect.y0, rect.y1);
-    if (*y < 0) *y += pageInfo->currDy;
 }
 
 void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)
@@ -1260,23 +1255,12 @@ bool DisplayModel::cvtUserToScreen(int pageNo, double *x, double *y)
     if (!pageInfo)
         return false;
 
-    int rot = _rotation;
-    normalizeRotation(&rot);
-
     fz_point p = { *x, *y };
-    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, rot);
+    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, _rotation);
     fz_point tp = fz_transformpoint(ctm, p);
 
-    rot += pageInfo->rotation;
-    normalizeRotation(&rot);
-    double vx = 0, vy = 0;
-    if (rot == 90 || rot == 180)
-        vx += pageInfo->currDx;
-    if (rot == 180 || rot == 270)
-        vy += pageInfo->currDy;
-
-    *x = tp.x + 0.5 + pageInfo->currPosX - areaOffset.x + vx;
-    *y = tp.y + 0.5 + pageInfo->currPosY - areaOffset.y + vy;
+    *x = tp.x + 0.5 + pageInfo->currPosX - areaOffset.x;
+    *y = tp.y + 0.5 + pageInfo->currPosY - areaOffset.y;
     return true;
 }
 
@@ -1285,29 +1269,17 @@ bool DisplayModel::cvtScreenToUser(int *pageNo, double *x, double *y)
     *pageNo = getPageNoByPoint(*x, *y);
     if (*pageNo == POINT_OUT_OF_PAGE) 
         return false;
-
-    int rot = _rotation;
-    normalizeRotation(&rot);
-
     const PdfPageInfo *pageInfo = getPageInfo(*pageNo);
+
     fz_point p;
     p.x = *x - 0.5 - pageInfo->currPosX + areaOffset.x;
     p.y = *y - 0.5 - pageInfo->currPosY + areaOffset.y;
 
-    fz_matrix ctm = pdfEngine->viewctm(*pageNo, _zoomReal, rot);
-    fz_matrix invCtm = fz_invertmatrix(ctm);
-    fz_point tp = fz_transformpoint(invCtm, p);
+    fz_matrix ctm = pdfEngine->viewctm(*pageNo, _zoomReal, _rotation);
+    fz_point tp = fz_transformpoint(fz_invertmatrix(ctm), p);
 
-    rot += pageInfo->rotation;
-    normalizeRotation(&rot);
-    double vx = 0, vy = 0;
-    if (rot == 90 || rot == 180)
-        vy -= pageInfo->pageDy;
-    if (rot == 180 || rot == 270)
-        vx += pageInfo->pageDx;
-
-    *x = tp.x + vx;
-    *y = tp.y + vy;
+    *x = tp.x;
+    *y = tp.y;
     return true;
 }
 

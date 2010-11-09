@@ -636,9 +636,20 @@ bool PdfEngine::hasPermission(int permission)
 fz_matrix PdfEngine::viewctm(pdf_page *page, float zoom, int rotate)
 {
     fz_matrix ctm = fz_identity;
-    ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
+
+    rotate = (rotate + page->rotate) % 360;
+    if (rotate < 0) rotate + 360;
+    if (90 == rotate)
+        ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y0));
+    else if (180 == rotate)
+        ctm = fz_concat(ctm, fz_translate(-page->mediabox.x1, -page->mediabox.y0));
+    else if (270 == rotate)
+        ctm = fz_concat(ctm, fz_translate(-page->mediabox.x1, -page->mediabox.y1));
+    else // if (0 == rotate)
+        ctm = fz_concat(ctm, fz_translate(-page->mediabox.x0, -page->mediabox.y1));
+
     ctm = fz_concat(ctm, fz_scale(zoom, -zoom));
-    ctm = fz_concat(ctm, fz_rotate(rotate + page->rotate));
+    ctm = fz_concat(ctm, fz_rotate(rotate));
     return ctm;
 }
 
