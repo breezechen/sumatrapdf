@@ -72,8 +72,8 @@ static bool PdfDateParse(TCHAR *pdfDate, SYSTEMTIME *timeOut) {
     pdfDate = PdfDateParseInt(pdfDate, 2, &timeOut->wDay);
     pdfDate = PdfDateParseInt(pdfDate, 2, &timeOut->wHour);
     pdfDate = PdfDateParseInt(pdfDate, 2, &timeOut->wMinute);
-    // TODO: I don't know how to calculate wDayOfWeek and it doesn't
-    //       matter anyway because we don't display day of the week
+    pdfDate = PdfDateParseInt(pdfDate, 2, &timeOut->wSecond);
+    // don't bother about the day of week, we won't display it anyway
     return pdfDate != NULL;
 }
 

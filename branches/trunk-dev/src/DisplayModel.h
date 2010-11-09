@@ -188,8 +188,7 @@ public:
        The same for areaOff.y, except it's for dy */
     PointD          areaOffset;
 
-    /* size of draw area i.e. _totalDrawAreaSize minus scrollbarsSize (if
-       they're shown) */
+    /* size of draw area (excluding scrollbars) */
     SizeD           drawAreaSize;
 
     SearchStateData searchState;
@@ -198,15 +197,7 @@ public:
     RectD           searchHitRectPage;
     RectI           searchHitRectCanvas;
 
-    void            setScrollbarsSize(int scrollbarXDy, int scrollbarYDx) {
-        _scrollbarXDy = scrollbarXDy;
-        _scrollbarYDx = scrollbarYDx;
-    }
-
-    void            setTotalDrawAreaSize(SizeD size) {
-        _totalDrawAreaSize = size;
-        drawAreaSize = SizeD(size.dx() - _scrollbarYDx, size.dy() - _scrollbarXDy);
-    }
+    void            setTotalDrawAreaSize(SizeD size) { drawAreaSize = size; }
     
     bool            needHScroll() { return drawAreaSize.dxI() < _canvasSize.dxI(); }
     bool            needVScroll() { return drawAreaSize.dyI() < _canvasSize.dyI(); }
@@ -302,19 +293,12 @@ protected:
     void            goToPdfDest(fz_obj *dest);
 
     PdfSearch *     _pdfSearch;
-    DisplayMode     _displayMode; /* TODO: not used yet */
+    DisplayMode     _displayMode;
     /* In non-continuous mode is the first page from a PDF file that we're
        displaying.
        No meaning in continous mode. */
     int             _startPage;
     void *          _appData;
-
-    /* size of scrollbars */
-    int             _scrollbarXDy;
-    int             _scrollbarYDx;
-
-    /* size of total draw area (i.e. window size) */
-    SizeD           _totalDrawAreaSize;
 
     /* size of virtual canvas containing all rendered pages.
        TODO: re-consider, 32 signed number should be large enough for everything. */
@@ -352,7 +336,6 @@ int                 columnsFromDisplayMode(DisplayMode displayMode);
 DisplayModel *DisplayModel_CreateFromFileName(
   const TCHAR *fileName,
   SizeD totalDrawAreaSize,
-  int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage,
   WindowInfo *win, bool tryrepair);
 

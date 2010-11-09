@@ -336,7 +336,7 @@ bool PdfEngine::load(const TCHAR *fileName, WindowInfo *win, bool tryrepair)
         return false;
     fz_stream *file = fz_openfile(fd);
 OpenEmbeddedFile:
-    // TODO: not sure how to handle passwords
+    // don't pass in a password so that _xref isn't thrown away if it was wrong
     error = pdf_openxrefwithstream(&_xref, file, NULL);
     fz_close(file);
     if (error || !_xref)

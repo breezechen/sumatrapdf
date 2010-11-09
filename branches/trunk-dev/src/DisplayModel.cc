@@ -181,8 +181,6 @@ DisplayModel::DisplayModel(DisplayMode displayMode, int dpi)
     _padding = &gDisplaySettings;
     _presentationMode = false;
     _zoomReal = INVALID_ZOOM;
-    _scrollbarYDx = 0;
-    _scrollbarXDy = 0;
     _dpiFactor = dpi * 1.0 / PDF_FILE_DPI;
     _showToc = TRUE;
     _startPage = INVALID_PAGE_NO;
@@ -1221,7 +1219,6 @@ PdfSearchResult *DisplayModel::Find(PdfSearchDirection direction, TCHAR *text, U
 DisplayModel *DisplayModel_CreateFromFileName(
   const TCHAR *fileName,
   SizeD totalDrawAreaSize,
-  int scrollbarXDy, int scrollbarYDx,
   DisplayMode displayMode, int startPage,
   WindowInfo *win, bool tryrepair)
 {
@@ -1234,7 +1231,6 @@ DisplayModel *DisplayModel_CreateFromFileName(
     if (!dm->load(fileName, startPage, win, tryrepair))
         goto Error;
 
-    dm->setScrollbarsSize(scrollbarXDy, scrollbarYDx);
     dm->setTotalDrawAreaSize(totalDrawAreaSize);
 
 //    DBG_OUT("DisplayModel_CreateFromPageTree() pageCount = %d, startPage=%d, displayMode=%d\n",
