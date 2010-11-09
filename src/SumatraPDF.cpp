@@ -2573,7 +2573,7 @@ static void DoAssociateExeWithPdfExtension(HKEY hkey)
 
     // also register for printing
     cmd_path = tstr_printf(_T("\"%s\" -print-to-default -exit-on-print \"%%1\""), exePath); // "${exePath}" -print-to-default -exit-on-print "%1"
-    WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\open\\command"), NULL, cmd_path);
+    WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\print\\command"), NULL, cmd_path);
     free(cmd_path);
 
     // Only change the association if we're confident, that we've registered ourselves well enough
