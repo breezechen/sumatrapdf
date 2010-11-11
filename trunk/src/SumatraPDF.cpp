@@ -5239,7 +5239,6 @@ static void OnMenuViewFullscreen(WindowInfo *win)
 static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result, bool wasModified)
 {
     win->dm->goToPage(result->page, 0, wasModified);
-    win->dm->MapResultRectToScreen(result);
 
     DeleteOldSelectionInfo(win);
     for (int i = 0; i < result->len; i++) {
@@ -5255,11 +5254,11 @@ static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result
         SelectionOnPage *selOnPage = (SelectionOnPage *)malloc(sizeof(SelectionOnPage));
         RectD_FromRectI(&selOnPage->selectionPage, &rect);
         selOnPage->pageNo = result->page;
-        win->dm->rectCvtScreenToUser(&selOnPage->pageNo, &selOnPage->selectionPage);
         selOnPage->next = win->selectionOnPage;
         win->selectionOnPage = selOnPage;
     }
 
+    win->dm->MapResultRectToScreen(result);
     win->showSelection = true;
     triggerRepaintDisplay(win);
 }

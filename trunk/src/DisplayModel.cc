@@ -923,11 +923,12 @@ void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)
     //DBG_OUT("DisplayModel::goToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     PdfPageInfo * pageInfo = getPageInfo(pageNo);
 
-    if (ZOOM_FIT_CONTENT == _zoomVirtual && 0 == scrollY && -1 == scrollX)
+    if (-1 == scrollX && 0 == scrollY && ZOOM_FIT_CONTENT == _zoomVirtual) {
         // scroll down to where the actual content starts
         getContentStart(pageNo, &scrollX, &scrollY);
-
-    if (-1 != scrollX)
+        areaOffset.x = (double)scrollX + pageInfo->currPosX - _padding->pageBorderLeft;
+    }
+    else if (-1 != scrollX)
         areaOffset.x = (double)scrollX;
     // make sure to not display the blank space beside the first page in cover mode
     else if (-1 == scrollX && 1 == pageNo && displayModeShowCover(displayMode()))
