@@ -608,7 +608,7 @@ SizeD PdfEngine::pageSize(int pageNo)
     return SizeD(fabs(bbox.x1 - bbox.x0), fabs(bbox.y1 - bbox.y0));
 }
 
-fz_bbox PdfEngine::pageContentBox(int pageNo)
+fz_bbox PdfEngine::pageContentBox(int pageNo, RenderTarget target)
 {
     assert(validPageNo(pageNo));
     pdf_page *page = getPdfPage(pageNo);
@@ -616,7 +616,7 @@ fz_bbox PdfEngine::pageContentBox(int pageNo)
         return fz_emptybbox;
 
     fz_bbox bbox;
-    fz_error error = runPage(page, fz_newbboxdevice(&bbox), fz_identity, Target_View, page->mediabox, false);
+    fz_error error = runPage(page, fz_newbboxdevice(&bbox), fz_identity, target, page->mediabox, false);
     if (error != fz_okay)
         return fz_emptybbox;
 
