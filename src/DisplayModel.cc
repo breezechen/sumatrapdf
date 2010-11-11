@@ -94,12 +94,6 @@ bool rotationFlipped(int rotation)
     return false;
 }
 
-static fz_rect rectFromBBox(fz_bbox bbox)
-{
-    fz_rect rect = { bbox.x0, bbox.y0, bbox.x1, bbox.y1 };
-    return rect;
-}
-
 bool DisplayModel::displayStateFromModel(DisplayState *ds)
 {
     bool presMode = getPresentationMode();
@@ -848,23 +842,36 @@ void DisplayModel::changeTotalDrawAreaSize(SizeD totalDrawAreaSize)
     }
 }
 
+fz_rect DisplayModel::getContentBox(int pageNo, fz_matrix ctm, RenderTarget target)
+{
+    fz_bbox cbox;
+    // we cache the contentBox for the View target
+    if (Target_View == target) {
+        PdfPageInfo *pageInfo = getPageInfo(pageNo);
+        if (fz_isemptyrect(pageInfo->contentBox))
+            pageInfo->contentBox = pdfEngine->pageContentBox(pageNo);
+        cbox = pageInfo->contentBox;
+    }
+    else
+        cbox = pdfEngine->pageContentBox(pageNo, target);
+
+    fz_rect rect = { cbox.x0, cbox.y0, cbox.x1, cbox.y1 };
+    return fz_transformrect(ctm, rect);
+}
+
 /* get the (screen) coordinates of the point where a page's actual
    content begins (relative to the page's top left corner) */
 void DisplayModel::getContentStart(int pageNo, int *x, int *y)
 {
-    PdfPageInfo *pageInfo = getPageInfo(pageNo);
-    if (fz_isemptyrect(pageInfo->contentBox))
-        pageInfo->contentBox = pdfEngine->pageContentBox(pageNo);
-    if (fz_isemptyrect(pageInfo->contentBox)) {
+    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, _rotation);
+    fz_rect contentBox = getContentBox(pageNo, ctm);
+    if (fz_isemptyrect(contentBox)) {
         *x = *y = 0;
         return;
     }
 
-    fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, _rotation);
-    fz_rect rect = fz_transformrect(ctm, rectFromBBox(pageInfo->contentBox));
-
-    *x = min(rect.x0, rect.x1);
-    *y = min(rect.y0, rect.y1);
+    *x = min(contentBox.x0, contentBox.x1);
+    *y = min(contentBox.y0, contentBox.y1);
 }
 
 void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)

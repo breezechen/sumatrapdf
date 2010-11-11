@@ -42,7 +42,7 @@ typedef struct PdfPageInfo {
     SizeD           page;
     int             rotation;
 
-    /* data that is calculated when needed. actual content size within a page */
+    /* data that is calculated when needed. actual content size within a page (View target) */
     fz_bbox         contentBox;
 
     /* data that needs to be set before DisplayModel_relayout().
@@ -242,6 +242,7 @@ public:
     bool            rectCvtUserToScreen(int pageNo, RectD *r);
     fz_rect         rectCvtUserToScreen(int pageNo, fz_rect rect);
     bool            rectCvtScreenToUser(int *pageNo, RectD *r);
+    fz_rect         getContentBox(int pageNo, fz_matrix ctm=fz_identity, RenderTarget target=Target_View);
 
     void            SetFindMatchCase(bool match) { _pdfSearch->SetSensitive(match); }
     PdfSearchResult *Find(PdfSearchDirection direction = FIND_FORWARD, TCHAR *text = NULL, UINT fromPage = 0);
@@ -266,6 +267,7 @@ public:
     bool            displayStateFromModel(DisplayState *ds);
 
     void            ageStore() const { pdfEngine->ageStore(); }
+
 protected:
 
     void            startRenderingPage(int pageNo);

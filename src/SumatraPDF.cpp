@@ -3829,6 +3829,9 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
     int printAreaHeight = GetDeviceCaps(hdc, PHYSICALHEIGHT);
     int topMargin = GetDeviceCaps(hdc, PHYSICALOFFSETY);
     int leftMargin = GetDeviceCaps(hdc, PHYSICALOFFSETX);
+    int rightMargin = printAreaWidth - leftMargin - GetDeviceCaps(hdc, HORZRES);
+    int bottomMargin = printAreaHeight - topMargin - GetDeviceCaps(hdc, VERTRES);
+
     double dpiFactor = min(GetDeviceCaps(hdc, LOGPIXELSX) / PDF_FILE_DPI,
                            GetDeviceCaps(hdc, LOGPIXELSY) / PDF_FILE_DPI);
     bool bPrintPortrait = printAreaWidth < printAreaHeight;
@@ -3839,8 +3842,8 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
     for (int i = 0; i < nPageRanges; i++) {
         if (-1 == pr->nFromPage && -1 == pr->nToPage) {
             // print with minimal margins as required by the printer
-            printAreaWidth = GetDeviceCaps(hdc, HORZRES);
-            printAreaHeight = GetDeviceCaps(hdc, VERTRES);
+            printAreaWidth -= leftMargin + rightMargin;
+            printAreaHeight -= topMargin + bottomMargin;
 
             assert(1 == nPageRanges && sel);
             DBG_OUT(" printing:  drawing bitmap for selection\n");
@@ -3913,8 +3916,18 @@ static void PrintToDevice(DisplayModel *dm, HDC hdc, LPDEVMODE devMode,
                 rotation = (rotation + 90) % 360;
                 pSize = SizeD(pSize.dy(), pSize.dx());
             }
-
             double zoom = min((double)printAreaWidth / pSize.dx(), (double)printAreaHeight / pSize.dy());
+
+            if (scaleAdv != PrintScaleNone) {
+                // make sure to fit all content into the printable area when scaling
+                fz_rect cbox = dm->getContentBox(pageNo, pdfEngine->viewctm(pageNo, 1.0, rotation), Target_Print);
+                zoom = min((0.5 * printAreaWidth - leftMargin) / (0.5 * pSize.dx() - cbox.x0),
+                       min((0.5 * printAreaWidth - rightMargin) / (cbox.x1 - 0.5 * pSize.dx()),
+                       min((0.5 * printAreaHeight - topMargin) / (0.5 * pSize.dy() - cbox.y0),
+                       min((0.5 * printAreaHeight - bottomMargin) / (cbox.y1 - 0.5 * pSize.dy()),
+                       zoom))));
+            }
+
             if (PrintScaleShrink == scaleAdv)
                 // try to use correct zoom values (scale down to fit the physical page, though)
                 zoom = min(dpiFactor, zoom);
