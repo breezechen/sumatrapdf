@@ -94,6 +94,12 @@ bool rotationFlipped(int rotation)
     return false;
 }
 
+static fz_rect rectFromBBox(fz_bbox bbox)
+{
+    fz_rect rect = { bbox.x0, bbox.y0, bbox.x1, bbox.y1 };
+    return rect;
+}
+
 bool DisplayModel::displayStateFromModel(DisplayState *ds)
 {
     bool presMode = getPresentationMode();
@@ -169,6 +175,14 @@ static int FirstPageInARowNo(int pageNo, int columns, bool showCover)
     if (showCover && columns > 1 && firstPageNo > 1)
         firstPageNo--;
     return firstPageNo;
+}
+
+static int LastPageInARowNo(int pageNo, int columns, bool showCover, int pageCount)
+{
+    int lastPageNo = FirstPageInARowNo(pageNo, columns, showCover) + columns - 1;
+    if (showCover && pageNo < columns)
+        lastPageNo--;
+    return min(lastPageNo, pageCount);
 }
 
 DisplayModel::DisplayModel(DisplayMode displayMode, int dpi)
@@ -331,22 +345,16 @@ float DisplayModel::zoomRealFromVirtualForPage(double zoomVirtual, int pageNo)
     int columns = columnsFromDisplayMode(displayMode());
     double areaForPageDx = (drawAreaSize.dx() - _padding->pageBorderLeft - _padding->pageBorderRight);
     areaForPageDx -= _padding->betweenPagesX * (columns - 1);
+    // TODO: this doesn't really work for ZOOM_FIT_CONTENT
     int areaForPageDxInt = areaForPageDx / columns;
     areaForPageDx = areaForPageDxInt;
     int areaForPageDy = drawAreaSize.dy() - _padding->pageBorderTop - _padding->pageBorderBottom;
-
-    /* TODO: should use gWinDx if we don't show scrollbarY */
     if (areaForPageDx <= 0 || areaForPageDy <= 0)
         return 0;
 
     float zoomX = areaForPageDx / pageDx;
     float zoomY = areaForPageDy / pageDy;
-
-    if (ZOOM_FIT_WIDTH == zoomVirtual)
-        return zoomX;
-
-    assert(ZOOM_FIT_PAGE == zoomVirtual || ZOOM_FIT_CONTENT == zoomVirtual);
-    if (zoomX < zoomY)
+    if (zoomX < zoomY || ZOOM_FIT_WIDTH == zoomVirtual)
         return zoomX;
     return zoomY;
 }
@@ -422,7 +430,8 @@ void DisplayModel::setZoomVirtual(double zoomVirtual)
         if (newZoom > 8.0)
             newZoom = 8.0;
         // don't zoom in by just a few pixels (throwing away a prerendered page)
-        if (newZoom < this->_zoomReal || this->_zoomReal / newZoom < 0.95)
+        if (newZoom < this->_zoomReal || this->_zoomReal / newZoom < 0.95 ||
+            this->_zoomReal < zoomRealFromVirtualForPage(ZOOM_FIT_PAGE, currentPageNo()))
             this->_zoomReal = newZoom;
     } else
         this->_zoomReal = zoomVirtual * 0.01 * this->_dpiFactor;
@@ -436,7 +445,7 @@ float DisplayModel::zoomReal(int pageNo)
     if (!displayModeFacing(mode))
         return zoomRealFromVirtualForPage(_zoomVirtual, pageNo);
     pageNo = FirstPageInARowNo(pageNo, columnsFromDisplayMode(mode), displayModeShowCover(mode));
-    if (pageNo == pageCount())
+    if (pageNo == pageCount() || pageNo == 1 && displayModeShowCover(mode))
         return zoomRealFromVirtualForPage(_zoomVirtual, pageNo);
     return min(zoomRealFromVirtualForPage(_zoomVirtual, pageNo), zoomRealFromVirtualForPage(_zoomVirtual, pageNo + 1));
 }
@@ -852,9 +861,7 @@ void DisplayModel::getContentStart(int pageNo, int *x, int *y)
     }
 
     fz_matrix ctm = pdfEngine->viewctm(pageNo, _zoomReal, _rotation);
-    fz_rect rect = { pageInfo->contentBox.x0, pageInfo->contentBox.y0,
-        pageInfo->contentBox.x1, pageInfo->contentBox.y1 };
-    rect = fz_transformrect(ctm, rect);
+    fz_rect rect = fz_transformrect(ctm, rectFromBBox(pageInfo->contentBox));
 
     *x = min(rect.x0, rect.x1);
     *y = min(rect.y0, rect.y1);
@@ -887,11 +894,17 @@ void DisplayModel::goToPage(int pageNo, int scrollY, bool addNavPt, int scrollX)
     //DBG_OUT("DisplayModel::goToPage(pageNo=%d, scrollY=%d)\n", pageNo, scrollY);
     PdfPageInfo * pageInfo = getPageInfo(pageNo);
 
-    if (ZOOM_FIT_CONTENT == _zoomVirtual && 0 == scrollY && -1 == scrollX)
+    if (-1 == scrollX && 0 == scrollY && ZOOM_FIT_CONTENT == _zoomVirtual) {
         // scroll down to where the actual content starts
         getContentStart(pageNo, &scrollX, &scrollY);
-
-    if (-1 != scrollX)
+        if (columnsFromDisplayMode(displayMode()) > 1) {
+            int lastPageNo = LastPageInARowNo(pageNo, columnsFromDisplayMode(displayMode()), displayModeShowCover(displayMode()), pageCount()), secondX, secondY;
+            getContentStart(lastPageNo, &secondX, &secondY);
+            scrollY = min(scrollY, secondY);
+        }
+        areaOffset.x = (double)scrollX + pageInfo->currPos.x - _padding->pageBorderLeft;
+    }
+    else if (-1 != scrollX)
         areaOffset.x = (double)scrollX;
     // make sure to not display the blank space beside the first page in cover mode
     else if (-1 == scrollX && 1 == pageNo && displayModeShowCover(displayMode()))
