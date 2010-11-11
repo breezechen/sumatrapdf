@@ -1919,7 +1919,7 @@ static void RecalcSelectionPosition (WindowInfo *win) {
             selOnPage->selectionCanvas.dx = 0;
             selOnPage->selectionCanvas.dy = 0;
         } else {//page is visible
-            RectD_Copy (&selD, &selOnPage->selectionPage);
+            selD = selOnPage->selectionPage;
             win->dm->rectCvtUserToScreen (selOnPage->pageNo, &selD);
             RectI_FromRectD (&selOnPage->selectionCanvas, &selD);
         }
@@ -4973,22 +4973,17 @@ static void OnMenuViewFullscreen(WindowInfo *win)
 static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result, bool wasModified)
 {
     win->dm->goToPage(result->page, 0, wasModified);
-    win->dm->MapResultRectToScreen(result);
 
     DeleteOldSelectionInfo(win);
     for (int i = 0; i < result->len; i++) {
-        RectI rect = RectI_FromRECT(&result->rects[i]);
-        assert(result->rects[i].bottom >= result->rects[i].top);
-        assert(result->rects[i].right >= result->rects[i].left);
-
         SelectionOnPage *selOnPage = (SelectionOnPage *)malloc(sizeof(SelectionOnPage));
-        RectD_FromRectI(&selOnPage->selectionPage, &rect);
+        RectD_FromRectI(&selOnPage->selectionPage, &result->rects[i]);
         selOnPage->pageNo = result->page;
-        win->dm->rectCvtScreenToUser(&selOnPage->pageNo, &selOnPage->selectionPage);
         selOnPage->next = win->selectionOnPage;
         win->selectionOnPage = selOnPage;
     }
 
+    win->dm->MapResultRectToScreen(result);
     win->showSelection = true;
     triggerRepaintDisplay(win);
 }
@@ -5078,12 +5073,7 @@ void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UI
             }
             
             // Scroll to show the overall highlighted zone
-            RECT rcRes;
-            rcRes.left = overallrc.x;
-            rcRes.top = overallrc.y;
-            rcRes.right = overallrc.x + overallrc.dx;
-            rcRes.bottom = overallrc.y + overallrc.dy;
-            PdfSearchResult res = { page, 1, &rcRes };
+            PdfSearchResult res = { page, 1, &overallrc };
             if (!win->dm->pageVisible(page))
                 win->dm->goToPage(page, 0, true);
             if(!win->dm->MapResultRectToScreen(&res))

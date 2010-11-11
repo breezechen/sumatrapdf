@@ -27,7 +27,6 @@ void   RectD_FromRectI(RectD *rOut, const RectI *rIn);
 void   RectI_FromRectD(RectI *rOut, const RectD *rIn);
 RECT   RECT_FromRectI(RectI *rIn);
 RectI  RectI_FromRECT(RECT *rIn);
-void   RectD_Copy(RectD *rOut, const RectD *rIn);
 int    RectD_Inside(RectD *r, double x, double y);
 void   u_RectI_Intersect(void);
 

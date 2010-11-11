@@ -1493,22 +1493,18 @@ TCHAR *DisplayModel::extractAllText(RenderTarget target)
 // returns true if it was necessary to scroll the display (horizontally or vertically)
 BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
 {
-    RECT extremes = { 0 };
+    RectI extremes = { 0 };
     for (int i = 0; i < res->len; i++) {
-        RECT *rect = &res->rects[i];
+        RectI *rect = &res->rects[i];
         RectD rectD;
-        RectD_FromXY(&rectD, rect->left, rect->right, rect->top, rect->bottom);
+        RectD_FromRectI(&rectD, rect);
         rectCvtUserToScreen(res->page, &rectD);
-        SetRect(rect, floor(rectD.x), floor(rectD.y), ceil(rectD.x + rectD.dx), ceil(rectD.y + rectD.dy));
+        RectI_FromXY(rect, floor(rectD.x), ceil(rectD.x + rectD.dx), floor(rectD.y), ceil(rectD.y + rectD.dy));
 
-        if (0 == i) {
+        if (0 == i)
             extremes = *rect;
-        } else {
-            extremes.left = min(rect->left, extremes.left);
-            extremes.right = max(rect->right, extremes.right);
-            extremes.top = min(rect->top, extremes.top);
-            extremes.bottom = max(rect->bottom, extremes.bottom);
-        }
+        else
+            extremes = RectI_Union(extremes, *rect);
     }
 
     PdfPageInfo *pageInfo = getPageInfo(res->page);
@@ -1518,21 +1514,21 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
     //
 
     // scroll up to make top side of selection visible
-    if (extremes.top < 0) {
-        sy = extremes.top - 5;
+    if (extremes.y < 0) {
+        sy = extremes.y - 5;
         if (sy + pageInfo->screenY + pageInfo->bitmap.y < 0)
             sy = -(pageInfo->screenY + pageInfo->bitmap.y);
     }
     // scroll down to make top side of selection visible
-    else if (extremes.top >= drawAreaSize.dy()) {
-        sy = extremes.top - drawAreaSize.dy() + 5;
+    else if (extremes.y >= drawAreaSize.dy()) {
+        sy = extremes.y - drawAreaSize.dy() + 5;
     }
 
     // scroll up to make bottom side of selection visible
     // (if selection height fits in visible area)
-    if (extremes.bottom > drawAreaSize.dy()
-        && extremes.bottom - extremes.top <= drawAreaSize.dy() + 5) {
-        sy = extremes.bottom - drawAreaSize.dy() + 5;
+    if (extremes.y + extremes.dy > drawAreaSize.dy()
+        && extremes.dy <= drawAreaSize.dy() + 5) {
+        sy = extremes.y + extremes.dy - drawAreaSize.dy() + 5;
     }
 
     //
@@ -1540,20 +1536,20 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
     //
 
     // scroll left to make left side of selection visible
-    if (extremes.left < 0) {
-        sx = extremes.left - 5;
+    if (extremes.x < 0) {
+        sx = extremes.x - 5;
         if (sx + pageInfo->screenX + pageInfo->bitmap.x < 0)
             sx = -(pageInfo->screenX + pageInfo->bitmap.x);
     }
     // scroll right to make left side of selection visible
-    else if (extremes.left >= drawAreaSize.dx()) {
-        sx = extremes.left - drawAreaSize.dx() + 5;
+    else if (extremes.x >= drawAreaSize.dx()) {
+        sx = extremes.x - drawAreaSize.dx() + 5;
     }
     // scroll left to make right side of selection visible
     // (if selection width fits in visible area)
-    if (extremes.right > drawAreaSize.dx()
-               && extremes.right-extremes.left <= drawAreaSize.dx() - 5) {
-        sx = extremes.right - drawAreaSize.dx() + 5;
+    if (extremes.x + extremes.dx > drawAreaSize.dx()
+        && extremes.dx <= drawAreaSize.dx() - 5) {
+        sx = extremes.x + extremes.dx - drawAreaSize.dx() + 5;
     }
 
     if (sx != 0)
@@ -1561,8 +1557,10 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
     if (sy != 0)
         scrollYBy(sy, false);
 
-    for (int i = 0; i < res->len; i++)
-        OffsetRect(&res->rects[i], -sx, -sy);
+    for (int i = 0; i < res->len; i++) {
+        res->rects[i].x -= sx;
+        res->rects[i].y -= sy;
+    }
 
     return sx != 0 || sy != 0;
 }
