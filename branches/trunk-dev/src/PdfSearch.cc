@@ -62,27 +62,28 @@ void PdfSearch::SetDirection(bool forward)
 
 void PdfSearch::FillResultRects(TCHAR *found, int length)
 {
+    fz_bbox mediabox = fz_roundrect(engine->pageMediabox(result.page));
     fz_bbox *c = &coords[found - pageText], *end = c + length;
     for (; c < end; c++) {
         // skip line breaks
         if (!c->x0 && !c->x1)
             continue;
 
-        result.rects = (RECT *)realloc(result.rects, sizeof(RECT) * ++result.len);
-        RECT *rc = &result.rects[result.len - 1];
-
         fz_bbox c0 = *c;
         for (; c < end && (c->x0 || c->x1); c++);
         c--;
         fz_bbox c1 = *c;
+        fz_bbox bbox = fz_intersectbbox(fz_unionbbox(c0, c1), mediabox);
+        // skip text that's completely outside a page's mediabox
+        if (fz_isemptyrect(bbox))
+            continue;
 
-        rc->left = min(c0.x0, c1.x0);
-        rc->top = min(c0.y0, c1.y0);
-        rc->right = max(c0.x1, c1.x1);
-        rc->bottom = max(c0.y1, c1.y1);
-        // cut the right edge, if it overlaps the next character's
-        if ((c[1].x0 || c[1].x1) && rc->left < c[1].x0 && rc->right > c[1].x0)
-            rc->right = c[1].x0;
+        // cut the right edge, if it overlaps the next character
+        if ((c[1].x0 || c[1].x1) && bbox.x0 < c[1].x0 && bbox.x1 > c[1].x0)
+            bbox.x1 = c[1].x0;
+
+        result.rects = (RectI *)realloc(result.rects, sizeof(RectI) * ++result.len);
+        RectI_FromXY(&result.rects[result.len - 1], bbox.x0, bbox.x1, bbox.y0, bbox.y1);
     }
 }
 
@@ -138,6 +139,10 @@ bool PdfSearch::FindTextInPage(int pageNo)
 
     FillResultRects(found, length);
     findIndex = found - pageText + (forward ? length : 0);
+
+    // try again if the found text is completely outside the page's mediabox
+    if (result.len == 0)
+        return FindTextInPage(pageNo);
 
     return true;
 }

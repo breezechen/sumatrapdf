@@ -99,13 +99,6 @@ RectI RectI_FromRECT(RECT *rIn)
     return rOut;
 }
 
-void RectD_Copy(RectD *rOut, const RectD *rIn) {
-    rOut->x = (double)rIn->x;
-    rOut->y = (double)rIn->y;
-    rOut->dx = (double)rIn->dx;
-    rOut->dy = (double)rIn->dy;
-}
-
 int RectD_FromXY(RectD *rOut, double xs, double xe, double ys, double ye)
 {
     assert(rOut);

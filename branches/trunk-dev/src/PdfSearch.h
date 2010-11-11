@@ -12,7 +12,7 @@ enum PdfSearchDirection {
 typedef struct {
     int page;
     int len;
-    RECT *rects;
+    RectI *rects;
 } PdfSearchResult;
 
 class PdfSearchTracker
