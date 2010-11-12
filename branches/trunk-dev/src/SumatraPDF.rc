@@ -329,7 +329,7 @@ IDC_CURSORDRAG          CURSOR                  "dragcursor.cur"
 
 STRINGTABLE 
 BEGIN
-    IDS_APP_TITLE           "Sumatra PDF"
+    IDS_APP_TITLE           "SumatraPDF"
 END
 
 #endif    // English (U.S.) resources

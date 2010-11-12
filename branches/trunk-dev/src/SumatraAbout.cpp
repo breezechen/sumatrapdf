@@ -20,7 +20,7 @@
 #define ABOUT_WIN_TITLE         _TR("About SumatraPDF")
 
 #ifndef SUMATRA_TXT
-#define SUMATRA_TXT             _T("Sumatra PDF")
+#define SUMATRA_TXT             _T("SumatraPDF")
 #endif
 #define SUMATRA_TXT_FONT        _T("Arial Black")
 #define SUMATRA_TXT_FONT_SIZE   24
