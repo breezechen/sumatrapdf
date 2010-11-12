@@ -2381,7 +2381,7 @@ void DisplayModel::setScrollbarsState(void)
     // When hiding the scroll bars and fitting content, it could be that we'd have to
     // display the scroll bars right again for the new zoom. Make sure we haven't just done
     // that - or if so, force the scroll bars to remain visible.
-    if (ZOOM_FIT_CONTENT == win->dm->zoomVirtual()) {
+    if (ZOOM_FIT_CONTENT == _zoomVirtual) {
         if ((win->prevCanvasBR.y != drawAreaDy || win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) &&
             (win->prevCanvasBR.x != drawAreaDx || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL))) {
             win->prevCanvasBR.x = drawAreaDx;
@@ -2411,7 +2411,7 @@ void DisplayModel::setScrollbarsState(void)
     // When hiding the scroll bars and fitting width, it could be that we'd have to
     // display the scroll bars right again for the new width. Make sure we haven't just done
     // that - or if so, force the vertical scroll bar to remain visible.
-    if (ZOOM_FIT_WIDTH == win->dm->zoomVirtual()) {
+    if (ZOOM_FIT_WIDTH == _zoomVirtual || ZOOM_FIT_PAGE == _zoomVirtual) {
         if (win->prevCanvasBR.y != drawAreaDy || win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) {
             win->prevCanvasBR.x = drawAreaDx;
             win->prevCanvasBR.y = drawAreaDy;
@@ -2427,21 +2427,21 @@ void DisplayModel::setScrollbarsState(void)
         si.nMax = 99;
         si.nPage = 100;
 
-        if (!win->fullScreen && !win->presentation && ZOOM_FIT_PAGE == win->dm->zoomVirtual()) {
-            switch (win->dm->displayMode()) {
+        if (!win->fullScreen && !win->presentation && ZOOM_FIT_PAGE == _zoomVirtual) {
+            switch (displayMode()) {
                 case DM_SINGLE_PAGE:
-                    si.nPos = win->dm->currentPageNo() - 1;
-                    si.nMax = win->dm->pageCount() - 1;
+                    si.nPos = currentPageNo() - 1;
+                    si.nMax = pageCount() - 1;
                     si.nPage = 1;
                     break;
                 case DM_FACING:
-                    si.nPos = (win->dm->currentPageNo() + 1) / 2 - 1;
-                    si.nMax = (win->dm->pageCount() + 1) / 2 - 1;
+                    si.nPos = (currentPageNo() + 1) / 2 - 1;
+                    si.nMax = (pageCount() + 1) / 2 - 1;
                     si.nPage = 1;
                     break;
                 case DM_BOOK_VIEW:
-                    si.nPos = win->dm->currentPageNo() / 2;
-                    si.nMax = win->dm->pageCount() / 2;
+                    si.nPos = currentPageNo() / 2;
+                    si.nMax = pageCount() / 2;
                     si.nPage = 1;
                     break;
             }
@@ -2452,7 +2452,7 @@ void DisplayModel::setScrollbarsState(void)
         si.nMax = canvasDy-1;
         si.nPage = drawAreaDy;
 
-        if (ZOOM_FIT_PAGE != win->dm->zoomVirtual()) {
+        if (ZOOM_FIT_PAGE != _zoomVirtual) {
             // keep the top/bottom 5% of the previous page visible after paging down/up
             si.nPage *= 0.95;
             si.nMax -= drawAreaDy - si.nPage;
