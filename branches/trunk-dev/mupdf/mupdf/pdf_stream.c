@@ -154,20 +154,9 @@ buildfilterchain(fz_stream *chain, pdf_xref *xref, fz_obj *fs, fz_obj *ps, int n
 	fz_obj *f;
 	fz_obj *p;
 	int i;
-	int rleCount = 0; /* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1086 */
 
 	for (i = 0; i < fz_arraylen(fs); i++)
 	{
-		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1086 */
-		char *s = fz_toname(fz_arrayget(fs, i));
-		if (!strcmp(s, "RunLengthDecode") || !strcmp(s, "RL"))
-			rleCount++;
-		if (rleCount > 2)
-		{
-			fz_warn("ignoring %dth RunLengthDecode filter in a row", rleCount);
-			continue;
-		}
-
 		f = fz_arrayget(fs, i);
 		p = fz_arrayget(ps, i);
 		chain = buildfilter(chain, xref, f, p, num, gen);
@@ -360,6 +349,8 @@ pdf_guessfilterlength(int len, char *filter)
 	if (!strcmp(filter, "ASCII85Decode"))
 		return len * 4 / 5;
 	if (!strcmp(filter, "FlateDecode"))
+		return len * 3;
+	if (!strcmp(filter, "RunLengthDecode"))
 		return len * 3;
 	if (!strcmp(filter, "LZWDecode"))
 		return len * 2;
