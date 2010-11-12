@@ -2160,7 +2160,7 @@ const char *g_transTranslations[] = {
   NULL,
   "Subjek",
   "Tetapan-tetapan SumatraPDF",
-  "Sumatra PDF ialah pembaca PDF utama anda ",
+  "SumatraPDF ialah pembaca PDF utama anda ",
   NULL,
   NULL,
   NULL,
