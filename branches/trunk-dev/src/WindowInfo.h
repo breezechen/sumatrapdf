@@ -24,7 +24,8 @@ enum MouseAction {
     MA_MAYBEDRAGGING,
     MA_DRAGGING,
     MA_SELECTING,
-    MA_SCROLLING
+    MA_SCROLLING,
+    MA_SELECTING_TEXT
 };
 
 enum PresentationMode {

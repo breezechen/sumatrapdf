@@ -146,6 +146,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\PdfSelection.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSelection.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\PdfSync.cpp"
 				>
 			</File>

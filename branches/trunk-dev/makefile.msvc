@@ -81,7 +81,7 @@ SUMATRA_OBJS = \
 	$(O)\PdfSearch.obj $(O)\SumatraAbout.obj $(O)\SumatraDialogs.obj $(O)\SumatraProperties.obj \
 	$(O)\SumatraPDF.obj $(O)\translations.obj $(O)\translations_txt.obj $(O)\LangMenuDef.obj \
 	$(O)\FileWatch.obj $(O)\PdfSync.obj $(O)\synctex_parser.obj $(O)\synctex_parser_utils.obj \
-    $(O)\RenderCache.obj $(SUMATRA_RES)
+    $(O)\RenderCache.obj $(O)\PdfSelection.obj $(SUMATRA_RES)
 
 # Don't include a manifest in Debug builds (it could override the external manifest)
 !if "$(CFG)"=="rel"
@@ -147,13 +147,14 @@ WINDOWINFO_H = $(PDFENGINE_H) $(DISPLAYMODEL_H) src\WindowInfo.h src\FileWatch.h
 $(O)\AppPrefs.obj:     $(BASEUTILS_H) $(APPPREFS_H) baseutils\benc_util.h baseutils\file_util.h \
                        src\FileHistory.h
 $(O)\CrashHandler.obj: $(SUMATRAPDF_H) baseutils\WinUtil.hpp
-$(O)\DisplayModel.obj: $(SUMATRAPDF_H) $(WINDOWINFO_H)
+$(O)\DisplayModel.obj: $(SUMATRAPDF_H) $(WINDOWINFO_H) src\PdfSelection.h
 $(O)\FileHistory.obj:  baseutils\tstr_util.h src\DisplayState.h
 $(O)\FileWatch.obj:    $(SUMATRAPDF_H) baseutils\file_util.h
 $(O)\Http.obj:         $(SUMATRAPDF_H) src\MemSegment.h
 $(O)\LangMenuDef.obj:  src\Resource.h
 $(O)\PdfEngine.obj:    $(PDFENGINE_H)
 $(O)\PdfSearch.obj:    $(PDFENGINE_H)
+$(O)\PdfSelection.obj: $(PDFENGINE_H)
 $(O)\PdfSync.obj:      $(SUMATRAPDF_H) $(WINDOWINFO_H)
 $(O)\RenderCache.obj:  $(DISPLAYMODEL_H)
 $(O)\SumatraAbout.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\translations.h src\Version.h

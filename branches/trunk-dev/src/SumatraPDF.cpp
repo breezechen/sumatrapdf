@@ -2960,6 +2960,30 @@ static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWO
     DeleteDC (rectDC);
 }
 
+static void UpdateTextSelection(WindowInfo *win)
+{
+    assert(win && win->dm);
+    if (!win || !win->dm) return;
+
+    int pageNo;
+    double dX = win->selectionRect.x + win->selectionRect.dx;
+    double dY = win->selectionRect.y + win->selectionRect.dy;
+    if (win->dm->cvtScreenToUser(&pageNo, &dX, &dY))
+        win->dm->textSelection->SelectUpTo(pageNo, dX, dY);
+
+    DeleteOldSelectionInfo(win);
+
+    PdfSel *result = &win->dm->textSelection->result;
+    for (int i = result->len - 1; i >= 0; i--) {
+        SelectionOnPage *selOnPage = (SelectionOnPage *)malloc(sizeof(SelectionOnPage));
+        RectD_FromRectI(&selOnPage->selectionPage, &result->rects[i]);
+        selOnPage->pageNo = result->pages[i];
+        selOnPage->next = win->selectionOnPage;
+        win->selectionOnPage = selOnPage;
+    }
+    win->showSelection = true;
+}
+
 static void PaintSelection (WindowInfo *win, HDC hdc) {
     const DWORD selectionColorYellow = 0xfff5fc0c;
     if (win->mouseAction == MA_SELECTING) {
@@ -2976,6 +3000,9 @@ static void PaintSelection (WindowInfo *win, HDC hdc) {
         if (selRect.dx != 0 && selRect.dy != 0)
             PaintTransparentRectangle (win, hdc, &selRect, selectionColorYellow);
     } else {
+        if (MA_SELECTING_TEXT == win->mouseAction)
+            UpdateTextSelection(win);
+
         // after selection is done
         SelectionOnPage *selOnPage = win->selectionOnPage;
         // TODO: Move recalcing to better place
@@ -3497,6 +3524,10 @@ static void OnMouseMove(WindowInfo *win, int x, int y, WPARAM flags)
         win->yScrollSpeed = (y - win->dragStartY) / SMOOTHSCROLL_SLOW_DOWN_FACTOR;
         win->xScrollSpeed = (x - win->dragStartX) / SMOOTHSCROLL_SLOW_DOWN_FACTOR;
         break;
+    case MA_SELECTING_TEXT:
+        if (GetCursor())
+            SetCursor(gCursorIBeam);
+        /* fall through */
     case MA_SELECTING:
         win->selectionRect.dx = x - win->selectionRect.x;
         win->selectionRect.dy = y - win->selectionRect.y;
@@ -3535,6 +3566,16 @@ static void OnSelectionStart(WindowInfo *win, int x, int y)
         win->showSelection = true;
         win->mouseAction = MA_SELECTING;
 
+        // Ctrl+Shift+drag initiates text selection
+        if (WasKeyDown(VK_CONTROL) && WasKeyDown(VK_SHIFT)) {
+            int pageNo;
+            double dX = x, dY = y;
+            if (win->dm->cvtScreenToUser(&pageNo, &dX, &dY)) {
+                win->dm->textSelection->StartAt(pageNo, dX, dY);
+                win->mouseAction = MA_SELECTING_TEXT;
+            }
+        }
+
         SetCapture(win->hwndCanvas);
         SetTimer(win->hwndCanvas, SMOOTHSCROLL_TIMER_ID, SMOOTHSCROLL_DELAY_IN_MS, NULL);
 
@@ -3544,9 +3585,13 @@ static void OnSelectionStart(WindowInfo *win, int x, int y)
 
 static void OnSelectionStop(WindowInfo *win, int x, int y)
 {
-    if (WS_SHOWING_PDF == win->state && win->mouseAction == MA_SELECTING) {
+    if (WS_SHOWING_PDF == win->state && (win->mouseAction == MA_SELECTING || win->mouseAction == MA_SELECTING_TEXT)) {
         assert (win->dm);
         if (!win->dm) return;
+
+        // update the text selection before changing the selectionRect
+        if (MA_SELECTING_TEXT == win->mouseAction)
+            UpdateTextSelection(win);
 
         win->selectionRect.dx = abs (x - win->selectionRect.x);
         win->selectionRect.dy = abs (y - win->selectionRect.y);
@@ -3559,7 +3604,7 @@ static void OnSelectionStop(WindowInfo *win, int x, int y)
 
         if (win->selectionRect.dx == 0 || win->selectionRect.dy == 0) {
             DeleteOldSelectionInfo(win);
-        } else {
+        } else if (win->mouseAction == MA_SELECTING) {
             ConvertSelectionRectToSelectionOnPage (win);
         }
         triggerRepaintDisplay(win);
@@ -3608,7 +3653,7 @@ static void OnMouseLeftButtonUp(WindowInfo *win, int x, int y, int key)
         return;
     }
 
-    if (MA_SELECTING == win->mouseAction)
+    if (MA_SELECTING == win->mouseAction || MA_SELECTING_TEXT == win->mouseAction)
         OnSelectionStop(win, x, y);
     else
         OnDraggingStop(win, x, y);
@@ -6577,6 +6622,9 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
             } else if (win && MA_SCROLLING == win->mouseAction) {
                 SetCursor(gCursorScroll);
                 return TRUE;
+            } else if (win && MA_SELECTING_TEXT == win->mouseAction) {
+                SetCursor(gCursorIBeam);
+                return TRUE;
             } else if (win && WS_SHOWING_PDF == win->state) {
                 POINT pt;
                 if (GetCursorPos(&pt) && ScreenToClient(hwnd, &pt)) {
@@ -6610,7 +6658,7 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT message, WPARAM wParam, LP
                 case SMOOTHSCROLL_TIMER_ID:
                     if (MA_SCROLLING == win->mouseAction)
                         WinMoveDocBy(win, win->xScrollSpeed, win->yScrollSpeed);
-                    else if (MA_SELECTING == win->mouseAction) {
+                    else if (MA_SELECTING == win->mouseAction || MA_SELECTING_TEXT == win->mouseAction) {
                         POINT pt;
                         GetCursorPos(&pt);
                         ScreenToClient(win->hwndCanvas, &pt);

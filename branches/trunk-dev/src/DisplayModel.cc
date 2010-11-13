@@ -194,6 +194,7 @@ DisplayModel::DisplayModel(DisplayMode displayMode, int dpi)
     _startPage = INVALID_PAGE_NO;
     _appData = NULL;
     pdfEngine = NULL;
+    textSelection = NULL;
     _pdfSearch = NULL;
     _pagesInfo = NULL;
 
@@ -215,6 +216,7 @@ DisplayModel::~DisplayModel()
     free(_pagesInfo);
     free(_navHistory);
     delete _pdfSearch;
+    delete textSelection;
     delete pdfEngine;
 }
 
@@ -256,6 +258,7 @@ bool DisplayModel::load(const TCHAR *fileName, int startPage, WindowInfo *win, b
     if (!buildPagesInfo())
         return false;
 
+    textSelection = new PdfSelection(pdfEngine);
     _pdfSearch = new PdfSearch(pdfEngine);
     _pdfSearch->tracker = (PdfSearchTracker *)win;
     return true;
@@ -1460,14 +1463,14 @@ TCHAR *DisplayModel::getTextInRegion(int pageNo, RectD *region)
     if (!pageText)
         return NULL;
 
-    RectI regionI;
+    RectI regionI, isect;
     RectI_FromRectD(&regionI, region);
     TCHAR *result = (TCHAR *)malloc((lstrlen(pageText) + 1) * sizeof(TCHAR)), *dest = result;
     for (TCHAR *src = pageText; *src; src++) {
         if (*src != '\n') {
             fz_bbox *bbox = &coords[src - pageText];
             RectI rect = { bbox->x0, bbox->y0, bbox->x1 - bbox->x0, bbox->y1 - bbox->y0 };
-            if (RectI_Intersect(&regionI, &rect, NULL)) {
+            if (RectI_Intersect(&regionI, &rect, &isect) && 1.0 * isect.dx * isect.dy / (rect.dx * rect.dy) >= 0.3) {
                 *dest++ = *src;
                 //DBG_OUT("Char: %c : %d; ushort: %hu\n", (char)c, (int)c, (unsigned short)c);
                 //DBG_OUT("Found char: %c : %hu; real %c : %hu\n", c, (unsigned short)(unsigned char) c, ln->text[i].c, ln->text[i].c);

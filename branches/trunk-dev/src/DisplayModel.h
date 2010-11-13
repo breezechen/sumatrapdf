@@ -5,6 +5,7 @@
 
 #include "PdfEngine.h"
 #include "DisplayState.h"
+#include "PdfSelection.h"
 #include "PdfSearch.h"
 
 #define INVALID_ZOOM        -99
@@ -169,6 +170,7 @@ public:
     int currentPageNo(void) const;
 
     PdfEngine *     pdfEngine;
+    PdfSelection *  textSelection;
 
     /* an arbitrary pointer that can be used by an app e.g. a multi-window GUI
        could link this to a data describing window displaying  this document */
