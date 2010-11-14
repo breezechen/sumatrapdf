@@ -2382,17 +2382,17 @@ void DisplayModel::setScrollbarsState(void)
     // display the scroll bars right again for the new zoom. Make sure we haven't just done
     // that - or if so, force the scroll bars to remain visible.
     if (ZOOM_FIT_CONTENT == _zoomVirtual) {
-        if ((win->prevCanvasBR.y != drawAreaDy || win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) &&
-            (win->prevCanvasBR.x != drawAreaDx || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL)) &&
-            (win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL) || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL))) {
-            win->prevCanvasBR.x = drawAreaDx;
-            win->prevCanvasBR.y = drawAreaDy;
-        }
-        else {
-            if (drawAreaDx == canvasDx)
-                canvasDx++;
+        if (win->prevCanvasBR.y == drawAreaDy && win->prevCanvasBR.x == drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) {
             if (drawAreaDy == canvasDy)
                 canvasDy++;
+        }
+        else if (win->prevCanvasBR.x == drawAreaDx && win->prevCanvasBR.y == drawAreaDy + GetSystemMetrics(SM_CYHSCROLL)) {
+            if (drawAreaDx == canvasDx)
+                canvasDx++;
+        }
+        else {
+            win->prevCanvasBR.x = drawAreaDx;
+            win->prevCanvasBR.y = drawAreaDy;
         }
     }
 
@@ -2483,6 +2483,7 @@ static void WindowInfo_ToggleZoom(WindowInfo *win)
     assert(dm);
     if (!dm) return;
 
+    win->prevCanvasBR.x = win->prevCanvasBR.y = -1;
     if (ZOOM_FIT_PAGE == dm->zoomVirtual())
         dm->zoomTo(ZOOM_FIT_WIDTH);
     else if (ZOOM_FIT_WIDTH == dm->zoomVirtual())
@@ -2518,6 +2519,7 @@ static void WindowInfo_ZoomToSelection(WindowInfo *win, double factor, bool rela
             zoomToPt = false;
     }
 
+    win->prevCanvasBR.x = win->prevCanvasBR.y = -1;
     if (relative)
         win->dm->zoomBy(factor, zoomToPt ? &pt : NULL);
     else
@@ -4326,6 +4328,7 @@ static void RotateLeft(WindowInfo *win)
 {
     if (!WindowInfo_PdfLoaded(win))
         return;
+    win->prevCanvasBR.x = win->prevCanvasBR.y = -1;
     win->dm->rotateBy(-90);
 }
 
@@ -4333,6 +4336,7 @@ static void RotateRight(WindowInfo *win)
 {
     if (!WindowInfo_PdfLoaded(win))
         return;
+    win->prevCanvasBR.x = win->prevCanvasBR.y = -1;
     win->dm->rotateBy(90);
 }
 
