@@ -15,8 +15,15 @@ public:
     PdfSelection(PdfEngine *engine);
     ~PdfSelection();
 
-    void StartAt(int pageNo, double x, double y);
-    void SelectUpTo(int pageNo, double x, double y);
+    void StartAt(int pageNo, int glyphIx);
+    void StartAt(int pageNo, double x, double y) {
+        StartAt(pageNo, FindClosestGlyph(pageNo, x, y));
+    }
+    void SelectUpTo(int pageNo, int glyphIx);
+    void SelectUpTo(int pageNo, double x, double y) {
+        SelectUpTo(pageNo, FindClosestGlyph(pageNo, x, y));
+    }
+    void Reset();
 
     PdfSel result;
 
