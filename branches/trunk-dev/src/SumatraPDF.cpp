@@ -2383,7 +2383,8 @@ void DisplayModel::setScrollbarsState(void)
     // that - or if so, force the scroll bars to remain visible.
     if (ZOOM_FIT_CONTENT == _zoomVirtual) {
         if ((win->prevCanvasBR.y != drawAreaDy || win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) &&
-            (win->prevCanvasBR.x != drawAreaDx || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL))) {
+            (win->prevCanvasBR.x != drawAreaDx || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL)) &&
+            (win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL) || win->prevCanvasBR.y != drawAreaDy + GetSystemMetrics(SM_CYHSCROLL))) {
             win->prevCanvasBR.x = drawAreaDx;
             win->prevCanvasBR.y = drawAreaDy;
         }
