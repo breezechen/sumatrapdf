@@ -139,7 +139,7 @@ BASEUTILS_H =  baseutils\base_util.h baseutils\tstr_util.h baseutils\str_util.h 
                baseutils\geom_util.h
 APPPREFS_H =   src\AppPrefs.h src\DisplayState.h
 PDFENGINE_H =  $(BASEUTILS_H) src\PdfEngine.h $(FITZ_DIR)\fitz\fitz.h $(FITZ_DIR)\mupdf\mupdf.h
-DISPLAYMODEL_H=$(PDFENGINE_H) src\DisplayModel.h src\PdfSearch.h src\DisplayState.h
+DISPLAYMODEL_H=$(PDFENGINE_H) src\DisplayModel.h src\PdfSearch.h src\DisplayState.h src\PdfSelection.h
 SUMATRAPDF_H = $(BASEUTILS_H) src\SumatraPDF.h baseutils\win_util.h src\Resource.h
 WINDOWINFO_H = $(PDFENGINE_H) $(DISPLAYMODEL_H) src\WindowInfo.h src\FileWatch.h src\PdfSync.h \
                baseutils\vstrlist.h
@@ -147,7 +147,7 @@ WINDOWINFO_H = $(PDFENGINE_H) $(DISPLAYMODEL_H) src\WindowInfo.h src\FileWatch.h
 $(O)\AppPrefs.obj:     $(BASEUTILS_H) $(APPPREFS_H) baseutils\benc_util.h baseutils\file_util.h \
                        src\FileHistory.h
 $(O)\CrashHandler.obj: $(SUMATRAPDF_H) baseutils\WinUtil.hpp
-$(O)\DisplayModel.obj: $(SUMATRAPDF_H) $(WINDOWINFO_H) src\PdfSelection.h
+$(O)\DisplayModel.obj: $(SUMATRAPDF_H) $(WINDOWINFO_H)
 $(O)\FileHistory.obj:  baseutils\tstr_util.h src\DisplayState.h
 $(O)\FileWatch.obj:    $(SUMATRAPDF_H) baseutils\file_util.h
 $(O)\Http.obj:         $(SUMATRAPDF_H) src\MemSegment.h

@@ -15,17 +15,21 @@ PdfSelection::PdfSelection(PdfEngine *engine) : engine(engine)
 
 PdfSelection::~PdfSelection()
 {
+    Reset();
+    free(coords);
+    free(lens);
+    free(result.pages);
+    free(result.rects);
+}
+
+void PdfSelection::Reset()
+{
     for (int i = 0; i < engine->pageCount(); i++) {
         if (coords[i]) {
             free(coords[i]);
             coords[i] = NULL;
         }
     }
-
-    free(coords);
-    free(lens);
-    free(result.pages);
-    free(result.rects);
 }
 
 int PdfSelection::FindClosestGlyph(int pageNo, double x, double y)
@@ -93,16 +97,24 @@ void PdfSelection::FillResultRects(int pageNo, int glyph, int length)
     }
 }
 
-void PdfSelection::StartAt(int pageNo, double x, double y)
+void PdfSelection::StartAt(int pageNo, int glyphIx)
 {
     startPage = pageNo;
-    startGlyph = FindClosestGlyph(pageNo, x, y);
+    startGlyph = glyphIx;
+    if (glyphIx < 0) {
+        FindClosestGlyph(pageNo, 0, 0);
+        startGlyph = lens[pageNo - 1] + glyphIx + 1;
+    }
 }
 
-void PdfSelection::SelectUpTo(int pageNo, double x, double y)
+void PdfSelection::SelectUpTo(int pageNo, int glyphIx)
 {
-    int endGlyph = FindClosestGlyph(pageNo, x, y);
-    bool isForward = pageNo > startPage || pageNo == startPage && endGlyph > startGlyph;
+    int endGlyph = glyphIx;
+    if (glyphIx < 0) {
+        FindClosestGlyph(pageNo, 0, 0);
+        endGlyph = lens[pageNo - 1] + glyphIx + 1;
+    }
+
     result.len = 0;
     int fromPage = min(pageNo, startPage), toPage = max(pageNo, startPage);
     int fromGlyph = (fromPage == pageNo ? endGlyph : startGlyph);
@@ -110,9 +122,11 @@ void PdfSelection::SelectUpTo(int pageNo, double x, double y)
     if (fromPage == toPage && fromGlyph > toGlyph)
         swap_int(&fromGlyph, &toGlyph);
 
-    if (fromGlyph != toGlyph)
-        x=x;
     for (int page = fromPage; page <= toPage; page++) {
+        // make sure that the glyph coordinates have been cached
+        if (!coords[page-1])
+            FindClosestGlyph(page, 0, 0);
+
         int glyph = page == fromPage ? fromGlyph : 0;
         int length = (page == toPage ? toGlyph : lens[page - 1]) - glyph;
         if (length > 0)

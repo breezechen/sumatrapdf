@@ -3294,18 +3294,25 @@ static void ConvertSelectionRectToSelectionOnPage (WindowInfo *win) {
     }
 }
 
-static void OnSelectAll(WindowInfo *win)
+static void OnSelectAll(WindowInfo *win, bool textOnly=false)
 {
     assert(win && win->dm);
     if (!win || !win->dm) return;
 
-    DeleteOldSelectionInfo(win);
-
-    win->selectionRect.x = INT_MIN / 2;
-    win->selectionRect.y = INT_MIN / 2;
-    win->selectionRect.dx = INT_MAX;
-    win->selectionRect.dy = INT_MAX;
-    ConvertSelectionRectToSelectionOnPage(win);
+    if (textOnly) {
+        int pageNo;
+        for (pageNo = 1; !win->dm->getPageInfo(pageNo)->shown; pageNo++);
+        win->dm->textSelection->StartAt(pageNo, 0);
+        for (pageNo = win->dm->pageCount(); !win->dm->getPageInfo(pageNo)->shown; pageNo--);
+        win->dm->textSelection->SelectUpTo(pageNo, -1);
+        RectI_FromXY(&win->selectionRect, INT_MIN / 2, INT_MAX, INT_MIN / 2, INT_MAX);
+        UpdateTextSelection(win);
+    }
+    else {
+        DeleteOldSelectionInfo(win);
+        RectI_FromXY(&win->selectionRect, INT_MIN / 2, INT_MAX, INT_MIN / 2, INT_MAX);
+        ConvertSelectionRectToSelectionOnPage(win);
+    }
 
     win->showSelection = true;
     triggerRepaintDisplay(win);
@@ -5312,6 +5319,7 @@ static bool OnKeydown(WindowInfo *win, int key, LPARAM lparam, bool inTextfield=
 static void ClearSearch(WindowInfo *win)
 {
     DeleteOldSelectionInfo(win);
+    win->dm->textSelection->Reset();
     triggerRepaintDisplay(win);
 }
 
