@@ -247,15 +247,15 @@ public:
     fz_rect         getContentBox(int pageNo, fz_matrix ctm=fz_identity, RenderTarget target=Target_View);
 
     void            SetFindMatchCase(bool match) { _pdfSearch->SetSensitive(match); }
-    PdfSearchResult *Find(PdfSearchDirection direction = FIND_FORWARD, TCHAR *text = NULL, UINT fromPage = 0);
-    int             lastFoundPage(void) const { return _pdfSearch->result.page; }
+    PdfSel *        Find(PdfSearchDirection direction=FIND_FORWARD, TCHAR *text=NULL, UINT fromPage=0);
+    int             lastFoundPage(void) const { return _pdfSearch->findPage; }
     BOOL            bFoundText;
 
     BOOL            _showToc;
 
     int             getPageNoByPoint (double x, double y);
 
-    BOOL            MapResultRectToScreen(PdfSearchResult *res);
+    BOOL            ShowResultRectToScreen(PdfSel *res);
 
     bool            getScrollState(ScrollState *state);
     void            setScrollState(ScrollState *state);
