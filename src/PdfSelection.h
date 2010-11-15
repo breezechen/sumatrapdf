@@ -2,6 +2,7 @@
 #define _PDF_SELECTION_H
 
 #include "PdfEngine.h"
+#include "VStrList.h"
 
 typedef struct {
     int len;
@@ -23,6 +24,7 @@ public:
     void SelectUpTo(int pageNo, double x, double y) {
         SelectUpTo(pageNo, FindClosestGlyph(pageNo, x, y));
     }
+    TCHAR *ExtractText(TCHAR *lineSep=_T(DOS_NEWLINE));
     void Reset();
 
     PdfSel result;
@@ -32,11 +34,11 @@ protected:
     fz_bbox  ** coords;
     int       * lens;
 
-    int         startPage;
-    int         startGlyph;
+    int         startPage, endPage;
+    int         startGlyph, endGlyph;
 
     int FindClosestGlyph(int pageNo, double x, double y);
-    void FillResultRects(int pageNo, int glyph, int length);
+    void FillResultRects(int pageNo, int glyph, int length, TCHAR *text=NULL, VStrList *lines=NULL);
 };
 
 #endif // _PDF_SELECTION_H

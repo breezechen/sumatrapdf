@@ -18,8 +18,6 @@ PdfSelection::~PdfSelection()
     Reset();
     free(coords);
     free(lens);
-    free(result.pages);
-    free(result.rects);
 }
 
 void PdfSelection::Reset()
@@ -30,13 +28,19 @@ void PdfSelection::Reset()
             coords[i] = NULL;
         }
     }
+
+    result.len = 0;
+    free(result.pages);
+    result.pages = NULL;
+    free(result.rects);
+    result.rects = NULL;
 }
 
 int PdfSelection::FindClosestGlyph(int pageNo, double x, double y)
 {
     assert(1 <= pageNo && pageNo <= engine->pageCount());
     if (!coords[pageNo - 1]) {
-        TCHAR *text = engine->ExtractPageText(pageNo, _T(DOS_NEWLINE), &coords[pageNo - 1]);
+        TCHAR *text = engine->ExtractPageText(pageNo, _T("\1"), &coords[pageNo - 1]);
         if (!text)
             return -1;
         lens[pageNo - 1] = lstrlen(text);
@@ -67,7 +71,7 @@ int PdfSelection::FindClosestGlyph(int pageNo, double x, double y)
     return result;
 }
 
-void PdfSelection::FillResultRects(int pageNo, int glyph, int length)
+void PdfSelection::FillResultRects(int pageNo, int glyph, int length, TCHAR *text, VStrList *lines)
 {
     fz_bbox mediabox = fz_roundrect(engine->pageMediabox(pageNo));
     fz_bbox *c = &coords[pageNo - 1][glyph], *end = c + length;
@@ -76,7 +80,7 @@ void PdfSelection::FillResultRects(int pageNo, int glyph, int length)
         if (!c->x0 && !c->x1)
             continue;
 
-        fz_bbox c0 = *c;
+        fz_bbox c0 = *c, *c0p = c;
         for (; c < end && (c->x0 || c->x1); c++);
         c--;
         fz_bbox c1 = *c;
@@ -84,6 +88,11 @@ void PdfSelection::FillResultRects(int pageNo, int glyph, int length)
         // skip text that's completely outside a page's mediabox
         if (fz_isemptyrect(bbox))
             continue;
+
+        if (text && lines) {
+            lines->push_back(tstr_dupn(text + (c0p - coords[pageNo - 1]), c - c0p + 1));
+            continue;
+        }
 
         // cut the right edge, if it overlaps the next character
         if ((c[1].x0 || c[1].x1) && bbox.x0 < c[1].x0 && bbox.x1 > c[1].x0)
@@ -109,16 +118,17 @@ void PdfSelection::StartAt(int pageNo, int glyphIx)
 
 void PdfSelection::SelectUpTo(int pageNo, int glyphIx)
 {
-    int endGlyph = glyphIx;
+    endPage = pageNo;
+    endGlyph = glyphIx;
     if (glyphIx < 0) {
         FindClosestGlyph(pageNo, 0, 0);
         endGlyph = lens[pageNo - 1] + glyphIx + 1;
     }
 
     result.len = 0;
-    int fromPage = min(pageNo, startPage), toPage = max(pageNo, startPage);
-    int fromGlyph = (fromPage == pageNo ? endGlyph : startGlyph);
-    int toGlyph = (fromPage == pageNo ? startGlyph : endGlyph);
+    int fromPage = min(startPage, endPage), toPage = max(startPage, endPage);
+    int fromGlyph = (fromPage == endPage ? endGlyph : startGlyph);
+    int toGlyph = (fromPage == endPage ? startGlyph : endGlyph);
     if (fromPage == toPage && fromGlyph > toGlyph)
         swap_int(&fromGlyph, &toGlyph);
 
@@ -132,4 +142,27 @@ void PdfSelection::SelectUpTo(int pageNo, int glyphIx)
         if (length > 0)
             FillResultRects(page, glyph, length);
     }
+}
+
+TCHAR *PdfSelection::ExtractText(TCHAR *lineSep)
+{
+    VStrList lines;
+
+    int fromPage = min(startPage, endPage), toPage = max(startPage, endPage);
+    int fromGlyph = (fromPage == endPage ? endGlyph : startGlyph);
+    int toGlyph = (fromPage == endPage ? startGlyph : endGlyph);
+    if (fromPage == toPage && fromGlyph > toGlyph)
+        swap_int(&fromGlyph, &toGlyph);
+
+    for (int page = fromPage; page <= toPage; page++) {
+        int glyph = page == fromPage ? fromGlyph : 0;
+        int length = (page == toPage ? toGlyph : lens[page - 1]) - glyph;
+        if (length > 0) {
+            TCHAR *text = engine->ExtractPageText(page, _T("\1"));
+            FillResultRects(page, glyph, length, text, &lines);
+            free(text);
+        }
+    }
+
+    return lines.join(lineSep);
 }

@@ -2963,16 +2963,18 @@ static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWO
     DeleteDC (rectDC);
 }
 
-static void UpdateTextSelection(WindowInfo *win)
+static void UpdateTextSelection(WindowInfo *win, bool select=true)
 {
     assert(win && win->dm);
     if (!win || !win->dm) return;
 
-    int pageNo;
-    double dX = win->selectionRect.x + win->selectionRect.dx;
-    double dY = win->selectionRect.y + win->selectionRect.dy;
-    if (win->dm->cvtScreenToUser(&pageNo, &dX, &dY))
-        win->dm->textSelection->SelectUpTo(pageNo, dX, dY);
+    if (select) {
+        int pageNo;
+        double dX = win->selectionRect.x + win->selectionRect.dx;
+        double dY = win->selectionRect.y + win->selectionRect.dy;
+        if (win->dm->cvtScreenToUser(&pageNo, &dX, &dY))
+            win->dm->textSelection->SelectUpTo(pageNo, dX, dY);
+    }
 
     DeleteOldSelectionInfo(win);
 
@@ -3217,10 +3219,16 @@ static void CopySelectionToClipboard(WindowInfo *win)
     EmptyClipboard();
 
     if (win->dm->pdfEngine->hasPermission(PDF_PERM_COPY)) {
-        VStrList selections;
-        for (SelectionOnPage *selOnPage = win->selectionOnPage; selOnPage; selOnPage = selOnPage->next)
-            selections.push_back(win->dm->getTextInRegion(selOnPage->pageNo, &selOnPage->selectionPage));
-        TCHAR *selText = selections.join();
+        TCHAR *selText;
+        if (win->dm->textSelection->result.len > 0) {
+            selText = win->dm->textSelection->ExtractText();
+        }
+        else {
+            VStrList selections;
+            for (SelectionOnPage *selOnPage = win->selectionOnPage; selOnPage; selOnPage = selOnPage->next)
+                selections.push_back(win->dm->getTextInRegion(selOnPage->pageNo, &selOnPage->selectionPage));
+            selText = selections.join();
+        }
 
         HGLOBAL handle = GlobalAlloc(GMEM_MOVEABLE, (lstrlen(selText) + 1) * sizeof(TCHAR));
         if (handle) {
@@ -3270,6 +3278,7 @@ static void DeleteOldSelectionInfo (WindowInfo *win) {
 }
 
 static void ConvertSelectionRectToSelectionOnPage (WindowInfo *win) {
+    win->dm->textSelection->Reset();
     for (int pageNo = win->dm->pageCount(); pageNo >= 1; --pageNo) {
         PdfPageInfo *pageInfo = win->dm->getPageInfo(pageNo);
         assert(!pageInfo->visible || pageInfo->shown);
@@ -5040,21 +5049,19 @@ static void OnMenuViewFullscreen(WindowInfo *win)
         WindowInfo_EnterFullscreen(win);
 }
 
-static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result, bool wasModified)
+static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSel *result, bool wasModified)
 {
-    win->dm->goToPage(result->page, 0, wasModified);
+    assert(result->len > 0);
+    win->dm->goToPage(result->pages[0], 0, wasModified);
 
-    DeleteOldSelectionInfo(win);
-    for (int i = 0; i < result->len; i++) {
-        SelectionOnPage *selOnPage = (SelectionOnPage *)malloc(sizeof(SelectionOnPage));
-        RectD_FromRectI(&selOnPage->selectionPage, &result->rects[i]);
-        selOnPage->pageNo = result->page;
-        selOnPage->next = win->selectionOnPage;
-        win->selectionOnPage = selOnPage;
-    }
+    PdfSelection *sel = win->dm->textSelection;
+    sel->Reset();
+    sel->result.pages = (int *)memdup(result->pages, result->len * sizeof(int));
+    sel->result.rects = (RectI *)memdup(result->rects, result->len * sizeof(RectI));
+    sel->result.len = result->len;
 
-    win->dm->MapResultRectToScreen(result);
-    win->showSelection = true;
+    UpdateTextSelection(win, false);
+    win->dm->ShowResultRectToScreen(result);
     triggerRepaintDisplay(win);
 }
 
@@ -5143,10 +5150,11 @@ void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UI
             }
             
             // Scroll to show the overall highlighted zone
-            PdfSearchResult res = { page, 1, &overallrc };
+            int pageNo = page;
+            PdfSel res = { 1, &pageNo, &overallrc };
             if (!win->dm->pageVisible(page))
                 win->dm->goToPage(page, 0, true);
-            if(!win->dm->MapResultRectToScreen(&res))
+            if (!win->dm->ShowResultRectToScreen(&res))
                 triggerRepaintDisplay(win);
             if (IsIconic(win->hwndFrame))
                 ShowWindowAsync(win->hwndFrame, SW_RESTORE);
@@ -5625,7 +5633,7 @@ static DWORD WINAPI FindThread(LPVOID data)
     FindThreadData *ftd = (FindThreadData *)data;
     WindowInfo *win = ftd->win;
 
-    PdfSearchResult *rect;
+    PdfSel *rect;
     if (ftd->wasModified || win->dm->lastFoundPage() != win->dm->currentPageNo())
         rect = win->dm->Find(ftd->direction, ftd->text);
     else
@@ -7129,13 +7137,13 @@ InitMouseWheelInfo:
 
         case WM_APP_FIND_END:
             if (wParam) {
-                PdfSearchResult *rect = (PdfSearchResult *)wParam;
                 bool wasModified = !!lParam;
-                WindowInfo_ShowSearchResult(win, rect, wasModified);
+                WindowInfo_ShowSearchResult(win, (PdfSel *)wParam, wasModified);
                 WindowInfo_HideFindStatus(win);
             } else {
+                bool wasCanceled = !!lParam;
                 ClearSearch(win);
-                WindowInfo_HideFindStatus(win, !!lParam);
+                WindowInfo_HideFindStatus(win, wasCanceled);
             }
             break;
 

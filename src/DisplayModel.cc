@@ -1225,7 +1225,7 @@ void DisplayModel::rotateBy(int newRotation)
     goToPage(currPageNo, 0);
 }
 
-PdfSearchResult *DisplayModel::Find(PdfSearchDirection direction, TCHAR *text, UINT fromPage)
+PdfSel *DisplayModel::Find(PdfSearchDirection direction, TCHAR *text, UINT fromPage)
 {
     bool forward = (direction == FIND_FORWARD);
     _pdfSearch->SetDirection(forward);
@@ -1501,23 +1501,26 @@ TCHAR *DisplayModel::extractAllText(RenderTarget target)
 }
 
 // returns true if it was necessary to scroll the display (horizontally or vertically)
-BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
+BOOL DisplayModel::ShowResultRectToScreen(PdfSel *res)
 {
+    if (!res->len)
+        return false;
+
     RectI extremes = { 0 };
     for (int i = 0; i < res->len; i++) {
-        RectI *rect = &res->rects[i];
+        RectI rect = res->rects[i];
         RectD rectD;
-        RectD_FromRectI(&rectD, rect);
-        rectCvtUserToScreen(res->page, &rectD);
-        RectI_FromXY(rect, floor(rectD.x), ceil(rectD.x + rectD.dx), floor(rectD.y), ceil(rectD.y + rectD.dy));
+        RectD_FromRectI(&rectD, &rect);
+        rectCvtUserToScreen(res->pages[i], &rectD);
+        RectI_FromXY(&rect, floor(rectD.x), ceil(rectD.x + rectD.dx), floor(rectD.y), ceil(rectD.y + rectD.dy));
 
         if (0 == i)
-            extremes = *rect;
+            extremes = rect;
         else
-            extremes = RectI_Union(extremes, *rect);
+            extremes = RectI_Union(extremes, rect);
     }
 
-    PdfPageInfo *pageInfo = getPageInfo(res->page);
+    PdfPageInfo *pageInfo = getPageInfo(res->pages[0]);
     int sx = 0, sy = 0;
     //
     // Vertical scroll
@@ -1566,11 +1569,6 @@ BOOL DisplayModel::MapResultRectToScreen(PdfSearchResult *res)
         scrollXBy(sx);
     if (sy != 0)
         scrollYBy(sy, false);
-
-    for (int i = 0; i < res->len; i++) {
-        res->rects[i].x -= sx;
-        res->rects[i].y -= sy;
-    }
 
     return sx != 0 || sy != 0;
 }
