@@ -62,7 +62,6 @@ protected:
 private:
     TCHAR *pageText;
     int findIndex;
-    fz_bbox *coords;
 };
 
 #endif // _PDF_SEARCH_H

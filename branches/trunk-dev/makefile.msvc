@@ -153,7 +153,7 @@ $(O)\FileWatch.obj:    $(SUMATRAPDF_H) baseutils\file_util.h
 $(O)\Http.obj:         $(SUMATRAPDF_H) src\MemSegment.h
 $(O)\LangMenuDef.obj:  src\Resource.h
 $(O)\PdfEngine.obj:    $(PDFENGINE_H)
-$(O)\PdfSearch.obj:    $(PDFENGINE_H)
+$(O)\PdfSearch.obj:    $(PDFENGINE_H) src\PdfSelection.h
 $(O)\PdfSelection.obj: $(PDFENGINE_H)
 $(O)\PdfSync.obj:      $(SUMATRAPDF_H) $(WINDOWINFO_H)
 $(O)\RenderCache.obj:  $(DISPLAYMODEL_H)
