@@ -10,7 +10,6 @@ PdfSearch::PdfSearch(PdfEngine *engine) : PdfSelection(engine)
     text = NULL;
     anchor = NULL;
     pageText = NULL;
-    coords = NULL;
     sensitive = false;
     forward = true;
     findPage = 1;
@@ -24,11 +23,9 @@ PdfSearch::~PdfSearch()
 
 void PdfSearch::Reset()
 {
-    if (pageText || coords) {
+    if (pageText) {
         free(pageText);
         pageText = NULL;
-        free(coords);
-        coords = NULL;
     }
     PdfSelection::Reset();
 }
@@ -123,7 +120,8 @@ bool PdfSearch::FindStartingAtPage(int pageNo)
     while (1 <= pageNo && pageNo <= total && UpdateTracker(pageNo, total)) {
         Reset();
 
-        pageText = engine->ExtractPageText(pageNo, _T(" "), &coords);
+        fz_bbox **pcoords = !coords[pageNo - 1] ? &coords[pageNo - 1] : NULL;
+        pageText = engine->ExtractPageText(pageNo, _T(" "), pcoords);
         findIndex = forward ? 0 : lstrlen(pageText);
 
         if (pageText && FindTextInPage(pageNo))
