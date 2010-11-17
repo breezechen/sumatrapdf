@@ -372,11 +372,14 @@ fz_executedisplaylist2(fz_displaylist *list, fz_device *dev, fz_matrix topctm, f
 				clipped++;
 				continue;
 			case FZ_CMDPOPCLIP:
-			case FZ_CMDENDMASK:
 			case FZ_CMDENDGROUP:
 				if (!clipped)
 					break;
 				clipped--;
+				continue;
+			case FZ_CMDENDMASK:
+				if (!clipped)
+					break;
 				continue;
 			default:
 				continue;
