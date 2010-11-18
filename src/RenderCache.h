@@ -99,7 +99,7 @@ private:
                             return _requestCount == MAX_PAGE_REQUESTS;
                         }
     UINT                GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile);
-    void                Render(DisplayModel *dm, int pageNo, TilePosition tile);
+    void                Render(DisplayModel *dm, int pageNo, TilePosition tile, bool clearQueue=true);
     void                ClearQueueForDisplayModel(DisplayModel *dm, int pageNo=INVALID_PAGE_NO,
                                                   TilePosition *tile=NULL);
 

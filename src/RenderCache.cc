@@ -269,10 +269,17 @@ void RenderCache::Render(DisplayModel *dm, int pageNo)
 {
     TilePosition tile = { GetTileRes(dm, pageNo), 0, 0 };
     Render(dm, pageNo, tile);
+
+    // render both tiles of the first row when splitting a page in four
+    // (which always happens on larger displays for Fit Width)
+    if (tile.res == 1 && !IsRenderQueueFull()) {
+        tile.col = 1;
+        Render(dm, pageNo, tile, false);
+    }
 }
 
 /* Render a bitmap for page <pageNo> in <dm>. */
-void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
+void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile, bool clearQueue)
 {
     DBG_OUT("RenderQueue_Add(pageNo=%d)\n", pageNo);
     assert(dm);
@@ -297,7 +304,8 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile)
     }
 
     // clear requests for tiles of different resolution and invisible tiles
-    ClearQueueForDisplayModel(dm, pageNo, &tile);
+    if (clearQueue)
+        ClearQueueForDisplayModel(dm, pageNo, &tile);
 
     for (int i=0; i < _requestCount; i++) {
         PageRenderRequest* req = &(_requests[i]);
