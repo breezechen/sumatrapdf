@@ -103,6 +103,7 @@ static bool             gUseGdiRenderer = false;
 #define COL_WINDOW_SHADOW       RGB(0x40, 0x40, 0x40)
 #define COL_PAGE_FRAME          RGB(0x88, 0x88, 0x88)
 #define COL_FWDSEARCH_BG        RGB(0x65, 0x81 ,0xff)
+#define COL_SELECTION_RECT      RGB(0xF5, 0xFC, 0x0C)
 
 #define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
 #define CANVAS_CLASS_NAME       _T("SUMATRA_PDF_CANVAS")
@@ -606,12 +607,12 @@ void DownloadSumatraUpdateInfo(WindowInfo *win, bool autoCheck)
 }
 
 static void SeeLastError(void) {
-    CHAR *msgBuf = NULL;
-    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    TCHAR *msgBuf = NULL;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&msgBuf, 0, NULL);
+        (LPTSTR)&msgBuf, 0, NULL);
     if (!msgBuf) return;
-    DBG_OUT("SeeLastError(): %s\n", msgBuf);
+    DBG_OUT_T(_T("SeeLastError(): %s\n"), msgBuf);
     LocalFree(msgBuf);
 }
 
@@ -1973,7 +1974,7 @@ static bool LoadPdfIntoWindow(
         displayMode, startPage, win, tryrepair);
 
     if (!win->dm) {
-        //DBG_OUT("failed to load file %s\n", fileName); <- fileName is now Unicode
+        DBG_OUT_T(_T("failed to load file %s\n"), fileName);
         win->needrefresh = true;
         // if there is an error while reading the pdf and pdfrepair is not requested
         // then fallback to the previous state
@@ -2923,49 +2924,36 @@ static void DrawCenteredText(HDC hdc, RECT *r, const TCHAR *txt)
     DrawText(hdc, txt, lstrlen(txt), r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
-static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWORD selectionColor, BYTE alpha = 0x5f, int margin = 1) {
-    BITMAPINFO bmi;        // bitmap header
-    UINT32 *pvBits;        // pointer to DIB section
-    const DWORD selectionColorBlack = 0xff000000;
-
+static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, COLORREF selectionColor, BYTE alpha = 0x5f, int margin = 1) {
     // don't draw selection parts not visible on screen
     RectI screen = { -margin, -margin, win->winDx() + 2 * margin, win->winDy() + 2 * margin };
     RectI isect;
-    if (!RectI_Intersect(rect, &screen, &isect))
+    if (!RectI_Intersect(rect, &screen, &isect) || isect.dx * isect.dy == 0)
         return;
     rect = &isect;
 
-    ZeroMemory(&bmi, sizeof(BITMAPINFO));
-    bmi.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = rect->dx;
-    bmi.bmiHeader.biHeight = rect->dy;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-    bmi.bmiHeader.biSizeImage = rect->dx * rect->dy * 4;
-
     HDC rectDC = CreateCompatibleDC(hdc);
-    HBITMAP hbitmap = CreateDIBSection(rectDC, &bmi, DIB_RGB_COLORS, (LPVOID *)&pvBits, NULL, 0x0);
-    if (!hbitmap) {
-        DBG_OUT("    selection rectangle too big to be drawn\n");
-        DeleteDC(rectDC);
-        return;
-    }
+    HBITMAP hbitmap = CreateCompatibleBitmap(hdc, rect->dx, rect->dy);
     SelectObject(rectDC, hbitmap);
+    if (!hbitmap)
+        DBG_OUT("    selection rectangle too big to be drawn\n");
 
-    for (int y = 0; y < rect->dy; y++) {
-        for (int x = 0; x < rect->dx; x++) {
-            if (x < margin || x >= rect->dx - margin || y < margin || y >= rect->dy - margin)
-                pvBits[x + y * rect->dx] = selectionColorBlack;
-            else
-                pvBits[x + y * rect->dx] = selectionColor;
-        }
+    // draw selection border
+    RECT rc = { 0, 0, rect->dx, rect->dy };
+    if (margin) {
+        FillRect(rectDC, &rc, gBrushBlack);
+        InflateRect(&rc, -margin, -margin);
     }
-
-    BLENDFUNCTION bf = { AC_SRC_OVER, 0, alpha, AC_SRC_ALPHA };
+    // fill selection
+    HBRUSH brush = CreateSolidBrush(selectionColor);
+    FillRect(rectDC, &rc, brush);
+    DeleteObject(brush);
+    // blend selection rectangle over content
+    BLENDFUNCTION bf = { AC_SRC_OVER, 0, alpha, 0 };
     AlphaBlend(hdc, rect->x, rect->y, rect->dx, rect->dy, rectDC, 0, 0, rect->dx, rect->dy, bf);
-    DeleteObject (hbitmap);
-    DeleteDC (rectDC);
+
+    DeleteObject(hbitmap);
+    DeleteDC(rectDC);
 }
 
 static void UpdateTextSelection(WindowInfo *win, bool select=true)
@@ -2995,33 +2983,28 @@ static void UpdateTextSelection(WindowInfo *win, bool select=true)
 }
 
 static void PaintSelection (WindowInfo *win, HDC hdc) {
-    const DWORD selectionColorYellow = 0xfff5fc0c;
     if (win->mouseAction == MA_SELECTING) {
         // during selecting
-        RectI selRect;
+        RectI selRect = win->selectionRect;
+        if (selRect.dx < 0) {
+            selRect.x += selRect.dx;
+            selRect.dx *= -1;
+        }
+        if (selRect.dy < 0) {
+            selRect.y += selRect.dy;
+            selRect.dy *= -1;
+        }
 
-        selRect.x = min (win->selectionRect.x, 
-            win->selectionRect.x + win->selectionRect.dx);
-        selRect.y = min (win->selectionRect.y, 
-            win->selectionRect.y + win->selectionRect.dy);
-        selRect.dx = abs (win->selectionRect.dx);
-        selRect.dy = abs (win->selectionRect.dy);
-
-        if (selRect.dx != 0 && selRect.dy != 0)
-            PaintTransparentRectangle (win, hdc, &selRect, selectionColorYellow);
+        PaintTransparentRectangle(win, hdc, &selRect, COL_SELECTION_RECT);
     } else {
         if (MA_SELECTING_TEXT == win->mouseAction)
             UpdateTextSelection(win);
 
         // after selection is done
-        SelectionOnPage *selOnPage = win->selectionOnPage;
         // TODO: Move recalcing to better place
         RecalcSelectionPosition(win);
-        while (selOnPage != NULL) {
-            if (selOnPage->selectionCanvas.dx != 0 && selOnPage->selectionCanvas.dy != 0)
-                PaintTransparentRectangle(win, hdc, &selOnPage->selectionCanvas, selectionColorYellow);
-            selOnPage = selOnPage->next;
-        }
+        for (SelectionOnPage *sel = win->selectionOnPage; sel; sel = sel->next)
+            PaintTransparentRectangle(win, hdc, &sel->selectionCanvas, COL_SELECTION_RECT);
     }
 }
 
@@ -3030,11 +3013,6 @@ static void PaintForwardSearchMark(WindowInfo *win, HDC hdc) {
     if (!pageInfo->visible)
         return;
     
-    const DWORD selectionColorBlue = 0xff000000 | 
-        (GetRValue(gGlobalPrefs.m_fwdsearchColor) << 16) |
-        (GetGValue(gGlobalPrefs.m_fwdsearchColor) << 8) | 
-        GetBValue(gGlobalPrefs.m_fwdsearchColor);
-
     RectD recD;
     RectI recI;
 
@@ -3052,7 +3030,7 @@ static void PaintForwardSearchMark(WindowInfo *win, HDC hdc) {
         }
         RectI_FromRectD(&recI, &recD);
         BYTE alpha = 0x5f * (double) (HIDE_FWDSRCHMARK_STEPS - win->fwdsearchmarkHideStep) / HIDE_FWDSRCHMARK_STEPS;
-        PaintTransparentRectangle(win, hdc, &recI, selectionColorBlue, alpha, 0);
+        PaintTransparentRectangle(win, hdc, &recI, gGlobalPrefs.m_fwdsearchColor, alpha, 0);
     }
 }
 
@@ -3397,7 +3375,7 @@ static void OnInverseSearch(WindowInfo *win, UINT x, UINT y)
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
         } else {
-            DBG_OUT("CreateProcess failed (%d): '%s'.\n", GetLastError(), cmdline);
+            DBG_OUT_T(_T("CreateProcess failed (%d): '%s'.\n"), GetLastError(), cmdline);
             WindowInfo_ShowMessage_Asynch(win, _TR("Cannot start inverse search command. Please check the command line in the settings."), true);
         }
     }
@@ -7452,7 +7430,7 @@ HDDEDATA CALLBACK DdeCallback(UINT uType,
 
 void DDEExecute (LPCTSTR server, LPCTSTR topic, LPCTSTR command)
 {
-    DBG_OUT("DDEExecute(\"%s\",\"%s\",\"%s\")", server, topic, command);
+    DBG_OUT_T(_T("DDEExecute(\"%s\",\"%s\",\"%s\")"), server, topic, command);
     unsigned long inst = 0;
     HSZ hszServer = NULL, hszTopic = NULL;
     HCONV hconv = NULL;

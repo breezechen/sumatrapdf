@@ -37,10 +37,10 @@ int RectI_Intersect(RectI *r1, RectI *r2, RectI *rIntersectOut)
         return 0;
 
     if (rIntersectOut) {
-        int xIntersectS = number_max(r1->x, r2->x);
-        int xIntersectE = number_min(r1->x + r1->dx, r2->x + r2->dx);
-        int yIntersectS = number_max(r1->y, r2->y);
-        int yIntersectE = number_min(r1->y + r1->dy, r2->y + r2->dy);
+        int xIntersectS = max(r1->x, r2->x);
+        int xIntersectE = min(r1->x + r1->dx, r2->x + r2->dx);
+        int yIntersectS = max(r1->y, r2->y);
+        int yIntersectE = min(r1->y + r1->dy, r2->y + r2->dy);
 
         RectI_FromXY(rIntersectOut, xIntersectS, xIntersectE, yIntersectS, yIntersectE);
     }

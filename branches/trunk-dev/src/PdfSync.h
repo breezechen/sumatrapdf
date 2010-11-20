@@ -148,7 +148,7 @@ public:
         if (_tstat(syncfilepath, &newstamp) == 0
             && difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0
             ) {
-                DBG_OUT("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
+                DBG_OUT_T(_T("PdfSync:sync file has changed, rebuilding index: %s\n"), syncfilepath);
 
                 // update time stamp
                 memcpy((void *)&syncfileTimestamp, &newstamp, sizeof(syncfileTimestamp));

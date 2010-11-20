@@ -48,11 +48,6 @@ char * str_catn_s(char *dst, size_t dst_cch_size, const char *src, size_t src_cc
         return NULL;
 }
 
-void no_op(void)
-{
-    /* This really is a no-op, just to silence the compiler */
-}
-
 int char_is_ws_or_zero(char c)
 {
     switch (c) {
@@ -838,50 +833,26 @@ Error:
 }
 
 #ifdef _WIN32
-void win32_dbg_out(const char *format, ...) 
+void win32_dbg_out(const char *format, ...)
 {
     char        buf[4096];
     char *      p = buf;
     va_list     args;
 
     va_start(args, format);
-    _vsnprintf(p,sizeof(buf), format, args);
-/*    printf(buf);
-    fflush(stdout); */
+    _vsnprintf(p, sizeof(buf), format, args);
     OutputDebugStringA(buf);
     va_end(args);
 }
 
 void win32_dbg_out_hex(const char *dsc, const unsigned char *data, int dataLen)
 {
-    unsigned char    buf[64+1];
-    unsigned char *  curPos;
-    int              bufCharsLeft;
+    char *hexStr;
+    if (!data) dataLen = 0;
 
-    if (dsc) win32_dbg_out(dsc); /* a bit dangerous if contains formatting codes */
-    if (!data) return;
-
-    bufCharsLeft = sizeof(buf)-1;
-    curPos = buf;
-    while (dataLen > 0) {
-        if (bufCharsLeft <= 1) {
-            *curPos = 0;
-            win32_dbg_out((char*)buf);
-            bufCharsLeft = sizeof(buf)-1;
-            curPos = buf;
-        }
-        char_to_hex(*data, curPos);
-        curPos += 2;
-        bufCharsLeft -= 2;
-        --dataLen;
-        ++data;
-    }
-
-    if (curPos != buf) {
-        *curPos = 0;
-        win32_dbg_out(buf);
-    }
-    win32_dbg_out("\n");
+    hexStr = mem_to_hexstr(data, dataLen);
+    win32_dbg_out("%s%s\n", dsc ? dsc : "", hexStr);
+    free(hexStr);
 }
 #endif
 
