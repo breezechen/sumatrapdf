@@ -63,7 +63,7 @@ UINT CreateSynchronizer(LPCTSTR pdffilename, Synchronizer **sync)
         #endif
     }
     else {
-        DBG_OUT("Bad PDF filename! (%s)\n", pdffilename);
+        DBG_OUT_T(_T("Bad PDF filename! (%s)\n"), pdffilename);
         return PDFSYNCERR_INVALID_ARGUMENT;
     }
 }
@@ -140,7 +140,7 @@ FILE *Pdfsync::opensyncfile()
     FILE *fp;
     fp = _tfopen(syncfilepath, _T("rb"));
     if (NULL == fp) {
-        DBG_OUT("The syncfile %s cannot be opened\n", syncfilepath);
+        DBG_OUT_T(_T("The syncfile %s cannot be opened\n"), syncfilepath);
         return NULL;
     }
     return fp;
@@ -547,7 +547,7 @@ UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
     vector<size_t> found_records;
     UINT ret = source_to_record(fp, srcfilename, line, col, found_records);
     if (ret!=PDFSYNCERR_SUCCESS || found_records.size() == 0 ) {
-        DBG_OUT("source->pdf: %s:%u -> no record found, error:%u\n", srcfilename, line, ret);
+        DBG_OUT_T(_T("source->pdf: %s:%u -> no record found, error:%u\n"), srcfilename, line, ret);
         fclose(fp);
         return ret;
     }
@@ -577,7 +577,8 @@ UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
                         rc.dx = MARK_SIZE;
                         rc.dy = MARK_SIZE;
                         rects.push_back(rc);
-                        DBG_OUT("source->pdf: %s:%u -> record:%u -> page:%u, x:%u, y:%u\n", srcfilename, line, record, sheet, rc.x, rc.y);
+                        DBG_OUT_T(_T("source->pdf: %s:%u -> record:%u -> page:%u, x:%u, y:%u\n"),
+                            srcfilename, line, record, sheet, rc.x, rc.y);
                         fclose(fp);
                         return PDFSYNCERR_SUCCESS;
                     }

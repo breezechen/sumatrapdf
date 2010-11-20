@@ -93,7 +93,6 @@ static unsigned WINAPI CrushDumpThread(void* data)
     //type |= MiniDumpWithDataSegs|MiniDumpWithHandleData|MiniDumpWithPrivateReadWriteMemory;
     BOOL ok = g_minidDumpWriteProc(GetCurrentProcess(), GetCurrentProcessId(), dumpFile, type, &excInfo, NULL, &mci);
     ///BOOL ok = minidDumpWriteProc(GetCurrentProcess(), GetCurrentProcessId(), dumpFile, type, &excInfo, NULL, NULL);
-    UNUSED_VAR(ok);
 
     if (dumpFile != INVALID_HANDLE_VALUE)
         CloseHandle(dumpFile);

@@ -675,3 +675,16 @@ int hex_wstr_decode_byte(const WCHAR **txt)
     return (16 * c1) + c2;
 }
 
+#ifdef _WIN32
+void win32_dbg_outW(const WCHAR *format, ...)
+{
+    WCHAR   buf[4096];
+    WCHAR * p = buf;
+    va_list args;
+
+    va_start(args, format);
+    _vsnwprintf(p, dimof(buf), format, args);
+    OutputDebugStringW(buf);
+    va_end(args);
+}
+#endif

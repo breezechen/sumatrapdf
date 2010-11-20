@@ -50,7 +50,7 @@ FileHistoryList *FileHistoryList_Node_CreateFromFilePath(const TCHAR *filePath)
 {
     FileHistoryList *node;
 
-    DBG_OUT("FileHistoryList_Node_CreateFromFilePath() file='%s'\n", filePath);
+    DBG_OUT_T(_T("FileHistoryList_Node_CreateFromFilePath() file='%s'\n"), filePath);
     node = FileHistoryList_Node_Create();
     if (!node)
         return NULL;
