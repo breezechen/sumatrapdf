@@ -223,13 +223,14 @@ bool FileWatcher::ReadDir()
     FILE_NOTIFY_INFORMATION *pFileNotify;
     pFileNotify = (PFILE_NOTIFY_INFORMATION)&buffer[1-curBuffer];
     while (pFileNotify) {
-        // Note: the ReadDirectoryChangesW API fills the buffer with
-        // WCHAR strings.
+        // Note: the ReadDirectoryChangesW API fills the buffer with WCHAR strings.
         pFileNotify->FileName[min(pFileNotify->FileNameLength/sizeof(WCHAR), _MAX_FNAME-1)] = 0;
         TCHAR *ptNotifyFilename = wstr_to_tstr(pFileNotify->FileName);
+        bool isWatchedFile = !_tcsicmp(ptNotifyFilename, pszFilename);
+        free(ptNotifyFilename);
 
         // is it the file that is being watched?
-        if (_tcsicmp(ptNotifyFilename, pszFilename) == 0) {
+        if (isWatchedFile) {
             // file modified?
             if (pFileNotify->Action == FILE_ACTION_MODIFIED) {
 
@@ -281,8 +282,6 @@ bool FileWatcher::ReadDir()
             //else {} // file touched but not modified.
             
         }
-
-        free(ptNotifyFilename);
 
         // step to the next entry if there is one
         if (pFileNotify->NextEntryOffset)
