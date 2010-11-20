@@ -60,18 +60,14 @@ fz_error pdf_runpagefortarget(pdf_xref *xref, pdf_page *page, fz_device *dev, fz
 
 fz_pixmap *fz_newpixmap_nullonoom(fz_colorspace *colorspace, int x, int y, int w, int h)
 {
-    // make sure not to request too large a pixmap, as MuPDF just aborts on OOM;
-    // instead we get a 1*h sized pixmap and try to resize it manually and just
-    // fail to render if we run out of memory.
-    fz_pixmap *image = fz_newpixmap(colorspace, x, y, 1, h);
+    // allocate the memory needed for the pixmap ourselves, as MuPDF just aborts on OOM
+    unsigned char *samples = (unsigned char *)malloc(w * h * (colorspace->n + 1));
+    if (!samples)
+        return NULL;
 
-    image->w = w;
-    free(image->samples);
-    image->samples = (unsigned char *)malloc(w * h * image->n);
-    if (!image->samples) {
-        fz_droppixmap(image);
-        image = NULL;
-    }
+    fz_pixmap *image = fz_newpixmapwithdata(colorspace, x, y, w, h, samples);
+    // tell MuPDF to free the memory when discarding the pixmap
+    image->freesamples = 1;
 
     return image;
 }

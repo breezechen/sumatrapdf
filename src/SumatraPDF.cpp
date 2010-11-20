@@ -2924,15 +2924,18 @@ static void DrawCenteredText(HDC hdc, RECT *r, const TCHAR *txt)
 }
 
 static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWORD selectionColor, BYTE alpha = 0x5f, int margin = 1) {
-    HBITMAP hbitmap;       // bitmap handle
     BITMAPINFO bmi;        // bitmap header
-    VOID *pvBits;          // pointer to DIB section
-    BLENDFUNCTION bf;      // structure for alpha blending
-    HDC rectDC = CreateCompatibleDC(hdc);
+    UINT32 *pvBits;        // pointer to DIB section
     const DWORD selectionColorBlack = 0xff000000;
 
-    ZeroMemory(&bmi, sizeof(BITMAPINFO));
+    // don't draw selection parts not visible on screen
+    RectI screen = { -margin, -margin, win->winDx() + 2 * margin, win->winDy() + 2 * margin };
+    RectI isect;
+    if (!RectI_Intersect(rect, &screen, &isect))
+        return;
+    rect = &isect;
 
+    ZeroMemory(&bmi, sizeof(BITMAPINFO));
     bmi.bmiHeader.biSize = sizeof (BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth = rect->dx;
     bmi.bmiHeader.biHeight = rect->dy;
@@ -2941,23 +2944,25 @@ static void PaintTransparentRectangle(WindowInfo *win, HDC hdc, RectI *rect, DWO
     bmi.bmiHeader.biCompression = BI_RGB;
     bmi.bmiHeader.biSizeImage = rect->dx * rect->dy * 4;
 
-    hbitmap = CreateDIBSection (rectDC, &bmi, DIB_RGB_COLORS, &pvBits, NULL, 0x0);
+    HDC rectDC = CreateCompatibleDC(hdc);
+    HBITMAP hbitmap = CreateDIBSection(rectDC, &bmi, DIB_RGB_COLORS, (LPVOID *)&pvBits, NULL, 0x0);
+    if (!hbitmap) {
+        DBG_OUT("    selection rectangle too big to be drawn\n");
+        DeleteDC(rectDC);
+        return;
+    }
     SelectObject(rectDC, hbitmap);
 
     for (int y = 0; y < rect->dy; y++) {
         for (int x = 0; x < rect->dx; x++) {
-            if (x < margin || x > rect->dx - margin - 1 
-                    || y < margin || y > rect->dy - margin - 1)
-                ((UINT32 *)pvBits)[x + y * rect->dx] = selectionColorBlack;
+            if (x < margin || x >= rect->dx - margin || y < margin || y >= rect->dy - margin)
+                pvBits[x + y * rect->dx] = selectionColorBlack;
             else
-                ((UINT32 *)pvBits)[x + y * rect->dx] = selectionColor;
+                pvBits[x + y * rect->dx] = selectionColor;
         }
     }
-    bf.BlendOp = AC_SRC_OVER;
-    bf.BlendFlags = 0;
-    bf.SourceConstantAlpha = alpha;
-    bf.AlphaFormat = AC_SRC_ALPHA;
 
+    BLENDFUNCTION bf = { AC_SRC_OVER, 0, alpha, AC_SRC_ALPHA };
     AlphaBlend(hdc, rect->x, rect->y, rect->dx, rect->dy, rectDC, 0, 0, rect->dx, rect->dy, bf);
     DeleteObject (hbitmap);
     DeleteDC (rectDC);
