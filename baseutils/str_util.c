@@ -153,7 +153,7 @@ char *str_cat(const char *str1, const char *str2)
 
 char *str_dup(const char *str)
 {
-    return str_cat4(str, NULL, NULL, NULL);
+    return str_dupn(str, strlen(str));
 }
 
 char *str_dupn(const char *str, size_t str_len_cch)
@@ -162,11 +162,9 @@ char *str_dupn(const char *str, size_t str_len_cch)
 
     if (!str)
         return NULL;
-    copy = (char*)malloc(str_len_cch+1);
-    if (!copy)
-        return NULL;
-    memcpy(copy, str, str_len_cch);
-    copy[str_len_cch] = 0;
+    copy = memdup((void *)str, str_len_cch + 1);
+    if (copy)
+        copy[str_len_cch] = 0;
     return copy;
 }
 

@@ -86,17 +86,15 @@ WCHAR *wstr_dupn(const WCHAR *str, size_t str_len_cch)
 
     if (!str)
         return NULL;
-    copy = (WCHAR*)malloc((str_len_cch+1)*sizeof(WCHAR));
-    if (!copy)
-        return NULL;
-    memcpy(copy, str, str_len_cch*sizeof(WCHAR));
-    copy[str_len_cch] = 0;
+    copy = memdup((void *)str, (str_len_cch + 1) * sizeof(WCHAR));
+    if (copy)
+        copy[str_len_cch] = 0;
     return copy;
 }
 
 WCHAR *wstr_dup(const WCHAR *str)
 {
-    return wstr_cat4(str, NULL, NULL, NULL);
+    return wstr_dupn(str, wstrlen(str));
 }
 
 int wstr_copyn(WCHAR *dst, size_t dst_cch_size, const WCHAR *src, size_t src_cch_size)
