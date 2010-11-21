@@ -29,7 +29,7 @@
 				CleanCommandLine="nmake -f makefile.msvc CFG=dbg clean"
 				Output="obj-dbg\sumatrapdf.exe"
 				PreprocessorDefinitions="WIN32;_DEBUG;SYNCTEX_FEATURE"
-				IncludeSearchPath=""
+				IncludeSearchPath="baseutils;mupdf\mupdf;mupdf\fitz"
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
