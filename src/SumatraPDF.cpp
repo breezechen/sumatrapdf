@@ -1466,8 +1466,6 @@ static void WindowInfo_Delete(WindowInfo *win)
     }
     WindowInfoList_Remove(win);
 
-    if (win->dm)
-        gRenderCache.CancelRendering(win->dm);
     WindowInfo_AbortFinding(win);
     delete win->dm;
     win->dm = NULL;
@@ -1981,14 +1979,12 @@ static bool LoadPdfIntoWindow(
         if (!tryrepair) {
             win->dm = previousmodel;
         } else {
-            gRenderCache.CancelRendering(previousmodel); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
             delete previousmodel;
             win->state = WS_ERROR_LOADING_PDF;
             win_set_text(win->hwndFrame, FilePath_GetBaseName(fileName));
             goto Error;
         }
     } else {
-        gRenderCache.CancelRendering(previousmodel); // This is necessary because the PageRenderThread may still try to access the 'previousmodel'
         if (previousmodel && tstr_eq(win->dm->fileName(), previousmodel->fileName()))
             gRenderCache.KeepForDisplayModel(previousmodel, win->dm);
         delete previousmodel;
