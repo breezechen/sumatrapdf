@@ -1,7 +1,7 @@
-#include "SumatraPDF.h"
+#include <windows.h>
+#include <dbghelp.h>
 #include "CrashHandler.h"
 
-#include <dbghelp.h>
 #include "base_util.h"
 #include "tstr_util.h"
 #include "WinUtil.hpp"
@@ -55,6 +55,7 @@ static DWORD WINAPI CrashDumpThread(LPVOID data)
         return 0;
 
     MINIDUMP_TYPE type = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory);
+    // set the SUMATRAPDF_FULLDUMP environment variable for far more complete minidumps
     if (GetEnvironmentVariable(_T("SUMATRAPDF_FULLDUMP"), NULL, 0))
         type = (MINIDUMP_TYPE)(type | MiniDumpWithDataSegs | MiniDumpWithHandleData | MiniDumpWithPrivateReadWriteMemory);
     MINIDUMP_CALLBACK_INFORMATION mci = { OpenMiniDumpCallback, NULL }; 
@@ -91,7 +92,8 @@ static LONG WINAPI DumpExceptionHandler(EXCEPTION_POINTERS *exceptionInfo)
 void InstallCrashHandler(const TCHAR *crashDumpPath)
 {
     GetFullPathName(crashDumpPath, dimof(g_crashDumpPath), g_crashDumpPath, NULL);
-    if (!tstr_endswithi(g_crashDumpPath, _T(".dmp")))
+    if (!tstr_endswithi(g_crashDumpPath, _T(".dmp")) &&
+        !tstr_endswithi(g_crashDumpPath, _T(".mdmp")))
         _tcscat_s(g_crashDumpPath, dimof(g_crashDumpPath), _T(".dmp"));
 
     if (!g_dumpEvent && !g_dumpThread) {

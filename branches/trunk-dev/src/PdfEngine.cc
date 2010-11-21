@@ -1,6 +1,5 @@
 /* Copyright 2006-2010 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
-#include <windows.h>
 #include "PdfEngine.h"
 
 // in SumatraPDF.cpp
@@ -339,9 +338,7 @@ OpenEmbeddedFile:
         return false;
 
     if (pdf_needspassword(_xref)) {
-        if (!win)
-            // win might not be given if called from pdfbench.cc
-            return false;
+        assert(win);
 
         unsigned char digest[16 + 32] = { 0 };
         pdf_streamfingerprint(_xref->file, digest);

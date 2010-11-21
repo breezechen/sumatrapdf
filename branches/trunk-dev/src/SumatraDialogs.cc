@@ -1,21 +1,15 @@
 /* Copyright 2006-2010 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include <windows.h>
-#include <assert.h>
-
 #include "SumatraPDF.h"
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
 #include "WindowInfo.h"
 
-#include "DisplayModel.h"
-#include "Resource.h"
 #include "win_util.h"
 #include "dialogsizer.h"
 #include "LangMenuDef.h"
 #include "translations.h"
-#include "tstr_util.h"
 
 static void CenterDialog(HWND hDlg)
 {

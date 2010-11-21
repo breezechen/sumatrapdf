@@ -2,12 +2,8 @@
    The author disclaims copyright to this source code. */
 
 /* The most basic things, including string handling functions */
-
 #include "base_util.h"
 #include "wstr_util.h"
-
-#include <str_strsafe.h>
-#include <assert.h>
 
 WCHAR * wstr_cat_s(WCHAR * dest, size_t dst_cch_size, const WCHAR * src)
 {
@@ -349,58 +345,40 @@ WCHAR *wstr_escape(const WCHAR *txt)
 
 WCHAR *wstr_printf(const WCHAR *format, ...)
 {
-    va_list     args;
-    WCHAR       message[256] = {0};
-    WCHAR  *    buf;
-    size_t      bufCchSize;
-
-    buf = &(message[0]);
-    bufCchSize = sizeof(message)/sizeof(message[0]);
+    va_list args;
+    WCHAR   message[256];
+    size_t  bufCchSize = dimof(message);
+    WCHAR * buf = message;
 
     va_start(args, format);
     for (;;)
     {
-    #ifdef __GNUC__
+#ifdef __GNUC__
         if (vsnwprintf(buf, bufCchSize, format, args) < bufCchSize)
             break;
-    #else
-        HRESULT hr;
-        hr = StringCchVPrintfW(buf, bufCchSize, format, args);
-        if (S_OK == hr)
+#else
+        int count = vswprintf_s(buf, bufCchSize, format, args);
+        if (0 <= count && (size_t)count < bufCchSize)
             break;
-        if (STRSAFE_E_INSUFFICIENT_BUFFER != hr)
-        {
-            /* any error other than buffer not big enough:
-               a) should not happen
-               b) means we give up */
-            assert(FALSE);
-            goto Error;
-        }
-    #endif
+#endif
         /* we have to make the buffer bigger. The algorithm used to calculate
            the new size is arbitrary (aka. educated guess) */
-        if (buf != &(message[0]))
+        if (buf != message)
             free(buf);
         if (bufCchSize < 4*1024)
             bufCchSize += bufCchSize;
         else
             bufCchSize += 1024;
-        buf = (WCHAR *)malloc(bufCchSize*sizeof(WCHAR));
-        if (NULL == buf)
-            goto Error;
+        buf = (WCHAR *)malloc(bufCchSize * sizeof(WCHAR));
+        if (!buf)
+            break;
     }
     va_end(args);
 
-    /* free the buffer if it was dynamically allocated */
-    if (buf == &(message[0]))
-        return wstr_dup(buf);
+    if (buf == message)
+        buf = wstr_dup(message);
 
     return buf;
-Error:
-    if (buf != &(message[0]))
-        free((void*)buf);
-
-    return NULL;
 }
 
 
