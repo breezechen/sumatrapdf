@@ -15,6 +15,7 @@
 #include "str_strsafe.h"
 #include "WinUtil.hpp"
 #include "Http.h"
+#include "CrashHandler.h"
 
 #include "translations.h"
 #include "Version.h"
@@ -7686,6 +7687,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
         else if (is_arg("-console")) {
             RedirectIOToConsole();
+        }
+        else if (is_arg_with_param("-crashdump")) {
+            InstallCrashHandler(argList[++i]);
         }
 #ifdef DEBUG
         else if (is_arg("-enum-printers")) {

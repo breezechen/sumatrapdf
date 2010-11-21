@@ -163,7 +163,7 @@ $(O)\SumatraDialogs.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\LangM
 $(O)\SumatraPDF.obj:   $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\FileHistory.h \
                        src\Http.h src\RenderCache.h baseutils\WinUtil.hpp baseutils\str_strsafe.h \
                        src\SumatraDialogs.h src\SumatraProperties.h src\SumatraAbout.h \
-                       src\translations.h src\Version.h
+                       src\translations.h src\Version.h src\CrashHandler.h
 $(O)\SumatraProperties.obj: $(SUMATRAPDF_H) $(APPPREFS_H) $(WINDOWINFO_H) src\translations.h
 $(O)\translations.obj: $(BASEUTILS_H)
 

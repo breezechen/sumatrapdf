@@ -74,6 +74,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\CrashHandler.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\CrashHandler.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DisplayModel.cc"
 				>
 			</File>
