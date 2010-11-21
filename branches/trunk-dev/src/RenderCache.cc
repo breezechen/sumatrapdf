@@ -506,7 +506,6 @@ static DWORD WINAPI PageRenderThread(LPVOID data)
         bmp = req.dm->renderBitmap(req.pageNo, req.zoom, req.rotation, &pageRect,
                                    pageRenderAbortCb, (void*)&req, Target_View,
                                    cache->useGdiRenderer && *cache->useGdiRenderer);
-        cache->ClearCurrentRequest();
         if (req.abort) {
             delete bmp;
             continue;

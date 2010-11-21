@@ -474,24 +474,22 @@ pdf_page *PdfEngine::getPdfPage(int pageNo)
     if (!_pages)
         return NULL;
 
-    bool needsLinkification = false;
-
     EnterCriticalSection(&_pagesAccess);
+
     pdf_page *page = _pages[pageNo-1];
     if (!page) {
         EnterCriticalSection(&_xrefAccess);
         fz_obj * obj = pdf_getpageobject(_xref, pageNo);
         fz_error error = pdf_loadpage(&page, _xref, obj);
-        if (!error) {
-            _pages[pageNo-1] = page;
-            needsLinkification = true;
-        }
         LeaveCriticalSection(&_xrefAccess);
+        if (!error) {
+            linkifyPageText(page);
+            _pages[pageNo-1] = page;
+        }
     }
+
     LeaveCriticalSection(&_pagesAccess);
 
-    if (needsLinkification)
-        linkifyPageText(page);
     return page;
 }
 
