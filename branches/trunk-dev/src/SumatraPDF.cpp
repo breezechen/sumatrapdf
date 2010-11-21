@@ -7474,7 +7474,6 @@ exit:
     DdeUninitialize(inst);
 }
 
-#ifdef DEBUG
 // Code from http://www.halcyon.com/~ast/dload/guicon.htm
 void RedirectIOToConsole(void)
 {
@@ -7504,7 +7503,6 @@ void RedirectIOToConsole(void)
     *stdin = *(FILE *)_fdopen(hConHandle, "r");
     setvbuf(stdin, NULL, _IONBF, 0);
 }
-#endif
 
 #define PROCESS_EXECUTE_FLAGS 0x22
 
@@ -7686,10 +7684,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 gBenchPageNum = INVALID_PAGE_NO;
             break;
         }
-#ifdef DEBUG
         else if (is_arg("-console")) {
             RedirectIOToConsole();
         }
+#ifdef DEBUG
         else if (is_arg("-enum-printers")) {
             EnumeratePrinters();
             /* this is for testing only, exit immediately */
