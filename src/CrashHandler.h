@@ -3,6 +3,6 @@
 
 #define CMD_ARG_SEND_CRASHDUMP  _T("/sendcrashdump")
 
-void InstallCrashHandler(const TCHAR *crashDumpDir, const TCHAR *crashDumpBaseName);
+void InstallCrashHandler(const TCHAR *crashDumpPath);
 
 #endif
