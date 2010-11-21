@@ -12,7 +12,6 @@
 #include "FileHistory.h"
 
 #include <shlobj.h>
-#include "str_strsafe.h"
 #include "WinUtil.hpp"
 #include "Http.h"
 #include "CrashHandler.h"
@@ -43,8 +42,8 @@
 /* Define if you want page numbers to be displayed in the ToC sidebar */
 // #define DISPLAY_TOC_PAGE_NUMBERS
 
-/* Next action for the benchmark mode */
-#define MSG_BENCH_NEXT_ACTION (WM_USER + 1)
+/* Define THREAD_BASED_FILEWATCH to use the thread-based implementation of file change detection. */
+#define THREAD_BASED_FILEWATCH
 
 #define ZOOM_IN_FACTOR      1.2
 #define ZOOM_OUT_FACTOR     1.0 / ZOOM_IN_FACTOR
@@ -140,6 +139,10 @@ static bool             gUseGdiRenderer = false;
 #define AUTO_RELOAD_TIMER_ID        5
 #define AUTO_RELOAD_DELAY_IN_MS     100
 
+#ifndef THREAD_BASED_FILEWATCH
+#define FILEWATCH_DELAY_IN_MS       1000
+#endif
+
 #define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
                   RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
 
@@ -161,9 +164,6 @@ static HBRUSH                       gBrushBlack;
 static HBRUSH                       gBrushShadow;
 static HFONT                        gDefaultGuiFont;
 static HBITMAP                      gBitmapReloadingCue;
-
-static TCHAR *                      gBenchFileName;
-static int                          gBenchPageNum = INVALID_PAGE_NO;
 
 static RenderCache                  gRenderCache;
 
@@ -1382,15 +1382,6 @@ static void WindowInfo_Refresh(WindowInfo* win, bool autorefresh) {
     DisplayState_Free(&ds);
 }
 
-#ifndef THREAD_BASED_FILEWATCH
-static void WindowInfo_RefreshUpdatedFiles(bool autorefresh) {
-    for (WindowInfo* curr = gWindowList; curr; curr = curr->next) {
-        if (curr->watcher.HasChanged())
-            WindowInfo_Refresh(curr, autorefresh);
-    }
-}
-#endif
-
 
 static void WindowInfo_DoubleBuffer_Delete(WindowInfo *win) {
     if (win->bmpDoubleBuffer) {
@@ -1428,8 +1419,7 @@ static bool WindowInfo_DoubleBuffer_New(WindowInfo *win)
     }
     SelectObject(win->hdcDoubleBuffer, win->bmpDoubleBuffer);
     /* fill out everything with background color */
-    RECT r;
-    SetRect(&r, 0, 0, win->winDx(), win->winDy());
+    RECT r = { 0, 0, win->winDx(), win->winDy() };
     FillRect(win->hdcDoubleBuffer, &r, win->presentation ? gBrushBlack : gBrushBg);
     win->hdcToDraw = win->hdcDoubleBuffer;
 #endif
@@ -2052,9 +2042,9 @@ static bool LoadPdfIntoWindow(
             title = win->title;
 
         if (win->needrefresh) {
-            TCHAR buf[256];
-            StringCchPrintf(buf, dimof(buf), _TR("[Changes detected; refreshing] %s"), title);
-            win_set_text(win->hwndFrame, buf);
+            TCHAR *msg = tstr_printf(_TR("[Changes detected; refreshing] %s"), title);
+            win_set_text(win->hwndFrame, msg);
+            free(msg);
         }
         else
             win_set_text(win->hwndFrame, title);
@@ -2121,6 +2111,15 @@ static void OnFileChange(const TCHAR * filename, LPARAM param)
     // Instead we just post a message to the main thread to trigger a reload
     PostMessage(((WindowInfo *)param)->hwndFrame, WM_APP_AUTO_RELOAD, 0, 0);
 }
+
+#ifndef THREAD_BASED_FILEWATCH
+static void WindowInfo_RefreshUpdatedFiles(void) {
+    for (WindowInfo *curr = gWindowList; curr; curr = curr->next) {
+        if (curr->watcher.HasChanged())
+            OnFileChange(curr->watcher.filepath(), (LPARAM)curr);
+    }
+}
+#endif
 
 static void CheckPositionAndSize(DisplayState* ds)
 {
@@ -2207,12 +2206,11 @@ WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win, bool showWin, TCHAR 
         goto exit;
     }
 
-    // Define THREAD_BASED_FILEWATCH to use the thread-based implementation of file change detection.
 #ifdef THREAD_BASED_FILEWATCH
     if (!win->watcher.IsThreadRunning())
         win->watcher.StartWatchThread(fullpath, &OnFileChange, (LPARAM)win);
 #else
-        win->watcher.Init(fullpath);
+    win->watcher.Init(fullpath);
 #endif
 
     CreateSynchronizer(fullpath, &win->pdfsync);
@@ -2319,9 +2317,9 @@ void DisplayModel::pageChanged()
     int currPageNo = currentPageNo();
     int pageCount = win->dm->pageCount();
     if (pageCount > 0) {
-        TCHAR buf[256];
         if (INVALID_PAGE_NO != currPageNo) {
-            HRESULT hr = StringCchPrintf(buf, dimof(buf), _T("%d"), currPageNo);
+            TCHAR buf[64];
+            _stprintf_s(buf, dimof(buf), _T("%d"), currPageNo);
             SetWindowText(win->hwndPageBox, buf);
             ToolbarUpdateStateForWindow(win);
         }
@@ -2552,6 +2550,7 @@ static void DoAssociateExeWithPdfExtension(HKEY hkey)
 {
     bool ok;
     TCHAR exePath[MAX_PATH];
+    TCHAR cmdPath[MAX_PATH * 2];
     TCHAR previousPdfHandler[MAX_PATH + 8];
 
     // Remember the previous default app for the Uninstaller
@@ -2568,14 +2567,12 @@ static void DoAssociateExeWithPdfExtension(HKEY hkey)
 
     WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell"), NULL, _T("open"));
 
-    TCHAR *cmd_path = tstr_printf(_T("\"%s\" \"%%1\""), exePath); // "${exePath}" "%1"
-    ok = WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\open\\command"), NULL, cmd_path);
-    free(cmd_path);
+    _stprintf_s(cmdPath, dimof(cmdPath), _T("\"%s\" \"%%1\""), exePath); // "${exePath}" "%1"
+    ok = WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\open\\command"), NULL, cmdPath);
 
     // also register for printing
-    cmd_path = tstr_printf(_T("\"%s\" -print-to-default -exit-on-print \"%%1\""), exePath); // "${exePath}" -print-to-default -exit-on-print "%1"
-    WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\print\\command"), NULL, cmd_path);
-    free(cmd_path);
+    _stprintf_s(cmdPath, dimof(cmdPath), _T("\"%s\" -print-to-default -exit-on-print \"%%1\""), exePath); // "${exePath}" -print-to-default -exit-on-print "%1"
+    WriteRegStr(hkey, _T("Software\\Classes\\") APP_NAME_STR _T("\\shell\\print\\command"), NULL, cmdPath);
 
     // Only change the association if we're confident, that we've registered ourselves well enough
     if (ok) {
@@ -2743,35 +2740,14 @@ static void PaintRectangle(HDC hdc, RECT * rect)
 
 static void WinResizeIfNeeded(WindowInfo *win, bool resizeWindow=true)
 {
-    RECT    rc;
+    RECT rc;
     GetClientRect(win->hwndCanvas, &rc);
-    int win_dx = rect_dx(&rc);
-    int win_dy = rect_dy(&rc);
 
-    if (win->hdcToDraw &&
-        (win_dx == win->winDx()) &&
-        (win_dy == win->winDy()))
-    {
-        return;
+    if (!win->hdcToDraw || win->winDx() != rect_dx(&rc) || win->winDy() != rect_dy(&rc)) {
+        WindowInfo_DoubleBuffer_New(win);
+        if (resizeWindow)
+            WindowInfo_ResizeToWindow(win);
     }
-
-    WindowInfo_DoubleBuffer_New(win);
-    if (resizeWindow)
-        WindowInfo_ResizeToWindow(win);
-}
-
-static void PostBenchNextAction(HWND hwnd)
-{
-    PostMessage(hwnd, MSG_BENCH_NEXT_ACTION, 0, 0);
-}
-
-static void OnBenchNextAction(WindowInfo *win)
-{
-    if (!win->dm)
-        return;
-
-    if (win->dm->goToNextPage(0))
-        PostBenchNextAction(win->hwndFrame);
 }
 
 #ifdef SVN_PRE_RELEASE_VER
@@ -3061,8 +3037,7 @@ static void PaintPageFrameAndShadow(HDC hdc, PdfPageInfo * pageInfo, bool presen
 
     // Draw shadow
     if (!presentation) {
-        RECT rc;
-        SetRect(&rc, sx, sy, sx + sw, sy + sh);
+        RECT rc = { sx, sy, sx + sw, sy + sh };
         FillRect(hdc, &rc, gBrushShadow);
     }
 
@@ -3165,8 +3140,7 @@ static void WindowInfo_Paint(WindowInfo *win, HDC hdc, PAINTSTRUCT *ps)
             if (fz_isemptyrect(isect))
                 continue;
 
-            RECT rectScreen;
-            SetRect(&rectScreen, isect.x0, isect.y0, isect.x1, isect.y1);
+            RECT rectScreen = { isect.x0, isect.y0, isect.x1, isect.y1 };
             PaintRectangle(hdc, &rectScreen);
         }
         free(links);
@@ -5452,13 +5426,6 @@ static void OnChar(WindowInfo *win, int key)
     }
 }
 
-static bool IsBenchMode(void)
-{
-    if (NULL != gBenchFileName)
-        return true;
-    return false;
-}
-
 /* Find a file in a file history list that has a given 'menuId'.
    Return a copy of filename or NULL if couldn't be found.
    It's used to figure out if a menu item selected by the user
@@ -5870,13 +5837,13 @@ static void UpdateToolbarPageText(WindowInfo *win, int pageCount)
     int pos_x = r.right + 10;
     int pos_y = (r.bottom - pageWndDy) / 2;
 
-    TCHAR buf[256];
+    TCHAR buf[64];
     if (0 == pageCount) {
         buf[0] = 0;
     } else if (-1 == pageCount) {
         GetWindowText(win->hwndPageTotal, buf, sizeof(buf));
     } else {
-        StringCchPrintf(buf, dimof(buf), _T(" / %d"), pageCount);
+        _stprintf_s(buf, dimof(buf), _T(" / %d"), pageCount);
     }
     win_set_text(win->hwndPageTotal, buf);
     SIZE size2 = TextSizeInHwnd(win->hwndPageTotal, buf);
@@ -7083,11 +7050,6 @@ InitMouseWheelInfo:
         case WM_DDE_TERMINATE:
             return OnDDETerminate(hwnd, wParam, lParam);
 
-        case MSG_BENCH_NEXT_ACTION:
-            if (win)
-                OnBenchNextAction(win);
-            break;
-
         case WM_APP_URL_DOWNLOADED:
             assert(win);
             ctx = (HttpReqCtx*)wParam;
@@ -7593,10 +7555,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             CurrLangNameSet(lang);
     }
 
-    /* parse argument list. If -bench was given, then we're in benchmarking mode. Otherwise
-    we assume that all arguments are PDF file names.
-    -bench can be followed by file or directory name. If file, it can additionally be followed by
-    a number which we interpret as page number */
+    /* parse argument list. we assume that all unrecognized arguments are PDF file names. */
 #define is_arg(txt) tstr_ieq(_T(txt), argList[i])
 #define is_arg_with_param(txt) (is_arg(txt) && i < argCount - 1)
 
@@ -7672,25 +7631,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         else if (is_arg("-presentation")) {
             enterPresentation = true;
         }
-#ifdef BUILD_RM_VERSION
-        else if (is_arg("-delete-these-on-close")) {
-            deleteFilesOnClose = true;
-        }
-#endif
-        else if (is_arg_with_param("-bench")) {
-            gBenchFileName = tstr_dup(argList[++i]);
-            if (i < argCount - 1)
-                gBenchPageNum = _ttoi(argList[++i]);
-            if (gBenchPageNum < 1)
-                gBenchPageNum = INVALID_PAGE_NO;
-            break;
-        }
         else if (is_arg("-console")) {
             RedirectIOToConsole();
         }
         else if (is_arg_with_param("-crashdump")) {
             InstallCrashHandler(argList[++i]);
         }
+#ifdef BUILD_RM_VERSION
+        else if (is_arg("-delete-these-on-close")) {
+            deleteFilesOnClose = true;
+        }
+#endif
 #ifdef DEBUG
         else if (is_arg("-enum-printers")) {
             EnumeratePrinters();
@@ -7718,63 +7669,57 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     gRenderCache.invertColors = &gGlobalPrefs.m_invertColors;
     gRenderCache.useGdiRenderer = &gUseGdiRenderer;
 
-    if (NULL != gBenchFileName) {
-        win = LoadPdf(gBenchFileName);
-        if (win && WS_SHOWING_PDF == win->state)
-            firstDocLoaded = true;
-    } else {
-        for (size_t i = 0; i < fileNames.size(); i++) {
-            if (reuse_instance) {
-                // delegate file opening to a previously running instance by sending a DDE message 
-                TCHAR fullpath[MAX_PATH], command[2 * MAX_PATH + 20];
-                GetFullPathName(fileNames[i], dimof(fullpath), fullpath, NULL);
-                wsprintf(command, _T("[") DDECOMMAND_OPEN _T("(\"%s\", 0, 1, 0)]"), fullpath);
+    for (size_t i = 0; i < fileNames.size(); i++) {
+        if (reuse_instance) {
+            // delegate file opening to a previously running instance by sending a DDE message 
+            TCHAR fullpath[MAX_PATH], command[2 * MAX_PATH + 20];
+            GetFullPathName(fileNames[i], dimof(fullpath), fullpath, NULL);
+            wsprintf(command, _T("[") DDECOMMAND_OPEN _T("(\"%s\", 0, 1, 0)]"), fullpath);
+            DDEExecute(PDFSYNC_DDE_SERVICE, PDFSYNC_DDE_TOPIC, command);
+            if (destName && !firstDocLoaded) {
+                wsprintf(command, _T("[") DDECOMMAND_GOTO _T("(\"%s\", \"%s\")]"), fullpath, destName);
                 DDEExecute(PDFSYNC_DDE_SERVICE, PDFSYNC_DDE_TOPIC, command);
-                if (destName && !firstDocLoaded) {
-                    wsprintf(command, _T("[") DDECOMMAND_GOTO _T("(\"%s\", \"%s\")]"), fullpath, destName);
-                    DDEExecute(PDFSYNC_DDE_SERVICE, PDFSYNC_DDE_TOPIC, command);
-                }
-                else if (pageNumber > 0 && !firstDocLoaded) {
-                    wsprintf(command, _T("[") DDECOMMAND_PAGE _T("(\"%s\", %d)]"), fullpath, pageNumber);
-                    DDEExecute(PDFSYNC_DDE_SERVICE, PDFSYNC_DDE_TOPIC, command);
-                }
             }
-            else {
-                bool showWin = !exitOnPrint;
-                win = LoadPdf(fileNames[i], NULL, showWin, newWindowTitle);
-                if (!win)
-                    goto Exit;
-                if (WS_SHOWING_PDF != win->state) {
-                    // cancel printing, if there was a load error
-                    exitOnPrint = printDialog = FALSE;
-                    free(printerName);
-                    printerName = NULL;
-               }
-                else if (destName && !firstDocLoaded) {
-                    char * destName_utf8 = tstr_to_utf8(destName);
-                    win->dm->goToNamedDest(destName_utf8);
-                    free(destName_utf8);
-                }
-                else if (pageNumber > 0 && !firstDocLoaded) {
-                    if (win->dm->validPageNo(pageNumber))
-                        win->dm->goToPage(pageNumber, 0);
-                }
-                if (WS_SHOWING_PDF == win->state && enterPresentation && !firstDocLoaded)
-                    WindowInfo_EnterFullscreen(win, true);
+            else if (pageNumber > 0 && !firstDocLoaded) {
+                wsprintf(command, _T("[") DDECOMMAND_PAGE _T("(\"%s\", %d)]"), fullpath, pageNumber);
+                DDEExecute(PDFSYNC_DDE_SERVICE, PDFSYNC_DDE_TOPIC, command);
             }
-
-            if (exitOnPrint)
-                ShowWindow(win->hwndFrame, SW_HIDE);
-
-            if (printerName) {
-                // note: this prints all of PDF files. Another option would be to
-                // print only the first one
-                PrintFile(win, printerName);
-            } else if (printDialog) {
-                OnMenuPrint(win);
-            }
-            firstDocLoaded = true;
         }
+        else {
+            bool showWin = !exitOnPrint;
+            win = LoadPdf(fileNames[i], NULL, showWin, newWindowTitle);
+            if (!win)
+                goto Exit;
+            if (WS_SHOWING_PDF != win->state) {
+                // cancel printing, if there was a load error
+                exitOnPrint = printDialog = FALSE;
+                free(printerName);
+                printerName = NULL;
+           }
+            else if (destName && !firstDocLoaded) {
+                char * destName_utf8 = tstr_to_utf8(destName);
+                win->dm->goToNamedDest(destName_utf8);
+                free(destName_utf8);
+            }
+            else if (pageNumber > 0 && !firstDocLoaded) {
+                if (win->dm->validPageNo(pageNumber))
+                    win->dm->goToPage(pageNumber, 0);
+            }
+            if (WS_SHOWING_PDF == win->state && enterPresentation && !firstDocLoaded)
+                WindowInfo_EnterFullscreen(win, true);
+        }
+
+        if (exitOnPrint)
+            ShowWindow(win->hwndFrame, SW_HIDE);
+
+        if (printerName) {
+            // note: this prints all of PDF files. Another option would be to
+            // print only the first one
+            PrintFile(win, printerName);
+        } else if (printDialog) {
+            OnMenuPrint(win);
+        }
+        firstDocLoaded = true;
     }
 
     free(destName);
@@ -7785,9 +7730,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
  
     if (!firstDocLoaded) {
         bool enterFullscreen = (WIN_STATE_FULLSCREEN == gGlobalPrefs.m_windowState);
-        /* disable benchmark mode if we couldn't open file to benchmark */
-        free(gBenchFileName);
-        gBenchFileName = NULL;
         win = WindowInfo_CreateEmpty();
         if (!win)
             goto Exit;
@@ -7803,13 +7745,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             WindowInfo_EnterFullscreen(win);
     }
 
-    if (IsBenchMode()) {
-        assert(win);
-        assert(firstDocLoaded);
-        if (win)
-            PostBenchNextAction(win->hwndFrame);
-    }
-
     if (!firstDocLoaded)
         MenuToolbarUpdateStateForAllWindows();
 
@@ -7821,8 +7756,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (gGlobalPrefs.m_enableAutoUpdate)
         DownloadSumatraUpdateInfo(gWindowList, true);
 
-#ifdef THREAD_BASED_FILEWATCH
+#ifndef THREAD_BASED_FILEWATCH
+    const UINT_PTR timerID = SetTimer(NULL, -1, FILEWATCH_DELAY_IN_MS, NULL);
+#endif
+
     while (GetMessage(&msg, NULL, 0, 0)) {
+#ifndef THREAD_BASED_FILEWATCH
+        if (NULL == msg.hwnd && WM_TIMER == msg.message && timerID == msg.wParam) {
+            WindowInfo_RefreshUpdatedFiles();
+            continue;
+        }
+#endif
         // Make sure to dispatch the accelerator to the correct window
         win = WindowInfo_FindByHwnd(msg.hwnd);
         if (!TranslateAccelerator(win ? win->hwndFrame : msg.hwnd, hAccelTable, &msg)) {
@@ -7830,28 +7774,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             DispatchMessage(&msg);
         }
     }
-#else
-    while (1) {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-            if (GetMessage(&msg, NULL, 0, 0)) {
-                // Make sure to dispatch the accelerator to the correct window
-                win = WindowInfo_FindByHwnd(msg.hwnd);
-                if (!TranslateAccelerator(win ? win->hwndFrame : msg.hwnd, hAccelTable, &msg)) {
-                    TranslateMessage(&msg);
-                    DispatchMessage(&msg);
-                }
-            }
-        }
-        else {
-            WindowInfo_RefreshUpdatedFiles();
-            Sleep(50); // TODO: why is it here?
-        }
-    }
+
+#ifndef THREAD_BASED_FILEWATCH
+    KillTimer(NULL, timerID);
 #endif
     
 Exit:
-    free(gBenchFileName);
-
     WindowInfoList_DeleteAll();
     FileHistoryList_Free(&gFileHistoryRoot);
     DeleteObject(gBrushBg);

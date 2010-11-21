@@ -3,8 +3,6 @@
 #include "FileWatch.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <assert.h>
-#include <time.h>
 #include "tstr_util.h"
 #include "base_util.h"
 #include "file_util.h"
@@ -142,7 +140,6 @@ void FileWatcher::Init(LPCTSTR filefullpath)
          NULL, /* bytes returned */
          &overl, /* overlapped buffer */
          NULL); /* completion routine */
-
 }
 
 // Start watching a file for changes

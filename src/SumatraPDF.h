@@ -28,8 +28,6 @@
 #define _WIN32_IE 0x0600
 #endif
 
-#define THREAD_BASED_FILEWATCH
-
 #ifdef DEBUG
 #define _CRTDBG_MAP_ALLOC
 #endif
@@ -63,7 +61,7 @@
 #define RIGHT_TXT_FONT          _T("Arial Black")
 #define RIGHT_TXT_FONT_SIZE     12
 
-#define COL_BLUE_LINK RGB(0,0x20,0xa0)
+#define COL_BLUE_LINK           RGB(0,0x20,0xa0)
 
 HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize);
 void Win32_Font_Delete(HFONT font);

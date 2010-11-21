@@ -4,7 +4,6 @@
 /* The most basic things, including string handling functions */
 #include "base_util.h"
 #include "str_util.h"
-#include "str_strsafe.h"
 
 /* TODO: should probably be based on MSVC version */
 #if defined(__GNUC__) || !defined(_WIN32) || (_MSC_VER < 1400)
@@ -759,75 +758,37 @@ char *str_printf(const char *format, ...)
 
 char *str_printf_args(const char *format, va_list args)
 {
-#ifdef _WIN32
-    char        message[256] = {0};
-    char  *     buf;
-    size_t      bufCchSize;
+    char   message[256];
+    size_t bufCchSize = dimof(message);
+    char * buf = message;
 
-    buf = &(message[0]);
-    bufCchSize = sizeof(message);
-
-# ifndef DISABLE_STRSAFE
     for (;;)
     {
-        /* TODO: this only works on windows with recent C library */
-        HRESULT hr = StringCchVPrintfA(buf, bufCchSize, format, args);
-        if (S_OK == hr)
+#ifdef __GNUC__
+        if (vsnprintf(buf, bufCchSize, format, args) < bufCchSize)
             break;
-        if (STRSAFE_E_INSUFFICIENT_BUFFER != hr)
-        {
-            /* any error other than buffer not big enough:
-               a) should not happen
-               b) means we give up */
-            assert(FALSE);
-            goto Error;
-        }
+#else
+        int count = vsprintf_s(buf, bufCchSize, format, args);
+        if (0 <= count && (size_t)count < bufCchSize)
+            break;
+#endif
         /* we have to make the buffer bigger. The algorithm used to calculate
            the new size is arbitrary (aka. educated guess) */
-        if (buf != &(message[0]))
+        if (buf != message)
             free(buf);
         if (bufCchSize < 4*1024)
             bufCchSize += bufCchSize;
         else
             bufCchSize += 1024;
-        buf = (char *)malloc(bufCchSize*sizeof(char));
-        if (NULL == buf)
-            goto Error;
+        buf = (char *)malloc(bufCchSize);
+        if (!buf)
+            break;
     }
-# else /* strsafe is disabled */
-    {
-        int len = vsnprintf(buf, bufCchSize, format, args);
-        
-        if(len >= bufCchSize)
-        {
-            bufCchSize = len + 1;
-            buf = (char *)malloc(bufCchSize*sizeof(char));
-            if (NULL == buf)
-                goto Error;
-            
-            len = vsnprintf(buf, bufCchSize, format, args);
-        }
-        
-        if(len < 0)
-            goto Error;
-    }
-# endif
 
-    /* free the buffer if it was dynamically allocated */
-    if (buf == &(message[0]))
-        return str_dup(buf);
+    if (buf == message)
+        buf = str_dup(message);
 
     return buf;
-Error:
-    if (buf != &(message[0]))
-        free((void*)buf);
-
-    return NULL;
-#else
-    char*   buf;
-    int     len = vasprintf(&buf, format, args);
-    return buf;
-#endif
 }
 
 #ifdef _WIN32
