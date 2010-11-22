@@ -50,13 +50,13 @@ void win32_dbg_outW(const WCHAR *format, ...);
 #endif
 #ifdef DEBUG
   #ifdef _WIN32
-    #define DBG_OUT_W win32_dbg_outW
+    #define DBG_OUT_W(format, ...) win32_dbg_outW(L##format, __VA_ARGS__)
   #else
-    #define DBG_OUT_W _wprintf
+    #define DBG_OUT_W(format, ...) wprintf(L##format, __VA_ARGS__)
   #endif
   void wstr_util_test(void);
 #else
-  #define DBG_OUT_W(...) ((void)0)
+  #define DBG_OUT_W(format, ...) ((void)0)
 #endif
 
 #ifdef __cplusplus

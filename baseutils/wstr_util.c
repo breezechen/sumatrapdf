@@ -220,7 +220,7 @@ int wstr_contains(const WCHAR *str, WCHAR c)
     return FALSE;
 }
 
-static int wchar_is_ws(char c)
+static int wchar_is_ws(WCHAR c)
 {
     switch (c) {
         case ' ':
