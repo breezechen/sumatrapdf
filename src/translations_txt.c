@@ -1130,7 +1130,7 @@ const char *g_transTranslations[] = {
   "&Drucken\342\200\246\tStrg+P",
   "&Drucken\342\200\246 (verweigert)",
   "Passwort f\303\274r dieses Dokument &merken",
-  "Ansicht-&Einstellungen f\303\274r jedes Dokument merken",
+  "Ansicht-&Einstellungen f\303\274r jedes Dokument einzeln merken",
   "Speichern &unter\342\200\246\tStrg+S",
   "&Einstellungen",
   "Seiten auf Druckbereich &verkleinern (falls n\303\266tig)",

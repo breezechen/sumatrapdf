@@ -1239,102 +1239,90 @@ static void MenuUpdateZoom(WindowInfo* win)
     ZoomMenuItemCheck(win->hMenu, menuId, NULL != win->dm);
 }
 
-static void UpdateDisplayStateWindowRect(WindowInfo *win, DisplayState *ds)
+static void RememberWindowPosition(WindowInfo *win)
 {
-    RECT r;
-    if (GetWindowRect(win->hwndTocBox, &r))
-        gGlobalPrefs.m_tocDx = ds->tocDx = rect_dx(&r);
+    // update global windowState for next default launch when either
+    // no pdf is opened or a document without window dimension information
+    if (win->presentation)
+        gGlobalPrefs.m_windowState = win->_windowStateBeforePresentation;
+    else if (win->fullScreen)
+        gGlobalPrefs.m_windowState = WIN_STATE_FULLSCREEN;
+    else if (IsZoomed(win->hwndFrame))
+        gGlobalPrefs.m_windowState = WIN_STATE_MAXIMIZED;
+    else if (!IsIconic(win->hwndFrame))
+        gGlobalPrefs.m_windowState = WIN_STATE_NORMAL;
 
-    // TODO: Use Get/SetWindowPlacement (otherwise we'd have to separately track
-    //       the non-maximized dimensions for proper restoration)
-    if (IsZoomed(win->hwndFrame) || IsIconic(win->hwndFrame) || win->fullScreen || win->presentation)
-        return;
+    RECT rc;
+    gGlobalPrefs.m_tocDx = GetWindowRect(win->hwndTocBox, &rc) ? rect_dx(&rc) : 0;
 
-    if (!GetWindowRect(win->hwndFrame, &r))
-        return;
+    /* don't update the window's dimensions if it is maximized, mimimized or fullscreened */
+    if (WIN_STATE_NORMAL == gGlobalPrefs.m_windowState &&
+        !IsIconic(win->hwndFrame) && !win->presentation) {
+        // TODO: Use Get/SetWindowPlacement (otherwise we'd have to separately track
+        //       the non-maximized dimensions for proper restoration)
+        GetWindowRect(win->hwndFrame, &rc);
+        gGlobalPrefs.m_windowPosX = rc.left;
+        gGlobalPrefs.m_windowPosY = rc.top;
+        gGlobalPrefs.m_windowDx = rect_dx(&rc);
+        gGlobalPrefs.m_windowDy = rect_dy(&rc);
+    }
+}
 
-    ds->windowX = r.left;
-    ds->windowY = r.top;
-    ds->windowDx = rect_dx(&r);
-    ds->windowDy = rect_dy(&r);
+static void UpdateDisplayStateWindowRect(WindowInfo *win, DisplayState *ds, bool updateGlobal=true)
+{
+    if (updateGlobal)
+        RememberWindowPosition(win);
+
+    ds->windowState = gGlobalPrefs.m_windowState;
+    ds->windowX = gGlobalPrefs.m_windowPosX;
+    ds->windowY = gGlobalPrefs.m_windowPosY;
+    ds->windowDx = gGlobalPrefs.m_windowDx;
+    ds->windowDy = gGlobalPrefs.m_windowDy;
+    ds->tocDx = gGlobalPrefs.m_tocDx;
 }
 
 static void UpdateCurrentFileDisplayStateForWin(WindowInfo *win)
 {
-    DisplayState     ds;
-    const TCHAR *    fileName = NULL;
-    FileHistoryList* node = NULL;
-
     if (!win)
         return;
 
-    if (WS_ABOUT == win->state || gGlobalPrefs.m_globalPrefsOnly)
-    {
-        // update global windowState for next default launch when no pdf opened
-        if (win->presentation)
-            gGlobalPrefs.m_windowState = win->_windowStateBeforePresentation;
-        else if (win->fullScreen)
-            gGlobalPrefs.m_windowState = WIN_STATE_FULLSCREEN;
-        else if (IsZoomed(win->hwndFrame))
-            gGlobalPrefs.m_windowState = WIN_STATE_MAXIMIZED;
-        else
-            gGlobalPrefs.m_windowState = WIN_STATE_NORMAL;
-        
-        RECT rc;
-        if (GetWindowRect(win->hwndTocBox, &rc))
-            gGlobalPrefs.m_tocDx = rect_dx(&rc);
-    }
-
+    RememberWindowPosition(win);
     if (WS_SHOWING_PDF != win->state)
         return;
     if (!win->dm)
         return;
 
-    fileName = win->dm->fileName();
+    const TCHAR *fileName = win->dm->fileName();
     assert(fileName);
     if (!fileName)
         return;
 
-    node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
+    FileHistoryList* node = FileHistoryList_Node_FindByFilePath(&gFileHistoryRoot, fileName);
     assert(node || !gGlobalPrefs.m_rememberOpenedFiles);
     if (!node)
         return;
 
+    DisplayState ds;
     DisplayState_Init(&ds);
     ds.useGlobalValues = gGlobalPrefs.m_globalPrefsOnly;
-
-    // Update pdf-specific windowState
-    if (win->presentation)
-        ds.windowState = win->_windowStateBeforePresentation;
-    else if (win->fullScreen)
-        ds.windowState = WIN_STATE_FULLSCREEN;
-    else if (IsZoomed(win->hwndFrame))
-        ds.windowState = WIN_STATE_MAXIMIZED;
-    else
-        ds.windowState = WIN_STATE_NORMAL;
+    UpdateDisplayStateWindowRect(win, &ds, false);
 
     if (!win->dm->displayStateFromModel(&ds))
         return;
 
-    UpdateDisplayStateWindowRect(win, &ds);
     DisplayState_Free(&(node->state));
     node->state = ds;
 }
 
-static void UpdateCurrentFileDisplayState(void)
-{
-    for (WindowInfo *currWin = gWindowList; currWin; currWin = currWin->next)
-        UpdateCurrentFileDisplayStateForWin(currWin);
-}
-
-static bool Prefs_Save(void)
+static BOOL Prefs_Save(void)
 {
     TCHAR *     path = NULL;
     size_t      dataLen;
-    bool        ok = false;
+    BOOL        ok = false;
 
     /* mark currently shown files as visible */
-    UpdateCurrentFileDisplayState();
+    for (WindowInfo *currWin = gWindowList; currWin; currWin = currWin->next)
+        UpdateCurrentFileDisplayStateForWin(currWin);
 
     const char *data = Prefs_Serialize(&gFileHistoryRoot, &dataLen);
     if (!data)
@@ -1346,8 +1334,7 @@ static bool Prefs_Save(void)
     /* TODO: consider 2-step process:
         * write to a temp file
         * rename temp file to final file */
-    if (write_to_file(path, (void*)data, dataLen))
-        ok = true;
+    ok = write_to_file(path, (void*)data, dataLen);
 
 Exit:
     free((void*)data);
@@ -4551,39 +4538,6 @@ static void OnMenuViewBook(WindowInfo *win)
     SwitchToDisplayMode(win, DM_BOOK_VIEW, true);
 }
 
-static void RememberWindowPosition(WindowInfo *win)
-{
-    /* If the window being moved or resized doesn't show a PDF document,
-       remember its position so that it can be persisted (we assume that
-       position of this window is what the user wants to be a position
-       of all new windows) */
-    if (win->state != WS_ABOUT && !gGlobalPrefs.m_globalPrefsOnly)
-        return;
-    
-    // update global windowState for next default launch when no pdf opened
-    if (win->presentation)
-        gGlobalPrefs.m_windowState = win->_windowStateBeforePresentation;
-    else if (win->fullScreen)
-        gGlobalPrefs.m_windowState = WIN_STATE_FULLSCREEN;
-    else if (IsZoomed(win->hwndFrame))
-        gGlobalPrefs.m_windowState = WIN_STATE_MAXIMIZED;
-    else if (!IsIconic(win->hwndFrame))
-        gGlobalPrefs.m_windowState = WIN_STATE_NORMAL;
-
-    RECT rc;
-    gGlobalPrefs.m_tocDx = GetWindowRect(win->hwndTocBox, &rc) ? rect_dx(&rc) : 0;
-
-    /* don't update the window's dimensions if it is maximized, mimimized or fullscreened */
-    if (WIN_STATE_NORMAL != gGlobalPrefs.m_windowState || IsIconic(win->hwndFrame) || win->presentation)
-        return;
-
-    GetWindowRect(win->hwndFrame, &rc);
-    gGlobalPrefs.m_windowPosX = rc.left;
-    gGlobalPrefs.m_windowPosY = rc.top;
-    gGlobalPrefs.m_windowDx = rect_dx(&rc);
-    gGlobalPrefs.m_windowDy = rect_dy(&rc);
-}
-
 static void AdjustWindowEdge(WindowInfo *win)
 {
     DWORD exStyle = GetWindowLong(win->hwndCanvas, GWL_EXSTYLE);
@@ -4983,15 +4937,7 @@ static void OnMenuViewFullscreen(WindowInfo *win)
     if (!win)
         return;
 
-    if (!win->dm || gGlobalPrefs.m_globalPrefsOnly) {
-        /* not showing a PDF document */
-        if (gGlobalPrefs.m_windowState != WIN_STATE_FULLSCREEN)
-            gGlobalPrefs.m_windowState = WIN_STATE_FULLSCREEN;
-        else if (IsZoomed(win->hwndFrame))
-            gGlobalPrefs.m_windowState = WIN_STATE_MAXIMIZED;
-        else
-            gGlobalPrefs.m_windowState = WIN_STATE_NORMAL;
-    }
+    RememberWindowPosition(win);
 
     if (win->presentation) {
         WindowInfo_ExitFullscreen(win);
