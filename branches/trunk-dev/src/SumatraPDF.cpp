@@ -613,7 +613,7 @@ static void SeeLastError(void) {
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR)&msgBuf, 0, NULL);
     if (!msgBuf) return;
-    DBG_OUT_T(_T("SeeLastError(): %s\n"), msgBuf);
+    DBG_OUT_T("SeeLastError(): %s\n", msgBuf);
     LocalFree(msgBuf);
 }
 
@@ -1963,7 +1963,7 @@ static bool LoadPdfIntoWindow(
         displayMode, startPage, win, tryrepair);
 
     if (!win->dm) {
-        DBG_OUT_T(_T("failed to load file %s\n"), fileName);
+        DBG_OUT_T("failed to load file %s\n", fileName);
         win->needrefresh = true;
         // if there is an error while reading the pdf and pdfrepair is not requested
         // then fallback to the previous state
@@ -3346,7 +3346,7 @@ static void OnInverseSearch(WindowInfo *win, UINT x, UINT y)
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
         } else {
-            DBG_OUT_T(_T("CreateProcess failed (%d): '%s'.\n"), GetLastError(), cmdline);
+            DBG_OUT_T("CreateProcess failed (%d): '%s'.\n", GetLastError(), cmdline);
             WindowInfo_ShowMessage_Asynch(win, _TR("Cannot start inverse search command. Please check the command line in the settings."), true);
         }
     }
@@ -7389,7 +7389,7 @@ HDDEDATA CALLBACK DdeCallback(UINT uType,
 
 void DDEExecute (LPCTSTR server, LPCTSTR topic, LPCTSTR command)
 {
-    DBG_OUT_T(_T("DDEExecute(\"%s\",\"%s\",\"%s\")"), server, topic, command);
+    DBG_OUT_T("DDEExecute(\"%s\",\"%s\",\"%s\")", server, topic, command);
     unsigned long inst = 0;
     HSZ hszServer = NULL, hszTopic = NULL;
     HCONV hconv = NULL;

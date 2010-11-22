@@ -240,7 +240,7 @@ bool FileWatcher::ReadDir()
                 if (_tstat(szFilepath, &newstamp) == 0
                     && difftime(newstamp.st_mtime, timestamp.st_mtime) > 0
                     ) {
-                    DBG_OUT_T(_T("FileWatch:change notification in %s\n"), pszFilename);
+                    DBG_OUT_T("FileWatch:change notification in %s\n", pszFilename);
 
                     // Check that the file has not already been reopened for writing.
                     // We try to open the file with write access and no write-sharing 
@@ -263,13 +263,13 @@ bool FileWatcher::ReadDir()
                 }
                 else {
                     // false positive: the time stamp has not changed
-                    DBG_OUT_T(_T("FileWatch:spurious change notification in %s\n"), pszFilename);
+                    DBG_OUT_T("FileWatch:spurious change notification in %s\n", pszFilename);
                 }
 #else 
                 ////
                 // We do not check for timestamp change: all notifications are reported.
                 //
-                DBG_OUT_T(_T("FileWatch:change detected in %s\n"), pszFilename);
+                DBG_OUT_T("FileWatch:change detected in %s\n", pszFilename);
                 return true; // report the notification.
 #endif
             }
