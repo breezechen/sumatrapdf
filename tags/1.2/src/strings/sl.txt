@@ -1,0 +1,411 @@
+﻿# Translations for Slovenian (Slovenščina) (sl) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: sl Slovenian (Slovenščina)
+
+Contributor: Janez Vehovec
+Contributor: Martin Srebotnjak
+
+&About
+&O programu ...
+
+&Actual Size\tCtrl-1
+&Dejanska velikost\tCtrl-1
+
+&Close\tCtrl-W
+&Zapri\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Kopiraj izbor\tCtrl-C
+
+&Don't ask me again
+&Ne sprašuj več
+
+&File
+&Datoteka
+
+&Find what:
+&Najdi:
+
+&First Page\tHome
+Prva stran\tHome
+
+&Go To
+Po&jdi na
+
+&Go to page:
+Pojdi na &stran:
+
+&Help
+Po&moč
+
+&Last Page\tEnd
+Zadnja stran\tEnd
+
+&Magnification:
+&Povečanje:
+
+&Manual
+P&riročnik
+
+&Match case
+Razlikuj &med velikimi/malimi črkami
+
+&Next Page\tRight Arrow
+Naslednja stran\t->
+
+&No
+&Ne
+
+&No, thanks
+&Ne, hvala
+
+&Open\tCtrl-O
+&Odpri\tCtrl-O
+
+&Options...
+&Možnosti ...
+
+&Password:
+&Geslo:
+
+&Previous Page\tLeft Arrow
+Predhodna stran\t<-
+
+&Print...\tCtrl-P
+&Natisni\tCtrl-P
+
+&Remember these settings for each document
+Zapomni si te &nastavitve za vsak dokument
+
+&Save As...\tCtrl-S
+Shrani &kot\tCtrl-S
+
+&Settings
+&Nastavitve
+
+&Skip this version
+&Preskoči to različico
+
+&View
+&Pogled
+
+&Yes
+&Da
+
+&Zoom
+Po&večava
+
+(of %d)
+(od %d)
+
+About SumatraPDF
+O programu SumatraPDF
+
+Advanced
+Napredno
+
+All files
+Vse datoteke
+
+Associate with PDF files?
+Želite povezati z datotekami PDF?
+
+Automatic
+Samodejno
+
+Automatically check for &updates
+Samodejno preveri &obstoj posodobitev
+
+Book&marks\tF12
+Zaznamki\tF12
+
+Cancel
+Prekliči
+
+Cannot print this file
+Te datoteke ni mogoče natisniti
+
+Cannot start inverse search command. Please check the command line in the settings.
+Ukaza za obratno iskanje ni mogoče zagnati. Preverite ukazno vrstico v nastavitvah.
+
+Change Language
+Spremeni jezik (Change Language)
+
+Check for &Updates
+&Preveri obstoj nove različice
+
+Continuous
+Nepretrgano
+
+Continuous facing
+Nepretrgano dvostransko
+
+Contribute Translation
+Prispevajte prevod
+
+Could not open Printer
+Do tiskalnika ni mogoče dostopati.
+
+Couldn't initialize printer
+Tiskalnika ni mogoče inicializirati
+
+Couldn't render the page
+Strani ni mogoče upodobiti
+
+Custom &Zoom...\tCtrl-Y
+Povečava po &meri ...\tCtrl-Y
+
+Default &Layout:
+&Privzeta postavitev:
+
+Default &Zoom:
+Pri&vzeta povečava:
+
+Download
+Prenesi
+
+E&xit\tCtrl-Q
+I&zhod\tCtrl-Q
+
+Enter password
+Vnesite geslo
+
+Enter password for %s
+Vnesite geslo za %s
+
+Error loading PDF file.
+Napaka pri branju datoteke PDF.
+
+F&ullscreen\tCtrl-L
+Celozaslonsko\tCtrl-L
+
+Facing
+Dvostransko
+
+Failed to save a file
+Shranjevanje datoteke ni uspelo.
+
+Fin&d...\tCtrl-F
+Najdi ...\tCtrl-F
+
+Find
+Išči
+
+Find Next
+Najdi naslednje
+
+Find Previous
+Najdi prejšnje
+
+Find:
+Najdi:
+
+Fit &Page\tCtrl-0
+&Prilagodi strani\tCtrl-0
+
+Fit &Width\tCtrl-2
+P&rilagodi po širini\tCtrl-2
+
+Fit Page
+Prilagodi strani
+
+Fit Width
+Prilagodi po širini
+
+Found text at page %d
+Besedilo najdeno na strani %d
+
+Go to page
+Pojdi na stran
+
+Hint: Use the F3 key for finding again
+Namig: Uporabite tipko F3 za ponovno iskanje
+
+Main PDF reader can't be changed in portable mode
+Glavnega bralnika PDF ni mogoče spremeniti v prenosnem načinu
+
+Make SumatraPDF default application for PDF files?
+Naj bo SumatraPDF privezti program za datoteke PDF?
+
+Make SumatraPDF my main PDF reader
+SumatraPDF naj bo privzeti bralnik PDF
+
+Match Case
+Razlikuj med velikimi/malimi črkami
+
+New version %s is available. Download new version?
+Na voljo je nova različica %s. Jo želite prenesti?
+
+New version available.
+Na voljo je nova različica.
+
+Next Page
+Naslednja stran
+
+No matches were found
+Ni zadetkov
+
+No result found around line %u in file %s
+Okoli vrstice %u v datoteki %s ni zadetkov
+
+No synchronization info at this position
+Na tem mestu ni sinhronizacijskih podatkov
+
+OK
+V redu
+
+Open
+Odpri
+
+Open in &Adobe Reader
+Odpri s programom &Adobe Reader
+
+PDF Document
+Dokument PDF
+
+PDF documents
+Dokumenti PDF
+
+Pa&ge...\tCtrl-G
+Stran ...\tCtrl-G
+
+Page number %u inexistant
+Stran številka %u ne obstaja
+
+Page:
+Stran:
+
+Please wait - rendering...
+Počakajte trenutek, upodobitev poteka ...
+
+Previous Page
+Predhodna stran
+
+Printing problem.
+Težave pri tiskanju.
+
+Remember &opened files
+&Zapomni si odprte datoteke
+
+Rotate &Left\tCtrl-Shift--
+Zasukaj v levo\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Zasukaj v desno\tCtrl-Shift-+
+
+Searching %d of %d...
+Preiskovanje strani %d od %d ...
+
+Select content with Ctrl+left mouse button
+Izberite vsebino s pritisnjeno tipko Ctrl in levim gumbom miške
+
+Set inverse search command-line
+Nastavi obratno iskanje ukazne vrstice
+
+Show &Toolbar
+Pokaži orodno vrstico
+
+Show the &bookmarks sidebar when available
+Pokaži podokno z &zaznamki, če so na voljo
+
+Single Page
+Enostransko
+
+Source file %s has no synchronization point
+Izvorna datoteka %s nima točke sinhronizacije
+
+SumatraPDF Options
+Možnosti SumatraPDF
+
+SumatraPDF is your main PDF reader
+SumatraPDF je vaš privzeti bralnik PDF
+
+SumatraPDF should now be your main PDF reader
+SumatraPDF bi zdaj moral biti vaš privzeti bralnik PDF
+
+Synchronization file cannot be opened
+Datoteke sinhronizacije ni mogoče odpreti
+
+Unknown source file (%s)
+Neznana izvorna datoteka (%s)
+
+View
+Pogled
+
+Visit &Website
+Ob&išči domačo stran
+
+Warning
+Opozorilo
+
+You have the latest version.
+Imate najnovejšo različico.
+
+You have version %s
+Imate različico %s
+
+Zoom
+Povečava
+
+Zoom In
+Povečaj
+
+Zoom Out
+Pomanjšaj
+
+Zoom factor
+Faktor povečave
+
+[Changes detected; refreshing] %s
+[Spremembe zaznane; osvežitev poteka] %s
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Print... (denied)
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Application:
+#Attachment: %s
+#Author:
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Created:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Modified:
+#No synchronization file found
+#Number of Pages:
+#P&roperties\tCtrl-D
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Page scaling
+#Print range
+#Send by &E-mail...
+#Show &pages continuously
+#Subject:
+#Text documents
+#Title:
+#copying text
+#printing document
+

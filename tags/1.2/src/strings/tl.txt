@@ -1,0 +1,445 @@
+﻿# Translations for Tagalog (Tagalog) (tl) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: tl Tagalog (Tagalog)
+
+Contributor: Arden Christopher C. Chan
+Contributor: Mark Angelo F. Racca
+
+&About
+Tungkol S&a...
+
+&Actual Size\tCtrl-1
+Tunay na Laki\tCtrl-1
+
+&All selected pages
+&Lahat ng napiling pahina
+
+&Back\tAlt+Left Arrow
+Bumalik\tAlt+Left Arrow
+
+&Close\tCtrl-W
+Isara\tCtrl-W
+
+&Copy Selection\tCtrl-C
+&Kopyahin ang Napili\tCtrl-C
+
+&Don't ask me again
+Huwag na akong tanunging muli
+
+&File
+&File
+
+&Find what:
+Hanapin ang:
+
+&First Page\tHome
+Unang Pahina\tHome
+
+&Go To
+Pumun&ta Sa...
+
+&Go to page:
+Pumunta sa pahina:
+
+&Help
+Tulong
+
+&Last Page\tEnd
+Huling Pahina\tEnd
+
+&Magnification:
+&Laki
+
+&Manual
+Gabay
+
+&Next Page\tRight Arrow
+Sunod na Pahina\t->
+
+&No
+Hindi
+
+&No, thanks
+'Di bale na lang
+
+&Open\tCtrl-O
+Buksan\tCtrl-O
+
+&Options...
+Mga Pagpipilian
+
+&Password:
+&Password:
+
+&Previous Page\tLeft Arrow
+Naunang Pahina\t<-
+
+&Print...\tCtrl-P
+I-&print\tCtrl-P
+
+&Print... (denied)
+&I-print... (hindi maaari)
+
+&Remember the password for this document
+Tandaan ang password para sa dokumentong ito
+
+&Remember these settings for each document
+Tandaan ang settings ng bawat dokumento
+
+&Save As...\tCtrl-S
+I-save Bilang...\tCtrl-S
+
+&Settings
+Mga Setting
+
+&Skip this version
+Laktawan ang bersyong ito
+
+&Use original page sizes
+Gamitin ang orihinal na laki ng mga pahina
+
+&View
+Tignan
+
+&Yes
+Oo
+
+&Zoom
+Baguhin ang laki
+
+(of %d)
+(ng %d)
+
+About SumatraPDF
+Tungkol sa SumatraPDF
+
+All files
+Lahat ng files
+
+Application:
+Pangalan ng aplikasyon:
+
+Associate with PDF files?
+I-associate sa mga PDF file?
+
+Attachment: %s
+Naka-attach: %s
+
+Author:
+May gawa:
+
+Automatic
+Awtomatiko
+
+Automatically check for &updates
+Awtomatikong tignan kung may mga &updates
+
+Book&marks\tF12
+Mga Pananda\tF12
+
+Bookmarks
+Mga Pananda
+
+Bytes
+Bytes
+
+Can't connect to the Internet (error %#x).
+Hindi makakonekta sa Internet (error %#x).
+
+Cancel
+Ikansela
+
+Cannot print this file
+Hindi mai-print ang file
+
+Change Language
+Ibahin ang Wika
+
+Check for &Updates
+Tignan kung may bagong &bersyon
+
+Check for Updates
+Tingnan kung may bagong bersyon
+
+Continuous
+Tuloy-tuloy
+
+Continuous facing
+Tuloy-tuloy na Magkaharap
+
+Contribute Translation
+Magbigay ng Saling-wika
+
+Copying text was denied (copying as image only)
+Hindi maaaring kopyahin ang mensahe (kinopya bilang isang imahe lamang)
+
+Could not open Printer
+Hindi mabuksan ang Printer
+
+Couldn't initialize printer
+Hindi ma-initialize ang printer
+
+Couldn't render the page
+Hindi maipakita ang pahina
+
+Created:
+Ginawa noong:
+
+Download
+I-download
+
+E&xit\tCtrl-Q
+Isara\tCtrl-Q
+
+Enter password
+Ipasok ang password
+
+Enter password for %s
+Ipasok ang password ng %s
+
+Error loading PDF file.
+Hindi mabuksan ang PDF file.
+
+F&ullscreen\tCtrl-L
+Pagkasyahin sa buong screen\tCtrl-L
+
+Facing
+Magkaharap
+
+Failed to save a file
+Hindi ma-i-save ang file
+
+File Size:
+Laki ng file:
+
+File:
+File:
+
+Fin&d...\tCtrl-F
+Hanapin...\tCtrl-F
+
+Find
+Hanapin
+
+Find Next
+Hanapin ang Susunod
+
+Find Previous
+Hanapin ang Nauna
+
+Find:
+Hanapin:
+
+Fit &Content\tCtrl-3
+Pagkasyahin ang laman\tCtrl-3
+
+Fit &Page\tCtrl-0
+Ipagkasya ang &Pahina\tCtrl-0
+
+Fit &Width\tCtrl-2
+&Ipagkasya ang Lapad\tCtrl-2
+
+Fit Content
+Pagkasyahin ang laman
+
+Fit Page
+Ipagkasya ang Pahina
+
+Fit Width
+Ipagkasya ang Lapad
+
+Found text at page %d
+Nakita ang salita sa pahina %d
+
+Go to page
+Pumunta sa Pahina
+
+Hint: Use the F3 key for finding again
+Payo: Pindutin ang F3 para maghanap muli
+
+Make SumatraPDF default application for PDF files?
+Gawin ang SumatraPDF bilang default na pambukas ng mga PDF files?
+
+Make SumatraPDF my main PDF reader
+Gawin ang SumatraPDF bilang default na pambukas ng mga PDF files
+
+Match Case
+Ipantay ang Laki ng Titik
+
+Modified:
+Nabago noong:
+
+New version %s is available. Download new version?
+May bagong bersyon: %s. I-download?
+
+New version available.
+Mayroong bagong bersyon.
+
+Next Page
+Sunod na Pahina
+
+No matches were found
+Walang makitang kapareha
+
+No result found around line %u in file %s
+Walang resultang mahanap sa linya %s ng file %s
+
+Number of Pages:
+Bilang ng mga pahina:
+
+OK
+OK
+
+Open
+Buksan
+
+Open in &Adobe Reader
+Buksan sa Adobe Reader
+
+PDF Document
+PDF Document
+
+PDF Producer:
+Gumawa ng PDF:
+
+PDF Version:
+Bersyon ng PDF:
+
+Pa&ge...\tCtrl-G
+Pahina...\tCtrl-G
+
+Page Size:
+Laki ng Page
+
+Page number %u inexistant
+Walang pahinang %u
+
+Page:
+Pahina:
+
+Please wait - rendering...
+Maghintay - pinapakita...
+
+Previous Page
+Naunang Pahina
+
+Printing problem.
+May Problema sa Pagpi-print.
+
+Remember &opened files
+Alalahanin ang mga binuksang files
+
+Rotate &Left\tCtrl-Shift--
+Iikot Pakaliwa\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Iikot Pakanan\tCtrl-Shift-+
+
+Searching %d of %d...
+Hinahanap: $d ng #d...
+
+Select content with Ctrl+left mouse button
+Mamili ng content gamit ang Ctrl+left mouse button
+
+Send by &E-mail...
+Ipadala sa &email...
+
+Set inverse search command-line
+Iayos ang Utos-Linya ng Tiwarik na Paghahanap
+
+Show &Toolbar
+Ipakita ang toolbar
+
+Show &pages continuously
+Ipakita nang tuloy-tuloy ang mga &pahina
+
+Show the &bookmarks sidebar when available
+Ipakita ang &bookmarks sidebar kung naangkop
+
+Single Page
+Iisang Pahina
+
+SumatraPDF Options
+Mga Opsyon para sa SumatraPDF
+
+SumatraPDF is your main PDF reader
+SumatraPDF ang iyong default na pambasa ng mga PDF file
+
+SumatraPDF should now be your main PDF reader
+SumatraPDF na dapat ang iyong default na pambasa ng mga PDF file
+
+Title:
+Pamagat:
+
+Unknown source file (%s)
+Hindi alam na source file (%s)
+
+View
+Tignan
+
+Visit &Website
+Puntahan ang Websa&yt
+
+Warning
+Babala
+
+You have the latest version.
+Ito ang pinakabagong bersyon.
+
+You have version %s
+Ang bersyong nasa iyo ay %s
+
+Zoom
+Laki
+
+Zoom In
+Palakihin
+
+Zoom Out
+Paliitin
+
+Zoom factor
+Antas ng laki
+
+[Changes detected; refreshing] %s
+[May napansing pagbabago; nagre-refresh] %s
+
+copying text
+kinokopya ang mensahe
+
+printing document
+ipini-print ang dokumento
+
+# Untranslated:
+#&Even pages only
+#&Fit pages to printable area
+#&Match case
+#&Odd pages only
+#&Shrink pages to printable area (if necessary)
+#Advanced
+#Book View
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous book view
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#Main PDF reader can't be changed in portable mode
+#No synchronization file found
+#No synchronization info at this position
+#P&roperties\tCtrl-D
+#PDF documents
+#Page scaling
+#Print range
+#Source file %s has no synchronization point
+#Subject:
+#Synchronization file cannot be opened
+#Text documents
+

@@ -1,0 +1,270 @@
+﻿# Translations for Lithuanian (Lietuvių) (lt) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: lt Lithuanian (Lietuvių)
+
+Contributor: Viktoras Jakovlevas
+
+&About
+Apie
+
+&Actual Size\tCtrl-1
+Tikrasis dydis\tCtrl-1
+
+&Close\tCtrl-W
+&Užverti\tCtrl-W
+
+&File
+&Failas
+
+&First Page\tHome
+Pirmas puslapis\tHome
+
+&Go To
+&Eiti
+
+&Help
+&Pagalba
+
+&Last Page\tEnd
+Paskutinis puslapis\tEnd
+
+&Next Page\tRight Arrow
+Kitas puslapis\t->
+
+&Open\tCtrl-O
+&Atverti\tCtrl-O
+
+&Previous Page\tLeft Arrow
+Ankstesnis puslapis\t<-
+
+&Print...\tCtrl-P
+&Spausdinti\tCtrl-P
+
+&Save As...\tCtrl-S
+&Įrašyti kaip...\tCtrl-S
+
+&View
+Peržiūra
+
+&Zoom
+Artinimas
+
+About SumatraPDF
+Apie SumatraPDF
+
+Book&marks\tF12
+Žymės\tF12
+
+Continuous
+Besitęsiantis
+
+Continuous facing
+Besitęsiantis puslapiavimas
+
+Contribute Translation
+Pasiklydę vertime
+
+Could not open Printer
+Nepavyko atverti spausdintuvo
+
+E&xit\tCtrl-Q
+Baigti darbą\tCtrl-Q
+
+Error loading PDF file.
+Klaida įkeliant PDF dokumentą
+
+F&ullscreen\tCtrl-L
+Visame ekrane\tCtrl-L
+
+Facing
+Puslapiavimas
+
+Failed to save a file
+Nepavyko išsaugoti failo
+
+Fin&d...\tCtrl-F
+Ieškoti...\tCtrl-F
+
+Find Next
+Rasti ankstesnį
+
+Find Previous
+Rasti kitą
+
+Find:
+Ieškoti:
+
+Fit &Page\tCtrl-0
+Pritaikyti lange\tCtrl-0
+
+Fit &Width\tCtrl-2
+Pritaikyti plotį\tCtrl-2
+
+Fit Page
+Pritaikyti lange
+
+Fit Width
+Pritaikyti plotį
+
+Make SumatraPDF my main PDF reader
+Parinkti SumatraPDF numatytuoju PDF dokumentų skaitytuvu
+
+Next Page
+Kitas puslapis
+
+Open
+Atverti
+
+Pa&ge...\tCtrl-G
+Puslapis...\tCtrl-G
+
+Previous Page
+Ankstesnis puslapis
+
+Printing problem.
+Spausdinimo klaida
+
+Rotate &Left\tCtrl-Shift--
+Pasukti kairėn\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Pasukti dešinėn\tCtrl-Shift-+
+
+Show &Toolbar
+Rodyti įrankinę
+
+Single Page
+Vienas puslapis
+
+View
+Peržiūra
+
+Visit &Website
+Aplankyti svetainę
+
+Zoom In
+Priartinti
+
+Zoom Out
+Sumažinti
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Don't ask me again
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Manual
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Skip this version
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Associate with PDF files?
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Change Language
+#Check for &Updates
+#Check for Updates
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter password
+#Enter password for %s
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Found text at page %d
+#Go to page
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Make SumatraPDF default application for PDF files?
+#Match Case
+#Modified:
+#New version %s is available. Download new version?
+#New version available.
+#No matches were found
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Page:
+#Please wait - rendering...
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Set inverse search command-line
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#You have the latest version.
+#You have version %s
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+
