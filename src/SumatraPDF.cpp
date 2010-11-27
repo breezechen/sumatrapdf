@@ -2645,7 +2645,7 @@ void DisplayModel::setScrollbarsState(void)
     // When hiding the scroll bars and fitting width, it could be that we'd have to
     // display the scroll bars right again for the new width. Make sure we haven't just done
     // that - or if so, force the vertical scroll bar to remain visible.
-    if (ZOOM_FIT_WIDTH == win->dm->zoomVirtual()) {
+    if (ZOOM_FIT_WIDTH == win->dm->zoomVirtual() || ZOOM_FIT_PAGE == win->dm->zoomVirtual()) {
         if (win->prevCanvasBR.y != drawAreaDy || win->prevCanvasBR.x != drawAreaDx + GetSystemMetrics(SM_CXVSCROLL)) {
             win->prevCanvasBR.x = drawAreaDx;
             win->prevCanvasBR.y = drawAreaDy;
@@ -5239,7 +5239,6 @@ static void OnMenuViewFullscreen(WindowInfo *win)
 static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result, bool wasModified)
 {
     win->dm->goToPage(result->page, 0, wasModified);
-    win->dm->MapResultRectToScreen(result);
 
     DeleteOldSelectionInfo(win);
     for (int i = 0; i < result->len; i++) {
@@ -5255,11 +5254,11 @@ static void WindowInfo_ShowSearchResult(WindowInfo *win, PdfSearchResult *result
         SelectionOnPage *selOnPage = (SelectionOnPage *)malloc(sizeof(SelectionOnPage));
         RectD_FromRectI(&selOnPage->selectionPage, &rect);
         selOnPage->pageNo = result->page;
-        win->dm->rectCvtScreenToUser(&selOnPage->pageNo, &selOnPage->selectionPage);
         selOnPage->next = win->selectionOnPage;
         win->selectionOnPage = selOnPage;
     }
 
+    win->dm->MapResultRectToScreen(result);
     win->showSelection = true;
     triggerRepaintDisplay(win);
 }

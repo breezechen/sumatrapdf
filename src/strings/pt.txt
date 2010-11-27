@@ -41,7 +41,7 @@ Apenas as páginas &pares
 &Localizar:
 
 &First Page\tHome
-Primeira pá&gina\tHome
+Primeira &página\tHome
 
 &Fit pages to printable area
 A&justar páginas à área de impressão
@@ -56,10 +56,10 @@ Ir pa&ra a página:
 &Ajuda
 
 &Last Page\tEnd
-Ú&ltima página\tEnd
+Última pá&gina\tEnd
 
 &Magnification:
-Amp&liação:
+&Ampliação:
 
 &Manual
 &Manual
@@ -182,7 +182,7 @@ Cannot start inverse search command. Please check the command line in the settin
 Não é possível iniciar o comando da pesquisa inversa. Verifique a linha de comandos nas definições.
 
 Change Language
-Mudar idioma
+&Mudar idioma
 
 Check for &Updates
 Verificar at&ualizações
@@ -218,7 +218,7 @@ Created:
 Criado:
 
 Custom &Zoom...\tCtrl-Y
-&Personalizado...\tCtrl-Y
+&Personalizar...\tCtrl-Y
 
 Default &Layout:
 E&xibição por omissão:
@@ -251,7 +251,7 @@ Error loading PDF file.
 Erro ao carregar o PDF.
 
 F&orward\tAlt+Right Arrow
-Avançar\tAlt+->
+A&vançar\tAlt+->
 
 F&ullscreen\tCtrl-L
 Ecrã co&mpleto\tCtrl-L
@@ -269,7 +269,7 @@ File:
 Ficheiro:
 
 Fin&d...\tCtrl-F
-Locali&zar...\tCtrl-F
+&Localizar...\tCtrl-F
 
 Find
 Localizar
@@ -374,7 +374,7 @@ PDF documents
 Documentos PDF
 
 Pa&ge...\tCtrl-G
-Pá&gina...\tCtrl-G
+Pági&na...\tCtrl-G
 
 Page Size:
 Tamanho da página:
