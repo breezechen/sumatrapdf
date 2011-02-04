@@ -1,0 +1,504 @@
+﻿# Translations for Czech (Čeština) (cz) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: cz Czech (Čeština)
+
+Contributor: Kristian Vrhel
+Contributor: Jiri Saneistr
+Contributor: Pavel Zampach
+Contributor: Martin Ruzicka
+
+&About
+&O programu
+
+&Actual Size\tCtrl-1
+Skutečná velikost\tCtrl+1
+
+&All selected pages
+Vše&chny vybrané stránky
+
+&Back\tAlt+Left Arrow
+Zpět\tAlt+Šipka vlevo
+
+&Close\tCtrl-W
+&Zavřít\tCtrl+W
+
+&Copy Selection\tCtrl-C
+&Kopírovat výběr\tCtrl+C
+
+&Don't ask me again
+&Příště se již neptat
+
+&Even pages only
+Pouz&e sudé stránky
+
+&File
+&Soubor
+
+&Find what:
+&Najít:
+
+&First Page\tHome
+První stránka\tHome
+
+&Fit pages to printable area
+Přizpůsobit &stránky na tisknutelnou plochu
+
+&Go To
+&Přejít
+
+&Go to page:
+&Přejít na stránku:
+
+&Help
+Náp&ověda
+
+&Last Page\tEnd
+Poslední stránka\tEnd
+
+&Magnification:
+&Zvětšení:
+
+&Manual
+&Příručka
+
+&Match case
+&Rozlišovat velikost písmen
+
+&Next Page\tRight Arrow
+Další stránka\tŠipka vpravo
+
+&No
+&Ne
+
+&No, thanks
+&Ne, děkuji
+
+&Odd pages only
+&Pouze liché stránky
+
+&Open\tCtrl-O
+&Otevřít...\tCtrl+O
+
+&Options...
+&Možnosti...
+
+&Password:
+&Heslo:
+
+&Previous Page\tLeft Arrow
+&Předchozí stránka\tŠipka vlevo
+
+&Print...\tCtrl-P
+&Tisk...\tCtrl+P
+
+&Print... (denied)
+&Tisk... (odepřen)
+
+&Remember the password for this document
+&Pamatovat si heslo tohoto dokumentu
+
+&Remember these settings for each document
+&Pamatovat si tato nastavení pro každý dokument
+
+&Save As...\tCtrl-S
+&Uložit jako...\tCtrl+S
+
+&Settings
+&Nastavení
+
+&Shrink pages to printable area (if necessary)
+&Zmenšit stránky na tisknutelnou plochu (v případě potřeby)
+
+&Skip this version
+&Přeskočit tuto verzi
+
+&View
+&Zobrazit
+
+&Yes
+&Ano
+
+&Zoom
+Z&většení
+
+(of %d)
+(z %d)
+
+About SumatraPDF
+O programu SumatraPDF
+
+Advanced
+Upřesnit
+
+All files
+Všechny soubory
+
+Application:
+Aplikace:
+
+Associate with PDF files?
+Přidružit k PDF souborům?
+
+Attachment: %s
+Příloha: %s
+
+Author:
+Autor:
+
+Automatic
+Automaticky
+
+Automatically check for &updates
+&Automaticky kontrolovat aktualizace
+
+Book View
+Kniha
+
+Book&marks\tF12
+Záložky\tF12
+
+Bookmarks
+Záložky
+
+Bytes
+bajtů
+
+Cancel
+Storno
+
+Cannot print this file
+Tento soubor nelze vytisknout
+
+Cannot start inverse search command. Please check the command line in the settings.
+Příkaz inverzní hledání nelze spustit. Zkontrolujte nastavení příkazového řádku.
+
+Change Language
+&Změnit jazyk (Change Language)
+
+Check for &Updates
+&Zkontrolovat aktualizace
+
+Continuous
+Jedna stránka průběžně
+
+Continuous book view
+Kniha průběžně
+
+Continuous facing
+Dvojstránky průběžně
+
+Contribute Translation
+Zaslat překlad
+
+Copying text was denied (copying as image only)
+Kopírování textu bylo odepřeno (lze kopírovat jako obraz)
+
+Could not open Printer
+Tiskárnu nelze otevřít
+
+Couldn't initialize printer
+Tiskárnu nelze inicializovat
+
+Couldn't render the page
+Stránku nelze vykreslit
+
+Created:
+Vytvořeno:
+
+Custom &Zoom...\tCtrl-Y
+Vlastní &měřítko...\tCtrl+Y
+
+Default &Layout:
+Výchozí &uspořádání:
+
+Default &Zoom:
+Výchozí &zvětšení:
+
+Denied Permissions:
+Odepřená oprávnění:
+
+Document Properties
+Vlastnosti dokumentu
+
+Download
+Stáhnout
+
+E&xit\tCtrl-Q
+&Konec\tCtrl+Q
+
+Enter password
+Zadejte heslo
+
+Enter password for %s
+Zadejte heslo pro %s
+
+Error loading PDF file.
+Při načítání PDF souboru došlo k chybě.
+
+F&orward\tAlt+Right Arrow
+Vpřed\tAlt+Šipka vpravo
+
+F&ullscreen\tCtrl-Shift-L
+Celá obrazovka\tCtrl+Shift+L
+
+Facing
+Dvojstránky
+
+Failed to save a file
+Při ukládání došlo k chybě
+
+File Size:
+Velikost souboru:
+
+File:
+Soubor:
+
+Fin&d...\tCtrl-F
+Najít...\tCtrl+F
+
+Find
+Najít
+
+Find Next
+Najít další
+
+Find Previous
+Najít předchozí
+
+Find:
+Najít:
+
+Fit &Content\tCtrl-3
+Přizpůsobit &obsah\tCtrl+3
+
+Fit &Page\tCtrl-0
+Podle &stránky\tCtrl+0
+
+Fit &Width\tCtrl-2
+&Podle šířky\tCtrl+2
+
+Fit Content
+Přizpůsobit obsah
+
+Fit Page
+Podle stránky
+
+Fit Width
+Podle šířky
+
+Found text at page %d
+Položka nalezena na stránce %d
+
+GB
+GB
+
+Go to page
+Přejít na stránku
+
+Hint: Use the F3 key for finding again
+Nápověda: Klávesou F3 vyhledáte další výskyt
+
+KB
+KB
+
+MB
+MB
+
+Main PDF reader can't be changed in portable mode
+V přenosném režimu nelze měnit výchozí PDF prohlížeč
+
+Make SumatraPDF default application for PDF files?
+Nastavit SumatraPDF jako výchozí prohlížeč PDF souborů?
+
+Make SumatraPDF my main PDF reader
+Nastavit SumatraPDF jako výchozí PDF prohlížeč
+
+Match Case
+Rozlišovat velikost písmen
+
+Modified:
+Změněno:
+
+New version %s is available. Download new version?
+Nová verze %s je k dispozici. Stáhnout novou verzi?
+
+Next Page
+Další stránka
+
+No matches were found
+Žádná položka nebyla nalezena
+
+No result found around line %u in file %s
+Kolem řádku %u v souboru %s nenalezen žádný výsledek
+
+No synchronization file found
+Soubor synchronizace nenalezen
+
+No synchronization info at this position
+Na této pozici není informace o synchronizaci
+
+Number of Pages:
+Počet stránek:
+
+OK
+OK
+
+Open
+Otevřít
+
+Open in &Adobe Reader
+Otevřít v programu &Adobe Reader
+
+P&roperties\tCtrl-D
+&Vlastnosti...\tCtrl+D
+
+PDF Document
+PDF dokument
+
+PDF Producer:
+Producent PDF:
+
+PDF Version:
+Verze PDF:
+
+PDF documents
+PDF dokumenty
+
+Pa&ge...\tCtrl-G
+Stránka...\tCtrl+G
+
+Page Size:
+Velikost stránky:
+
+Page number %u inexistant
+Stránka číslo %u neexistuje
+
+Page scaling
+Měřítko stránky
+
+Page:
+Stránka:
+
+Please wait - rendering...
+Prosím čekejte, probíhá vykreslování...
+
+Previous Page
+Předchozí stránka
+
+Print range
+Rozsah tisku
+
+Printing problem.
+Potíže s tiskem
+
+Remember &opened files
+Pamatovat si &otevřené soubory
+
+Rotate &Left\tCtrl-Shift--
+Otočit doleva\tCtrl+Shift+Num-
+
+Rotate &Right\tCtrl-Shift-+
+Otočit doprava\tCtrl+Shift+Num+
+
+Searching %d of %d...
+Prohledává se %d z %d...
+
+Select content with Ctrl+left mouse button
+Vybrat obsah klávesou Ctrl a levým tlačítkem myši
+
+Send by &E-mail...
+Odeslat &e-mailem...
+
+Set inverse search command-line
+Nastavit inverzní vyhledávání z příkazového řádku
+
+Show &Toolbar
+Zobrazit panel nástrojů
+
+Show &pages continuously
+Zobrazit stránky průběžně
+
+Show the &bookmarks sidebar when available
+Zo&brazit záložky v postranním panelu, jsou-li dostupné
+
+Single Page
+Jedna stránka
+
+Source file %s has no synchronization point
+Zdrojový soubor %s nemá bod synchronizace
+
+Subject:
+Předmět:
+
+SumatraPDF Options
+Možnosti programu SumatraPDF
+
+SumatraPDF is your main PDF reader
+SumatraPDF je výchozím PDF prohlížečem
+
+SumatraPDF should now be your main PDF reader
+SumatraPDF by měl být výchozím PDF prohlížečem
+
+Synchronization file cannot be opened
+Soubor synchronizace nelze otevřít
+
+Text documents
+Textové dokumenty
+
+Title:
+Název:
+
+Unknown source file (%s)
+Neznámý zdrojový soubor (%s)
+
+View
+Zobrazení
+
+Visit &Website
+&Navštívit webovou stránku
+
+Warning
+Upozornění
+
+You have the latest version.
+Používáte nejnovější verzi.
+
+You have version %s
+Používáte verzi %s
+
+Zoom
+Zvětšení
+
+Zoom In
+Zvětšit
+
+Zoom Out
+Zmenšit
+
+Zoom factor
+Měřítko přiblížení
+
+[Changes detected; refreshing] %s
+[Zjištěna změna; probíhá aktualizace] %s
+
+copying text
+kopírování textu
+
+printing document
+tisk dokumentu
+
+# Untranslated:
+#&Use original page sizes
+#Can't connect to the Internet (error %#x).
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Please include the following file in your crash report:
+#Pr&esentation\tCtrl-L
+#SumatraPDF Update
+#SumatraPDF crashed
+

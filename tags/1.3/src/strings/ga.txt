@@ -1,0 +1,313 @@
+﻿# Translations for Irish (Gaeilge) (ga) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: ga Irish (Gaeilge)
+
+&About
+Maidir le
+
+&Actual Size\tCtrl-1
+Fíormhéid\tCtrl-1
+
+&Close\tCtrl-W
+&Dún\tCtrl-W
+
+&Don't ask me again
+Ná fiafraigh dom arís
+
+&File
+&Comhad
+
+&First Page\tHome
+An Chéad Leathanach\tHome
+
+&Go To
+Téigh Chuig...
+
+&Help
+C&abhair
+
+&Last Page\tEnd
+An Leathanach Deiridh\tEnd
+
+&Manual
+Lámhleabhar
+
+&Next Page\tRight Arrow
+Leathanach Ar Aghaidh\t->
+
+&Open\tCtrl-O
+&Oscail\tCtrl-O
+
+&Previous Page\tLeft Arrow
+Leathanach Roimhe\t<-
+
+&Print...\tCtrl-P
+Clóbhuail\tCtrl-P
+
+&Save As...\tCtrl-S
+Cuir i dtaisce mar...\tCtrl-S
+
+&Skip this version
+Ná bac leis an leagan seo.
+
+&View
+Amharc
+
+&Zoom
+Féithigh
+
+About SumatraPDF
+Maidir le SumatraPDF
+
+Associate with PDF files?
+Comhthiomsaigh le comhaid PDF?
+
+Book&marks\tF12
+Astail\tF12
+
+Change Language
+Athraigh an Teanga (Change Language)
+
+Check for &Updates
+Téigh ar thóir leagan nua
+
+Continuous
+Ar Leanúint
+
+Continuous facing
+Dhá Leathanach Ar Leanúint
+
+Contribute Translation
+Aistrigh É Seo
+
+Could not open Printer
+Níorbh fhéidir an Clóire a oscailt
+
+E&xit\tCtrl-Q
+Scoir\tCtrl-Q
+
+Enter password
+Cuir isteach focal faire
+
+Enter password for %s
+Cuir isteach focal faire le haghaidh %s
+
+Error loading PDF file.
+Tharla botún ag luchtú comhad PDF.
+
+F&ullscreen\tCtrl-Shift-L
+Lánscáileán\tCtrl-Shift-L
+
+Facing
+Dhá Leathanach
+
+Failed to save a file
+Theip air comhad a chur i dtaisce
+
+Fin&d...\tCtrl-F
+Aimsigh...\tCtrl-F
+
+Find Next
+Aimsigh Ar Aghaidh
+
+Find Previous
+Aimsigh Roimhe
+
+Find:
+Aimsigh:
+
+Fit &Page\tCtrl-0
+Oiriúnaigh don Lch\tCtrl-0
+
+Fit &Width\tCtrl-2
+Oiriúnaigh don Leithead\tCtrl-2
+
+Fit Page
+Oiriúnaigh don Lch
+
+Fit Width
+Oiriúnaigh don Leithead
+
+GB
+GB
+
+Go to page
+Téigh chuig lch
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+Bíodh SumatraPDF mar an léitheoir PDF réamhshocruithe agat?
+
+Make SumatraPDF my main PDF reader
+Bíodh SumatraPDF mar an léitheoir PDF réamhshocruithe
+
+Match Case
+Comhoiriúnaigh an cás
+
+New version %s is available. Download new version?
+Tá an leagan nua %s ar fáil. Íosluchtaigh an leagan nua?
+
+Next Page
+Leathanach Ar Aghaidh
+
+Open
+Oscail
+
+Pa&ge...\tCtrl-G
+Leathanach...\tCtrl-G
+
+Page:
+Leathanach:
+
+Previous Page
+Leathanach Roimhe
+
+Printing problem.
+Botún Clóbhuailte
+
+Rotate &Left\tCtrl-Shift--
+Rothlaigh Tuathalach\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Rothlaigh Deiseal\tCtrl-Shift-+
+
+Set inverse search command-line
+Socruigh líne na n-orduithe cuardaigh inbhéarta
+
+Show &Toolbar
+Taispeáin an Barra Uirlisí
+
+Single Page
+Leathanach Amháin
+
+View
+Amharc
+
+Visit &Website
+Tabhair cuairt ar an suíomh idirlín
+
+You have the latest version.
+Tá an leagan is úire agat
+
+You have version %s
+Tá leagan %s agat.
+
+Zoom In
+Féithigh Isteach
+
+Zoom Out
+Féithigh Amach
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Modified:
+#No matches were found
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+

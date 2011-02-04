@@ -1,0 +1,287 @@
+﻿# Translations for Turkish (Türkçe) (tr) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: tr Turkish (Türkçe)
+
+Contributor: Hakan ATAÇ
+
+&About
+&Hakkında
+
+&Actual Size\tCtrl-1
+Gerçek Boyut\tCtrl-1
+
+&Close\tCtrl-W
+Kapa&t\tCtrl-W
+
+&File
+&Dosya
+
+&First Page\tHome
+İlk Sayfa\tHome
+
+&Go To
+&Git
+
+&Help
+&Yardım
+
+&Last Page\tEnd
+Son Sayfa\tEnd
+
+&Next Page\tRight Arrow
+Sonraki Sayfa\t->
+
+&Open\tCtrl-O
+&Aç\tCtrl-O
+
+&Previous Page\tLeft Arrow
+Önceki Sayfa\t<-
+
+&Print...\tCtrl-P
+&Yazdır\tCtrl-P
+
+&Save As...\tCtrl-S
+&Farklı kaydet\tCtrl-S
+
+&View
+&Göster
+
+&Zoom
+&Yakınlaştırma
+
+About SumatraPDF
+SumatraPDF hakkında
+
+Book&marks\tF12
+Yer imleri\tF12
+
+Continuous
+Devamlı
+
+Continuous facing
+Devamlı çift sayfa
+
+Contribute Translation
+Çeviriye katkıda bulunun.
+
+Could not open Printer
+Yazıcıya erişilemiyor.
+
+E&xit\tCtrl-Q
+Çı&kış\tCtrl-O
+
+Error loading PDF file.
+Dosya yüklenirken hata çıktı.
+
+F&ullscreen\tCtrl-Shift-L
+Tam Ekran\tCtrl-Shift-L
+
+Facing
+Çift sayfa
+
+Failed to save a file
+Dosya kaydedilirken hata çıktı.
+
+Fin&d...\tCtrl-F
+Bul...\tCtrl-F
+
+Find Next
+Sonrakini Bul
+
+Find Previous
+Öncekini bul
+
+Find:
+Bul:
+
+Fit &Page\tCtrl-0
+&Sayfaya sığdır\tCtrl-0
+
+Fit &Width\tCtrl-2
+Genişliğe &sığdır\tCtrl-2
+
+Fit Page
+Sayfaya sığdır
+
+Fit Width
+Genişliğe sığdır
+
+GB
+GB
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF my main PDF reader
+&Varsayılan PDF okuyucusu yap
+
+Match Case
+Büyük/Küçük harf eşleştir
+
+Next Page
+Sonraki Sayfa
+
+Open
+&Aç
+
+Pa&ge...\tCtrl-G
+Sayfa...\tCtrl-G
+
+Page:
+Sayfa:
+
+Previous Page
+Önceki Sayfa
+
+Printing problem.
+Yazdırma problemi.
+
+Rotate &Left\tCtrl-Shift--
+Sola çevir\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Sağa çevir\tCtrl-Shift-+
+
+Show &Toolbar
+Araç kutusunu göster
+
+Single Page
+Tek sayfa
+
+View
+Göster
+
+Visit &Website
+&Web sayfası
+
+Zoom In
+Yakınlaştır
+
+Zoom Out
+Uzaklaştır
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Don't ask me again
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Manual
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Skip this version
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Associate with PDF files?
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Change Language
+#Check for &Updates
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter password
+#Enter password for %s
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d
+#Go to page
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Make SumatraPDF default application for PDF files?
+#Modified:
+#New version %s is available. Download new version?
+#No matches were found
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Set inverse search command-line
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#You have the latest version.
+#You have version %s
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+

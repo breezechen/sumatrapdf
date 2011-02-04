@@ -1,0 +1,54 @@
+Overview.
+---------
+
+This document describes how to compile mupdf natively on Windows.
+
+Short version.
+--------------
+
+Checkout sumatra sources at the same level as mupdf sources:
+
+  svn checkout http://sumatrapdf.googlecode.com/svn/trunk/ sumatrapdf
+
+If you have Visual Studio 2008, run buildwin.bat
+
+If you have Visual Studio 2005, edit buildwin.bat to setup env for
+VS 2005 and then run it.
+
+You end up with several executables:
+ * pdfbench
+ * pdfclean
+ * pdfdraw
+ * pdfinfo
+ * pdfshow
+ * pdfextract
+ * pdfview
+in obj-rel-win and obj-dbg-win directories. Those are sample programs
+using mpudf.
+
+Longer version.
+---------------
+
+Mupdf depends on several libraries that are not easily available on Windows:
+ * freetype
+ * libjpeg for jpeg image format decoding
+ * zlib for zlib decompression
+ * openjpeg or jasper for jpeg2000 image format decoding 
+ * jbig2dec for jbig2 image format decoding
+
+They're part of SumatraPDF sources so you need to checkout Sumatra sources
+as described above.
+
+Build is done via native msvc makefile (makefile.msvc) and can be done from
+command line as e.g.:
+  nmake -f makefile.msvc EXTLIBSDIR=..\ CFG=rel
+
+But first you need setup environment for VS cmd-line builds, which is what
+buildwin.bat does by calling apropriate scripts.
+
+The makefile is meant as a template, not a final product. It compiles
+several example programs but you will need to modify it to compile your
+own software based on mupdf. For more elaborate, Windows specific example
+you can see SumatraPDF's makefile (which is based on makefile.msvc, with
+Sumatra code added).
+

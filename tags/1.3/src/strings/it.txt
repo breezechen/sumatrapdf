@@ -1,0 +1,435 @@
+﻿# Translations for Italian (Italiano) (it) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: it Italian (Italiano)
+
+Contributor: Angelo Contardi
+Contributor: iBlawgger
+Contributor: Alessandro Visentin
+Contributor: Alessandro Mariani
+Contributor: Massimiliano Beltrando
+Contributor: Mirco Scottà
+Contributor: Cosimo Prete Damiano
+
+&About
+&Informazioni
+
+&Actual Size\tCtrl-1
+&Dimensioni reali\tCtrl-1
+
+&All selected pages
+&Tutte le pagine selezionate
+
+&Back\tAlt+Left Arrow
+&Indietro\tAlt+Freccia sinistra
+
+&Close\tCtrl-W
+&Chiudi\tCtrl-W
+
+&Copy Selection\tCtrl-C
+&Copia Selezione\tCtrl-C
+
+&Don't ask me again
+&Non chiedermelo più
+
+&Even pages only
+&Solo pagine pari
+
+&File
+&File
+
+&Find what:
+&Ricerca:
+
+&First Page\tHome
+&Prima pagina\tHome
+
+&Fit pages to printable area
+&Adatta le pagine alla zona stampabile
+
+&Go To
+&Vai a
+
+&Go to page:
+&Vai a pagina:
+
+&Help
+&Aiuto
+
+&Last Page\tEnd
+&Ultima pagina\tEnd
+
+&Magnification:
+&Ingrandimento:
+
+&Manual
+&Manuale
+
+&Match case
+&Maiuscole/minuscole
+
+&Next Page\tRight Arrow
+Pagina successiva\tFreccia destra
+
+&No
+&No
+
+&No, thanks
+&No, grazie
+
+&Odd pages only
+&Solo pagine dispari
+
+&Open\tCtrl-O
+&Apri\tCtrl-O
+
+&Options...
+&Opzioni...
+
+&Password:
+&Password:
+
+&Previous Page\tLeft Arrow
+&Pagina precedente\tFreccia destra
+
+&Print...\tCtrl-P
+&Stampa\tCtrl-P
+
+&Print... (denied)
+&Stampa... (rifiutato)
+
+&Remember the password for this document
+&Ricorda la password per questo documento
+
+&Remember these settings for each document
+&Ricorda le impostazioni per ogni documento
+
+&Save As...\tCtrl-S
+&Salva come...\tCtrl-S
+
+&Settings
+&Impostazioni
+
+&Shrink pages to printable area (if necessary)
+&Riduci le pagine alla zona stampabile (se necessario)
+
+&Skip this version
+&Salta questa versione
+
+&Use original page sizes
+&Usa la larghezza originale
+
+&View
+&Visualizza
+
+&Yes
+&Sì
+
+&Zoom
+&Ingrandimento
+
+(of %d)
+(di %d)
+
+About SumatraPDF
+Informazioni su SumatraPDF
+
+Advanced
+Avanzate
+
+All files
+Tutti i file
+
+Application:
+Applicazione:
+
+Associate with PDF files?
+Associare ai file PDF?
+
+Attachment: %s
+Allegato: %s
+
+Author:
+Autore:
+
+Automatic
+Automatico
+
+Automatically check for &updates
+Controlla &automaticamente aggiornamenti
+
+Book View
+Vista libro
+
+Book&marks\tF12
+Segnalibri\tF12
+
+Bookmarks
+Segnalibri
+
+Bytes
+Byte
+
+Can't connect to the Internet (error %#x).
+Impossibile connettersi a Internet (errore %#x).
+
+Cancel
+Annulla
+
+Cannot print this file
+Impossibile stampare il file
+
+Cannot start inverse search command. Please check the command line in the settings.
+Impossibile eseguire il comando di ricerca inversa. Controllare la riga di comando usata nelle impostazioni
+
+Change Language
+Cambia lingua (Change Language)
+
+Check for &Updates
+&Controlla aggiornamenti
+
+Continuous
+Pagina continua
+
+Continuous book view
+Vista libro continua
+
+Continuous facing
+Pagine affiancate continue
+
+Contribute Translation
+Contribuisci alla traduzione
+
+Copying text was denied (copying as image only)
+Impossibile copiare il testo (copia solo come immagine)
+
+Could not open Printer
+Stampante non accessibile
+
+Couldn't initialize printer
+Impossibile inizializzare la stampante
+
+Couldn't render the page
+Impossibile renderizzare la pagina
+
+Created:
+Creato:
+
+Custom &Zoom...\tCtrl-Y
+&Ingrandimento personalizzato\tCtrl-Y
+
+Default &Layout:
+&Vista predefinita:
+
+Default &Zoom:
+&Ingrandimento predefinito
+
+Denied Permissions:
+Permessi rifiutati
+
+Document Properties
+Proprietà del documento
+
+Download
+Scarica
+
+E&xit\tCtrl-Q
+&Esci\tCtrl-Q
+
+Enter password
+Inserisci password
+
+Enter password for %s
+Inserisci password per %s
+
+Enter the command-line to invoke when you double-click on the PDF document:
+Inserire la linea di comando da eseguire quando fai doppio clic su un documento PDF:
+
+Error loading PDF file.
+Errore durante l'apertura del file.
+
+F&ullscreen\tCtrl-Shift-L
+Schermo intero\tCtrl-Shift-L
+
+Facing
+Pagine affiancate
+
+Failed to save a file
+Salvataggio del file fallito
+
+File Size:
+Dimensione del file
+
+File:
+File:
+
+Fin&d...\tCtrl-F
+Trova...\tCtrl-F
+
+Find
+Trova
+
+Find Next
+Trova successivo
+
+Find Previous
+Trova precedente
+
+Find:
+Trova:
+
+Fit &Content\tCtrl-3
+&Contenuto\tCtrl-3
+
+Fit &Page\tCtrl-0
+&Pagina intera\tCtrl-0
+
+Fit &Width\tCtrl-2
+&Larghezza pagina\tCtrl-2
+
+Fit Content
+Contenuto
+
+Fit Page
+Pagina intera
+
+Fit Width
+Larghezza pagina
+
+Found text at page %d
+Testo trovato a pagina %d
+
+GB
+GB
+
+Go to page
+Vai a pagina
+
+Hint: Use the F3 key for finding again
+Consiglio: Usa F3 per trovare il successivo
+
+KB
+KB
+
+MB
+MB
+
+Main PDF reader can't be changed in portable mode
+Il lettore PDF predefinito non è modificabile in modalità "portable"
+
+Make SumatraPDF default application for PDF files?
+Impostare SumatraPDF come programma predefinito per i file PDF?
+
+Make SumatraPDF my main PDF reader
+Imposta SumatraPDF come lettore PDF predefinito
+
+Match Case
+Maiuscole/minuscole
+
+Modified:
+Modificato:
+
+New version %s is available. Download new version?
+E' disponibile la versione %s. Scaricare la nuova versione?
+
+Next Page
+Pagina successiva
+
+No matches were found
+Nessuna corrispondenza trovata
+
+No result found around line %u in file %s
+Nessun risultato trovato intorno alla riga %u nel file %s
+
+No synchronization file found
+Non è stato trovato il file di sincronizzazione
+
+No synchronization info at this position
+Nessuna informazione di sincronizzazione in questa posizione
+
+Number of Pages:
+Numero di pagine:
+
+OK
+OK
+
+Open
+Apri
+
+Open in &Adobe Reader
+Apri con &Adobe Reader
+
+P&roperties\tCtrl-D
+P&roprietà\tCtrl-D
+
+PDF Document
+Documento PDF
+
+PDF Producer:
+Produttore PDF:
+
+PDF Version:
+Versione PDF:
+
+PDF documents
+Documenti PDF
+
+Pa&ge...\tCtrl-G
+Pagina...\tCtrl-G
+
+Page Size:
+Dimensione pagina:
+
+Page number %u inexistant
+Pagina numero %u inesistente
+
+# Untranslated:
+#F&orward\tAlt+Right Arrow
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Page scaling
+#Page:
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Previous Page
+#Print range
+#Printing problem.
+#Remember &opened files
+#Rotate &Left\tCtrl-Shift--
+#Rotate &Right\tCtrl-Shift-+
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Set inverse search command-line
+#Show &Toolbar
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Single Page
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#View
+#Visit &Website
+#Warning
+#You have the latest version.
+#You have version %s
+#Zoom
+#Zoom In
+#Zoom Out
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+

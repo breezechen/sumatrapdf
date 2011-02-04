@@ -1,0 +1,313 @@
+﻿# Translations for Punjabi (ਪੰਜਾਬੀ) (pa) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: pa Punjabi (ਪੰਜਾਬੀ)
+
+&About
+Sumatra ਬਾਰੇ(&A)
+
+&Actual Size\tCtrl-1
+ਸਹੀ ਅਕਾਰ(&u)\tCtrl-1
+
+&Close\tCtrl-W
+ਬੰਦ ਕਰੋ(&C)\tCtrl-W
+
+&Don't ask me again
+ਮੈਥੌਂ ਮੁੜ ਨਾ ਪੁਛੋ
+
+&File
+ਫਾਇਲ(&F)
+
+&First Page\tHome
+ਪਹਿਲੇ ਪੰਨੇ ਤੇ\tHome
+
+&Go To
+ਜਾਵੋ(&G)
+
+&Help
+ਸਹਾਇਤਾ(&H)
+
+&Last Page\tEnd
+ਆਖਰੀ ਪੰਨੇ ਤੇ\tEnd
+
+&Manual
+ਮਦੱਦ ਕਤਾਬ(&M)
+
+&Next Page\tRight Arrow
+ਅਗਲੇ ਪੰਨੇ ਤੇ\t->
+
+&Open\tCtrl-O
+ਫਾਇਲ ਖੋਲੋ(&O)\tCtrl-O
+
+&Previous Page\tLeft Arrow
+ਪਿਛਲੇ ਪੰਨੇ ਤੇ\t<-
+
+&Print...\tCtrl-P
+ਪਰਿੰਟ ਕਰੋ(&P)\tCtrl-P
+
+&Save As...\tCtrl-S
+ਇੰਝ ਸੰਬਾਲੋ(&S)\tCtrl-S
+
+&Skip this version
+ਇਸ ਵਰਜਨ ਨੂੰ ਛਡੋ
+
+&View
+ਵੇਖੋ(&V)
+
+&Zoom
+ਵੱਡਾ ਕਰੋ(&Z)
+
+About SumatraPDF
+Sumatra ਬਾਰੇ
+
+Associate with PDF files?
+PDF ਫਾਈਲਾਂ ਨਾਲ ਸੰਬੰਦ ਬਣਾਓ ?
+
+Book&marks\tF12
+ਸੰਭਾਲੇ ਹੋਏ ਚਿੰਨ\tF12
+
+Change Language
+ਭਾਸ਼ਾ ਬਦਲੋ (Change Language)
+
+Check for &Updates
+ਨਵੇ ਵਰਜਨ ਲਈ ਚੈੱਕ ਕਰੋ(&C)
+
+Continuous
+ਲਗਾਤਾਰ
+
+Continuous facing
+ਲਗਾਤਾਰ ਕਿਤਾਬ
+
+Contribute Translation
+ਅਨੁਵਾਦ ਕਰਨ ਵਿੱਚ ਮਦੱਦ ਕਰੋ
+
+Could not open Printer
+ਪਰਿੰਟ ਖੋਲਿਆ ਨਹੀ ਜਾ ਸਕਿਆ
+
+E&xit\tCtrl-Q
+ਬੰਦ ਕਰੋ(&x)\tCtrl-Q
+
+Enter password
+ਪਾਸਵਰਡ ਭਰੋ
+
+Enter password for %s
+%s ਲਈ ਪਾਸਵਰਡ ਭਰੋ
+
+Error loading PDF file.
+PDF ਫਾਈਲ ਖੋਲੀ ਨਹੀ ਜਾ ਸਕੀ ।
+
+F&ullscreen\tCtrl-Shift-L
+ਪੂਰੀ ਸਕਰੀਨ\tCtrl-Shift-L
+
+Facing
+ਕਿਤਾਬ
+
+Failed to save a file
+ਫਾਈਲ ਸੰਭਾਲੀ ਨਹੀ ਜਾ ਸਕੀ
+
+Fin&d...\tCtrl-F
+ਲੱਭੋ...\tCtrl-F
+
+Find Next
+ਅਗਲਾ ਲੱਭੋ
+
+Find Previous
+ਪਿਛਲਾ ਲੱਭੋ
+
+Find:
+ਲੱਭੋ:
+
+Fit &Page\tCtrl-0
+ਫਿਟ ਕਰੋ(&P)\tCtrl-0
+
+Fit &Width\tCtrl-2
+ਚੋੜਾਈ ਦੇ ਮੁਤਾਬਕ(&h)\tCtrl-2
+
+Fit Page
+ਫਿਟ ਕਰੋ
+
+Fit Width
+ਚੋੜਾਈ ਦੇ ਮੁਤਾਬਕ
+
+GB
+GB
+
+Go to page
+ਪੰਨੇ ਤੇ ਜਾਓ
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+PDF ਫਾਈਲਾਂ SumatraPDF ਵਿੱਚ ਖੋਲੋ?
+
+Make SumatraPDF my main PDF reader
+ਸਾਰੀਂਆ  PDF ਫਾਈਲਾ SumatraPDF ਵਿਚ ਖੋਲੋ
+
+Match Case
+ਅੱਖਰ ਅਕਾਰ ਮਿਲਾਓ
+
+New version %s is available. Download new version?
+ਨਵਾ ਵਰਜਨ %s ਓੁਪਲਭਧ ਹੈ । ਡਾਓੂਨਲੋਡ ਕਰਾਂ ?
+
+Next Page
+ਅਗਲੇ ਪੰਨੇ ਤੇ
+
+Open
+ਖੋਲੋ
+
+Pa&ge...\tCtrl-G
+ਪੰਨਾ ਨੰਬਰ ਤੇ\tCtrl-G
+
+Page:
+ਪੰਨਾ ਨੰਬਰ:
+
+Previous Page
+ਪਿਛਲੇ ਪੰਨੇ ਤੇ
+
+Printing problem.
+ਪਰਿਨਟ ਕਰਨ ਵਿੱਚ ਗਲਤੀ
+
+Rotate &Left\tCtrl-Shift--
+ਸੱਜੇ ਪਾਸੇ ਘੁਮਾਓ\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+ਖੱਬੇ ਪਾਸੇ ਘੁਮਾਓ\tCtrl-Shift-+
+
+Set inverse search command-line
+ਪੁੱਠੀ command-line ਖੋਜ ਸੈਟ ਕਰੋ
+
+Show &Toolbar
+ਸੰਦ ਵਾਲੀ ਫੱਟੀ ਵਖਾਓ
+
+Single Page
+ਇਕ ਪੰਨਾ
+
+View
+ਵੇਖੋ
+
+Visit &Website
+ਵੇਬਸਾਇਟ ਵੇਥੋ(&V)
+
+You have the latest version.
+ਤੋਹਾਡੇ ਕੋਲ ਪਿਹਲਾਂ ਤੌਂ ਹੀ ਨਵਾਂ ਵਰਜਨ ਹੈ
+
+You have version %s
+ਤੋਹਾਡੇ ਕੋਲ %s ਵਰਜਨ ਹੈ
+
+Zoom In
+ਵੱਡਾ ਕਰੋ
+
+Zoom Out
+ਛੋਟਾ ਕਰੋ
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Modified:
+#No matches were found
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+

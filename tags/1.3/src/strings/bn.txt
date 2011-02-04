@@ -1,0 +1,316 @@
+﻿# Translations for Bengali (বাংলা) (bn) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: bn Bengali (বাংলা)
+
+Contributor: Soham Chatterjee (soham.chatterjee@gmail.com)
+Contributor: Shabab Mustafa (shabab.mustafa@gmail.com)
+
+&About
+&আমাদের সম্পর্কে
+
+&Actual Size\tCtrl-1
+বাস্তবিক আকার\tCtrl-1
+
+&Close\tCtrl-W
+&বন্ধ\tCtrl-W
+
+&Don't ask me again
+আমাকে পুনরায় জিজ্ঞাসা করা হবে না
+
+&File
+&সঞ্চিকা
+
+&First Page\tHome
+প্রথম পৃষ্ঠা\tHome
+
+&Go To
+এতে চলুন...
+
+&Help
+&সাহায্য
+
+&Last Page\tEnd
+শেষ পৃষ্ঠা\tEnd
+
+&Manual
+নির্দেশ নথিপত্র
+
+&Next Page\tRight Arrow
+পরবর্তী পৃষ্ঠা\t->
+
+&Open\tCtrl-O
+&উন্মীলন\tCtrl-O
+
+&Previous Page\tLeft Arrow
+পূর্ববর্তী পৃষ্ঠা\t<-
+
+&Print...\tCtrl-P
+&মুদ্রন\tCtrl-P
+
+&Save As...\tCtrl-S
+&সংরক্ষণ এই রূপে...\tCtrl-S
+
+&Skip this version
+এই সংস্করণটি পরিহার করুন
+
+&View
+দর্শন
+
+&Zoom
+&বিবর্ধন
+
+About SumatraPDF
+সুমাত্রাপিডিএফ-এর সম্পর্কে
+
+Associate with PDF files?
+পিডিএফ সঞ্চিকার সাথে সম্বন্ধ করা হবে?
+
+Book&marks\tF12
+পৃষ্ঠাস্মারকসমূহ\tF12
+
+Change Language
+ভাষা পরিবর্তন (Change Language)
+
+Check for &Updates
+নতুন সংস্করণের জন্য নিরীক্ষা করুন
+
+Continuous
+ক্রমাগত...
+
+Continuous facing
+ক্রমাগত দুটি পৃষ্ঠায়
+
+Contribute Translation
+অনুবাদ প্রদান করুন
+
+Could not open Printer
+মুদ্রক কার্যকরী করা যাচ্ছে না
+
+E&xit\tCtrl-Q
+&প্রস্থান\tCtrl-Q
+
+Enter password
+শব্দকূট প্রবেশ করুন
+
+Enter password for %s
+%s-এর জন্য শব্দকূট প্রবেশ করুন
+
+Error loading PDF file.
+পিডিএফ সঞ্চিকা ভরণে ত্রুটি
+
+F&ullscreen\tCtrl-Shift-L
+পূর্ণ পর্দা\tCtrl-Shift-L
+
+Facing
+দুটি পৃষ্ঠায়
+
+Failed to save a file
+সঞ্চিকা সংরক্ষণে ব্যর্থ
+
+Fin&d...\tCtrl-F
+অনুসন্ধান...\tCtrl-F
+
+Find Next
+পরবর্তী অনুসন্ধান
+
+Find Previous
+পূর্ববর্তী অনুসন্ধান
+
+Find:
+অনুসন্ধান:
+
+Fit &Page\tCtrl-0
+পৃষ্ঠা অনুরূপ\tCtrl-0
+
+Fit &Width\tCtrl-2
+প্রস্থ অনুরূপ\tCtrl-2
+
+Fit Page
+পৃষ্ঠা অনুরূপ
+
+Fit Width
+প্রস্থ অনুরূপ
+
+GB
+GB
+
+Go to page
+এর পৃষ্ঠায় চলুন
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+সুমাত্রাপিডিএফ কে পিডিএফ সঞ্চিকাগুলির জন্য স্বাভাবিক অনুপ্রয়োগ রূপে নির্ধারণ করা হবে?
+
+Make SumatraPDF my main PDF reader
+সুমাত্রাপিডিএফ কে আপনার স্বাভাবিক পঠক রূপে নির্ধারণ
+
+Match Case
+অক্ষরের আকার মেলান
+
+New version %s is available. Download new version?
+নতুন সংস্করণ %s উপলব্ধ হয়েছে। নতুন সংস্করণ অধঃভরণ করা হবে?
+
+Next Page
+পরবর্তী পৃষ্ঠা
+
+Open
+উন্মীলন
+
+Pa&ge...\tCtrl-G
+পৃষ্ঠা সংখ্যা...\tCtrl-G
+
+Page:
+পৃষ্ঠা:
+
+Previous Page
+পূর্ববর্তী পৃষ্ঠা
+
+Printing problem.
+মুদ্রণ করতে সমস্যা হয়েছে
+
+Rotate &Left\tCtrl-Shift--
+বামদিকে বিবর্তন\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+ডানদিকে বিবর্তন\tCtrl-Shift-+
+
+Set inverse search command-line
+সমাদেশ-পংক্তিতে বিলোম অনুসন্ধান নির্ধারণ করুন
+
+Show &Toolbar
+উপকরণপট্টি প্রদর্শন
+
+Single Page
+একটি পৃষ্ঠায়
+
+View
+দর্শন
+
+Visit &Website
+&আমাদের অন্তর্জালস্থান দর্শন করুন
+
+You have the latest version.
+আপনার এই সংস্করণটি সর্বাধুনিক।
+
+You have version %s
+আপনার সংস্করণটি হল %s
+
+Zoom In
+বৃহৎ বিবর্ধন
+
+Zoom Out
+ক্ষুদ্র বিবর্ধন
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Modified:
+#No matches were found
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
+

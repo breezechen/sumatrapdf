@@ -1,0 +1,520 @@
+﻿# Translations for German (Deutsch) (de) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: de German (Deutsch)
+
+Contributor: Lars Wohlfahrt (www.eviltux.de)
+Contributor: Christopher Amann
+Contributor: Simon Bünzli (zeniko@gmail.com)
+Contributor: Andreas Hopp (teraflop@arcor.de)
+
+&About
+&Über SumatraPDF
+
+&Actual Size\tCtrl-1
+&Tatsächliche Größe\tStrg+1
+
+&All selected pages
+&Alle angegebenen Seiten
+
+&Back\tAlt+Left Arrow
+&Zurück\tAlt+<-
+
+&Close\tCtrl-W
+&Schließen\tStrg+W
+
+&Copy Selection\tCtrl-C
+Auswahl &kopieren\tStrg+C
+
+&Don't ask me again
+Nicht &wieder fragen.
+
+&Even pages only
+Nur &gerade Seiten
+
+&File
+&Datei
+
+&Find what:
+&Suchen nach:
+
+&First Page\tHome
+&Erste Seite\tPos1
+
+&Fit pages to printable area
+Seiten in Druckbereich &einpassen
+
+&Go To
+&Gehe zu
+
+&Go to page:
+&Gehe zu Seite:
+
+&Help
+&Hilfe
+
+&Last Page\tEnd
+&Letzte Seite\tEnde
+
+&Magnification:
+&Vergrößerung:
+
+&Manual
+&Handbuch
+
+&Match case
+&Groß-/Kleinschreibung beachten
+
+&Next Page\tRight Arrow
+&Nächste Seite\t->
+
+&No
+&Nein
+
+&No, thanks
+&Nein danke
+
+&Odd pages only
+Nur &ungerade Seiten
+
+&Open\tCtrl-O
+Ö&ffnen…\tStrg+O
+
+&Options...
+&Optionen…
+
+&Password:
+&Passwort:
+
+&Previous Page\tLeft Arrow
+&Vorherige Seite\t<-
+
+&Print...\tCtrl-P
+&Drucken…\tStrg+P
+
+&Print... (denied)
+&Drucken… (verweigert)
+
+&Remember the password for this document
+Passwort für dieses Dokument &merken
+
+&Remember these settings for each document
+Ansicht-&Einstellungen für jedes Dokument einzeln merken
+
+&Save As...\tCtrl-S
+Speichern &unter…\tStrg+S
+
+&Settings
+&Einstellungen
+
+&Shrink pages to printable area (if necessary)
+Seiten auf Druckbereich &verkleinern (falls nötig)
+
+&Skip this version
+&Diese Version überspringen.
+
+&Use original page sizes
+Seitengröße &nicht anpassen
+
+&View
+&Ansicht
+
+&Yes
+&Ja
+
+&Zoom
+&Zoom
+
+(of %d)
+(von %d)
+
+About SumatraPDF
+Über SumatraPDF
+
+Advanced
+Weiteres
+
+All files
+Alle Dateien
+
+Application:
+Anwendung:
+
+Associate with PDF files?
+Mit PDF-Dateien verknüpfen?
+
+Attachment: %s
+Anhang: %s
+
+Author:
+Autor:
+
+Automatic
+Automatisch
+
+Automatically check for &updates
+&Automatisch nach Updates suchen
+
+Book View
+Buchansicht
+
+Book&marks\tF12
+Lese&zeichen\tF12
+
+Bookmarks
+Lesezeichen
+
+Bytes
+Byte
+
+Can't connect to the Internet (error %#x).
+Keine Verbindung zum Internet möglich (Fehler %#x).
+
+Cancel
+Abbrechen
+
+Cannot print this file
+Datei kann nicht gedruckt werden
+
+Cannot start inverse search command. Please check the command line in the settings.
+Fehler beim Ausführen des Befehls für die Inverssuche. Bitte überprüfen Sie die Einstellung.
+
+Change Language
+Sprache ändern… (Change Language)
+
+Check for &Updates
+Nach &neuer Version suchen
+
+Continuous
+Fortlaufend
+
+Continuous book view
+Fortlaufende Buchansicht
+
+Continuous facing
+Fortlaufende Doppelseiten
+
+Contribute Translation
+Übersetzung beisteuern
+
+Copying text was denied (copying as image only)
+Text kopieren verweigert (nur als Bild kopiert)
+
+Could not open Printer
+Konnte den Drucker nicht ansprechen.
+
+Couldn't initialize printer
+Der Drucker konnte nicht initialisiert werden
+
+Couldn't render the page
+Diese Seite kann leider nicht angezeigt werden
+
+Created:
+Erstellt am:
+
+Custom &Zoom...\tCtrl-Y
+&Zoomfaktor…\tStrg+Y
+
+Default &Layout:
+&Standardlayout:
+
+Default &Zoom:
+Standard&vergrößerung:
+
+Denied Permissions:
+Einschränkungen:
+
+Document Properties
+Dokumenteigenschaften
+
+Download
+Herunterladen
+
+E&xit\tCtrl-Q
+&Beenden\tStrg+Q
+
+Enter password
+Bitte Passwort eingeben
+
+Enter password for %s
+Bitte Passwort für %s eingeben
+
+Enter the command-line to invoke when you double-click on the PDF document:
+Beim Doppelklicken im PDF Dokument wird der folgende Befehl ausgeführt:
+
+Error loading PDF file.
+Fehler beim Öffnen der Datei!
+
+F&orward\tAlt+Right Arrow
+Vor&wärts\tAlt+->
+
+F&ullscreen\tCtrl-Shift-L
+&Vollbild\tStrg+Umschalt+L
+
+Facing
+Doppelseite
+
+Failed to save a file
+Fehler beim Speichern der Datei!
+
+File Size:
+Dateigröße:
+
+File:
+Datei:
+
+Fin&d...\tCtrl-F
+S&uchen…\tStrg+F
+
+Find
+Suchen
+
+Find Next
+Weitersuchen
+
+Find Previous
+Rückwärts suchen
+
+Find:
+Suchen:
+
+Fit &Content\tCtrl-3
+An &Inhalt anpassen\tStrg+3
+
+Fit &Page\tCtrl-0
+An &Seite anpassen\tStrg+0
+
+Fit &Width\tCtrl-2
+An &Breite anpassen\tStrg+2
+
+Fit Content
+An Inhalt anpassen
+
+Fit Page
+An Seite anpassen
+
+Fit Width
+An Breite anpassen
+
+Fit Width and Show Pages Continuously
+An Breite anpassen und Seiten fortlaufend anzeigen
+
+Fit a Single Page
+An eine einzelne Seite anpassen
+
+Found text at page %d
+Text auf Seite %d gefunden
+
+GB
+GB
+
+Go to page
+Gehe zu Seite
+
+Hint: Use the F3 key for finding again
+Tipp: F3-Taste verwenden, um weiterzusuchen
+
+KB
+KB
+
+MB
+MB
+
+Main PDF reader can't be changed in portable mode
+Standardanwendung im portablen Modus nicht veränderbar
+
+Make SumatraPDF default application for PDF files?
+SumatraPDF als Standardanwendung für PDF-Dateien registrieren?
+
+Make SumatraPDF my main PDF reader
+Standardmäßig PDF-Dateien mit SumatraPDF öffnen
+
+Match Case
+Groß-/Kleinschreibung beachten
+
+Modified:
+Geändert am:
+
+New version %s is available. Download new version?
+Es ist die neue Version %s vorhanden. Möchten Sie diese herunterladen?
+
+Next Page
+&Nächste Seite
+
+No matches were found
+Suchbegriff nicht gefunden
+
+No result found around line %u in file %s
+In der Nähe von Zeile %u in der Datei %s wurde kein Resultat gefunden
+
+No synchronization file found
+Synchronisationsdatei nicht gefunden
+
+No synchronization info at this position
+Keine Synchronisationsinformationen verfügbar
+
+Number of Pages:
+Anzahl der Seiten:
+
+OK
+OK
+
+Open
+Ö&ffnen…
+
+Open in &Adobe Reader
+Mit &Adobe Reader öffnen
+
+P&roperties\tCtrl-D
+Ei&genschaften\tStrg+D
+
+PDF Document
+PDF-Dokument
+
+PDF Producer:
+PDF Urheber:
+
+PDF Version:
+PDF Version:
+
+PDF documents
+PDF-Dokumente
+
+Pa&ge...\tCtrl-G
+&Seite…\tStrg+G
+
+Page Size:
+Seitengröße:
+
+Page number %u inexistant
+Seite %u nicht vorhanden
+
+Page scaling
+Anpassen der Seitengröße
+
+Page:
+Seite:
+
+Please include the following file in your crash report:
+Bitte diese Datei bei einer Absturz-Meldung beifügen:
+
+Please wait - rendering...
+Bitte einen Moment Geduld…
+
+Pr&esentation\tCtrl-L
+&Präsentation\tStrg+L
+
+Previous Page
+&Vorherige Seite
+
+Print range
+Druckbereich
+
+Printing problem.
+Druckerproblem
+
+Remember &opened files
+Liste der &zuletzt geöffneten Dokumente anlegen
+
+Rotate &Left\tCtrl-Shift--
+Drehung &links\tStrg+Umschalt+-
+
+Rotate &Right\tCtrl-Shift-+
+Drehung &rechts\tStrg+Umschalt++
+
+Searching %d of %d...
+Suche auf Seite %d von %d…
+
+Select content with Ctrl+left mouse button
+Inhalte mit Strg+linker Maustaste auswählen
+
+Send by &E-mail...
+Per &E-Mail versenden…
+
+Set inverse search command-line
+Befehlszeile für die Inverssuche setzen
+
+Show &Toolbar
+&Werkzeugleiste anzeigen
+
+Show &pages continuously
+Seiten &fortlaufend anzeigen
+
+Show the &bookmarks sidebar when available
+&Lesezeichenleiste beim Start anzeigen
+
+Single Page
+Einzelne Seite
+
+Source file %s has no synchronization point
+%s hat keinen Synchronisations-Punkt
+
+Subject:
+Thema:
+
+SumatraPDF Options
+SumatraPDF Optionen
+
+SumatraPDF Update
+SumatraPDF Update
+
+SumatraPDF crashed
+SumatraPDF ist abgestürzt
+
+SumatraPDF is your main PDF reader
+PDF-Dateien werden standardmäßig mit SumatraPDF geöffnet
+
+SumatraPDF should now be your main PDF reader
+PDF-Dateien sollten nun mit SumatraPDF geöffnet werden
+
+Synchronization file cannot be opened
+Die Synchronisationsdatei kann nicht geöffnet werden
+
+Text documents
+Text-Dokumente
+
+Title:
+Titel:
+
+Unknown source file (%s)
+Unbekannte Datei (%s)
+
+View
+Ansicht
+
+Visit &Website
+&SumatraPDF im Internet
+
+Warning
+Warnung
+
+You have the latest version.
+Sie haben die neuste Version installiert.
+
+You have version %s
+Sie haben Version %s.
+
+Zoom
+Zoom
+
+Zoom In
+Vergrößern
+
+Zoom Out
+Verkleinern
+
+Zoom factor
+Zoomfaktor
+
+[Changes detected; refreshing] %s
+[Datei wurde geändert; aktualisiere…] %s
+
+copying text
+Text kopieren verweigert
+
+printing document
+Dokument drucken verweigert
+

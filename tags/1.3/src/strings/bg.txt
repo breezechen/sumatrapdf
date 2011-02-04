@@ -1,0 +1,431 @@
+﻿# Translations for Bulgarian (Български) (bg) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: bg Bulgarian (Български)
+
+Contributor: Христо Бенев (http://hbcom.info)
+
+&About
+Относно програмата...
+
+&Actual Size\tCtrl-1
+Едно към едно\tCtrl-1
+
+&Back\tAlt+Left Arrow
+Назад\tAlt+<-
+
+&Close\tCtrl-W
+Затвори\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Копирай избраното\tCtrl-C
+
+&Don't ask me again
+Не питай отново
+
+&File
+&Файл
+
+&Find what:
+Търсене на:
+
+&First Page\tHome
+Начална страница\tHome
+
+&Go To
+Отиди &на
+
+&Go to page:
+Отиди на страница:
+
+&Help
+Помо&щ
+
+&Last Page\tEnd
+Последна страница\tEnd
+
+&Magnification:
+Увеличение:
+
+&Manual
+Ръководство
+
+&Match case
+Същия текст
+
+&Next Page\tRight Arrow
+Следваща страница\t->
+
+&No
+Не
+
+&No, thanks
+Не, благодаря
+
+&Open\tCtrl-O
+&Отвори\tCtrl-O
+
+&Options...
+Параметри
+
+&Password:
+Парола
+
+&Previous Page\tLeft Arrow
+Предишна страница\t<-
+
+&Print...\tCtrl-P
+От&печатай\tCtrl-P
+
+&Remember these settings for each document
+Запази настройките за всеки документ
+
+&Save As...\tCtrl-S
+&Запиши като...\tCtrl-S
+
+&Settings
+Настройки
+
+&Skip this version
+Пропусни тази версия.
+
+&View
+&Виж
+
+&Yes
+Да
+
+&Zoom
+&Мащаб
+
+(of %d)
+(от %d)
+
+About SumatraPDF
+Относно SumatraPDF
+
+Advanced
+Допълнителни
+
+All files
+Всички файлове
+
+Associate with PDF files?
+Асоцииране с PDF файлове?
+
+Automatic
+Автоматично
+
+Automatically check for &updates
+Автоматично проверявай за обновления
+
+Book View
+Като книга
+
+Book&marks\tF12
+Етикети\tF12
+
+Cancel
+Откажи
+
+Cannot print this file
+Файла не може да бъде отпечатан
+
+Cannot start inverse search command. Please check the command line in the settings.
+Обратното търсене не може да започне. Моля проверете параметрите в настройките.
+
+Change Language
+Смени езика (Change Language)
+
+Check for &Updates
+Проверка за нова версия
+
+Continuous
+Непрекъснати
+
+Continuous book view
+Като книга - непрекъснати
+
+Continuous facing
+Две непрекъснати
+
+Contribute Translation
+Допринеси за превода
+
+Could not open Printer
+Принтера не е достъпен
+
+Couldn't initialize printer
+Принтера не може да бъде инициализиран
+
+Couldn't render the page
+Страницата не може да се изобрази
+
+Custom &Zoom...\tCtrl-Y
+Увеличение по избор...\tCtrl-Y
+
+Default &Layout:
+Раположение по подразбиране
+
+Default &Zoom:
+Увеличение по подразбиране
+
+Download
+Свали
+
+E&xit\tCtrl-Q
+&Изход\tCtrl-Q
+
+Enter password
+Въведете парола
+
+Enter password for %s
+Въведете парола за %s
+
+Error loading PDF file.
+Грешка при зареждане на файла.
+
+F&orward\tAlt+Right Arrow
+Напред\tAlt+->
+
+F&ullscreen\tCtrl-Shift-L
+Цял Екран\tCtrl-Shift-L
+
+Facing
+Две страници
+
+Failed to save a file
+Грешка при записване на файла
+
+Fin&d...\tCtrl-F
+Търси...\tCtrl-F
+
+Find
+Търси
+
+Find Next
+Намери следващото
+
+Find Previous
+Намери предишното
+
+Find:
+Търси:
+
+Fit &Page\tCtrl-0
+Оразмери страницата\tCtrl-0
+
+Fit &Width\tCtrl-2
+Оразмери по ширина\tCtrl-2
+
+Fit Page
+Оразмери страницата
+
+Fit Width
+Оразмери по ширина
+
+Found text at page %d
+Текста е намерен на страница %d
+
+GB
+GB
+
+Go to page
+Към страница
+
+Hint: Use the F3 key for finding again
+Съвет: Използвайте F3 за повторно търсене
+
+KB
+KB
+
+MB
+MB
+
+Main PDF reader can't be changed in portable mode
+PDF четеца не може да бъде сменен в преносим режим
+
+Make SumatraPDF default application for PDF files?
+Направи SumatraPDF основно приложение за PDF файлове?
+
+Make SumatraPDF my main PDF reader
+Направи SumatraPDF четец на PDF по подразбиране
+
+Match Case
+Точно същите букви
+
+New version %s is available. Download new version?
+Достъпна е нова версия %s. Искате ли да я свалите?
+
+Next Page
+Следваща страница
+
+No matches were found
+Няма съвпадения
+
+No result found around line %u in file %s
+Няма резултати около линия %u във файла %s
+
+No synchronization file found
+Синфронизационния файл не е намерен
+
+No synchronization info at this position
+В тази позиция няма информация за синхронизация
+
+Open
+Отвори
+
+Open in &Adobe Reader
+Отвори с &Adobe Reader
+
+PDF Document
+PDF документ
+
+PDF documents
+PDF документи
+
+Pa&ge...\tCtrl-G
+Страница...\tCtrl-G
+
+Page number %u inexistant
+Страница номер не съществува
+
+Page:
+Страница:
+
+Please wait - rendering...
+Моля изчакайте - изображението се създава
+
+Previous Page
+Предишна страница
+
+Printing problem.
+Проблем при печатане.
+
+Remember &opened files
+Запомни отворените файлове
+
+Rotate &Left\tCtrl-Shift--
+Завърти наляво\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Завърти надясно\tCtrl-Shift-+
+
+Searching %d of %d...
+Търсене в страница %d от %d...
+
+Select content with Ctrl+left mouse button
+Изберете съдържание с Ctrl и левия бутон на мишката
+
+Set inverse search command-line
+Активирай обратно търсене
+
+Show &Toolbar
+Покажи лентата с инструменти
+
+Show &pages continuously
+Непрекъснати
+
+Show the &bookmarks sidebar when available
+Покажи показалеца в станичната колона когато е възможно
+
+Single Page
+Единична страница
+
+Source file %s has no synchronization point
+Източника %s няма синхронизационна точка
+
+SumatraPDF Options
+Опции на SumatraPDF
+
+SumatraPDF is your main PDF reader
+SumatraPDF е вашия PDF четец
+
+SumatraPDF should now be your main PDF reader
+SumatraPDF вече трябва да е четец на PDF по подразбиране
+
+Synchronization file cannot be opened
+Синхронизационния файл не може да бъде отворен
+
+Unknown source file (%s)
+Непознат файл източник (%s)
+
+View
+Виж
+
+Visit &Website
+Посетете сайта
+
+Warning
+Внимание
+
+You have the latest version.
+Имате последната версия.
+
+You have version %s
+Вашата версия е %s
+
+Zoom
+Увеличение
+
+Zoom In
+Увеличи
+
+Zoom Out
+Намали
+
+Zoom factor
+оефициент на увеличение
+
+[Changes detected; refreshing] %s
+[Намерени са промени; обновявам] %s
+
+# Untranslated:
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Print... (denied)
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Application:
+#Attachment: %s
+#Author:
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Copying text was denied (copying as image only)
+#Created:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#File Size:
+#File:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Modified:
+#Number of Pages:
+#OK
+#P&roperties\tCtrl-D
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Page scaling
+#Please include the following file in your crash report:
+#Pr&esentation\tCtrl-L
+#Print range
+#Send by &E-mail...
+#Subject:
+#SumatraPDF Update
+#SumatraPDF crashed
+#Text documents
+#Title:
+#copying text
+#printing document
+
