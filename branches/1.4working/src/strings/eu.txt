@@ -1,0 +1,434 @@
+﻿# Translations for Basque (Euskara) (eu) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: eu Basque (Euskara)
+
+Contributor: Igor G. Olaizola
+
+&About
+Ho&Ni buruz...
+
+&Actual Size\tCtrl-1
+&Berezko neurria\tCtrl-1
+
+&All selected pages
+Aukeratutako orri guztuak
+
+&Close\tCtrl-W
+&Itxi\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Aukeratua kopiatu\tCtrl-C
+
+&Don't ask me again
+Ez berriz galdetu
+
+&File
+&Fitxategia
+
+&First Page\tHome
+Lehendabiziko orria \tHome
+
+&Go To
+...ra &Joan
+
+&Go to page:
+Orrira joan:
+
+&Help
+&Laguntza
+
+&Last Page\tEnd
+Azken orria\tEnd
+
+&Magnification:
+Handitzea:
+
+&Next Page\tRight Arrow
+Hurrengo orria\t->
+
+&No
+Ez
+
+&No, thanks
+Ez, Eskerrik Asko
+
+&Open\tCtrl-O
+Ireki\tCtrl-O
+
+&Options...
+Aukerak...
+
+&Password:
+Pasahitza
+
+&Previous Page\tLeft Arrow
+Aurreko orria\t<-
+
+&Print...\tCtrl-P
+&Inprimatu\tCtrl-P
+
+&Print... (denied)
+Imprimatu... (ezeztua)
+
+&Remember the password for this document
+Orri honetako pasahitza gogoratu
+
+&Remember these settings for each document
+Aldaketak hauek gogoratu dokumentu guztietarako
+
+&Save As...\tCtrl-S
+... bezala &Gorde\tCtrl-S
+
+&Settings
+Aldaketak
+
+&Skip this version
+Bertsio berria saihestu
+
+&Use original page sizes
+Jatorrizko orri tamaina erabili
+
+&View
+I&kusi
+
+&Yes
+Bai
+
+&Zoom
+&Zoom-a
+
+About SumatraPDF
+SumatraPDF-taz
+
+All files
+Dokumentu guztiak
+
+Application:
+Aplikazioa:
+
+Associate with PDF files?
+PDF fitxategiekin lotu?
+
+Attachment: %s
+Itsatsia: %s
+
+Author:
+Egilea:
+
+Automatic
+Automatikoa
+
+Automatically check for &updates
+Automatikoki begiratu egunerapenak
+
+Book View
+Liburu bezala ikusi
+
+Book&marks\tF12
+Markagailuak\tF12
+
+Bytes
+Byte
+
+Can't connect to the Internet (error %#x).
+Ezinezkoa da Internetera konektatu (%#x errorea).
+
+Cancel
+Ezeztatu
+
+Cannot print this file
+Ezinezkoa da artxiboa imprimatu
+
+Change Language
+Hizkuntza aldatu (Change Language)
+
+Check for &Updates
+Bertsio berriagorik ba ote den begiratu
+
+Continuous
+Jarraian
+
+Continuous Facing
+Bi aldetatik jarraian
+
+Contribute Translation
+Lagun gaitzazu itzulpenekin
+
+Could not open Printer
+Ezin da inprimagailua ireki
+
+Created:
+Sortua:
+
+Custom &Zoom...\tCtrl-Y
+Zooma Aldatu...\tCtrl-Y
+
+Default &Zoom:
+Berezko zooma:
+
+Denied Permissions:
+Baimen ezeztua:
+
+Document Properties
+Dokumentuaren Propietateak
+
+Download
+Deskargatu
+
+E&xit\tCtrl-Q
+&Irten\tCtrl-Q
+
+Enter password
+Pasahitza sartu
+
+Enter password for %s
+%s-rentzat pasahitza sartu
+
+Error loading PDF file.
+PDF fitxategia kargargatzerakoan errorea suertatu da
+
+F&ullscreen\tCtrl-Shift-L
+Pantaila osoan\tCtrl-Shift-L
+
+Facing
+Bi aldetatik
+
+Failed to save a file
+Fitxategia ezin izan da gorde
+
+File Size:
+Dokumentuaren neurria:
+
+File:
+Dokumentua:
+
+Fin&d...\tCtrl-F
+Bilatu...\tCtrl-F
+
+Find
+Bilatu
+
+Find Next
+Hurrengoa bilatu
+
+Find Previous
+Aurrekoa bilatu
+
+Find:
+Bilatu:
+
+Fit &Page\tCtrl-0
+Orriaren neurria egokitu\tCtrl-O
+
+Fit &Width\tCtrl-2
+Orriaren zabalera egokitu\tCtrl-2
+
+Fit Page
+Orriaren neurria egokitu
+
+Fit Width
+Orriaren zabalera egokitu
+
+Found text at page %d
+Textua aurkito %d orrian
+
+GB
+GB
+
+Go to page
+...garren orrira joan
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+PDF fitxategiak irakurtzeko SumatraPFD defektuzko aplikazioa izatea nahi al duzu?
+
+Make SumatraPDF my default PDF reader
+SumatraPDF erabili besterik ezean PDFak irakurtzeko
+
+Match Case
+Hizki handiak edo txikiak bereizi
+
+Modified:
+Aldatua:
+
+New version %s is available. Download new version?
+%s bertsio berria eskuragarri dago. Jeisterik nahi?
+
+Next Page
+Hurrengo orria
+
+No matches were found
+Ez dira Aurkito amaitzik
+
+Number of Pages:
+Orri Kopurua:
+
+OK
+Ondo
+
+Open
+Ireki
+
+Open in &Adobe Reader
+Adobe Reader-ekin ireki
+
+Open in &Foxit Reader
+Foxit Reader-ekin ireki
+
+Open in PDF-XChange
+PDF-XChange-ekin ireki
+
+P&roperties\tCtrl-D
+Propietateak\tCtrl-D
+
+PDF Document
+PDF Dokumentua
+
+PDF Producer:
+PDF sortzailea
+
+PDF Version:
+PDF Bertzioa:
+
+PDF documents
+PDF dokumentuak
+
+Pa&ge...\tCtrl-G
+...garren orria\tCtrl-G
+
+Page Size:
+Orri Tamaina:
+
+Page number %u inexistant
+Ez da %u zenbaki orririk existitzen
+
+Page:
+Orria
+
+Previous Page
+Aurreko orria
+
+Printing problem.
+Arazoak inprimatze lanetan
+
+Rotate &Left\tCtrl-Shift--
+Ezkerrerantz biratu\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Eskubirantz biratu\tCtrl-Shift-+
+
+Searching %d of %d...
+%d-tik %d Bilatzen...
+
+Send by &E-mail...
+E-mailez bidali...
+
+Set inverse search command-line
+Alderantzizko bilaketa ezarri
+
+Show &Toolbar
+Lanabes barra azaldu
+
+Single Page
+Orri bakarra
+
+Subject:
+Gaia:
+
+Text documents
+Textu dokumentuak
+
+Title:
+Titulua:
+
+Unknown source file (%s)
+(%s) iturri desesaguna 
+
+View
+Ikusi
+
+Visit &Website
+&Web orria bisitatu
+
+Warning
+Oharra
+
+You have the latest version.
+Azkeneko bertsioa da daukazuna.
+
+You have version %s
+%s bertsioa daukazu.
+
+Zoom
+Zooma
+
+Zoom In
+Zoom-a hurbildu
+
+Zoom Out
+Zoom-a urruneratu
+
+copying text
+Textua Kopiatzen
+
+printing document
+dokumentua imprimatzen
+
+# Untranslated:
+#&Back\tAlt+Left Arrow
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Manual
+#&Match case
+#&Odd pages only
+#&Shrink pages to printable area (if necessary)
+#(of %d)
+#Advanced
+#Bookmarks
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous Book View
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Default &Layout:
+#Default PDF reader can't be changed in portable mode
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Hint: Use the F3 key for finding again
+#No result found around line %u in file %s
+#No synchronization file found
+#No synchronization info at this position
+#Page scaling
+#Please include the following file in your crash report:
+#Please wait - rendering...
+#Pr&esentation\tCtrl-L
+#Print range
+#Remember &opened files
+#Select &All\tCtrl-A
+#Select content with Ctrl+left mouse button
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#SumatraPDF Options
+#SumatraPDF Update
+#SumatraPDF crashed
+#SumatraPDF is your default PDF reader
+#SumatraPDF should now be your default PDF reader
+#Synchronization file cannot be opened
+#Zoom factor
+#[Changes detected; refreshing] %s
+

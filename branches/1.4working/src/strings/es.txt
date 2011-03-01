@@ -1,0 +1,530 @@
+﻿# Translations for Spanish (Español) (es) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: es Spanish (Español)
+
+Contributor: Jose Virgili
+Contributor: LinoSP [http://reactos.wordpress.com]
+Contributor: pragmart [http://putolinux.wordpress.com]
+Contributor: Pedro Sanchez
+Contributor: Carlos Luna
+
+&About
+&Acerca de...
+
+&Actual Size\tCtrl-1
+Tamaño Real\tCtrl-1
+
+&All selected pages
+&Todas las páginas seleccionadas
+
+&Back\tAlt+Left Arrow
+Atrás\tAlt+<-
+
+&Close\tCtrl-W
+&Cerrar\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Copiar Selección\tCtrl-C
+
+&Don't ask me again
+&No volver a preguntar
+
+&Even pages only
+&Sólo páginas pares
+
+&File
+&Archivo
+
+&Find what:
+&Encontrar:
+
+&First Page\tHome
+Primera página\tInicio
+
+&Fit pages to printable area
+&Ajustar páginas al área de impresión
+
+&Go To
+&Ir a
+
+&Go to page:
+&Ir a la página:
+
+&Help
+&Ayuda
+
+&Last Page\tEnd
+Última página\tFin
+
+&Magnification:
+&Aumento:
+
+&Manual
+&Manual de Instrucciones
+
+&Match case
+&Coincidir mayúsculas y minúsculas
+
+&Next Page\tRight Arrow
+Página siguiente\t->
+
+&No
+&No
+
+&No, thanks
+&No, gracias
+
+&Odd pages only
+&Sólo páginas impares
+
+&Open\tCtrl-O
+&Abrir\tCtrl-O
+
+&Options...
+&Opciones...
+
+&Password:
+&Contraseña:
+
+&Previous Page\tLeft Arrow
+Página anterior\t<-
+
+&Print...\tCtrl-P
+&Imprimir\tCtrl-P
+
+&Print... (denied)
+&Imprimir... (denegado)
+
+&Remember the password for this document
+&Recordar la contraseña para este documento
+
+&Remember these settings for each document
+&Recordar estas configuraciones para cada documento
+
+&Save As...\tCtrl-S
+&Guardar como...\tCtrl-S
+
+&Settings
+&Configuración
+
+&Shrink pages to printable area (if necessary)
+&Reducir el tamaño del área de impresión de páginas (si es necesario)
+
+&Skip this version
+&Ignorar esta versión
+
+&Use original page sizes
+&Usar el tamaño original de la página
+
+&View
+&Ver
+
+&Yes
+&Sí
+
+&Zoom
+&Zoom
+
+(of %d)
+(de %d)
+
+About SumatraPDF
+Acerca de SumatraPDF
+
+Advanced
+Avanzado
+
+All files
+Todos los archivos
+
+Application:
+Aplicación:
+
+Associate with PDF files?
+¿Asociar con archivos PDF?
+
+Attachment: %s
+Adjunto: %s
+
+Author:
+Autor:
+
+Automatic
+Automático
+
+Automatically check for &updates
+Revisar &actualizaciones automáticamente
+
+Book View
+Vista de libro
+
+Book&marks\tF12
+Marcadores\tF12
+
+Bookmarks
+Marcadores
+
+Bytes
+Bytes
+
+Can't connect to the Internet (error %#x).
+No se puede conectar a Internet (error %#x).
+
+Cancel
+Cancelar
+
+Cannot print this file
+No se puede imprimir este archivo
+
+Cannot start inverse search command. Please check the command line in the settings.
+No se puede iniciar el comando de búsqueda inversa. Verifique la línea de comandos en las opciones.
+
+Change Language
+Cambiar Idioma (Change Language)
+
+Check for &Updates
+&Comprobar actualizaciones
+
+Continuous
+Continua
+
+Continuous Book View
+Vista continua de libro
+
+Continuous Facing
+Página doble continua
+
+Contribute Translation
+Contribuir en la traducción
+
+Copying text was denied (copying as image only)
+Ha sido denegada la copia de texto (copiar solamente como imagen)
+
+Could not open Printer
+Impresora no accesible
+
+Couldn't initialize printer
+No se pudo inicializar la impresora
+
+Couldn't render the page
+No se pudo renderizar la página
+
+Created:
+Creado:
+
+Custom &Zoom...\tCtrl-Y
+&Zoom personalizado...\tCtrl-Y
+
+Default &Layout:
+&Vista Predeterminada:
+
+Default &Zoom:
+&Zoom Predeterminado:
+
+Default PDF reader can't be changed in portable mode
+No se puede cambiar el lector PDF por defecto en modo portátil
+
+Denied Permissions:
+Permisos Denegados
+
+Document Properties
+Propiedades del Documento
+
+Download
+Descargar
+
+E&xit\tCtrl-Q
+&Salir\tCtrl-Q
+
+Enter password
+Introduzca contraseña
+
+Enter password for %s
+Introduzca contraseña para %s
+
+Enter the command-line to invoke when you double-click on the PDF document:
+Introduzca el comando para ejecutar al hacer doble-clic en el documento PDF:
+
+Error loading PDF file.
+Error al Cargar el Archivo PDF.
+
+F&orward\tAlt+Right Arrow
+Adelante\tAlt+->
+
+F&ullscreen\tCtrl-Shift-L
+Pantalla completa\tCtrl-Shift-L
+
+Facing
+Página doble
+
+Failed to save a file
+Error al Guardar el Archivo
+
+File Size:
+Tamaño del Archivo:
+
+File:
+Archivo:
+
+Fin&d...\tCtrl-F
+Buscar...\tCtrl-F
+
+Find
+Buscar
+
+Find Next
+Buscar Siguiente
+
+Find Previous
+Buscar Anterior
+
+Find:
+Buscar:
+
+Fit &Content\tCtrl-3
+Ajustar &Contenido\tCtrl-3
+
+Fit &Page\tCtrl-0
+Ajustar &Página\tCtrl-0
+
+Fit &Width\tCtrl-2
+&Ancho de Página\tCtrl-2
+
+Fit Content
+Ajustar contenido
+
+Fit Page
+Ajustar Página
+
+Fit Width
+Ancho de Página
+
+Fit Width and Show Pages Continuously
+Ajustar el ancho de página y mostrar las páginas de forma continua
+
+Fit a Single Page
+Ajustar a una sola página
+
+Found text at page %d
+Se encontró el texto en la página %d
+
+GB
+GB
+
+Go to page
+Ir a la página
+
+Hint: Use the F3 key for finding again
+Usar "F3" para mostrar el siguiente resultado
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+¿Convertir SumatraPDF en la aplicación por defecto para archivos PDF?
+
+Make SumatraPDF my default PDF reader
+Hacer SumatraPDF el lector PDF por defecto
+
+Match Case
+Coincidir mayúsculas y minúsculas
+
+Modified:
+Modificado:
+
+New version %s is available. Download new version?
+Está disponible la nueva versión %s. ¿Desea descargarla?
+
+Next Page
+Página siguiente
+
+No matches were found
+No se encontraron coincidencias
+
+No result found around line %u in file %s
+No se encontró resultado cerca de la línea %u en el archivo %s
+
+No synchronization file found
+No se encontró archivo de sincronización
+
+No synchronization info at this position
+No hay información de sincronización en esta posición
+
+Number of Pages:
+Número de Páginas:
+
+OK
+Aceptar
+
+Open
+Abrir
+
+Open in &Adobe Reader
+Abrir en &Adobe Reader
+
+Open in &Foxit Reader
+Abrir en &Foxit Reader
+
+Open in PDF-XChange
+Abrir en PDF-XChange
+
+P&roperties\tCtrl-D
+P&ropriedades...\tCtrl-D
+
+PDF Document
+Documento PDF
+
+PDF Producer:
+Productor PDF:
+
+PDF Version:
+Versión PDF:
+
+PDF documents
+Documentos PDF
+
+Pa&ge...\tCtrl-G
+Página...\tCtrl-G
+
+Page Size:
+Tamaño de Página:
+
+Page number %u inexistant
+La página &u no existe
+
+Page scaling
+Escalado de página
+
+Page:
+Página:
+
+Please include the following file in your crash report:
+Por favor incluya el siguiente archivo en su reporte de error:
+
+Please wait - rendering...
+Renderizando - Espere por favor...
+
+Pr&esentation\tCtrl-L
+Pr&esentación\tCtrl-L
+
+Previous Page
+Página anterior
+
+Print range
+Imprimir rango
+
+Printing problem.
+Problema de impresión.
+
+Remember &opened files
+Recordar archiv&os abiertos
+
+Rotate &Left\tCtrl-Shift--
+Girar a la izquierda\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Girar a la derecha\tCtrl-Shift-+
+
+Searching %d of %d...
+Buscando %d de %d…
+
+Select &All\tCtrl-A
+Seleccionar &todo\tCtrl-A
+
+Select content with Ctrl+left mouse button
+Seleccionar con Ctrl+Click
+
+Send by &E-mail...
+Enviar por correo electrónico
+
+Set inverse search command-line
+Establecer búsqueda inversa
+
+Show &Toolbar
+Mostrar barra de herramientas
+
+Show &pages continuously
+Mostrar paginas continuamente
+
+Show the &bookmarks sidebar when available
+Mostrar la barra de marcadores cuando esté disponible
+
+Single Page
+Página única
+
+Source file %s has no synchronization point
+El archivo fuente %s no posee un punto de sincronización
+
+Subject:
+Tema:
+
+SumatraPDF Options
+Opciones de SumatraPDF
+
+SumatraPDF Update
+Actualizar SumatraPDF
+
+SumatraPDF crashed
+SumatraPDF falló
+
+SumatraPDF is your default PDF reader
+SumatraPDF es el lector PDF predeterminado
+
+SumatraPDF should now be your default PDF reader
+SumatraPDF debería ser ahora tu lector PDF por defecto
+
+Synchronization file cannot be opened
+No se pudo abrir el archivo de sincronización
+
+Text documents
+Documentos de Texto
+
+Title:
+Título:
+
+Unknown source file (%s)
+Archivo fuente desconocido (%s)
+
+View
+Vista del Documento
+
+Visit &Website
+&Visitar Sitio Web
+
+Warning
+Advertencia
+
+You have the latest version.
+Usted tiene la última versión.
+
+You have version %s
+Tiene la versión %s
+
+Zoom
+Zoom
+
+Zoom In
+Acercar Zoom
+
+Zoom Out
+Alejar Zoom
+
+Zoom factor
+Proporción de Zoom
+
+[Changes detected; refreshing] %s
+[Modificaciones detectadas; actualizando] %s
+
+copying text
+copiado de texto
+
+printing document
+impresión de documento
+

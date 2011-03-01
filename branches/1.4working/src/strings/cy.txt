@@ -1,0 +1,483 @@
+﻿# Translations for Welsh (Cymraeg) (cy) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: cy Welsh (Cymraeg)
+
+Contributor: Rhoslyn Prys Cymraeg/Welsh (post@meddal.com)
+Contributor: Glenn Wall
+
+&About
+&Ynghylch...
+
+&Actual Size\tCtrl-1
+&Gwir Faint\tCtrl-1
+
+&Back\tAlt+Left Arrow
+Nôl\tAlt+Saeth Chwith
+
+&Close\tCtrl-W
+&Cau\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Copïo'r Dewis\tCtrl-C
+
+&Don't ask me again
+&Peidio gofyn eto
+
+&File
+&Ffeil
+
+&Find what:
+&Canfod beth:
+
+&First Page\tHome
+Tudalen Gyntaf\tHome
+
+&Go To
+&Mynd
+
+&Go to page:
+&Mynd i dudalen:
+
+&Help
+&Cymorth
+
+&Last Page\tEnd
+Tudalen Olaf\tEnd
+
+&Magnification:
+&Chwyddiad:
+
+&Manual
+&Llawlyfr
+
+&Match case
+&Cydweddu maint
+
+&Next Page\tRight Arrow
+Tudalen Nesaf\t->
+
+&No
+&Na
+
+&No, thanks
+&Dim diolch
+
+&Open\tCtrl-O
+&Agor\tCtrl-O
+
+&Options...
+&Dewisiadau...
+
+&Password:
+&Cyfrinair:
+
+&Previous Page\tLeft Arrow
+Tudalen Flaenorol\t<-
+
+&Print...\tCtrl-P
+&Argraffu\tCtrl-P
+
+&Print... (denied)
+&Argraffu... (gwrthodwyd)
+
+&Remember these settings for each document
+C&ofio'r gosodiadau hyn ar gyfer pob dogfen
+
+&Save As...\tCtrl-S
+&Cadw fel...\tCtrl-S
+
+&Settings
+&Gosodiadau
+
+&Skip this version
+&Hepgor y fersiwn yma.
+
+&View
+&Gweld
+
+&Yes
+&Iawn
+
+&Zoom
+&Chwyddo
+
+(of %d)
+(o %d)
+
+About SumatraPDF
+Ynghylch SumatraPDF
+
+Advanced
+Uwch
+
+All files
+Pob ffeil
+
+Application:
+Rhaglen:
+
+Associate with PDF files?
+Cysylltu gyda ffeiliau PDF?
+
+Author:
+Awdur:
+
+Automatic
+Awtomatig
+
+Automatically check for &updates
+Gwirio'n awtomatig am &ddiweddariadau
+
+Book View
+Golwg llyfr
+
+Book&marks\tF12
+Nodau Tudalen\tF12
+
+Bytes
+Beit
+
+Cancel
+Diddymu
+
+Cannot print this file
+Methu argraffu'r ffeil
+
+Cannot start inverse search command. Please check the command line in the settings.
+Methu cychwyn gorchymyn chwilio gwrthdro. Gwiriwch y linell orchymyn yn y gosodiadau
+
+Change Language
+Newid iaith (Change Language)
+
+Check for &Updates
+&Gwirio am fersiwn newydd
+
+Continuous
+Didor
+
+Continuous Book View
+Golwg llyfr didor
+
+Continuous Facing
+Gwynebu'n Ddidor
+
+Contribute Translation
+Cyfrannu cyfieithiad.
+
+Could not open Printer
+Methu agor Argraffydd
+
+Couldn't initialize printer
+Methu cychwyn yr argraffydd
+
+Couldn't render the page
+Methu cyflwyno'r dudalen
+
+Created:
+Crëwyd:
+
+Custom &Zoom...\tCtrl-Y
+&Addasu Chwyddo...\tCtrl-Y
+
+Default &Layout:
+&Cynllun Rhagosodedig:
+
+Default &Zoom:
+C&hwyddo Rhagosodedig:
+
+Default PDF reader can't be changed in portable mode
+Nid oes modd newid y prif ddarllenydd yn y modd cludadwy
+
+Denied Permissions:
+Gwrthodwyd Caniatâd:
+
+Document Properties
+Priodweddau Dogfen
+
+Download
+Llwytho i Lawr
+
+E&xit\tCtrl-Q
+&Gadael\tCtrl-Q
+
+Enter password
+Rhoi cyfrinair
+
+Enter password for %s
+Rhoi cyfrinair ar gyfer %s
+
+Error loading PDF file.
+Gwall wrth lwytho ffeil.
+
+F&orward\tAlt+Right Arrow
+Ymlaen\tAlt+Saeth Dde
+
+F&ullscreen\tCtrl-Shift-L
+Sgrin Lawn\tCtrl-Shift-L
+
+Facing
+Wynebu
+
+Failed to save a file
+Methwyd cadw ffeil
+
+File Size:
+Maint Ffeil:
+
+File:
+Ffeil:
+
+Fin&d...\tCtrl-F
+Canfod...\tCtrl-F
+
+Find
+Canfod
+
+Find Next
+Canfod y Nesaf
+
+Find Previous
+Canfod y Blaenorol
+
+Find:
+Canfod:
+
+Fit &Page\tCtrl-0
+&Ffitio'r Dudalen\tCtrl-0
+
+Fit &Width\tCtrl-2
+&Fitio'r Lled\tCtrl-2
+
+Fit Page
+Ffitio'r Dudalen
+
+Fit Width
+Fitio'r Lled
+
+Found text at page %d
+Canfod testun ar dudalen %d
+
+GB
+GB
+
+Go to page
+Mynd i dudalen
+
+Hint: Use the F3 key for finding again
+Cyngor: Defnyddiwch bysell F3 i ganfod eto
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+Gosod SumatraPDF fel rhaglen rhagosodedig ar gyfer ffeiliau PDF?
+
+Make SumatraPDF my default PDF reader
+Gosod SumatraPDF fel y darllenydd PDF rhagosodedig
+
+Match Case
+Cydweddu Maint
+
+Modified:
+Newidwyd:
+
+New version %s is available. Download new version?
+Mae fersiwn newydd %s ar gael. Llwytho'r fersiwn newydd i lawr??
+
+Next Page
+Tudalen Nesaf
+
+No matches were found
+Heb ganfod cyfatebiad
+
+No result found around line %u in file %s
+Dim canlyniad o liell %u yn ffeil %s
+
+No synchronization file found
+Heb ganfod ffeil cydweddu
+
+No synchronization info at this position
+Dim gwybodaeth cydweddu yn y fan hon
+
+Number of Pages:
+Nifer o Dudalennau:
+
+OK
+Iawn
+
+Open
+Agor
+
+Open in &Adobe Reader
+Agor yn &Adobe Reader
+
+Open in &Foxit Reader
+Agor yn &Foxit Reader
+
+Open in PDF-XChange
+Agor yn PDF-XChange
+
+P&roperties\tCtrl-D
+P&riodweddau...\tCtrl-D
+
+PDF Document
+Dogfen PDF
+
+PDF Producer:
+Cynhyrchydd PDF:
+
+PDF Version:
+PDF Fersiwn:
+
+PDF documents
+Dogfennau PDF
+
+Pa&ge...\tCtrl-G
+Tudalen...\tCtrl-G
+
+Page Size:
+Maint Tudalen:
+
+Page number %u inexistant
+Nid yw tudalen rhif %u yn bodoli
+
+Page:
+Tudalen:
+
+Please wait - rendering...
+Arhoswch, wrthi'n cyflwyno...
+
+Previous Page
+Tudalen Flaenorol
+
+Printing problem.
+Anhawster argraffu
+
+Remember &opened files
+Co&fio ffeiliau ar agor
+
+Rotate &Left\tCtrl-Shift--
+Troi i'r chwith\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Troi i'r dde\tCtrl-Shift-+
+
+Searching %d of %d...
+Chwilio am %d o %d...
+
+Select content with Ctrl+left mouse button
+Dewis cynnwys drwy Ctrl a botwm chwith y llygoden
+
+Send by &E-mail...
+Anfon drwy &e-bost...
+
+Set inverse search command-line
+Gosod linell-orchymyn chwilio gwrthdro
+
+Show &Toolbar
+Dangos y bar offer
+
+Show &pages continuously
+Dangos tudalennau'n ddidor
+
+Show the &bookmarks sidebar when available
+Dangos bar ochr y &nodau tudalen pan yw ar gael
+
+Single Page
+Tudalen unigol
+
+Source file %s has no synchronization point
+Does dim pwynt cydweddu yn ffeil %s
+
+Subject:
+Pwnc:
+
+SumatraPDF Options
+Dewisiadau SumatraPDF
+
+SumatraPDF is your default PDF reader
+SumatraPDF yw eich prif ddarllenydd PDF
+
+SumatraPDF should now be your default PDF reader
+SumatraPDF dylai fod eich prif ddarllenydd PDF
+
+Synchronization file cannot be opened
+Methu agor ffeil cydweddu
+
+Text documents
+Dogfennau testun
+
+Title:
+Teitl:
+
+Unknown source file (%s)
+Ffeil ffynhonnell anhysbys (%s)
+
+View
+Gweld
+
+Visit &Website
+&Ymweld â'r Wefan
+
+Warning
+Rhybudd
+
+You have the latest version.
+Mae'r fersiwn diweddaraf gennych.
+
+You have version %s
+Mae fersiwn %s gennych
+
+Zoom
+Chwyddo
+
+Zoom In
+Chwyddo i Mewn
+
+Zoom Out
+Chwyddo Allan
+
+Zoom factor
+Ffactor Chwyddo
+
+[Changes detected; refreshing] %s
+[Newidiadau wedi eu canfod; adnewyddu]
+
+copying text
+copïo testun
+
+printing document
+argraffu dogfen
+
+# Untranslated:
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Attachment: %s
+#Bookmarks
+#Can't connect to the Internet (error %#x).
+#Copying text was denied (copying as image only)
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Page scaling
+#Please include the following file in your crash report:
+#Pr&esentation\tCtrl-L
+#Print range
+#Select &All\tCtrl-A
+#SumatraPDF Update
+#SumatraPDF crashed
+

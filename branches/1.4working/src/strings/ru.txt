@@ -1,0 +1,528 @@
+﻿# Translations for Russian (Русский) (ru) language
+
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
+
+Lang: ru Russian (Русский)
+
+Contributor: Zero-8
+Contributor: Dmitry Yerokhin (erodim@mail.ru)
+Contributor: Victor Kozyakin
+
+&About
+О программе...
+
+&Actual Size\tCtrl-1
+Реальный размер\tCtrl-1
+
+&All selected pages
+Все выбранные страницы
+
+&Back\tAlt+Left Arrow
+Назад\tAlt+<-
+
+&Close\tCtrl-W
+Закрыть\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Скопировать выделенное\tCtrl-C
+
+&Don't ask me again
+Больше не спрашивать
+
+&Even pages only
+Только четные страницы
+
+&File
+Файл
+
+&Find what:
+&Найти:
+
+&First Page\tHome
+Первая страница\tHome
+
+&Fit pages to printable area
+Подогнать страницы под область печати
+
+&Go To
+Переход
+
+&Go to page:
+&Перейти к странице
+
+&Help
+Справка
+
+&Last Page\tEnd
+Последняя страница\tEnd
+
+&Magnification:
+Масштабирование:
+
+&Manual
+Руководство
+
+&Match case
+&Учитывать регистр
+
+&Next Page\tRight Arrow
+Следующая страница\t->
+
+&No
+Нет
+
+&No, thanks
+Нет, спасибо
+
+&Odd pages only
+Только нечетные страницы
+
+&Open\tCtrl-O
+Открыть\tCtrl-O
+
+&Options...
+&Параметры...
+
+&Password:
+&Пароль:
+
+&Previous Page\tLeft Arrow
+Предыдущая страница\t<-
+
+&Print...\tCtrl-P
+Печать\tCtrl-P
+
+&Print... (denied)
+Печать... (отмена)
+
+&Remember the password for this document
+Запомнить пароль для этого документа
+
+&Remember these settings for each document
+Запомнить эти параметры для &каждого документа
+
+&Save As...\tCtrl-S
+Сохранить как...\tCtrl-S
+
+&Settings
+Настройки
+
+&Shrink pages to printable area (if necessary)
+Уменьшить страницы до области печати (если нужно)
+
+&Skip this version
+Пропустить эту версию.
+
+&Use original page sizes
+Использовать оригиналный размер страниц
+
+&View
+Вид
+
+&Yes
+Да
+
+&Zoom
+Масштаб
+
+(of %d)
+(из %d)
+
+About SumatraPDF
+О программе SumatraPDF
+
+Advanced
+Дополнительно
+
+All files
+Все файлы
+
+Application:
+Приложение:
+
+Associate with PDF files?
+Ассоциировать с PDF-файлами?
+
+Attachment: %s
+Вложение: %s
+
+Author:
+Автор:
+
+Automatic
+Автоматически
+
+Automatically check for &updates
+&Автоматически проверять обновления
+
+Book View
+В разворот
+
+Book&marks\tF12
+Закладки\tF12
+
+Bookmarks
+Закладки
+
+Bytes
+Байт
+
+Can't connect to the Internet (error %#x).
+Отсутствует соединение с Интернетом (ошибка %#x).
+
+Cancel
+Отмена
+
+Cannot print this file
+Не удалось распечатать этот файл
+
+Cannot start inverse search command. Please check the command line in the settings.
+Ошибка команды обратного поиска. Проверьте параметры командной строки.
+
+Change Language
+Изменить язык (Change Language)
+
+Check for &Updates
+Проверить наличие новой версии
+
+Continuous
+Разрешить прокрутку
+
+Continuous Book View
+Прокуртка в разворот
+
+Continuous Facing
+Прокрутка по две страницы
+
+Contribute Translation
+Помочь с переводом
+
+Copying text was denied (copying as image only)
+Скопировать текст невозможно (копируется как изображение)
+
+Could not open Printer
+Принтер недоступен
+
+Couldn't initialize printer
+Не удалось инициализировать принтер
+
+Couldn't render the page
+Не удалось сформировать изображение страницы
+
+Created:
+Создан:
+
+Custom &Zoom...\tCtrl-Y
+Указать масштаб...\tCtrl-Y
+
+Default &Layout:
+&Компоновка по умолчанию
+
+Default &Zoom:
+&Масштаб по умолчанию
+
+Default PDF reader can't be changed in portable mode
+В мобильном режиме ассоциирование невозможно
+
+Denied Permissions:
+Запрещенные права:
+
+Document Properties
+Свойства документа
+
+Download
+Загрузка
+
+E&xit\tCtrl-Q
+Выход\tCtrl-Q
+
+Enter password
+Введите пароль
+
+Enter password for %s
+Введите пароль для %s
+
+Enter the command-line to invoke when you double-click on the PDF document:
+Введите командную строку, которая будет исполнена при двойном щелчке в PDF документе:
+
+Error loading PDF file.
+Ошибка открытия PDF-файла.
+
+F&orward\tAlt+Right Arrow
+Вперед\tAlt+->
+
+F&ullscreen\tCtrl-Shift-L
+Полный экран\tCtrl-Shift-L
+
+Facing
+По две страницы
+
+Failed to save a file
+Ошибка сохранения файла
+
+File Size:
+Размер файла:
+
+File:
+Файл:
+
+Fin&d...\tCtrl-F
+Найти...\tCtrl-F
+
+Find
+Поиск
+
+Find Next
+Найти следующее
+
+Find Previous
+Найти предыдущее
+
+Find:
+Найти:
+
+Fit &Content\tCtrl-3
+По содержимиму\tCtrl-3
+
+Fit &Page\tCtrl-0
+По размеру страницы\tCtrl-0
+
+Fit &Width\tCtrl-2
+По ширине\tCtrl-2
+
+Fit Content
+По содержимому
+
+Fit Page
+По размеру страницы
+
+Fit Width
+По ширине
+
+Fit Width and Show Pages Continuously
+Подогнать по ширине окна и разрешить прокрутку
+
+Fit a Single Page
+Подогнать страницу по размеру окна
+
+Found text at page %d
+Текст найден на стр. %d
+
+GB
+Гб
+
+Go to page
+Перейти на страницу
+
+Hint: Use the F3 key for finding again
+Для повторного поиска используйте клавишу F3
+
+KB
+Кб
+
+MB
+Мб
+
+Make SumatraPDF default application for PDF files?
+Сделать SumatraPDF стандартной программой просмотра PDF-файлов?
+
+Make SumatraPDF my default PDF reader
+Ассоциировать SumatraPDF с файлами PDF
+
+Match Case
+Учитывать регистр
+
+Modified:
+Изменен:
+
+New version %s is available. Download new version?
+Доступна новая версия: %s. Загрузить её?
+
+Next Page
+Следующая страница
+
+No matches were found
+Совпадений не найдено
+
+No result found around line %u in file %s
+Результат, соответствующий строке %u в файле %s, не найден
+
+No synchronization file found
+Файл синхронизации не найден
+
+No synchronization info at this position
+В этой позиции нет информации для синхронизации
+
+Number of Pages:
+Число страниц:
+
+OK
+OK
+
+Open
+Открыть
+
+Open in &Adobe Reader
+Открыть в &Adobe Reader
+
+Open in &Foxit Reader
+Открыть в &Foxit Reader
+
+Open in PDF-XChange
+Открыть в PDF-XChange
+
+P&roperties\tCtrl-D
+Свойства...\tCtrl-D
+
+PDF Document
+PDF-документ
+
+PDF Producer:
+Создатель PDF:
+
+PDF Version:
+Версия PDF:
+
+PDF documents
+PDF-документы
+
+Pa&ge...\tCtrl-G
+Указанная страница...\tCtrl-G
+
+Page Size:
+Формат страницы:
+
+Page number %u inexistant
+Страница %u не существует
+
+Page scaling
+Масштабирование страниц
+
+Page:
+Страница:
+
+Please include the following file in your crash report:
+Пожалуйста, приложите следующий файл к Вашему отчету об аварийном завершении работы:
+
+Please wait - rendering...
+Формируется изображение, подождите...
+
+Pr&esentation\tCtrl-L
+Презентация\tCtrl-L
+
+Previous Page
+Предыдущая страница
+
+Print range
+Диапазон печати
+
+Printing problem.
+Ошибка при печати.
+
+Remember &opened files
+&Запоминать открытые файлы
+
+Rotate &Left\tCtrl-Shift--
+Повернуть влево\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Повернуть вправо\tCtrl-Shift-+
+
+Searching %d of %d...
+Обработка страницы %d из %d...
+
+Select &All\tCtrl-A
+Выделить все\tCtrl-A
+
+Select content with Ctrl+left mouse button
+Выберите содержимое, нажав Ctrl и левую кнопку мыши
+
+Send by &E-mail...
+Послать по &email...
+
+Set inverse search command-line
+Задать команду обратного поиска
+
+Show &Toolbar
+Панель инструментов
+
+Show &pages continuously
+Разрешить прокрутку
+
+Show the &bookmarks sidebar when available
+Показывать панель &закладок (по возможности)
+
+Single Page
+Постранично
+
+Source file %s has no synchronization point
+Отсутствует точка синхронизации в исходном файле %s
+
+Subject:
+Тема:
+
+SumatraPDF Options
+Параметры SumatraPDF
+
+SumatraPDF Update
+Обновление SumatraPDF
+
+SumatraPDF crashed
+Аварийное завершение работы SumatraPDF
+
+SumatraPDF is your default PDF reader
+SumatraPDF ассоциирована с файлами PDF
+
+SumatraPDF should now be your default PDF reader
+Теперь SumatraPDF ассоциирована с файлами PDF
+
+Synchronization file cannot be opened
+Не удалось открыть файл с информацией для синхронизации
+
+Text documents
+Текстовые документы
+
+Title:
+Название:
+
+Unknown source file (%s)
+Неизвестный исходный файл (%s)
+
+View
+Вид
+
+Visit &Website
+Посетить веб-сайт программы
+
+Warning
+Внимание
+
+You have the latest version.
+Вы используете новейшую версию.
+
+You have version %s
+Вы используете версию %s
+
+Zoom
+Масштаб
+
+Zoom In
+Увеличить
+
+Zoom Out
+Уменьшить
+
+Zoom factor
+Масштаб
+
+[Changes detected; refreshing] %s
+[Обнаружены изменения; обновление...] %s
+
+copying text
+копируется текст
+
+printing document
+печатается документ
+
