@@ -2446,8 +2446,11 @@ static void CopySelectionToClipboard(WindowInfo *win)
         }
         else {
             VStrList selections;
-            for (SelectionOnPage *selOnPage = win->selectionOnPage; selOnPage; selOnPage = selOnPage->next)
-                selections.push_back(win->dm->getTextInRegion(selOnPage->pageNo, &selOnPage->selectionPage));
+            for (SelectionOnPage *selOnPage = win->selectionOnPage; selOnPage; selOnPage = selOnPage->next) {
+                selText = win->dm->getTextInRegion(selOnPage->pageNo, &selOnPage->selectionPage);
+                if (selText)
+                    selections.push_back(selText);
+            }
             selText = selections.join();
         }
 

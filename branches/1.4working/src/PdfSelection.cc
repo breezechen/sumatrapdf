@@ -67,6 +67,9 @@ int PdfSelection::FindClosestGlyph(int pageNo, double x, double y)
         }
     }
 
+    if (-1 == result)
+        return 0;
+
     // the result indexes the first glyph to be selected in a forward selection
     fz_matrix ctm = engine->viewctm(pageNo, 1.0, 0);
     fz_bbox bbox = fz_transformbbox(ctm, _coords[result]);
