@@ -93,7 +93,7 @@ int PdfSearch::MatchLen(TCHAR *start)
     while (*match) {
         if (!*end)
             return -1;
-        if (caseSensitive ? *match != *end : _totlower(*match) != _totlower(*end))
+        if (caseSensitive ? *match != *end : CharLower((LPTSTR)LOWORD(*match)) != CharLower((LPTSTR)LOWORD(*end)))
             return -1;
         match++;
         end++;
