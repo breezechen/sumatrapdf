@@ -1,18 +1,18 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+// Copyright William Blum 2008 http://william.famille-blum.org/
 // PDF-source synchronizer based on .pdfsync file
+// License: GPLv3
 
-#ifndef PdfSync_h
-#define PdfSync_h
+#ifndef _PDF_SYNC_H__
+#define _PDF_SYNC_H__
 
 #include <windows.h>
 #include <assert.h>
 #include <time.h>
 
-#include "BaseUtil.h"
-#include "TStrUtil.h"
-#include "FileUtil.h"
-#include "Vec.h"
+#include "base_util.h"
+#include "tstr_util.h"
+#include "file_util.h"
+#include "vstrlist.h"
 
 // size of the mark highlighting the location calculated by forward-search
 #define MARK_SIZE                            10 
@@ -131,7 +131,7 @@ public:
     // Forward-search:
     // The result is returned in (page,x,y). The coordinates x,y are specified in the internal 
     // coordinate system.
-    virtual UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects) = 0;
+    virtual UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects) = 0;
 
     void discard_index() { this->index_discarded = true; }
     bool is_index_discarded() const
@@ -142,8 +142,9 @@ public:
 
         // has the synchronization file been changed on disk?
         struct _stat newstamp;
-        if (_tstat(syncfilepath, &newstamp) == 0 &&
-            difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0) {
+        if (_tstat(syncfilepath, &newstamp) == 0
+            && difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0
+            ) {
                 DBG_OUT_T("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
 
                 // update time stamp
@@ -190,20 +191,20 @@ public:
     }
 
     int rebuild_index();
-    virtual UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT cchFilepath, UINT *line, UINT *col);
-    virtual UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects);
+    UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT cchFilepath, UINT *line, UINT *col);
+    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects);
 
 private:
     int get_record_section(int record_index);
     int scan_and_build_index(FILE *fp);
-    UINT source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, Vec<size_t>& records);
+    UINT source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, vector<size_t> &records);
     FILE *opensyncfile();
 
 private:
-    Vec<size_t> pdfsheet_index; // pdfsheet_index[i] contains the index in pline_sections of the first pline section for that sheet
-    Vec<plines_section> pline_sections;
-    Vec<record_section> record_sections;
-    Vec<src_file> srcfiles;
+    vector<size_t> pdfsheet_index; // pdfsheet_index[i] contains the index in pline_sections of the first pline section for that sheet
+    vector<plines_section> pline_sections;
+    vector<record_section> record_sections;
+    vector<src_file> srcfiles;
 };
 
 

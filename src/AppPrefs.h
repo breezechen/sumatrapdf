@@ -1,10 +1,11 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright Krzysztof Kowalczyk 2006-2011
    License: GPLv3 */
-
-#ifndef AppPrefs_h
-#define AppPrefs_h
+#ifndef APP_PREFS_H_
+#define APP_PREFS_H_
 
 #include "DisplayState.h"
+
+#define DEFAULT_WIN_POS (int)-1
 
 // TODO: Move this somewhere more appropriate?
 #define MAX_RECENT_FILES_IN_MENU 10
@@ -19,28 +20,28 @@ enum {
 
 /* Most of the global settings that we persist in preferences file. */
 typedef struct {
-    bool m_globalPrefsOnly;
-    char *m_currentLanguage;
+    int  m_globalPrefsOnly;
+    const char *m_currentLanguage;
 
-    bool m_showToolbar;
+    BOOL m_showToolbar;
     /* If false, we won't ask the user if he wants Sumatra to handle PDF files */
-    bool m_pdfAssociateDontAskAgain;
+    BOOL m_pdfAssociateDontAskAgain;
     /* If m_pdfAssociateDontAskAgain is TRUE, says whether we should 
        silently associate or not */
-    bool m_pdfAssociateShouldAssociate;
+    BOOL m_pdfAssociateShouldAssociate;
 
-    bool m_enableAutoUpdate;
+    BOOL m_enableAutoUpdate;
 
     /* if true, we remember which files we opened and their settings */
-    bool m_rememberOpenedFiles;
+    BOOL m_rememberOpenedFiles;
 
     int  m_bgColor;
-    bool m_escToExit;
+    BOOL m_escToExit;
 
     /* pattern used to launch the editor when doing inverse search */
     TCHAR *m_inverseSearchCmdLine;
     /* whether to expose the SyncTeX enhancements to the user */
-    bool m_enableTeXEnhancements;
+    BOOL m_enableTeXEnhancements;
 
     /* When we show 'new version available', user has an option to check
        'skip this version'. This remembers which version is to be skipped.
@@ -54,29 +55,30 @@ typedef struct {
     DisplayMode m_defaultDisplayMode;
 
     float m_defaultZoom;
-    int   m_windowState;
-    RectI m_windowPos;
+    int  m_windowState;
+    int  m_windowPosX;
+    int  m_windowPosY;
+    int  m_windowDx;
+    int  m_windowDy;
 
-    bool m_showToc;
+    int  m_showToc;
     int  m_tocDx;
 
     /* Forward search highlighting settings  */
     int  m_fwdsearchOffset;    /* if <=0 then use the standard (inline) highlighting style, otherwise use the margin highlight (i.e., coloured block on the left side of the page) */
     int  m_fwdsearchColor;     /* highlight color of the forward-search for both the standard and margin style*/
     int  m_fwdsearchWidth;     /* width of the coloured blocks for the margin style */
-    bool m_fwdsearchPermanent; /* if false then highlights are hidden automatically after a short period of time,
+    BOOL m_fwdsearchPermanent; /* if false then highlights are hidden automatically after a short period of time,
                                   if true then highlights remain until the next forward search */
 
-    bool m_invertColors; /* invert all colors for accessibility reasons (experimental!) */
+    BOOL m_invertColors; /* invert all colors for accessibility reasons (experimental!) */
 } SerializableGlobalPrefs;
+
+extern SerializableGlobalPrefs gGlobalPrefs;
 
 class FileHistoryList;
 
-namespace Prefs {
-
-bool    Load(TCHAR *filepath, SerializableGlobalPrefs *globalPrefs, FileHistoryList *fileHistory);
-bool    Save(TCHAR *filepath, SerializableGlobalPrefs *globalPrefs, FileHistoryList *fileHistory);
-
-}
+const char *Prefs_Serialize(FileHistoryList *root, size_t* lenOut);
+bool        Prefs_Deserialize(const char *prefsTxt, size_t prefsTxtLen, FileHistoryList *fileHistoryRoot);
 
 #endif

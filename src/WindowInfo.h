@@ -1,17 +1,28 @@
 /* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef WindowInfo_h
-#define WindowInfo_h
+#ifndef _WINDOWINFO_H_
+#define _WINDOWINFO_H_
 
 #include <shlobj.h>
-#include "GeomUtil.h"
+#include "geom_util.h"
 #include "DisplayState.h"
+#include "FileWatch.h"
 #include "PdfSearch.h"
-#include "Vec.h"
+#include "vstrlist.h"
+
+// TODO: the final division is meant to be:
+// WindowInfoBase
+// WindowInfoAbout : WindowInfoBase
+// WindowInfoPdf : WindowInfoBase
+// WindowInfoComic : WindowInfoBase
+// WindowInfoError : WindowInfoBase
+// (eventually I would prefer to show 'error opening a file' and other
+// similar messages as Growl-style, dismissable notifications
+// in the lower right corner of the window, which would be a solution
+// to issue 1214)
 
 class DisplayModel;
-class FileWatcher;
 class Synchronizer;
 
 /* Current state of a window:
@@ -24,7 +35,6 @@ enum WinState {
     WS_ABOUT
 };
 
-#if 0
 // TODO: WindowInfoType is meant to replace WinState
 enum WindowInfoType {
     WitInvalid = 0,
@@ -33,7 +43,6 @@ enum WindowInfoType {
     WitPdf,         // WindowInfoPdf
     WitComic        // WindowInfoComic
 };
-#endif
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -63,23 +72,24 @@ typedef struct SelectionOnPage {
 
 /* Describes information related to one window with (optional) pdf document
    on the screen */
-class WindowInfo : public PdfSearchTracker, public PasswordUI
+class WindowInfoBase
 {
 public:
-    WindowInfo(HWND hwnd);
-    ~WindowInfo();
+    WindowInfoBase(HWND hwnd);
+    ~WindowInfoBase();
+    
+    void GetCanvasSize() { 
+        GetClientRect(hwndCanvas, &canvasRc);
+    }
 
-    void GetCanvasSize();
-
-    int winDx() const { return canvasRc.dx; }
-    int winDy() const { return canvasRc.dy; }
-    SizeI winSize() const { return canvasRc.Size(); }
-    bool IsAboutWindow() const { return WS_ABOUT == state; }
+    int winDx() const { return canvasRc.right - canvasRc.left; }
+    int winDy() const { return canvasRc.bottom - canvasRc.top; }
+    SizeI winSize() const { return SizeI(winDx(), winDy()); }
 
     WinState        state;
     bool            needrefresh; // true if the view of the PDF is not synchronized with the content of the file on disk
     TCHAR *         loadedFilePath;
-    bool            threadStressRunning;
+
     DisplayModel *  dm;
     HWND            hwndFrame;
     HWND            hwndCanvas;
@@ -100,7 +110,7 @@ public:
     HWND            hwndPdfProperties;
 
     bool            infotipVisible;
-    HMENU           menu;
+    HMENU           hMenu;
 
     HDC             hdc;
     int             dpi;
@@ -141,7 +151,7 @@ public:
      * rectangular marks in the document. These variables indicate the position of the markers
      * and whether they should be shown. */
     bool            showForwardSearchMark; // are the markers visible?
-    Vec<RectI>      fwdsearchmarkRects;    // location of the markers in user coordinates
+    vector<RectI>   fwdsearchmarkRects;    // location of the markers in user coordinates
     int             fwdsearchmarkPage;     // page 
     int             fwdsearchmarkHideStep; // value used to gradually hide the markers
 
@@ -156,7 +166,7 @@ public:
     SelectionOnPage *selectionOnPage;
 
     // file change watcher
-    FileWatcher *   watcher;
+    FileWatcher     watcher;
     
     // synchronizer based on .pdfsync file
     Synchronizer *  pdfsync;
@@ -171,13 +181,13 @@ public:
     bool            fullScreen;
     bool            _tocBeforeFullScreen;
     PresentationMode presentation;
-    bool            _tocBeforePresentation;
+    BOOL            _tocBeforePresentation;
     int             _windowStateBeforePresentation;
 
     long            prevStyle;
-    RectI           frameRc;
-    RectI           canvasRc;
-    PointI          prevCanvasBR;
+    RECT            frameRc;
+    RECT            canvasRc;
+    POINT           prevCanvasBR;
     float           prevZoomVirtual;
     DisplayMode     prevDisplayMode;
 
@@ -204,7 +214,6 @@ public:
     void DoubleBuffer_Show(HDC hdc);
     void DoubleBuffer_Delete();
     void RedrawAll(bool update=false);
-    void RepaintAsync(UINT delay=0);
 
     bool PdfLoaded() const { return this->dm != NULL; }
     HTREEITEM TreeItemForPageNo(HTREEITEM hItem, int pageNo);
@@ -218,20 +227,74 @@ public:
     void ZoomToSelection(float factor, bool relative);
     void SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous=false);
     void MoveDocBy(int dx, int dy);
+};
 
-    TOOLINFO CreateToolInfo(const TCHAR *text=NULL);
-    void DeleteInfotip();
-
+class WindowInfo : public WindowInfoBase, public PdfSearchTracker, public PasswordUI
+{
+public:
+    WindowInfo(HWND hwnd) : WindowInfoBase(hwnd) {
+    }
+    ~WindowInfo() {
+    }
     virtual bool FindUpdateStatus(int count, int total);
     virtual TCHAR * GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
                                 unsigned char decryptionKeyOut[32], bool *saveKey);
-
 };
 
-WindowInfo* FindWindowInfoByFile(TCHAR *file);
-WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
+#if 0 // TODO: not used yet
+class WindowInfoPdf : public WindowInfoBase, public PdfSearchTracker
+{
+public:
+    WindowInfoPdf(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitPdf;
+    }
+    ~WindowInfoPdf() {
+    }
+    virtual bool FindUpdateStatus(int count, int total);
+};
+
+class WindowInfoAbout : public WindowInfoBase
+{
+    WindowInfoAbout(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitAbout;
+    }
+    ~WindowInfoAbout() {
+    }
+};
+
+class WindowInfoError : public WindowInfoBase
+{
+    WindowInfoError(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitError;
+    }
+    ~WindowInfoError() {
+    }
+};
+
+class WindowInfoComic : public WindowInfoBase
+{
+    WindowInfoComic(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitComic;
+    }
+    ~WindowInfoComic() {
+    }
+};
+#endif
+
+class WindowInfoList : public vector<WindowInfo *>
+{
+public:
+    void remove(WindowInfo *win);
+    WindowInfo * find(HWND hwnd);
+    WindowInfo * find(TCHAR *filepath);
+
+    static WindowInfo * Find(HWND hwnd);
+    static WindowInfo * Find(TCHAR *filepath);
+};
 
 WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
-void        WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, Vec<RectI>& rects);
+WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
+WindowInfo* LoadComicBook(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
+void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
 
 #endif

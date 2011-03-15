@@ -1,8 +1,5 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#ifndef PdfSearch_h
-#define PdfSearch_h
+#ifndef _PDF_SEARCH_H
+#define _PDF_SEARCH_H
 
 #include <windows.h>
 #include "PdfEngine.h"
@@ -35,7 +32,7 @@ public:
     PdfSearchTracker *tracker;
 
 protected:
-    TCHAR *findText;
+    TCHAR *text;
     TCHAR *anchor;
     bool forward;
     bool caseSensitive;
@@ -49,8 +46,8 @@ protected:
 
     void Clear()
     {
-        free(findText);
-        findText = NULL;
+        free(text);
+        text = NULL;
         free(anchor);
         anchor = NULL;
         free(lastText);
@@ -75,4 +72,4 @@ private:
     BYTE *findCache;
 };
 
-#endif
+#endif // _PDF_SEARCH_H

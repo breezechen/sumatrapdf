@@ -5,12 +5,11 @@
 #include "WindowInfo.h"
 #include "PdfSync.h"
 #include "Resource.h"
-#include "FileUtil.h"
-#include "TStrUtil.h"
-#include "WinUtil.h"
-#include "FileWatch.h"
+#include "file_util.h"
+#include "tstr_util.h"
+#include "WinUtil.hpp"
 
-WindowInfo::WindowInfo(HWND hwnd) :
+WindowInfoBase::WindowInfoBase(HWND hwnd) :
     dm(NULL), state(WS_ABOUT), hwndFrame(hwnd),
     linkOnLastButtonDown(NULL), url(NULL), selectionOnPage(NULL),
     tocLoaded(false), tocShow(false), tocState(NULL), tocRoot(NULL),
@@ -20,7 +19,7 @@ WindowInfo::WindowInfo(HWND hwnd) :
     hwndPageText(NULL), hwndPageBox(NULL), hwndPageBg(NULL), hwndPageTotal(NULL),
     hwndTocBox(NULL), hwndTocTree(NULL), hwndSpliter(NULL),
     hwndInfotip(NULL), infotipVisible(false), hwndPdfProperties(NULL),
-    menu(NULL), hdc(NULL),
+    hMenu(NULL), hdc(NULL),
     findThread(NULL), findCanceled(false), findPercent(0), findStatusVisible(false),
     findStatusThread(NULL), stopFindStatusThreadEvent(NULL),
     showSelection(false), showForwardSearchMark(false), fwdsearchmarkHideStep(0),
@@ -29,11 +28,12 @@ WindowInfo::WindowInfo(HWND hwnd) :
     prevZoomVirtual(INVALID_ZOOM), prevDisplayMode(DM_AUTOMATIC),
     loadedFilePath(NULL), currPageNo(0),
     xScrollSpeed(0), yScrollSpeed(0), wheelAccumDelta(0),
-    delayedRepaintTimer(0), resizingTocBox(false), watcher(NULL),
-    pdfsync(NULL), pluginParent(NULL), threadStressRunning(false)
+    delayedRepaintTimer(0), resizingTocBox(false),
+    pdfsync(NULL), pluginParent(NULL)
 {
     ZeroMemory(&selectionRect, sizeof(selectionRect));
     prevCanvasBR.x = prevCanvasBR.y = -1;
+    fwdsearchmarkRects.clear();
 
     HDC hdcFrame = GetDC(hwndFrame);
     dpi = GetDeviceCaps(hdcFrame, LOGPIXELSY);
@@ -42,10 +42,9 @@ WindowInfo::WindowInfo(HWND hwnd) :
     ReleaseDC(hwndFrame, hdcFrame);
 }
 
-WindowInfo::~WindowInfo() {
+WindowInfoBase::~WindowInfoBase() {
     this->AbortFinding();
     delete this->dm;
-    delete this->watcher;
     delete this->pdfsync;
 
     CloseHandle(this->stopFindStatusThreadEvent);
@@ -59,12 +58,7 @@ WindowInfo::~WindowInfo() {
     free(this->tocState);
 }
 
-void WindowInfo::GetCanvasSize()
-{
-    this->canvasRc = ClientRect(hwndCanvas);
-}
-
-void WindowInfo::DoubleBuffer_Show(HDC hdc)
+void WindowInfoBase::DoubleBuffer_Show(HDC hdc)
 {
     if (this->hdc != this->hdcToDraw) {
         assert(this->hdcToDraw == this->hdcDoubleBuffer);
@@ -72,7 +66,7 @@ void WindowInfo::DoubleBuffer_Show(HDC hdc)
     }
 }
 
-void WindowInfo::DoubleBuffer_Delete() {
+void WindowInfoBase::DoubleBuffer_Delete() {
     if (this->bmpDoubleBuffer) {
         DeleteObject(this->bmpDoubleBuffer);
         this->bmpDoubleBuffer = NULL;
@@ -85,7 +79,7 @@ void WindowInfo::DoubleBuffer_Delete() {
     this->hdcToDraw = NULL;
 }
 
-void WindowInfo::AbortFinding()
+void WindowInfoBase::AbortFinding()
 {
     if (this->findThread) {
         this->findCanceled = true;
@@ -94,14 +88,14 @@ void WindowInfo::AbortFinding()
     this->findCanceled = false;
 }
 
-void WindowInfo::RedrawAll(bool update)
+void WindowInfoBase::RedrawAll(bool update)
 {
     InvalidateRect(this->hwndCanvas, NULL, false);
     if (update)
         UpdateWindow(this->hwndCanvas);
 }
 
-HTREEITEM WindowInfo::TreeItemForPageNo(HTREEITEM hItem, int pageNo)
+HTREEITEM WindowInfoBase::TreeItemForPageNo(HTREEITEM hItem, int pageNo)
 {
     HTREEITEM hCurrItem = NULL;
 
@@ -134,7 +128,7 @@ HTREEITEM WindowInfo::TreeItemForPageNo(HTREEITEM hItem, int pageNo)
     return hCurrItem;
 }
 
-void WindowInfo::UpdateTocSelection(int currPageNo)
+void WindowInfoBase::UpdateTocSelection(int currPageNo)
 {
     if (!this->tocLoaded || !this->tocShow)
         return;
@@ -149,7 +143,7 @@ void WindowInfo::UpdateTocSelection(int currPageNo)
         TreeView_SelectItem(this->hwndTocTree, hCurrItem);
 }
 
-void WindowInfo::UpdateToCExpansionState(HTREEITEM hItem)
+void WindowInfoBase::UpdateToCExpansionState(HTREEITEM hItem)
 {
     while (hItem) {
         TVITEM item;
@@ -175,13 +169,13 @@ void WindowInfo::UpdateToCExpansionState(HTREEITEM hItem)
     }
 }
 
-void WindowInfo::DisplayStateFromToC(DisplayState *ds)
+void WindowInfoBase::DisplayStateFromToC(DisplayState *ds)
 {
     ds->showToc = this->tocShow;
 
     if (this->tocLoaded) {
         free(this->tocState);
-        this->tocState = SAZA(int, 1);
+        this->tocState = SAZ(int);
         HTREEITEM hRoot = TreeView_GetRoot(this->hwndTocTree);
         if (this->tocState && hRoot)
             this->UpdateToCExpansionState(hRoot);
@@ -193,11 +187,12 @@ void WindowInfo::DisplayStateFromToC(DisplayState *ds)
         ds->tocState = (int *)memdup(this->tocState, (this->tocState[0] + 1) * sizeof(int));
 }
 
-void WindowInfo::ResizeIfNeeded(bool resizeWindow)
+void WindowInfoBase::ResizeIfNeeded(bool resizeWindow)
 {
-    ClientRect rc(this->hwndCanvas);
+    RECT rc;
+    GetClientRect(this->hwndCanvas, &rc);
 
-    if (!this->hdcToDraw || this->winDx() != rc.dx || this->winDy() != rc.dy) {
+    if (!this->hdcToDraw || this->winDx() != RectDx(&rc) || this->winDy() != RectDy(&rc)) {
         this->DoubleBuffer_New();
         if (resizeWindow) {
             assert(this->dm);
@@ -207,7 +202,7 @@ void WindowInfo::ResizeIfNeeded(bool resizeWindow)
     }
 }
 
-void WindowInfo::ToggleZoom()
+void WindowInfoBase::ToggleZoom()
 {
     assert(this->dm);
     if (!this->dm) return;
@@ -221,7 +216,7 @@ void WindowInfo::ToggleZoom()
         this->dm->zoomTo(ZOOM_FIT_PAGE);
 }
 
-void WindowInfo::ZoomToSelection(float factor, bool relative)
+void WindowInfoBase::ZoomToSelection(float factor, bool relative)
 {
     assert(this->dm);
     if (!this->dm) return;
@@ -232,11 +227,12 @@ void WindowInfo::ZoomToSelection(float factor, bool relative)
     if (zoomToPt) {
         RectI selRect = this->selectionOnPage->selectionCanvas;
         for (SelectionOnPage *sel = this->selectionOnPage->next; sel; sel = sel->next)
-            selRect = selRect.Union(sel->selectionCanvas);
+            selRect = RectI_Union(selRect, sel->selectionCanvas);
 
-        ClientRect rc(this->hwndCanvas);
-        pt.x = 2 * selRect.x + selRect.dx - rc.dx / 2;
-        pt.y = 2 * selRect.y + selRect.dy - rc.dy / 2;
+        RECT rc;
+        GetClientRect(this->hwndCanvas, &rc);
+        pt.x = 2 * selRect.x + selRect.dx - RectDx(&rc) / 2;
+        pt.y = 2 * selRect.y + selRect.dy - RectDy(&rc) / 2;
 
         pt.x = CLAMP(pt.x, selRect.x, selRect.x + selRect.dx);
         pt.y = CLAMP(pt.y, selRect.y, selRect.y + selRect.dy);
@@ -256,7 +252,7 @@ void WindowInfo::ZoomToSelection(float factor, bool relative)
     this->UpdateToolbarState();
 }
 
-void WindowInfo::UpdateToolbarState()
+void WindowInfoBase::UpdateToolbarState()
 {
     if (!this->dm)
         return;
@@ -282,9 +278,9 @@ void WindowInfo::UpdateToolbarState()
         prevZoomVirtual = INVALID_ZOOM;
 }
 
-void WindowInfo::MoveDocBy(int dx, int dy)
+void WindowInfoBase::MoveDocBy(int dx, int dy)
 {
-    assert(WS_SHOWING_PDF == this->state);
+    assert (WS_SHOWING_PDF == this->state);
     if (WS_SHOWING_PDF != this->state) return;
     assert(this->dm);
     if (!this->dm) return;
@@ -296,3 +292,64 @@ void WindowInfo::MoveDocBy(int dx, int dy)
         this->dm->scrollYBy(dy, FALSE);
 }
 
+/* :::::: WindowInfoList :::::: */
+
+void WindowInfoList::remove(WindowInfo *win) {
+    assert(win);
+    if (!win) return;
+
+    for (size_t i = 0; i < this->size(); i++) {
+        if ((*this)[i] == win) {
+            this->erase(i);
+            break;
+        }
+    }
+}
+
+WindowInfo* WindowInfoList::find(HWND hwnd)
+{
+    for (size_t i = 0; i < this->size(); i++) {
+        WindowInfo *win = (*this)[i];
+        if (hwnd == win->hwndFrame)
+            return win;
+        if (hwnd == win->hwndCanvas)
+            return win;
+        if (hwnd == win->hwndReBar)
+            return win;
+        if (hwnd == win->hwndFindBox)
+            return win;
+        if (hwnd == win->hwndFindStatus)
+            return win;
+        if (hwnd == win->hwndPageBox)
+            return win;
+        if (hwnd == win->hwndTocBox)
+            return win;
+        if (hwnd == win->hwndTocTree)
+            return win;
+        if (hwnd == win->hwndSpliter)
+            return win;
+        if (hwnd == win->hwndPdfProperties)
+            return win;
+    }
+
+    return NULL;
+}
+
+// Find the first windows showing a given PDF file 
+WindowInfo* WindowInfoList::find(TCHAR * file) {
+    TCHAR * normFile = FilePath_Normalize(file, FALSE);
+    if (!normFile)
+        return NULL;
+
+    WindowInfo *found = NULL;
+    for (size_t i = 0; i < this->size(); i++) {
+        WindowInfo *win = (*this)[i];
+        if (win->loadedFilePath && FilePath_IsSameFile(win->loadedFilePath, normFile)) {
+            found = win;
+            break;
+        }
+    }
+
+    free(normFile);
+    return found;
+}

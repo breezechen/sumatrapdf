@@ -54,7 +54,6 @@ fz_tracepath(fz_path *path, int indent)
 			break;
 		case FZ_CLOSEPATH:
 			printf("<closepath />\n");
-			break;
 		}
 	}
 }

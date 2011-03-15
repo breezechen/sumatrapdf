@@ -769,7 +769,5 @@ int main(int argc, char **argv)
 
 	pdf_freexref(xref);
 
-	fz_flushwarnings();
-
 	return 0;
 }

@@ -66,59 +66,51 @@
 			Name="baseutils"
 			>
 			<File
-				RelativePath=".\baseutils\BaseUtil.h"
+				RelativePath=".\baseutils\base_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.cpp"
+				RelativePath=".\baseutils\base_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.h"
+				RelativePath=".\baseutils\benc_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.cpp"
+				RelativePath=".\baseutils\benc_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.h"
+				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.cpp"
+				RelativePath=".\baseutils\file_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.h"
+				RelativePath=".\baseutils\geom_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\GeomUtil.h"
+				RelativePath=".\baseutils\geom_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.cpp"
+				RelativePath=".\baseutils\str_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.h"
+				RelativePath=".\baseutils\str_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\TStrUtil.cpp"
+				RelativePath=".\baseutils\tstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\TStrUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\UtilTests.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Vec.h"
+				RelativePath=".\baseutils\tstr_util.h"
 				>
 			</File>
 			<File
@@ -126,19 +118,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\baseutils\win_util.c"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\win_util.h"
+				>
+			</File>
+			<File
 				RelativePath=".\baseutils\WinUtil.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WinUtil.h"
+				RelativePath=".\baseutils\WinUtil.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WStrUtil.cpp"
+				RelativePath=".\baseutils\wstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WStrUtil.h"
+				RelativePath=".\baseutils\wstr_util.h"
 				>
 			</File>
 		</Filter>

@@ -1,8 +1,5 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#ifndef PdfSelection_h
-#define PdfSelection_h
+#ifndef _PDF_SELECTION_H
+#define _PDF_SELECTION_H
 
 #include "PdfEngine.h"
 
@@ -29,7 +26,7 @@ public:
     void SelectUpTo(int pageNo, double x, double y) {
         SelectUpTo(pageNo, FindClosestGlyph(pageNo, x, y));
     }
-    TCHAR *ExtractText(TCHAR *lineSep=DOS_NEWLINE);
+    TCHAR *ExtractText(TCHAR *lineSep=_T(DOS_NEWLINE));
     void Reset();
 
     PdfSel result;
@@ -37,14 +34,13 @@ public:
 protected:
     PdfEngine * engine;
     fz_bbox  ** coords;
-    TCHAR    ** text;
     int       * lens;
 
     int         startPage, endPage;
     int         startGlyph, endGlyph;
 
     int FindClosestGlyph(int pageNo, double x, double y);
-    void FillResultRects(int pageNo, int glyph, int length, VStrList *lines=NULL);
+    void FillResultRects(int pageNo, int glyph, int length, TCHAR *text=NULL, VStrList *lines=NULL);
 };
 
-#endif
+#endif // _PDF_SELECTION_H

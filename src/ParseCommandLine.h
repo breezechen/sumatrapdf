@@ -1,11 +1,7 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#ifndef ParseCommandLine_h
-#define ParseCommandLine_h
+#ifndef _PARSE_COMMAND_LINE_H__
+#define _PARSE_COMMAND_LINE_H__
 
 #include "DisplayState.h"
-#include "vstrlist.h"
 
 class CommandLineInfo {
 public:
@@ -25,14 +21,14 @@ public:
     int         fwdsearchOffset;
     int         fwdsearchWidth;
     int         fwdsearchColor;
-    bool        fwdsearchPermanent;
-    bool        escToExit;
+    BOOL        fwdsearchPermanent;
+    BOOL        escToExit;
     bool        reuseInstance;
     char *      lang;
     TCHAR *     destName;
     int         pageNumber;
     bool        restrictedUse;
-    bool        invertColors;
+    BOOL        invertColors;
     bool        enterPresentation;
     bool        enterFullscreen;
     DisplayMode startView;
@@ -40,7 +36,6 @@ public:
     bool        showConsole;
     HWND        hwndPluginParent;
     bool        exitImmediately;
-    bool        silent;
 
     CommandLineInfo() : makeDefault(false), exitOnPrint(false), printDialog(false),
         printerName(NULL), bgColor(-1), inverseSearchCmdLine(NULL),
@@ -50,7 +45,7 @@ public:
         restrictedUse(false), invertColors(FALSE),
         enterPresentation(false), enterFullscreen(false), hwndPluginParent(NULL),
         startView(DM_AUTOMATIC), startZoom(INVALID_ZOOM),
-        showConsole(false), exitImmediately(false), silent(false)
+        showConsole(false), exitImmediately(false)
     { }
 
     ~CommandLineInfo() {
@@ -65,12 +60,12 @@ public:
 protected:
     void SetPrinterName(TCHAR *s) {
         free(printerName);
-        printerName = StrCopy(s);
+        printerName = tstr_dup(s);
     }
 
     void SetInverseSearchCmdLine(TCHAR *s) {
         free(inverseSearchCmdLine);
-        inverseSearchCmdLine = StrCopy(s);
+        inverseSearchCmdLine = tstr_dup(s);
     }
 
     void SetLang(TCHAR *s) {
@@ -80,7 +75,7 @@ protected:
     
     void SetDestName(TCHAR *s) {
         free(destName);
-        destName = StrCopy(s);
+        destName = tstr_dup(s);
     }
 };
 

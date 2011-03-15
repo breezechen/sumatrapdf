@@ -1,30 +1,37 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+#ifndef HTTP_H__
+#define HTTP_H__
+
+/* Copyright Krzysztof Kowalczyk 2006-2011
    License: GPLv3 */
 
-#ifndef Http_h
-#define Http_h
-
-#include "TStrUtil.h"
-#include "Vec.h"
+#include "MemSegment.h"
+#include "tstr_util.h"
 
 class HttpReqCtx {
-    HANDLE          hThread;
-    static DWORD WINAPI HttpDownloadThread(LPVOID data);
-
 public:
-    // the callback to execute when the download is complete
-    CallbackFunc *  callback;
+    // the window to which we'll send notification about completed download
+    HWND          hwndToNotify;
+    // message to send when download is complete
+    UINT          msg;
 
-    TCHAR *         url;
-    Vec<char> *     data;
-    DWORD           error;
+    TCHAR *       url;
+    MemSegment    data;
+    /* true for automated check, false for check triggered from menu */
+    bool          silent;
 
-    HttpReqCtx(const TCHAR *url, CallbackFunc *callback=NULL);
+    HANDLE        hThread;
+
+    HttpReqCtx(const TCHAR *url, HWND hwnd, UINT msg, bool silent=false)
+        : hwndToNotify(hwnd), msg(msg), url(NULL), silent(silent), hThread(NULL) {
+        assert(url);
+        this->url = tstr_dup(url);
+    }
     ~HttpReqCtx() {
         free(url);
-        delete data;
         CloseHandle(hThread);
     }
 };
 
+void StartHttpDownload(const TCHAR *url, HWND hwndToNotify, UINT msg, bool silent);
 #endif
+

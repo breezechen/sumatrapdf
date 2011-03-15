@@ -1,8 +1,8 @@
 ﻿/* Copyright 2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "TStrUtil.h"
+#include "base_util.h"
+#include "wstr_util.h"
 #include "CTeXFilter.h"
 
 HRESULT CTeXFilter::OnInit()
@@ -142,7 +142,7 @@ WCHAR *CTeXFilter::ExtractBracedBlock()
             break;
         case '%':
             // ignore comments until the end of line
-            m_pPtr = wcschr(m_pPtr, '\n') ? wcschr(m_pPtr, '\n') + 1 : m_pPtr + StrLen(m_pPtr);
+            m_pPtr = wcschr(m_pPtr, '\n') ? wcschr(m_pPtr, '\n') + 1 : m_pPtr + wstr_len(m_pPtr);
             break;
         case '&':
             *rptr++ = '\t';

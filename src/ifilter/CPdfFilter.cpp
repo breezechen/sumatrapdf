@@ -1,8 +1,8 @@
 /* Copyright 2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "WStrUtil.h"
+#include "base_util.h"
+#include "wstr_util.h"
 #include "CPdfFilter.h"
 #include "PdfEngine.h"
 

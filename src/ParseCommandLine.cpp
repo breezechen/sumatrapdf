@@ -1,11 +1,8 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
 #include "SumatraPDF.h"
-#include "BaseUtil.h"
-#include "TStrUtil.h"
+#include "base_util.h"
+#include "tstr_util.h"
 #include "vstrlist.h"
-#include "WinUtil.h"
+#include "WinUtil.hpp"
 #include "ParseCommandLine.h"
 #include "Benchmark.h"
 #include "WindowInfo.h"
@@ -23,9 +20,10 @@ void MakePluginWindow(WindowInfo *win, HWND hwndParent)
     ws |= WS_CHILD;
     SetWindowLong(win->hwndFrame, GWL_STYLE, ws);
 
+    RECT rc;
     SetParent(win->hwndFrame, hwndParent);
-    ClientRect rc(hwndParent);
-    MoveWindow(win->hwndFrame, 0, 0, rc.dx, rc.dy, FALSE);
+    GetClientRect(hwndParent, &rc);
+    MoveWindow(win->hwndFrame, 0, 0, RectDx(&rc), RectDy(&rc), FALSE);
     ShowWindow(win->hwndFrame, SW_SHOW);
 
     // from here on, we depend on the plugin's host to resize us
@@ -39,7 +37,7 @@ static TCHAR *GetDefaultPrinterName()
     TCHAR buf[512];
     DWORD bufSize = dimof(buf);
     if (GetDefaultPrinter(buf, &bufSize))
-        return StrCopy(buf);
+        return tstr_dup(buf);
     return NULL;
 }
 
@@ -48,7 +46,7 @@ static void EnumeratePrinters()
 {
     PRINTER_INFO_5 *info5Arr = NULL;
     DWORD bufSize = 0, printersCount;
-    bool fOk = EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 
+    BOOL fOk = EnumPrinters(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 
         5, (LPBYTE)info5Arr, bufSize, &bufSize, &printersCount);
     if (!fOk) {
         info5Arr = (PRINTER_INFO_5 *)malloc(bufSize);
@@ -154,7 +152,7 @@ static void VStrList_FromCmdLine(VStrList *strList, TCHAR *cmdLine)
         TCHAR *txt = tstr_parse_possibly_quoted(&cmdLine);
         if (!txt)
             break;
-        strList->Push(txt);
+        strList->push_back(txt);
     }
 }
 
@@ -163,7 +161,7 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
 {
     VStrList argList;
     VStrList_FromCmdLine(&argList, cmdLine);
-    size_t argCount = argList.Count();
+    size_t argCount = argList.size();
 
 #define is_arg(txt) tstr_ieq(_T(txt), argument)
 #define is_arg_with_param(txt) (is_arg(txt) && param != NULL)
@@ -178,10 +176,6 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
             this->exitImmediately = true;
             return;
         }
-        else if (is_arg("-silent")) {
-            // silences errors happening during -print-to and -print-to-default
-            this->silent = true;
-        }
         else if (is_arg("-print-to-default")) {
             TCHAR *printerName = GetDefaultPrinterName();
             if (printerName) {
@@ -192,13 +186,11 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
         else if (is_arg_with_param("-print-to")) {
             this->SetPrinterName(argList[++n]);
         }
+        else if (is_arg("-exit-on-print")) {
+            this->exitOnPrint = true;
+        }
         else if (is_arg("-print-dialog")) {
             this->printDialog = true;
-        }
-        else if (is_arg("-exit-on-print")) {
-            // only affects -print-dialog (-print-to and -print-to-default
-            // always exit on print)
-            this->exitOnPrint = true;
         }
         else if (is_arg_with_param("-bgcolor") || is_arg_with_param("-bg-color")) {
             // -bgcolor is for backwards compat (was used pre-1.3)
@@ -221,7 +213,7 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
             this->fwdsearchPermanent = _ttoi(argList[++n]);
         }
         else if (is_arg("-esc-to-exit")) {
-            this->escToExit = true;
+            this->escToExit = TRUE;
         }
         else if (is_arg("-reuse-instance")) {
             // find the window handle of a running instance of SumatraPDF
@@ -272,12 +264,12 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
             this->hwndPluginParent = (HWND)_ttol(argList[++n]);
         }
         else if (is_arg_with_param("-bench")) {
-            TCHAR *s = StrCopy(argList[++n]);
-            this->filesToBenchmark.Push(s);
+            TCHAR *s = tstr_dup(argList[++n]);
+            this->filesToBenchmark.push_back(s);
             s = NULL;
             if ((n + 1 < argCount) && IsBenchPagesInfo(argList[n+1]))
-                s = StrCopy(argList[++n]);
-            this->filesToBenchmark.Push(s);
+                s = tstr_dup(argList[++n]);
+            this->filesToBenchmark.push_back(s);
             this->exitImmediately = true;
         }
 #ifdef DEBUG
@@ -294,8 +286,8 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
             if (tstr_endswithi(argList[n], _T(".lnk")))
                 filepath = ResolveLnk(argList[n]);
             if (!filepath)
-                filepath = StrCopy(argList[n]);
-            this->fileNames.Push(filepath);
+                filepath = tstr_dup(argList[n]);
+            this->fileNames.push_back(filepath);
         }
     }
 #undef is_arg

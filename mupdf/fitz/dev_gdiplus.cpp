@@ -266,8 +266,9 @@ public:
 		ImageAttributes imgAttrs;
 		_setDrawAttributes(&imgAttrs, alpha);
 		
-		float scale = _hypotf(_hypotf(ctm.a, ctm.b), _hypotf(ctm.c, ctm.d)) / _hypotf(image->w, image->h);
-		bool downscale = _hypotf(ctm.a, ctm.b) < image->w && _hypotf(ctm.c, ctm.d) < image->h;
+		float scale = 2.0 * fz_matrixexpansion(ctm) / sqrtf(image->w * image->w + image->h * image->h);
+		bool downscale = sqrtf(ctm.a * ctm.a + ctm.b * ctm.b) < image->w &&
+			sqrtf(ctm.c * ctm.c + ctm.d * ctm.d) < image->h;
 		
 		if (!image->interpolate && !downscale && graphics == this->graphics)
 		{
@@ -535,7 +536,6 @@ gdiplusgetpath(fz_path *path, fz_matrix ctm, int evenodd=1)
 {
 	PointF *points = new PointF[path->len / 2];
 	BYTE *types = new BYTE[path->len / 2];
-	PointF origin;
 	int len = 0;
 	
 	for (int i = 0; i < path->len; )
@@ -544,7 +544,6 @@ gdiplusgetpath(fz_path *path, fz_matrix ctm, int evenodd=1)
 		{
 		case FZ_MOVETO:
 			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
-			origin = points[len];
 			// empty paths seem to confuse GDI+, so filter them out
 			if (i < path->len && path->els[i].k == FZ_CLOSEPATH)
 				i++;
@@ -565,11 +564,6 @@ gdiplusgetpath(fz_path *path, fz_matrix ctm, int evenodd=1)
 			break;
 		case FZ_CLOSEPATH:
 			types[len - 1] = types[len - 1] | PathPointTypeCloseSubpath;
-			if (i < path->len && (path->els[i].k != FZ_MOVETO && path->els[i].k != FZ_CLOSEPATH))
-			{
-				points[len] = origin;
-				types[len++] = PathPointTypeStart;
-			}
 			break;
 		}
 	}

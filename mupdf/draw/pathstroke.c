@@ -271,6 +271,8 @@ fz_strokeflush(struct sctx *s)
 	{
 		fz_linedot(s, s->beg[0]);
 	}
+
+	s->dot = 0;
 }
 
 static void
@@ -281,7 +283,6 @@ fz_strokemoveto(struct sctx *s, fz_point cur)
 	s->beg[0] = cur;
 	s->sn = 1;
 	s->bn = 1;
-	s->dot = 0;
 }
 
 static void
@@ -327,9 +328,8 @@ fz_strokeclosepath(struct sctx *s)
 		fz_linedot(s, s->beg[0]);
 	}
 
-	s->seg[0] = s->beg[0];
-	s->bn = 1;
-	s->sn = 1;
+	s->bn = 0;
+	s->sn = 0;
 	s->dot = 0;
 }
 
@@ -644,7 +644,6 @@ fz_dashpath(fz_gel *gel, fz_path *path, fz_strokestate *stroke, fz_matrix ctm, f
 
 		case FZ_CLOSEPATH:
 			fz_dashlineto(&s, beg);
-			p0 = p1 = beg;
 			break;
 		}
 	}

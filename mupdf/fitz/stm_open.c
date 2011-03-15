@@ -10,8 +10,7 @@ fz_newstream(void *state,
 	stm = fz_malloc(sizeof(fz_stream));
 
 	stm->refs = 1;
-	stm->error = 0;
-	stm->eof = 0;
+	stm->dead = 0;
 	stm->pos = 0;
 
 	stm->bits = 0;
@@ -125,9 +124,8 @@ static void seekbuffer(fz_stream *stm, int offset, int whence)
 	if (whence == 1)
 		stm->rp += offset;
 	if (whence == 2)
-		stm->rp = stm->ep - offset;
-	stm->rp = CLAMP(stm->rp, stm->bp, stm->ep);
-	stm->wp = stm->ep;
+		stm->rp = stm->wp - offset;
+	stm->rp = CLAMP(stm->rp, stm->bp, stm->wp);
 }
 
 static void closebuffer(fz_stream *stm)

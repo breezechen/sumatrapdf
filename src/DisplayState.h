@@ -1,11 +1,9 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright Krzysztof Kowalczyk 2006-2011
    License: GPLv3 */
+#ifndef DISPLAY_STATE_H_
+#define DISPLAY_STATE_H_
 
-#ifndef DisplayState_h
-#define DisplayState_h
-
-#include "BaseUtil.h"
-#include "GeomUtil.h"
+#include "base_util.h"
 
 enum DisplayMode {
     DM_FIRST = 0,
@@ -79,9 +77,11 @@ enum DisplayMode {
 class DisplayState {
 public:
     DisplayState() :
-        filePath(NULL), decryptionKey(NULL), useGlobalValues(false),
-        displayMode(DM_AUTOMATIC), pageNo(1), zoomVirtual(100.0),
-        rotation(0), windowState(0), showToc(true), tocDx(0), tocState(NULL) { }
+        filePath(NULL), decryptionKey(NULL), useGlobalValues(FALSE),
+        displayMode(DM_AUTOMATIC), scrollX(0), scrollY(0), pageNo(1),
+        zoomVirtual(100.0), rotation(0), windowState(0), windowX(0),
+        windowY(0), windowDx(0), windowDy(0), showToc(TRUE), tocDx(0),
+        tocState(NULL) { }
 
     ~DisplayState() {
         free((void *)filePath);
@@ -89,25 +89,29 @@ public:
         free(tocState);
     }
 
-    TCHAR *             filePath;
-    char *              decryptionKey; // hex encoded MD5 fingerprint of file content (32 chars) followed by crypt key (64 chars)
-    bool                useGlobalValues;
+    const TCHAR *       filePath;
+    const char *        decryptionKey; // hex encoded MD5 fingerprint of file content (32 chars) followed by crypt key (64 chars)
+    BOOL                useGlobalValues;
 
     enum DisplayMode    displayMode;
-    PointI              scrollPos;
+    int                 scrollX;
+    int                 scrollY;
     int                 pageNo;
     float               zoomVirtual;
     int                 rotation;
     int                 windowState;
-    RectI               windowPos;
-    bool                showToc;
+    int                 windowX;
+    int                 windowY;
+    int                 windowDx;
+    int                 windowDy;
+    BOOL                showToc;
     int                 tocDx;
     int *               tocState;
 };
 
 void    normalizeRotation(int *rotation);
-bool    validRotation(int rotation);
-bool    ValidZoomVirtual(float zoomVirtual);
+BOOL    validRotation(int rotation);
+BOOL    ValidZoomVirtual(float zoomVirtual);
 
 const char *      DisplayModeNameFromEnum(DisplayMode var);
 bool              DisplayModeEnumFromName(const char *txt, DisplayMode *resOut);

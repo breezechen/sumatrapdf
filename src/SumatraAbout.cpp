@@ -7,7 +7,8 @@
 #include "translations.h"
 #include "Version.h"
 #include "AppPrefs.h"
-#include "WinUtil.h"
+#include "win_util.h"
+#include "WinUtil.hpp"
 #include "AppTools.h"
 
 #define ABOUT_LINE_OUTER_SIZE       2
@@ -40,41 +41,29 @@
 extern HCURSOR gCursorHand;
 extern bool gRestrictedUse;
 extern HINSTANCE ghinst;
-extern SerializableGlobalPrefs gGlobalPrefs;
 
 static HWND gHwndAbout;
 
-typedef struct AboutLayoutInfoEl {
-    /* static data, must be provided */
-    const TCHAR *   leftTxt;
-    const TCHAR *   rightTxt;
-    const TCHAR *   url;
-
-    /* data calculated by the layout */
-    RectI           leftPos;
-    RectI           rightPos;
-} AboutLayoutInfoEl;
-
 static AboutLayoutInfoEl gAboutLayoutInfo[] = {
-    { _T("website"),        _T("SumatraPDF website"),   _T("http://blog.kowalczyk.info/software/sumatrapdf") },
-    { _T("forums"),         _T("SumatraPDF forums"),    _T("http://blog.kowalczyk.info/forum_sumatra") },
-    { _T("programming"),    _T("Krzysztof Kowalczyk"),  _T("http://blog.kowalczyk.info") },
-    { _T("programming"),    _T("Simon B\xFCnzli"),      _T("http://www.zeniko.ch/#SumatraPDF") },
-    { _T("programming"),    _T("William Blum"),         _T("http://william.famille-blum.org/") },
+    { _T("website"),        _T("SumatraPDF website"),   _T("http://blog.kowalczyk.info/software/sumatrapdf"), 0 },
+    { _T("forums"),         _T("SumatraPDF forums"),    _T("http://blog.kowalczyk.info/forum_sumatra"), 0 },
+    { _T("programming"),    _T("Krzysztof Kowalczyk"),  _T("http://blog.kowalczyk.info"), 0 },
+    { _T("programming"),    _T("Simon B\xFCnzli"),      _T("http://www.zeniko.ch/#SumatraPDF"), 0 },
+    { _T("programming"),    _T("William Blum"),         _T("http://william.famille-blum.org/"), 0 },
 #ifdef SVN_PRE_RELEASE_VER
-    { _T("a note"),         _T("Pre-release version, for testing only!"), NULL },
+    { _T("a note"),         _T("Pre-release version, for testing only!"), NULL, 0 },
 #endif
 #ifdef DEBUG
-    { _T("a note"),         _T("Debug version, for testing only!"), NULL },
+    { _T("a note"),         _T("Debug version, for testing only!"), NULL, 0 },
 #endif
-    { _T("pdf rendering"),  _T("MuPDF"),                _T("http://mupdf.com") },
-    { _T("program icon"),   _T("Zenon"),                _T("http://www.flashvidz.tk/") },
-    { _T("toolbar icons"),  _T("Yusuke Kamiyamane"),    _T("http://p.yusukekamiyamane.com/") },
-    { _T("translators"),    _T("The Translators"),      _T("http://blog.kowalczyk.info/software/sumatrapdf/translators.html") },
-    { _T("translations"),   _T("Contribute translation"), _T("http://blog.kowalczyk.info/software/sumatrapdf/translations.html") },
+    { _T("pdf rendering"),  _T("MuPDF"),                _T("http://mupdf.com"), 0 },
+    { _T("program icon"),   _T("Zenon"),                _T("http://www.flashvidz.tk/"), 0 },
+    { _T("toolbar icons"),  _T("Yusuke Kamiyamane"),    _T("http://p.yusukekamiyamane.com/"), 0 },
+    { _T("translators"),    _T("The Translators"),      _T("http://blog.kowalczyk.info/software/sumatrapdf/translators.html"), 0 },
+    { _T("translations"),   _T("Contribute translation"), _T("http://blog.kowalczyk.info/software/sumatrapdf/translations.html"), 0 },
     // Note: Must be on the last line, as it's dynamically hidden based on m_enableTeXEnhancements
-    { _T("synctex"),        _T("J\xE9rome Laurens"),    _T("http://itexmac.sourceforge.net/SyncTeX.html") },
-    { NULL, NULL, NULL }
+    { _T("synctex"),        _T("J\xE9rome Laurens"),    _T("http://itexmac.sourceforge.net/SyncTeX.html"), 0 },
+    { NULL, NULL, NULL, 0 }
 };
 
 #define COL1 RGB(196, 64, 50)
@@ -89,11 +78,11 @@ void DrawSumatraPDF(HDC hdc, int x, int y)
 #ifdef BLACK_ON_YELLOW
     // simple black version
     SetTextColor(hdc, ABOUT_BORDER_COL);
-    TextOut(hdc, x, y, txt, StrLen(txt));
+    TextOut(hdc, x, y, txt, lstrlen(txt));
 #else
     // colorful version
     COLORREF cols[] = { COL1, COL2, COL3, COL4, COL5, COL5, COL4, COL3, COL2, COL1 };
-    for (size_t i = 0; i < StrLen(txt); i++) {
+    for (int i = 0; i < lstrlen(txt); i++) {
         SetTextColor(hdc, cols[i % dimof(cols)]);
         TextOut(hdc, x, y, txt + i, 1);
 
@@ -107,7 +96,7 @@ void DrawSumatraPDF(HDC hdc, int x, int y)
 /* Draws the about screen a remember some state for hyperlinking.
    It transcribes the design I did in graphics software - hopeless
    to understand without seeing the design. */
-static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
+void DrawAbout(HWND hwnd, HDC hdc, RECT *rect)
 {
     SIZE            txtSize;
     int             totalDx, totalDy;
@@ -134,20 +123,21 @@ static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
 
     SetBkMode(hdc, TRANSPARENT);
 
-    ClientRect rc(hwnd);
-    FillRect(hdc, &rc.ToRECT(), brushBg);
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    FillRect(hdc, &rc, brushBg);
 
     SelectObject(hdc, brushBg);
     SelectObject(hdc, penBorder);
 
-    offX = rect.x;
-    offY = rect.y;
-    totalDx = rect.dx;
-    totalDy = rect.dy;
+    offX = rect->left;
+    offY = rect->top;
+    totalDx = RectDx(rect);
+    totalDy = RectDy(rect);
 
     /* render title */
     const TCHAR *txt = SUMATRA_TXT;
-    GetTextExtentPoint32(hdc, txt, StrLen(txt), &txtSize);
+    GetTextExtentPoint32(hdc, txt, lstrlen(txt), &txtSize);
     sumatraPdfTxtDx = txtSize.cx;
     sumatraPdfTxtDy = txtSize.cy;
 
@@ -165,9 +155,9 @@ static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
     x = offX + (totalDx - sumatraPdfTxtDx) / 2 + sumatraPdfTxtDx + 6;
     y = offY + (boxDy - sumatraPdfTxtDy) / 2;
     txt = VERSION_TXT;
-    TextOut(hdc, x, y, txt, StrLen(txt));
+    TextOut(hdc, x, y, txt, lstrlen(txt));
     txt = VERSION_SUB_TXT;
-    TextOut(hdc, x, y + 16, txt, StrLen(txt));
+    TextOut(hdc, x, y + 16, txt, lstrlen(txt));
 
     SetTextColor(hdc, ABOUT_BORDER_COL);
 
@@ -178,7 +168,7 @@ static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
     leftLargestDx = 0;
     SelectObject(hdc, fontLeftTxt);
     for (AboutLayoutInfoEl *el = gAboutLayoutInfo; el->leftTxt; el++) {
-        TextOut(hdc, el->leftPos.x, el->leftPos.y, el->leftTxt, StrLen(el->leftTxt));
+        TextOut(hdc, el->leftPos.x, el->leftPos.y, el->leftTxt, lstrlen(el->leftTxt));
         if (leftLargestDx < el->leftPos.dx)
             leftLargestDx = el->leftPos.dx;
     }
@@ -190,7 +180,7 @@ static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
         bool hasUrl = !gRestrictedUse && el->url;
         SetTextColor(hdc, hasUrl ? COL_BLUE_LINK : ABOUT_BORDER_COL);
 
-        TextOut(hdc, el->rightPos.x, el->rightPos.y, el->rightTxt, StrLen(el->rightTxt));
+        TextOut(hdc, el->rightPos.x, el->rightPos.y, el->rightTxt, lstrlen(el->rightTxt));
         bottomY = el->rightPos.y + el->rightPos.dy + ABOUT_TXT_DY;
 
         if (!hasUrl)
@@ -222,7 +212,7 @@ static void DrawAbout(HWND hwnd, HDC hdc, RectI rect)
     DeleteObject(penLinkLine);
 }
 
-static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
+void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect)
 {
     SIZE            txtSize;
     int             totalDx, totalDy;
@@ -248,17 +238,17 @@ static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
 
     /* calculate minimal top box size */
     const TCHAR *txt = SUMATRA_TXT;
-    GetTextExtentPoint32(hdc, txt, StrLen(txt), &txtSize);
+    GetTextExtentPoint32(hdc, txt, lstrlen(txt), &txtSize);
     boxDy = txtSize.cy + ABOUT_BOX_MARGIN_DY * 2;
     titleLargestDx = txtSize.cx;
 
     /* consider version and version-sub strings */
     SelectObject(hdc, fontVersionTxt);
     txt = VERSION_TXT;
-    GetTextExtentPoint32(hdc, txt, StrLen(txt), &txtSize);
+    GetTextExtentPoint32(hdc, txt, lstrlen(txt), &txtSize);
     offX = txtSize.cx;
     txt = VERSION_SUB_TXT;
-    GetTextExtentPoint32(hdc, txt, StrLen(txt), &txtSize);
+    GetTextExtentPoint32(hdc, txt, lstrlen(txt), &txtSize);
     txtSize.cx = max(txtSize.cx, offX);
     titleLargestDx += 2 * (txtSize.cx + 6);
 
@@ -267,7 +257,7 @@ static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
     leftLargestDx = 0;
     leftDy = 0;
     for (AboutLayoutInfoEl *el = gAboutLayoutInfo; el->leftTxt; el++) {
-        GetTextExtentPoint32(hdc, el->leftTxt, StrLen(el->leftTxt), &txtSize);
+        GetTextExtentPoint32(hdc, el->leftTxt, lstrlen(el->leftTxt), &txtSize);
         el->leftPos.dx = txtSize.cx;
         el->leftPos.dy = txtSize.cy;
 
@@ -284,7 +274,7 @@ static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
     rightLargestDx = 0;
     rightDy = 0;
     for (AboutLayoutInfoEl *el = gAboutLayoutInfo; el->leftTxt; el++) {
-        GetTextExtentPoint32(hdc, el->rightTxt, StrLen(el->rightTxt), &txtSize);
+        GetTextExtentPoint32(hdc, el->rightTxt, lstrlen(el->rightTxt), &txtSize);
         el->rightPos.dx = txtSize.cx;
         el->rightPos.dy = txtSize.cy;
 
@@ -309,12 +299,17 @@ static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
         totalDy += rightDy + ABOUT_TXT_DY;
     totalDy += ABOUT_LINE_OUTER_SIZE + 4;
 
-    ClientRect rc(hwnd);
-    offX = (rc.dx - totalDx) / 2;
-    offY = (rc.dy - totalDy) / 2;
+    RECT rc;
+    GetClientRect(hwnd, &rc);
+    offX = (RectDx(&rc) - totalDx) / 2;
+    offY = (RectDy(&rc) - totalDy) / 2;
 
-    if (rect)
-        *rect = RectI(offX, offY, totalDx, totalDy);
+    if (rect) {
+        rect->left = offX;
+        rect->top = offY;
+        rect->right = offX + totalDx;
+        rect->bottom = offY + totalDy;
+    }
 
     /* calculate text positions */
     linePosX = ABOUT_LINE_OUTER_SIZE + ABOUT_MARGIN_DX + leftLargestDx + ABOUT_LEFT_RIGHT_SPACE_DX;
@@ -339,14 +334,14 @@ static void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RectI *rect)
 void OnPaintAbout(HWND hwnd)
 {
     PAINTSTRUCT ps;
-    RectI rc;
+    RECT rc;
     HDC hdc = BeginPaint(hwnd, &ps);
     UpdateAboutLayoutInfo(hwnd, hdc, &rc);
-    DrawAbout(hwnd, hdc, rc);
+    DrawAbout(hwnd, hdc, &rc);
     EndPaint(hwnd, &ps);
 }
 
-static const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el_out=NULL)
+const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el_out)
 {
     if (gRestrictedUse) return NULL;
 
@@ -388,19 +383,20 @@ void OnMenuAbout() {
         return;
 
     // get the dimensions required for the about box's content
-    RectI rc;
+    RECT rc;
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(gHwndAbout, &ps);
     UpdateAboutLayoutInfo(gHwndAbout, hdc, &rc);
     EndPaint(gHwndAbout, &ps);
-    rc.Inflate(ABOUT_RECT_PADDING, ABOUT_RECT_PADDING);
+    InflateRect(&rc, ABOUT_RECT_PADDING, ABOUT_RECT_PADDING);
 
     // resize the new window to just match these dimensions
-    WindowRect wRc(gHwndAbout);
-    ClientRect cRc(gHwndAbout);
-    wRc.dx += rc.dx - cRc.dx;
-    wRc.dy += rc.dy - cRc.dy;
-    MoveWindow(gHwndAbout, wRc.x, wRc.y, wRc.dx, wRc.dy, FALSE);
+    RECT wRc, cRc;
+    GetWindowRect(gHwndAbout, &wRc);
+    GetClientRect(gHwndAbout, &cRc);
+    wRc.right += RectDx(&rc) - RectDx(&cRc);
+    wRc.bottom += RectDy(&rc) - RectDy(&cRc);
+    MoveWindow(gHwndAbout, wRc.left, wRc.top, RectDx(&wRc), RectDy(&wRc), FALSE);
 
     ShowWindow(gHwndAbout, SW_SHOW);
 }
@@ -460,73 +456,3 @@ LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPa
     }
     return 0;
 }
-
-static void OnPaint(WindowInfo *win)
-{
-    ClientRect rc(win->hwndCanvas);
-
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(win->hwndCanvas, &ps);
-    win->ResizeIfNeeded(false);
-    UpdateAboutLayoutInfo(win->hwndCanvas, win->hdcToDraw, &rc);
-    DrawAbout(win->hwndCanvas, win->hdcToDraw, rc);
-    win->DoubleBuffer_Show(hdc);
-    EndPaint(win->hwndCanvas, &ps);
-}
-
-void CreateInfotipForAboutLink(WindowInfo *win, AboutLayoutInfoEl *aboutEl)
-{
-    if (aboutEl && aboutEl->url) {
-        TOOLINFO ti = win->CreateToolInfo(aboutEl->url);
-        ti.rect = aboutEl->rightPos.ToRECT();
-        SendMessage(win->hwndInfotip, win->infotipVisible ? TTM_NEWTOOLRECT : TTM_ADDTOOL, 0, (LPARAM)&ti);
-        win->infotipVisible = true;
-    } else
-        win->DeleteInfotip();
-}
-
-LRESULT HandleWindowAboutMsg(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, bool& handled)
-{
-    POINT        pt;
-
-    assert(win->state == WS_ABOUT);
-    handled = false;
-
-    switch (message)
-    {
-        case WM_PAINT:
-            OnPaint(win);
-            handled = true;
-            return 0;
-
-        case WM_SETCURSOR:
-            if (GetCursorPos(&pt) && ScreenToClient(hwnd, &pt)) {
-                AboutLayoutInfoEl *aboutEl;
-                if (AboutGetLink(win, pt.x, pt.y, &aboutEl)) {
-                    CreateInfotipForAboutLink(win, aboutEl);
-                    SetCursor(gCursorHand);
-                    handled = true;
-                    return TRUE;
-                }
-            }
-            break;
-
-        case WM_LBUTTONDOWN:
-            // remember a link under so that on mouse up we only activate
-            // link if mouse up is on the same link as mouse down
-            win->url = AboutGetLink(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            handled = true;
-            break;
-
-        case WM_LBUTTONUP:
-            const TCHAR *url = AboutGetLink(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-            if (url && url == win->url)
-                LaunchBrowser(url);
-            win->url = NULL;
-            handled = true;
-            break;            
-    }
-
-    return 0;
-}
-

@@ -1,10 +1,7 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#include "BaseUtil.h"
+#include "base_util.h"
 #include "translations.h"
 #include "translations_txt.h"
-#include "TStrUtil.h"
+#include "tstr_util.h"
 
 /*
 This code relies on the following variables that must be defined in a 

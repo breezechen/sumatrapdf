@@ -1,8 +1,7 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+// Copyright William Blum 2008 http://william.famille-blum.org/
 // PDF-source synchronizer based on .pdfsync file
-
-#include "BaseUtil.h"
+// License: GPLv3
+#include "base_util.h"
 #include "WindowInfo.h"
 #include "DisplayModel.h"
 #include "Resource.h"
@@ -35,7 +34,7 @@ public:
     bool is_index_discarded() { return Synchronizer::is_index_discarded(); }
 
     UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT cchFilepath, UINT *line, UINT *col);
-    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, Vec<RectI> &rects);
+    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects);
     int rebuild_index();
 
 private:
@@ -67,7 +66,7 @@ UINT CreateSynchronizer(LPCTSTR pdffilename, Synchronizer **sync)
 
     TCHAR buffer[MAX_PATH];
     TCHAR *syncfile;
-    size_t n = StrLen(pdffilename);
+    size_t n = lstrlen(pdffilename);
     size_t u = dimof(PDF_EXTENSION)-1;
 
     // Check if a PDFSYNC file is present
@@ -113,7 +112,7 @@ UINT Synchronizer::prepare_commandline(LPCTSTR pattern, LPCTSTR filename, UINT l
     size_t cchOut = cchCmdline;
     while (perc = tstr_find_char(pattern, '%')) {
         tstr_copyn(out, cchOut, pattern, perc - pattern);
-        len = StrLen(out);
+        len = tstr_len(out);
         out += len;
         cchOut -= len;
 
@@ -130,7 +129,7 @@ UINT Synchronizer::prepare_commandline(LPCTSTR pattern, LPCTSTR filename, UINT l
         else {
             tstr_copyn(out, cchOut, perc - 1, 2);
         }
-        len = StrLen(out);
+        len = tstr_len(out);
         out += len;
         cchOut -= len;
 
@@ -145,7 +144,7 @@ UINT Synchronizer::prepare_commandline(LPCTSTR pattern, LPCTSTR filename, UINT l
 // PDFSYNC synchronizer
 int Pdfsync::get_record_section(int record_index)
 {
-    int leftsection = 0, rightsection = (int)record_sections.Count();
+    int leftsection = 0, rightsection = (int)record_sections.size();
     if (rightsection == 0)
         return -1; // no section in the table
     rightsection--;
@@ -184,7 +183,7 @@ LPSTR fgetline(LPSTR dst, size_t cchDst, FILE *fp)
     if (!fgets(dst, (int)cchDst, fp))
         return NULL;
 
-    LPSTR end =  dst+StrLen(dst)-1;
+    LPSTR end =  dst+str_len(dst)-1;
     while (*end == '\n' || *end == '\r')
         *(end--) = 0;
     return dst;
@@ -209,7 +208,7 @@ int Pdfsync::scan_and_build_index(FILE *fp)
     else if (versionNumber != 1)
         return 2; // unknown version
 
-    srcfiles.Reset();
+    srcfiles.clear();
 
     // add the initial tex file to the file stack
     src_file s;
@@ -220,16 +219,17 @@ int Pdfsync::scan_and_build_index(FILE *fp)
     s.closeline_pos = -1;
     fgetpos(fp, &s.openline_pos);
 #endif
-    srcfiles.Push(s);
+    srcfiles.push_back(s);
 
-    Vec<size_t> incstack; // stack of included files
-    incstack.Push(srcfiles.Count() - 1);
+    stack<size_t> incstack; // stack of included files
+    incstack.push(srcfiles.size()-1);
 
     UINT cur_sheetNumber = (UINT)-1;
     int cur_plinesec = -1; // index of the p-line-section currently being created.
     int cur_recordsec=-1; // l-line-section currenlty created
-    record_sections.Reset();
-    pdfsheet_index.Reset();
+    record_sections.clear();
+    pdfsheet_index.clear();
+
 
     CHAR buff[_MAX_PATH];
     fpos_t linepos;
@@ -254,7 +254,7 @@ int Pdfsync::scan_and_build_index(FILE *fp)
                 // read the filename
                 fgetline(buff, dimof(buff), fp);
                 PSTR pfilename = buff;
-                size_t len = StrLen(buff);
+                size_t len = str_len(buff);
                 // if the filename contains quotes then remove them
                 if (str_startswith(buff, "\"") && str_endswith(buff, "\"")) {
                     pfilename++;
@@ -273,17 +273,17 @@ int Pdfsync::scan_and_build_index(FILE *fp)
                 s.openline_pos = linepos;
                 s.closeline_pos = -1;
 #endif
-                this->srcfiles.Push(s);
-                incstack.Push(this->srcfiles.Count() - 1);
+                this->srcfiles.push_back(s);
+                incstack.push(this->srcfiles.size()-1);
             }
             break;
 
         case ')':
 #ifndef NDEBUG
-            if (incstack.Last() != (size_t)-1)
-                this->srcfiles[incstack.Last()].closeline_pos = linepos;
+            if (incstack.top() != (size_t)-1)
+                this->srcfiles[incstack.top()].closeline_pos = linepos;
 #endif
-            incstack.Pop();
+            incstack.pop();
             fscanf(fp, "\n");
             break;
         case 'l':
@@ -294,20 +294,20 @@ int Pdfsync::scan_and_build_index(FILE *fp)
                 else {
                     if (cur_recordsec==-1){ // section not initiated yet?
                         record_section sec;
-                        sec.srcfile = incstack.Last();
+                        sec.srcfile = incstack.top();
                         sec.startpos = linepos;
                         sec.firstrecord = recordNumber;
-                        record_sections.Push(sec);
-                        cur_recordsec = (int)record_sections.Count() - 1;
+                        record_sections.push_back(sec);
+                        cur_recordsec = (int)record_sections.size()-1;
                     }
 #ifndef NDEBUG
                     record_sections[cur_recordsec].highestrecord = recordNumber;
 #endif
-                    assert(incstack.Last() != (size_t)-1);
-                    if (this->srcfiles[incstack.Last()].first_recordsection == (size_t)-1)
-                        this->srcfiles[incstack.Last()].first_recordsection = cur_recordsec;
+                    assert(incstack.top() != (size_t)-1);
+                    if (this->srcfiles[incstack.top()].first_recordsection == (size_t)-1)
+                        this->srcfiles[incstack.top()].first_recordsection = cur_recordsec;
                     
-                    this->srcfiles[incstack.Last()].last_recordsection = cur_recordsec;
+                    this->srcfiles[incstack.top()].last_recordsection = cur_recordsec;
                 }
             }
             break;
@@ -325,8 +325,8 @@ int Pdfsync::scan_and_build_index(FILE *fp)
 #ifndef NDEBUG
                     sec.endpos = -1;
 #endif
-                    pline_sections.Push(sec);
-                    cur_plinesec = (int)pline_sections.Count() - 1;
+                    pline_sections.push_back(sec);
+                    cur_plinesec = (int)pline_sections.size()-1;
 
                     assert(cur_sheetNumber != (UINT)-1);
                     pdfsheet_index[cur_sheetNumber] = cur_plinesec;
@@ -336,10 +336,11 @@ int Pdfsync::scan_and_build_index(FILE *fp)
         case 's':
             {
                 fscanf(fp, " %u\n", &cur_sheetNumber);
-                size_t maxsheet = pdfsheet_index.Count();
-                if (cur_sheetNumber >= maxsheet) {
-                    for (size_t s = maxsheet; s <= cur_sheetNumber; s++)
-                        pdfsheet_index.Push((size_t)-1);
+                size_t maxsheet = pdfsheet_index.size();
+                if (cur_sheetNumber>=maxsheet) {
+                    pdfsheet_index.resize(cur_sheetNumber+1);
+                    for (size_t s=maxsheet;s<=cur_sheetNumber;s++)
+                        pdfsheet_index[s] = (size_t)-1;
                 }
                 break;
             }
@@ -356,7 +357,7 @@ int Pdfsync::scan_and_build_index(FILE *fp)
         this->pline_sections[cur_plinesec].endpos = linepos;
 #endif
 
-    assert(incstack.Count() == 1);
+    assert(incstack.size()==1);
 
     return 0;
 }
@@ -394,7 +395,7 @@ UINT Pdfsync::pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT 
         closest_ydist_record = (UINT)-1; // vertically-closest record
 
     // find the entry in the index corresponding to this page
-    if (sheet>=pdfsheet_index.Count()) {
+    if (sheet>=pdfsheet_index.size()) {
         fclose(fp);
         return PDFSYNCERR_INVALID_PAGE_NUMBER;
     }
@@ -402,9 +403,9 @@ UINT Pdfsync::pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT 
     // read all the sections of 'p' declarations for this pdf sheet
     fpos_t linepos;
     for (size_t cur_psection = pdfsheet_index[sheet];
-        (cur_psection<this->pline_sections.Count())
-        && ((sheet < pdfsheet_index.Count() - 1 && cur_psection < pdfsheet_index[sheet+1])
-                || sheet==pdfsheet_index.Count() - 1) ;
+        (cur_psection<this->pline_sections.size())
+        && ((sheet<pdfsheet_index.size()-1 && cur_psection < pdfsheet_index[sheet+1])
+                || sheet==pdfsheet_index.size()-1) ;
         cur_psection++) {
         
         linepos = this->pline_sections[cur_psection].startpos;
@@ -490,7 +491,7 @@ UINT Pdfsync::pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT 
 //
 // The function returns PDFSYNCERR_SUCCESS if a matching record was found.
 //
-UINT Pdfsync::source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, Vec<size_t> &records)
+UINT Pdfsync::source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, vector<size_t> &records)
 {
     if (!srcfilename)
         return PDFSYNCERR_INVALID_ARGUMENT;
@@ -501,7 +502,7 @@ UINT Pdfsync::source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT co
 
     // find the source file entry
     size_t isrc = (size_t)-1;
-    for (size_t i = 0; i<this->srcfiles.Count(); i++) {
+    for (size_t i=0; i<this->srcfiles.size();i++) {
         if (str_ieq(mb_srcfilename, this->srcfiles[i].filename)) {
             isrc = i;
             break;
@@ -557,7 +558,7 @@ read_linerecords:
     UINT recordNumber = closestrec, columnNumber, lineNumber;
     fsetpos(fp, &closestrecline_filepos);
     do {
-        records.Push(recordNumber);
+        records.push_back(recordNumber);
         columnNumber = 0;
         lineNumber = 0;
         recordNumber = 0;
@@ -567,7 +568,7 @@ read_linerecords:
 
 }
 
-UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, Vec<RectI> &rects)
+UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects)
 {
     if (this->is_index_discarded())
         rebuild_index();
@@ -576,9 +577,9 @@ UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
     if (!fp)
         return PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED;
 
-    Vec<size_t> found_records;
+    vector<size_t> found_records;
     UINT ret = source_to_record(fp, srcfilename, line, col, found_records);
-    if (ret!=PDFSYNCERR_SUCCESS || found_records.Count() == 0 ) {
+    if (ret!=PDFSYNCERR_SUCCESS || found_records.size() == 0 ) {
         DBG_OUT_T("source->pdf: %s:%u -> no record found, error:%u\n", srcfilename, line, ret);
         fclose(fp);
         return ret;
@@ -587,9 +588,9 @@ UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
     // records have been found for the desired source position:
     // we now find the pages and position in the PDF corresponding to the first record in the
     // list of record found
-    for (size_t irecord = 0; irecord < found_records.Count(); irecord++) {
+    for (size_t irecord=0;irecord<found_records.size();irecord++) {
         size_t record = found_records[irecord];
-        for (size_t sheet = 0; sheet < this->pdfsheet_index.Count(); sheet++) {
+        for (size_t sheet=0;sheet<this->pdfsheet_index.size();sheet++) {
             if (this->pdfsheet_index[sheet] != (size_t)-1) {
                 fsetpos(fp, &this->pline_sections[this->pdfsheet_index[sheet]].startpos);
                 int c;
@@ -602,13 +603,13 @@ UINT Pdfsync::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
                     fscanf(fp, "%u %u %u\n", &recordNumber, &xPosition, &yPosition);
                     if (recordNumber == record) {
                         *page = (UINT)sheet;
-                        rects.Reset();
+                        rects.clear();
                         RectI rc;
                         rc.x = (UINT)SYNCCOORDINATE_TO_PDFCOORDINATE(xPosition);
                         rc.y = (UINT)SYNCCOORDINATE_TO_PDFCOORDINATE(yPosition);
                         rc.dx = MARK_SIZE;
                         rc.dy = MARK_SIZE;
-                        rects.Push(rc);
+                        rects.push_back(rc);
                         DBG_OUT_T("source->pdf: %s:%u -> record:%u -> page:%u, x:%u, y:%u\n",
                             srcfilename, line, record, sheet, rc.x, rc.y);
                         fclose(fp);
@@ -670,8 +671,8 @@ UINT SyncTex::pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT 
             // undecorate the filepath: replace * by space and / by \ 
             TCHAR *p = srcfilename;
             while(*p) {
-                if (*p=='*') *p=' ';
-                else if (*p=='/') *p='\\';
+                if(*p=='*') *p=' ';
+                else if(*p=='/') *p='\\';
                 p++;
             }
 
@@ -689,7 +690,7 @@ UINT SyncTex::pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT 
     return PDFSYNCERR_NO_SYNC_AT_LOCATION;
 }
 
-UINT SyncTex::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, Vec<RectI> &rects)
+UINT SyncTex::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects)
 {
     if (this->is_index_discarded())
         if (rebuild_index())
@@ -716,7 +717,7 @@ UINT SyncTex::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
             synctex_node_t node;
             int firstpage = -1;
             RectI rc;
-            rects.Reset();
+            rects.clear();
             while (node = synctex_next_result(this->scanner)) {
                 if (firstpage == -1)
                 {
@@ -730,7 +731,7 @@ UINT SyncTex::source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page
                 rc.y  = (int)(synctex_node_box_visible_v(node) - synctex_node_box_visible_height(node));
                 rc.dx =  (int)synctex_node_box_visible_width(node),
                 rc.dy = (int)(synctex_node_box_visible_height(node) + synctex_node_box_visible_depth(node));
-                rects.Push(rc);
+                rects.push_back(rc);
             }
             return ( firstpage > 0 ) ? PDFSYNCERR_SUCCESS : PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD;
     }
@@ -775,7 +776,7 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
     ack.reserved = 0;
     ack.fBusy = 0;
     
-    bool bUnicodeSender = IsWindowUnicode((HWND)wparam);
+    BOOL bUnicodeSender = IsWindowUnicode((HWND)wparam);
 
     LPVOID command = GlobalLock((HGLOBAL)hi);
     ack.fAck = 0;
@@ -814,12 +815,14 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                 || 2 == _stscanf(pos, _T(",%u,%u)]"), &line, &col))
                 )
             {
+                // Execute the command.
+
                 // check if the PDF is already opened
-                WindowInfo *win = FindWindowInfoByFile(pdffile);
+                WindowInfo *win = WindowInfoList::Find(pdffile);
                 
                 // if not then open it
                 if (newwindow || !win)
-                    win = LoadDocument(pdffile, !newwindow ? win : NULL);
+                    win = LoadPdf(pdffile, !newwindow ? win : NULL);
                 else if (win && WS_ERROR_LOADING_PDF == win->state)
                     SendMessage(win->hwndFrame, WM_COMMAND, IDM_REFRESH, FALSE);
                 
@@ -830,7 +833,7 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                         ack.fAck = 1;
                         assert(win->dm);
                         UINT page;
-                        Vec<RectI> rects;
+                        vector<RectI> rects;
                         UINT ret = win->pdfsync->source_to_pdf(srcfile, line, col, &page, rects);
                         WindowInfo_ShowForwardSearchResult(win, srcfile, line, col, ret, page, rects);
                         if (setfocus) {
@@ -850,11 +853,11 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                 )
             {
                 // check if the PDF is already opened
-                WindowInfo *win = FindWindowInfoByFile(pdffile);
+                WindowInfo *win = WindowInfoList::Find(pdffile);
                 
                 // if not then open it
                 if (newwindow || !win)
-                    win = LoadDocument(pdffile, !newwindow ? win : NULL);
+                    win = LoadPdf(pdffile, !newwindow ? win : NULL);
                 else if (win && WS_ERROR_LOADING_PDF == win->state) {
                     SendMessage(win->hwndFrame, WM_COMMAND, IDM_REFRESH, FALSE);
                     forcerefresh = false;
@@ -882,7 +885,7 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                 )
             {
                // check if the PDF is already opened
-                WindowInfo *win = FindWindowInfoByFile(pdffile);
+                WindowInfo *win = WindowInfoList::Find(pdffile);
                 if (win && WS_ERROR_LOADING_PDF == win->state)
                     SendMessage(win->hwndFrame, WM_COMMAND, IDM_REFRESH, FALSE);
                 if (win && WS_SHOWING_PDF == win->state) {
@@ -906,7 +909,7 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                 )
             {
                // check if the PDF is already opened
-                WindowInfo *win = FindWindowInfoByFile(pdffile);
+                WindowInfo *win = WindowInfoList::Find(pdffile);
                 if (win && WS_ERROR_LOADING_PDF == win->state)
                     SendMessage(win->hwndFrame, WM_COMMAND, IDM_REFRESH, FALSE);
                 if (win && WS_SHOWING_PDF == win->state) {
@@ -930,7 +933,7 @@ LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam)
                 )
             {
                // check if the PDF is already opened
-                WindowInfo *win = FindWindowInfoByFile(pdffile);
+                WindowInfo *win = WindowInfoList::Find(pdffile);
                 if (win && WS_ERROR_LOADING_PDF == win->state)
                     SendMessage(win->hwndFrame, WM_COMMAND, IDM_REFRESH, FALSE);
                 if (win && WS_SHOWING_PDF == win->state) {

@@ -1,8 +1,7 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright Krzysztof Kowalczyk 2006-2011
    License: GPLv3 */
-
-#ifndef PdfEngine_h
-#define PdfEngine_h
+#ifndef _PDF_ENGINE_H_
+#define _PDF_ENGINE_H_
 
 extern "C" {
 #ifdef _MSC_VER
@@ -17,9 +16,9 @@ __pragma(warning(pop))
 #endif
 }
 
-#include "BaseUtil.h"
-#include "GeomUtil.h"
-#include "TStrUtil.h"
+#include "base_util.h"
+#include "geom_util.h"
+#include "tstr_util.h"
 
 #define INVALID_PAGE_NO     -1
 #define INVALID_ROTATION    -1
@@ -27,7 +26,6 @@ __pragma(warning(pop))
 #define PDF_FILE_DPI        72.0f
 // number of page content trees to cache for quicker rendering
 #define MAX_PAGE_RUN_CACHE  8
-#define DOS_NEWLINE _T("\r\n")
 
 /* certain OCGs will only be rendered for some of these (e.g. watermarks) */
 enum RenderTarget { Target_View, Target_Print, Target_Export };
@@ -119,7 +117,7 @@ public:
     RenderedBitmap *renderBitmap(int pageNo, float zoom, int rotation,
                          fz_rect *pageRect=NULL, /* if NULL: defaults to the page's mediabox */
                          RenderTarget target=Target_View, bool useGdi=false);
-    bool PdfEngine::renderPage(HDC hDC, int pageNo, RectI *screenRect,
+    bool PdfEngine::renderPage(HDC hDC, int pageNo, RECT *screenRect,
                          fz_matrix *ctm=NULL, float zoom=0, int rotation=0,
                          fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
         return renderPage(hDC, getPdfPage(pageNo), screenRect, ctm, zoom, rotation, pageRect, target);
@@ -139,10 +137,10 @@ public:
     fz_obj   * getNamedDest(const char *name);
     char     * getPageLayoutName(void);
     bool       isDocumentDirectionR2L(void);
-    TCHAR    * ExtractPageText(int pageNo, TCHAR *lineSep=DOS_NEWLINE, fz_bbox **coords_out=NULL, RenderTarget target=Target_View);
+    TCHAR    * ExtractPageText(int pageNo, TCHAR *lineSep=_T(DOS_NEWLINE), fz_bbox **coords_out=NULL, RenderTarget target=Target_View);
     TCHAR    * getPdfInfo(char *key) const;
     int        getPdfVersion(void) const;
-    char     * getDecryptionKey(void) const { return _decryptionKey ? StrCopy(_decryptionKey) : NULL; }
+    char     * getDecryptionKey(void) const { return _decryptionKey ? str_dup(_decryptionKey) : NULL; }
     fz_buffer* getStreamData(int num=0, int gen=0);
     bool       isImagePage(int pageNo);
 
@@ -168,10 +166,10 @@ protected:
     bool            finishLoading(void);
     pdf_page      * getPdfPage(int pageNo, bool failIfBusy=false);
     fz_matrix       viewctm(pdf_page *page, float zoom, int rotate);
-    bool            renderPage(HDC hDC, pdf_page *page, RectI *screenRect,
+    bool            renderPage(HDC hDC, pdf_page *page, RECT *screenRect,
                                fz_matrix *ctm=NULL, float zoom=0, int rotation=0,
                                fz_rect *pageRect=NULL, RenderTarget target=Target_View);
-    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=DOS_NEWLINE,
+    TCHAR         * ExtractPageText(pdf_page *page, TCHAR *lineSep=_T(DOS_NEWLINE),
                                     fz_bbox **coords_out=NULL, RenderTarget target=Target_View,
                                     bool cacheRun=false);
 

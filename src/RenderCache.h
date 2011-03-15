@@ -1,8 +1,8 @@
 /* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef RenderCache_h
-#define RenderCache_h
+#ifndef _RENDER_CACHE_H_
+#define _RENDER_CACHE_H_
 
 #include "DisplayModel.h"
 
@@ -25,30 +25,23 @@ typedef struct TilePosition {
    and corresponding rendered bitmap.
 */
 typedef struct {
-    DisplayModel *   dm;
-    int              pageNo;
-    int              rotation;
-    float            zoom;
-    TilePosition     tile;
-
-    RenderedBitmap * bitmap;
-    int              refs;
+    DisplayModel * dm;
+    int            pageNo;
+    int            rotation;
+    float          zoom;
+    RenderedBitmap *bitmap;
+    TilePosition   tile;
+    int            refs;
 } BitmapCacheEntry;
 
-/* Even though this looks a lot like a BitmapCacheEntry, we keep it
-   separate for clarity in the code (PageRenderRequests are reused,
-   while BitmapCacheEntries are ref-counted) */
 typedef struct {
-    DisplayModel *      dm;
-    int                 pageNo;
-    int                 rotation;
-    float               zoom;
-    TilePosition        tile;
-
-    bool                abort;
-    DWORD               timestamp;
-    // owned by the PageRenderRequest (use it before reusing the request)
-    CallbackFunc *      callback;
+    DisplayModel *  dm;
+    int             pageNo;
+    int             rotation;
+    float          zoom;
+    TilePosition    tile;
+    BOOL            abort;
+    DWORD           timestamp;
 } PageRenderRequest;
 
 #define MAX_PAGE_REQUESTS 8
@@ -76,17 +69,17 @@ private:
 
 public:
     /* point these to the actual preferences for live updates */
-    bool              * invertColors;
+    BOOL              * invertColors;
     bool              * useGdiRenderer;
 
     RenderCache(void);
     ~RenderCache(void);
 
-    void                Render(DisplayModel *dm, int pageNo, CallbackFunc *callback=NULL);
+    void                Render(DisplayModel *dm, int pageNo);
     void                CancelRendering(DisplayModel *dm);
     bool                FreeForDisplayModel(DisplayModel *dm);
     void                KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
-    UINT                Paint(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,
+    UINT                Paint(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
                               PdfPageInfo *pageInfo, bool *renderOutOfDateCue);
 
 public:
@@ -95,23 +88,20 @@ public:
 
     bool                ClearCurrentRequest(void);
     bool                GetNextRequest(PageRenderRequest *req);
-    void                Add(PageRenderRequest &req, RenderedBitmap *bitmap);
+    void                Add(DisplayModel *dm, int pageNo, int rotation, float zoom,
+                            TilePosition tile, RenderedBitmap *bitmap);
     bool                FreeNotVisible(void);
 
 private:
     USHORT              GetTileRes(DisplayModel *dm, int pageNo);
-    bool                ReduceTileSize(void);
 
     bool                IsRenderQueueFull(void) const {
                             return _requestCount == MAX_PAGE_REQUESTS;
                         }
     UINT                GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile);
-    void                Render(DisplayModel *dm, int pageNo, TilePosition tile,
-                               bool clearQueue=true, CallbackFunc *callback=NULL);
+    void                Render(DisplayModel *dm, int pageNo, TilePosition tile, bool clearQueue=true);
     void                ClearQueueForDisplayModel(DisplayModel *dm, int pageNo=INVALID_PAGE_NO,
                                                   TilePosition *tile=NULL);
-
-    static DWORD WINAPI RenderCacheThread(LPVOID data);
 
     BitmapCacheEntry *  Find(DisplayModel *dm, int pageNo, int rotation,
                              float zoom=INVALID_ZOOM, TilePosition *tile=NULL);
@@ -123,7 +113,7 @@ private:
     UINT                PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,
                                   TilePosition tile, RectI *tileOnScreen, bool renderMissing,
                                   bool *renderOutOfDateCue, bool *renderedReplacement);
-    UINT                PaintTiles(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo,
+    UINT                PaintTiles(HDC hdc, RECT *bounds, DisplayModel *dm, int pageNo,
                                    RectI *pageOnScreen, USHORT tileRes, bool renderMissing,
                                    bool *renderOutOfDateCue, bool *renderedReplacement);
 };

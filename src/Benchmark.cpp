@@ -1,12 +1,9 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
 #include <windows.h>
 #include <tchar.h>
 #include "Benchmark.h"
 #include "PdfEngine.h"
-#include "WinUtil.h"
-#include "FileUtil.h"
+#include "WinUtil.hpp"
+#include "file_util.h"
 
 #define logbench(msg, ...) _ftprintf(stderr, _T(msg), __VA_ARGS__)
 
@@ -125,7 +122,7 @@ static void BenchFile(TCHAR *filePath, TCHAR *pagesSpec)
 
 void Bench(VStrList& filesToBench)
 {
-    size_t n = filesToBench.Count() / 2;
+    size_t n = filesToBench.size() / 2;
     for (size_t i = 0; i < n; i++)
         BenchFile(filesToBench[2*i], filesToBench[2*i + 1]);
 }

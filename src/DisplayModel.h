@@ -1,8 +1,7 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright Krzysztof Kowalczyk 2006-2011
    License: GPLv3 */
-
-#ifndef DisplayModel_h
-#define DisplayModel_h
+#ifndef _DISPLAY_MODEL_H_
+#define _DISPLAY_MODEL_H_
 
 #include "PdfEngine.h"
 #include "DisplayState.h"
@@ -108,7 +107,7 @@ public:
         if (!pdfEngine) return NULL;
         return pdfEngine->renderBitmap(pageNo, zoom, rotation, pageRect, target, useGdi);
     }
-    bool renderPage(HDC hDC, int pageNo, RectI *screenRect, float zoom=0, int rotation=0, fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
+    bool renderPage(HDC hDC, int pageNo, RECT *screenRect, float zoom=0, int rotation=0, fz_rect *pageRect=NULL, RenderTarget target=Target_View) {
         if (!pdfEngine) return false;
         return pdfEngine->renderPage(hDC, pageNo, screenRect, NULL, zoom, rotation, pageRect, target);
     }
@@ -211,11 +210,11 @@ public:
     PdfSel *        Find(PdfSearchDirection direction=FIND_FORWARD, TCHAR *text=NULL, UINT fromPage=0);
     // note: lastFoundPage might not be a valid page number!
     int             lastFoundPage(void) const { return _pdfSearch->findPage; }
-    bool            bFoundText;
+    BOOL            bFoundText;
 
     int             getPageNoByPoint(int x, int y);
 
-    bool            ShowResultRectToScreen(PdfSel *res);
+    BOOL            ShowResultRectToScreen(PdfSel *res);
 
     bool            getScrollState(ScrollState *state);
     void            setScrollState(ScrollState *state);
@@ -230,11 +229,10 @@ public:
 
     void            ageStore() const { pdfEngine->ageStore(); }
 
-    void            StartRenderingPage(int pageNo);
-
 protected:
 
     bool            load(const TCHAR *fileName, int startPage, WindowInfo *win);
+    void            startRenderingPage(int pageNo);
 
     bool            buildPagesInfo(void);
     float           zoomRealFromVirtualForPage(float zoomVirtual, int pageNo);
@@ -252,7 +250,7 @@ protected:
     void            clearAllRenderings(void);
 public:
     /* called when we decide that the display needs to be redrawn */
-    void            RepaintDisplay(void);
+    void            repaintDisplay(void);
 
 protected:
     void            goToPdfDest(fz_obj *dest);

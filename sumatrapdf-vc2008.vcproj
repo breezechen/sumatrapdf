@@ -68,7 +68,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\AppPrefs.cpp"
+				RelativePath=".\src\AppPrefs.cc"
 				>
 			</File>
 			<File
@@ -76,7 +76,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\AppTools.cpp"
+				RelativePath=".\src\AppTools.cc"
 				>
 			</File>
 			<File
@@ -100,7 +100,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\DisplayModel.cpp"
+				RelativePath=".\src\DisplayModel.cc"
 				>
 			</File>
 			<File
@@ -108,7 +108,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\DisplayState.cpp"
+				RelativePath=".\src\DisplayState.cc"
 				>
 			</File>
 			<File
@@ -116,11 +116,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\FileHistory.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\FileHistory.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\FileWatch.cpp"
+				RelativePath=".\src\FileWatch.cc"
 				>
 			</File>
 			<File
@@ -144,6 +148,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\MemSegment.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\MemSegment.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\ParseCommandLine.cpp"
 				>
 			</File>
@@ -152,7 +164,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\PdfEngine.cpp"
+				RelativePath=".\src\PdfEngine.cc"
 				>
 			</File>
 			<File
@@ -160,7 +172,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\PdfSearch.cpp"
+				RelativePath=".\src\PdfSearch.cc"
 				>
 			</File>
 			<File
@@ -168,7 +180,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\PdfSelection.cpp"
+				RelativePath=".\src\PdfSelection.cc"
 				>
 			</File>
 			<File
@@ -184,7 +196,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\RenderCache.cpp"
+				RelativePath=".\src\RenderCache.cc"
 				>
 			</File>
 			<File
@@ -204,7 +216,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\SumatraDialogs.cpp"
+				RelativePath=".\src\SumatraDialogs.cc"
 				>
 			</File>
 			<File
@@ -236,7 +248,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\translations_txt.cpp"
+				RelativePath=".\src\translations_txt.c"
 				>
 			</File>
 			<File
@@ -298,59 +310,51 @@
 			Name="baseutils"
 			>
 			<File
-				RelativePath=".\baseutils\BaseUtil.h"
+				RelativePath=".\baseutils\base_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.cpp"
+				RelativePath=".\baseutils\base_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.h"
+				RelativePath=".\baseutils\benc_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.cpp"
+				RelativePath=".\baseutils\benc_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.h"
+				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.cpp"
+				RelativePath=".\baseutils\file_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.h"
+				RelativePath=".\baseutils\geom_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\GeomUtil.h"
+				RelativePath=".\baseutils\geom_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.cpp"
+				RelativePath=".\baseutils\str_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.h"
+				RelativePath=".\baseutils\str_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\TStrUtil.cpp"
+				RelativePath=".\baseutils\tstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\TStrUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\UtilTests.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Vec.h"
+				RelativePath=".\baseutils\tstr_util.h"
 				>
 			</File>
 			<File
@@ -358,19 +362,27 @@
 				>
 			</File>
 			<File
+				RelativePath=".\baseutils\win_util.c"
+				>
+			</File>
+			<File
+				RelativePath=".\baseutils\win_util.h"
+				>
+			</File>
+			<File
 				RelativePath=".\baseutils\WinUtil.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WinUtil.h"
+				RelativePath=".\baseutils\WinUtil.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WStrUtil.cpp"
+				RelativePath=".\baseutils\wstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WStrUtil.h"
+				RelativePath=".\baseutils\wstr_util.h"
 				>
 			</File>
 		</Filter>
@@ -787,7 +799,7 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\docs\releasenotes.txt"
+			RelativePath=".\src\releasenotes.txt"
 			>
 		</File>
 	</Files>

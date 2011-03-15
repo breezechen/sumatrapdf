@@ -48,20 +48,9 @@ void winwarn(pdfapp_t *app, char *msg)
 
 void winerror(pdfapp_t *app, fz_error error)
 {
-	char msgbuf[160 * 30];
-	int i;
-
 	/* TODO: redirect stderr to a log file and display here */
 	fz_catch(error, "displaying error message to user");
-
-	fz_strlcpy(msgbuf, "An error has occurred.\n\n", sizeof msgbuf);
-	for (i = 0; i < fz_geterrorcount(); i++)
-	{
-		fz_strlcat(msgbuf, fz_geterrorline(i), sizeof msgbuf);
-		fz_strlcat(msgbuf, "\n", sizeof msgbuf);
-	}
-
-	MessageBoxA(hwndframe, msgbuf, "MuPDF: Error", MB_ICONERROR);
+	MessageBoxA(hwndframe, "An error has occurred.", "MuPDF: Error", MB_ICONERROR);
 	exit(1);
 }
 
@@ -236,7 +225,7 @@ dlogaboutproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch(message)
 	{
 	case WM_INITDIALOG:
-		SetDlgItemTextA(hwnd, 2, pdfapp_version(&gapp));
+		SetDlgItemTextA(hwnd, 2, "MuPDF is Copyright (C) 2006-2010 Artifex Software Inc.");
 		SetDlgItemTextA(hwnd, 3, pdfapp_usage(&gapp));
 		return TRUE;
 	case WM_COMMAND:

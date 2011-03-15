@@ -1,13 +1,10 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
 #include <windows.h>
 #include <dbghelp.h>
 #include "CrashHandler.h"
 
-#include "BaseUtil.h"
-#include "TStrUtil.h"
-#include "WinUtil.h"
+#include "base_util.h"
+#include "tstr_util.h"
+#include "WinUtil.hpp"
 #include "translations.h"
 
 typedef BOOL WINAPI MiniDumpWriteProc(
