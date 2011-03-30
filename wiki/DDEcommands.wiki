@@ -96,7 +96,7 @@ Multiple commands can be concatenated as follows:
   Topic: {{{control}}}
 
   * Forward Search:
-  DDE command: {{{[ForwardSearch("%bm.pdf","%Wc",%l,0)]}}}
+  DDE command: {{{[ForwardSearch("%bm.pdf","%Wc",%l,0,0,1)]}}}
   Server: {{{SUMATRA}}}
   Topic: {{{control}}}
 
