@@ -54,6 +54,16 @@ Multiple commands can be concatenated as follows:
   }}}
   * Note: the pdf file must be already opened.
 
+* Go to page
+  * Format
+  {{{
+  [GoToPage("<pdffilepath>",<page number>)]
+  }}}
+  * Eg:
+  {{{
+  [GoToPage("c:\file.pdf", 37)]
+  }}}
+  * Note: the pdf file must be already opened.
 
 = Configuring DDE-synchronization with TeX editors =
 
