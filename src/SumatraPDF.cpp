@@ -1440,6 +1440,7 @@ static bool LoadDocIntoWindow(
     win->dm = DisplayModel::CreateFromFileName(win, fileName, displayMode,
         startPage, win->GetViewPortSize());
     bool needrefresh = !win->dm;
+    bool oldTocShow = win->tocShow;
 
     if (!win->dm) {
         assert(!win->IsDocLoaded() && !win->IsAboutWindow());
@@ -1463,7 +1464,6 @@ static bool LoadDocIntoWindow(
 
     float zoomVirtual = gGlobalPrefs.m_defaultZoom;
     int rotation = DEFAULT_ROTATION;
-    bool oldTocShow = win->tocShow;
 
     if (state) {
         if (win->dm->validPageNo(startPage)) {
