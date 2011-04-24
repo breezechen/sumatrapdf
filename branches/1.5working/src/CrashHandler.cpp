@@ -565,6 +565,15 @@ static bool HasOwnSymbols()
     return HasSymbolsForAddress(addr);
 }
 
+static void AppendAddress(Str::Str<char>& s, DWORD64 addr)
+{
+#ifdef _WIN64
+    s.AppendFmt("%016I64X", addr);
+#else
+    s.AppendFmt("%08X", (DWORD)addr);
+#endif
+}
+
 static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
 {
     static const int MAX_SYM_LEN = 512;
@@ -587,11 +596,11 @@ static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
     if (GetAddrInfo((void*)addr, module, sizeof(module), section, offset)) {
         Str::ToLower(module);
         const char *moduleShort = Path::GetBaseName(module);
-#ifdef _WIN64
-        s.AppendFmt("%016I64X %02X:%016I64X %s", (DWORD64)addr, section, (DWORD64)offset, moduleShort);
-#else
-        s.AppendFmt("%08X %02X:%08X %s", (DWORD)addr, section, (DWORD)offset, moduleShort);
-#endif
+        AppendAddress(s, addr);
+        s.AppendFmt(" %02X:", section);
+        AppendAddress(s, offset);
+        s.AppendFmt(" %s", moduleShort);
+
         if (symName)
             s.AppendFmt("!%s+0x%x", symName, (int)symDisp);
         IMAGEHLP_LINE64 line;
@@ -600,14 +609,10 @@ static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
         if (_SymGetLineFromAddr64(GetCurrentProcess(), addr, &disp, &line)) {
             s.AppendFmt(" %s+%d", line.FileName, line.LineNumber);
         }
-        s.Append("\r\n");
     } else {
-#ifdef _WIN64
-        s.AppendFmt("%016I64X\r\n", addr);
-#else
-        s.AppendFmt("%08X\r\n", (DWORD)addr);
-#endif
+        AppendAddress(s, addr);
     }
+    s.Append("\r\n");
 }
 
 static bool GetStackFrameInfo(Str::Str<char>& s, STACKFRAME64 *stackFrame,
@@ -783,8 +788,24 @@ static void GetExceptionInfo(Str::Str<char>& s, EXCEPTION_POINTERS *excPointers)
     DWORD excCode = excRecord->ExceptionCode;
     s.AppendFmt("Exception: %08X %s\r\n", (int)excCode, ExceptionNameFromCode(excCode));
 
-    s.AppendFmt("Fault address: ");
+    s.AppendFmt("Faulting IP: ");
     GetAddressInfo(s, (DWORD64)excRecord->ExceptionAddress);
+    if ((EXCEPTION_ACCESS_VIOLATION == excCode) ||
+        (EXCEPTION_IN_PAGE_ERROR == excCode)) 
+    {
+        int readWriteFlag = (int)excRecord->ExceptionInformation[0];
+        DWORD64 dataVirtAddr = (DWORD64)excRecord->ExceptionInformation[1];
+        if (0 == readWriteFlag) {
+            s.Append("Fault reading address "); AppendAddress(s, dataVirtAddr);
+        } else if (1 == readWriteFlag) {
+            s.Append("Fault writing address "); AppendAddress(s, dataVirtAddr);
+        } else if (8 == readWriteFlag) {
+            s.Append("DEP violation at address "); AppendAddress(s, dataVirtAddr);
+        } else {
+            s.Append("unknown readWriteFlag: %d", readWriteFlag);
+        }
+        s.Append("\r\n");
+    }
 
     PCONTEXT ctx = excPointers->ContextRecord;
     s.AppendFmt("\r\nRegisters:\r\n");
