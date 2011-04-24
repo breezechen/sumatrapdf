@@ -3642,8 +3642,6 @@ static void BrowseFolder(WindowInfo *win, bool forward)
 
 static void OnVScroll(WindowInfo *win, WPARAM wParam)
 {
-    if (!win->dm) return;
-
     SCROLLINFO   si = {0};
     int          iVertPos;
     int          lineHeight = 16;
@@ -3681,8 +3679,6 @@ static void OnVScroll(WindowInfo *win, WPARAM wParam)
 
 static void OnHScroll(WindowInfo *win, WPARAM wParam)
 {
-    if (!win->dm) return;
-
     SCROLLINFO   si = {0};
     int          iVertPos;
 
