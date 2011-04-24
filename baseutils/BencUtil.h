@@ -40,7 +40,7 @@ protected:
 
 public:
     BencString(const TCHAR *value);
-    virtual ~BencString() { free(value); }
+    ~BencString() { free(value); }
 
     TCHAR *Value() const;
     const char *RawValue() const { return value; }
@@ -72,12 +72,11 @@ class BencArray : public BencObj {
 
 public:
     BencArray() : BencObj(BT_ARRAY) { }
-    virtual ~BencArray() { DeleteVecMembers(value); }
+    ~BencArray() { DeleteVecMembers(value); }
     size_t Length() const { return value.Count(); }
 
     void Add(BencObj *obj) {
         assert(obj && value.Find(obj) == -1);
-        if (!obj || value.Find(obj) != -1) return;
         value.Append(obj);
     }
     void Add(const TCHAR *string) {
@@ -116,7 +115,7 @@ class BencDict : public BencObj {
 
 public:
     BencDict() : BencObj(BT_DICT) { }
-    virtual ~BencDict() {
+    ~BencDict() {
         FreeVecMembers(keys);
         DeleteVecMembers(values);
     }
