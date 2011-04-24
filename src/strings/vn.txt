@@ -341,17 +341,11 @@ Tìm thấy từ ở trang %d
 Found text at page %d (again)
 Tìm thấy đoạn văn bản tại trang %d (lần nữa)
 
-Frequently Read
-Tần suất đọc
-
 GB
 GB
 
 Go to page
 Nhảy đến trang
-
-Hide frequently read
-Ẩn tần suất đọc
 
 Hint: Use the F3 key for finding again
 Gợi ý: Nhấn phím F3 để tìm lại
@@ -403,9 +397,6 @@ OK
 
 Open
 Mở tập tin
-
-Open a document...
-Mở một tài liệu...
 
 Open in &Adobe Reader
 Mở bằng Adobe Reader
@@ -503,9 +494,6 @@ Hiện thanh công cụ
 Show &pages continuously
 Xem trang liên tiếp
 
-Show frequently read
-Hiện tần suất đọc
-
 Show the &bookmarks sidebar when available
 Hiện chỉ dấu sách nếu có
 
@@ -583,8 +571,4 @@ copying text
 
 printing document
 đang in tập tin
-
-# Untranslated:
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 

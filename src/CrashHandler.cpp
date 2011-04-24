@@ -978,9 +978,13 @@ static bool DownloadSymbols(const TCHAR *symDir)
 #endif
 }
 
-// If we can't resolve the symbols, we assume it's because we don't have symbols
-// so we'll try to download them and retry. If we can resolve symbols, we'll
-// get the callstacks etc. and submit to our server for analysis.
+// We're (potentially) doing it twice for reliability reason. First with whatever symbols we already
+// have. Then, if we don't have symbols for our binaries, download the symbols from a website and
+// redo the callstacks. But if our state is so corrupted that we can't download symbols, we'll
+// at least have non-symbolized version of callstacks
+// TODO: if it turns out that that downloading symbols is reliable, we will
+// just do it once
+
 void SubmitCrashInfo()
 {
     char *s = NULL;

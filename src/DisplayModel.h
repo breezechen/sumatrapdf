@@ -4,9 +4,9 @@
 #ifndef DisplayModel_h
 #define DisplayModel_h
 
-#include "DisplayState.h"
 #include "PdfEngine.h"
 #include "ImagesEngine.h"
+#include "DisplayState.h"
 #include "TextSearch.h"
 
 // define the following if you want shadows drawn around the pages
@@ -15,13 +15,13 @@
 #define INVALID_PAGE_NO     -1
 #define INVALID_ROTATION    -1
 
-struct ScreenPagePadding {
+typedef struct {
     // padding around the whole canvas
     int top, left;
     int bottom, right;
     // padding between two pages in X and Y direction
     int inBetweenX, inBetweenY;
-};
+} ScreenPagePadding;
 
 /* the default distance between a page and window border edges, in pixels */
 #ifdef DRAW_PAGE_SHADOWS
@@ -48,7 +48,7 @@ struct ScreenPagePadding {
 #define NAV_HISTORY_LEN             50
 
 /* Describes many attributes of one page in one, convenient place */
-struct PageInfo {
+typedef struct {
     /* data that is constant for a given page. page size and rotation
        recorded in PDF file */
     SizeD           page;
@@ -74,7 +74,7 @@ struct PageInfo {
     PointI          screen;
     /* position of page relative to visible view port */
     RectI           pageOnScreen;
-};
+} PageInfo;
 
 /* The current scroll state (needed for saving/restoring the scroll position) */
 /* coordinates are in user space units (per page) */
@@ -90,7 +90,7 @@ public:
 
 class DisplayModel;
 
-class DisplayModelCallback : public PasswordUI {
+class DisplayModelCallback : public PasswordUI, public TextSearchTracker {
 public:
     virtual void Repaint() = 0;
     virtual void PageNoChanged(int pageNo) = 0;
@@ -280,6 +280,5 @@ public:
 bool    displayModeContinuous(DisplayMode displayMode);
 bool    displayModeFacing(DisplayMode displayMode);
 bool    displayModeShowCover(DisplayMode displayMode);
-int     normalizeRotation(int rotation);
 
 #endif

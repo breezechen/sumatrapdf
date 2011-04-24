@@ -563,11 +563,5 @@ drukowanie dokumentu
 #Bookmark Shortcuts
 #Bookmark shortcut to page %d of %s
 #Copy &Link Address
-#Frequently Read
-#Hide frequently read
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
-#Show frequently read
 

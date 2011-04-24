@@ -10,26 +10,21 @@
 #define RENDER_DELAY_FAILED    ((UINT)-2)
 #define INVALID_TILE_RES       ((USHORT)-1)
 
-class RenderingCallback {
-public:
-    virtual void Callback(RenderedBitmap *bmp=NULL) = 0;
-};
-
 /* A page is split into tiles of at most TILE_MAX_W x TILE_MAX_H pixels.
  * A given tile starts at (col / 2^res * page_width, row / 2^res * page_height). */
-struct TilePosition {
+typedef struct TilePosition {
     USHORT res, row, col;
 
     bool operator==(TilePosition other) {
         return res == other.res && row == other.row && col == other.col;
     }
-};
+} TilePosition;
 
 /* We keep a cache of rendered bitmaps. BitmapCacheEntry keeps data
    that uniquely identifies rendered page (dm, pageNo, rotation, zoom)
    and corresponding rendered bitmap.
 */
-struct BitmapCacheEntry {
+typedef struct {
     DisplayModel *   dm;
     int              pageNo;
     int              rotation;
@@ -38,25 +33,23 @@ struct BitmapCacheEntry {
 
     RenderedBitmap * bitmap;
     int              refs;
-};
+} BitmapCacheEntry;
 
 /* Even though this looks a lot like a BitmapCacheEntry, we keep it
    separate for clarity in the code (PageRenderRequests are reused,
    while BitmapCacheEntries are ref-counted) */
-struct PageRenderRequest {
+typedef struct {
     DisplayModel *      dm;
     int                 pageNo;
     int                 rotation;
     float               zoom;
     TilePosition        tile;
 
-    RectD               pageRect; // calculated from TilePosition
     bool                abort;
     DWORD               timestamp;
     // owned by the PageRenderRequest (use it before reusing the request)
-    // on rendering success, the callback gets handed the RenderedBitmap
-    RenderingCallback * callback;
-};
+    CallbackFunc *      callback;
+} PageRenderRequest;
 
 #define MAX_PAGE_REQUESTS 8
 
@@ -89,9 +82,7 @@ public:
     RenderCache();
     ~RenderCache();
 
-    void                Render(DisplayModel *dm, int pageNo, RenderingCallback *callback=NULL);
-    void                Render(DisplayModel *dm, int pageNo, int rotation, float zoom,
-                               RectD pageRect, RenderingCallback& callback);
+    void                Render(DisplayModel *dm, int pageNo, CallbackFunc *callback=NULL);
     void                CancelRendering(DisplayModel *dm);
     bool                FreeForDisplayModel(DisplayModel *dm);
     void                KeepForDisplayModel(DisplayModel *oldDm, DisplayModel *newDm);
@@ -116,10 +107,7 @@ private:
                         }
     UINT                GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile);
     void                Render(DisplayModel *dm, int pageNo, TilePosition tile,
-                               bool clearQueue=true, RenderingCallback *callback=NULL);
-    bool                Render(DisplayModel *dm, int pageNo, int rotation, float zoom,
-                               TilePosition *tile=NULL, RectD *pageRect=NULL,
-                               RenderingCallback *callback=NULL);
+                               bool clearQueue=true, CallbackFunc *callback=NULL);
     void                ClearQueueForDisplayModel(DisplayModel *dm, int pageNo=INVALID_PAGE_NO,
                                                   TilePosition *tile=NULL);
 

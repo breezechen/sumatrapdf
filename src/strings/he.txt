@@ -513,20 +513,14 @@ printing document
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Image files (*.%s)
 #No result found around line %u in file %s
-#Open a document...
 #P&roperties
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
 #Select &All\tCtrl-A
-#Show frequently read
 #SumatraPDF crashed
 #XPS documents
 

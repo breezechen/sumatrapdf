@@ -6,6 +6,11 @@
 
 #include "DisplayState.h"
 
+// number of most recently used files that will be shown in the menu
+// (and remembered in the preferences file, if just filenames are
+//  to be remembered and not individual view settings per document)
+#define MAX_RECENT_FILES_IN_MENU 10
+
 /* enum from m_windowState */
 enum {
     WIN_STATE_NORMAL = 1 /* use remebered position and size */
@@ -15,13 +20,7 @@ enum {
 };
 
 /* Most of the global settings that we persist in preferences file. */
-struct SerializableGlobalPrefs {
-    ~SerializableGlobalPrefs() {
-        free(m_versionToSkip);
-        free(m_inverseSearchCmdLine);
-        free(m_lastUpdateTime);
-    }
-
+typedef struct {
     bool m_globalPrefsOnly;
     /* pointer to a static string returned by Trans::ConfirmLanguage, don't free */
     const char *m_currentLanguage;
@@ -72,75 +71,15 @@ struct SerializableGlobalPrefs {
 
     bool m_invertColors; /* invert all colors for accessibility reasons (experimental!) */
 
-    bool m_showStartPage; /* whether to display Frequently Read documents or the About page in an empty window */
-    int  m_openCountWeek; /* week count since 2011-01-01 needed to "age" openCount values in file history */
-
     FILETIME m_lastPrefUpdate; /* modification time of the preferences file when it was last read */
-};
-
-#define GLOBAL_PREFS_STR            "gp"
-#define FILE_HISTORY_STR            "File History"
-
-#define FILE_STR                    "File"
-#define DISPLAY_MODE_STR            "Display Mode"
-#define PAGE_NO_STR                 "Page"
-#define ZOOM_VIRTUAL_STR            "ZoomVirtual"
-#define ROTATION_STR                "Rotation"
-#define SCROLL_X_STR                "Scroll X2"
-#define SCROLL_Y_STR                "Scroll Y2"
-#define WINDOW_STATE_STR            "Window State"
-#define WINDOW_X_STR                "Window X"
-#define WINDOW_Y_STR                "Window Y"
-#define WINDOW_DX_STR               "Window DX"
-#define WINDOW_DY_STR               "Window DY"
-#define SHOW_TOOLBAR_STR            "ShowToolbar"
-#define PDF_ASSOCIATE_DONT_ASK_STR  "PdfAssociateDontAskAgain"
-#define PDF_ASSOCIATE_ASSOCIATE_STR "PdfAssociateShouldAssociate"
-#define UI_LANGUAGE_STR             "UILanguage"
-#define SHOW_TOC_STR                "ShowToc"
-#define TOC_DX_STR                  "Toc DX"
-#define TOC_STATE_STR               "TocToggles"
-#define BG_COLOR_STR                "BgColor"
-#define ESC_TO_EXIT_STR             "EscToExit"
-#define INVERSE_SEARCH_COMMANDLINE  "InverseSearchCommandLine"
-#define ENABLE_TEX_ENHANCEMENTS_STR "ExposeInverseSearch"
-#define VERSION_TO_SKIP_STR         "VersionToSkip"
-#define LAST_UPDATE_STR             "LastUpdate"
-#define ENABLE_AUTO_UPDATE_STR      "EnableAutoUpdate"
-#define REMEMBER_OPENED_FILES_STR   "RememberOpenedFiles"
-#define PRINT_COMMANDLINE           "PrintCommandLine"
-#define GLOBAL_PREFS_ONLY_STR       "GlobalPrefsOnly"
-#define USE_GLOBAL_VALUES_STR       "UseGlobalValues"
-#define DECRYPTION_KEY_STR          "Decryption Key"
-#define SHOW_RECENT_FILES_STR       "ShowStartPage"
-#define OPEN_COUNT_STR              "OpenCount"
-#define OPEN_COUNT_WEEK_STR         "OpenCountWeek"
-#define FWDSEARCH_OFFSET            "ForwardSearch_HighlightOffset"
-#define FWDSEARCH_COLOR             "ForwardSearch_HighlightColor"
-#define FWDSEARCH_WIDTH             "ForwardSearch_HighlightWidth"
-#define FWDSEARCH_PERMANENT         "ForwardSearch_HighlightPermanent"
-
-#define DM_AUTOMATIC_STR            "automatic"
-#define DM_SINGLE_PAGE_STR          "single page"
-#define DM_FACING_STR               "facing"
-#define DM_BOOK_VIEW_STR            "book view"
-#define DM_CONTINUOUS_STR           "continuous"
-#define DM_CONTINUOUS_FACING_STR    "continuous facing"
-#define DM_CONTINUOUS_BOOK_VIEW_STR "continuous book view"
+} SerializableGlobalPrefs;
 
 class FileHistory;
 
 namespace Prefs {
 
-bool    Load(TCHAR *filepath, SerializableGlobalPrefs& globalPrefs, FileHistory& fileHistory);
-bool    Save(TCHAR *filepath, SerializableGlobalPrefs& globalPrefs, FileHistory& fileHistory);
-
-}
-
-namespace DisplayModeConv {
-
-const TCHAR *   NameFromEnum(DisplayMode var);
-bool            EnumFromName(const TCHAR *txt, DisplayMode *resOut);
+bool    Load(TCHAR *filepath, SerializableGlobalPrefs *globalPrefs, FileHistory *fileHistory);
+bool    Save(TCHAR *filepath, SerializableGlobalPrefs *globalPrefs, FileHistory *fileHistory);
 
 }
 

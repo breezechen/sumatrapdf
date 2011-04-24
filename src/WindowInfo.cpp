@@ -8,7 +8,6 @@
 #include "PdfSync.h"
 #include "Resource.h"
 #include "FileWatch.h"
-#include "Notifications.h"
 
 WindowInfo::WindowInfo(HWND hwnd) :
     dm(NULL), menu(NULL), hwndFrame(hwnd),
@@ -20,7 +19,8 @@ WindowInfo::WindowInfo(HWND hwnd) :
     hwndPageText(NULL), hwndPageBox(NULL), hwndPageBg(NULL), hwndPageTotal(NULL),
     hwndTocBox(NULL), hwndTocTree(NULL), hwndSpliter(NULL),
     hwndInfotip(NULL), infotipVisible(false), hwndProperties(NULL),
-    findThread(NULL), findCanceled(false), printThread(NULL), printCanceled(false),
+    findThread(NULL), findCanceled(false), findPercent(0), findStatusVisible(false),
+    findStatusThread(NULL), stopFindStatusThreadEvent(NULL), findStatusHighlight(false),
     showSelection(false), mouseAction(MA_IDLE),
     prevZoomVirtual(INVALID_ZOOM), prevDisplayMode(DM_AUTOMATIC),
     loadedFilePath(NULL), currPageNo(0),
@@ -37,24 +37,24 @@ WindowInfo::WindowInfo(HWND hwnd) :
     ReleaseDC(hwndFrame, hdcFrame);
 
     buffer = new DoubleBuffer(hwndCanvas, canvasRc);
-    linkHandler = new LinkHandler(*this);
-    messages = new MessageWndList();
+
+    linkHandler = new PdfLinkHandler(this);
     fwdsearchmark.show = false;
 }
 
 WindowInfo::~WindowInfo() {
     this->AbortFinding();
-    this->AbortPrinting();
-
     delete this->dm;
     delete this->watcher;
     delete this->pdfsync;
     delete this->linkHandler;
 
+    CloseHandle(this->stopFindStatusThreadEvent);
+    CloseHandle(this->findStatusThread);
+
     delete this->buffer;
     delete this->selectionOnPage;
     delete this->linkOnLastButtonDown;
-    delete this->messages;
 
     free(this->loadedFilePath);
 
@@ -95,31 +95,13 @@ SizeI WindowInfo::GetViewPortSize()
     return size;
 }
 
-void WindowInfo::ShowNotification(const TCHAR *message, bool autoDismiss, bool highlight, NotificationGroup groupId)
-{
-    MessageWnd *wnd = new MessageWnd(this->hwndCanvas, message, autoDismiss ? 3000 : 0, highlight, this->messages);
-    this->messages->Add(wnd, groupId);
-}
-
-void WindowInfo::AbortFinding(bool hideMessage)
+void WindowInfo::AbortFinding()
 {
     if (this->findThread) {
         this->findCanceled = true;
         WaitForSingleObject(this->findThread, INFINITE);
     }
     this->findCanceled = false;
-
-    if (hideMessage)
-        this->messages->CleanUp(NG_FIND_PROGRESS);
-}
-
-void WindowInfo::AbortPrinting()
-{
-    if (this->printThread) {
-        this->printCanceled = true;
-        WaitForSingleObject(this->printThread, INFINITE);
-    }
-    this->printCanceled = false;
 }
 
 void WindowInfo::RedrawAll(bool update)
@@ -142,7 +124,7 @@ HTREEITEM WindowInfo::TreeItemForPageNo(HTREEITEM hItem, int pageNo)
 
         // return if this item is on the specified page (or on a latter page)
         if (item.lParam) {
-            int page = ((DocToCItem *)item.lParam)->pageNo;
+            int page = ((PdfTocItem *)item.lParam)->pageNo;
             if (1 <= page && page <= pageNo)
                 hCurrItem = hItem;
             if (page >= pageNo)
@@ -187,7 +169,7 @@ void WindowInfo::UpdateToCExpansionState(HTREEITEM hItem)
         TreeView_GetItem(this->hwndTocTree, &item);
 
         // add the ids of toggled items to tocState
-        DocToCItem *tocItem = item.lParam ? (DocToCItem *)item.lParam : NULL;
+        PdfTocItem *tocItem = item.lParam ? (PdfTocItem *)item.lParam : NULL;
         bool wasToggled = tocItem && !(item.state & TVIS_EXPANDED) == tocItem->open;
         if (wasToggled) {
             int *newState = (int *)realloc(this->tocState, (++this->tocState[0] + 1) * sizeof(int));
@@ -236,8 +218,8 @@ void WindowInfo::ToggleZoom()
 
 void WindowInfo::ZoomToSelection(float factor, bool relative)
 {
-    if (!this->IsDocLoaded())
-        return;
+    assert(this->dm);
+    if (!this->IsDocLoaded()) return;
 
     PointI pt;
     bool zoomToPt = this->showSelection && this->selectionOnPage;
@@ -399,26 +381,32 @@ Vec<SelectionOnPage> *SelectionOnPage::FromTextSelect(TextSel *textSel)
     return sel;
 }
 
-BaseEngine *LinkHandler::engine() const
+extern "C" {
+__pragma(warning(push))
+#include <fitz.h>
+__pragma(warning(pop))
+}
+
+PdfEngine *PdfLinkHandler::engine()
 {
     if (!owner || !owner->dm)
         return NULL;
-    return owner->dm->engine;
+    return owner->dm->pdfEngine;
 }
 
-void LinkHandler::GotoLink(PageDestination *link)
+void PdfLinkHandler::GotoPdfLink(PageDestination *link)
 {
     assert(owner && owner->linkHandler == this);
-    if (!link)
-        return;
     if (!engine())
+        return;
+    if (!link || !link->AsLink())
         return;
 
     DisplayModel *dm = owner->dm;
-    ScopedMem<TCHAR> path(link->GetDestValue());
+    ScopedMem<TCHAR> path(link->GetValue());
     const char *type = link->GetType();
     if (Str::Eq(type, "ScrollTo")) {
-        ScrollTo(link);
+        GotoPdfDest(link->dest());
     }
     else if (Str::Eq(type, "LaunchURL") && path) {
         if (Str::StartsWithI(path, _T("http:")) || Str::StartsWithI(path, _T("https:")))
@@ -426,12 +414,16 @@ void LinkHandler::GotoLink(PageDestination *link)
         /* else: unsupported uri type */
     }
     else if (Str::Eq(type, "LaunchEmbedded")) {
-        // open embedded PDF documents in a new window
-        if (path && Str::StartsWith(path.Get(), dm->fileName()))
-            LoadDocument(path);
-        // offer to save other attachments to a file
-        else
-            link->SaveEmbedded(LinkSaver(owner->hwndFrame, path));
+        fz_obj *embedded = link->dest();
+        if (path && Str::EndsWithI(path, _T(".pdf"))) {
+            // open embedded PDF documents in a new window
+            ScopedMem<TCHAR> combinedPath(Str::Format(_T("%s:%d:%d"), dm->fileName(), fz_to_num(embedded), fz_to_gen(embedded)));
+            LoadDocument(combinedPath);
+        } else {
+            // offer to save other attachments to a file
+            PdfLinkSaver saveUI(owner->hwndFrame, path);
+            dm->pdfEngine->SaveEmbedded(embedded, saveUI);
+        }
     }
     else if ((Str::Eq(type, "LaunchFile") || Str::Eq(type, "ScrollToEx")) && path) {
         /* for safety, only handle relative PDF paths and only open them in SumatraPDF */
@@ -443,7 +435,7 @@ void LinkHandler::GotoLink(PageDestination *link)
             WindowInfo *newWin = LoadDocument(combinedPath);
 
             if (Str::Eq(type, "ScrollToEx") && newWin && newWin->IsDocLoaded())
-                newWin->linkHandler->ScrollTo(link);
+                newWin->linkHandler->GotoPdfDest(link->dest());
         }
     }
     // predefined named actions
@@ -470,49 +462,61 @@ void LinkHandler::GotoLink(PageDestination *link)
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_ZOOM_CUSTOM, 0);
 }
 
-void LinkHandler::ScrollTo(PageDestination *dest)
+void PdfLinkHandler::GotoPdfDest(fz_obj *dest)
 {
     assert(owner && owner->linkHandler == this);
-    int pageNo = dest->GetDestPageNo();
+    if (!engine())
+        return;
+
+    int pageNo = engine()->FindPageNo(dest);
     if (pageNo <= 0)
         return;
 
     DisplayModel *dm = owner->dm;
     PointI scroll(-1, 0);
-    RectD rect = dest->GetDestRect();
+    float zoom = INVALID_ZOOM;
 
-    if (rect.IsEmpty()) {
-        // PDF: /XYZ top left
-        // scroll to rect.TL()
-        PointD scrollD = dm->engine->Transform(rect.TL(), pageNo, dm->zoomReal(), dm->rotation());
+    fz_obj *obj = fz_array_get(dest, 1);
+    const char *type = fz_to_name(obj);
+    if (Str::Eq(type, "XYZ")) {
+        PointD scrollD = PointD(fz_to_real(fz_array_get(dest, 2)),
+                                fz_to_real(fz_array_get(dest, 3)));
+        scrollD = engine()->Transform(scrollD, pageNo, dm->zoomReal(), dm->rotation());
         scroll = scrollD.Convert<int>();
 
-        // default values for the coordinates mean: keep the current position
-        if (DEST_USE_DEFAULT == rect.x)
+        // NULL values for the coordinates mean: keep the current position
+        if (fz_is_null(fz_array_get(dest, 2)))
             scroll.x = -1;
-        if (DEST_USE_DEFAULT == rect.y) {
+        if (fz_is_null(fz_array_get(dest, 3))) {
             PageInfo *pageInfo = dm->getPageInfo(dm->currentPageNo());
             scroll.y = -(pageInfo->pageOnScreen.y - dm->getPadding()->top);
             scroll.y = max(scroll.y, 0); // Adobe Reader never shows the previous page
         }
     }
-    else if (rect.dx != DEST_USE_DEFAULT && rect.dy != DEST_USE_DEFAULT) {
-        // PDF: /FitR left bottom right top
-        RectD rectD = dm->engine->Transform(rect, pageNo, dm->zoomReal(), dm->rotation());
+    else if (Str::Eq(type, "FitR")) {
+        RectD rect = RectD::FromXY(fz_to_real(fz_array_get(dest, 2)),  // left
+                                   fz_to_real(fz_array_get(dest, 5)),  // top
+                                   fz_to_real(fz_array_get(dest, 4)),  // right
+                                   fz_to_real(fz_array_get(dest, 3))); // bottom
+        RectD rectD = engine()->Transform(rect, pageNo, dm->zoomReal(), dm->rotation());
         scroll = rectD.TL().Convert<int>();
 
-        // Rect<float> rectF = dm->engine->Transform(rect, pageNo, 1.0, dm->rotation()).Convert<float>();
-        // zoom = 100.0f * min(owner->canvasRc.dx / rectF.dx, owner->canvasRc.dy / rectF.dy);
+        Rect<float> rectF = engine()->Transform(rect, pageNo, 1.0, dm->rotation()).Convert<float>();
+        zoom = 100.0f * min(owner->canvasRc.dx / rectF.dx, owner->canvasRc.dy / rectF.dy);
     }
-    else if (rect.y != DEST_USE_DEFAULT) {
-        // PDF: /FitH top  or  /FitBH top
-        PointD scrollD = dm->engine->Transform(rect.TL(), pageNo, dm->zoomReal(), dm->rotation());
+    else if (Str::Eq(type, "FitH") || Str::Eq(type, "FitBH")) {
+        PointD scrollD = PointD(0, fz_to_real(fz_array_get(dest, 2))); // top
+        scrollD = engine()->Transform(scrollD, pageNo, dm->zoomReal(), dm->rotation());
         scroll.y = max(scrollD.Convert<int>().y, 0); // Adobe Reader never shows the previous page
 
-        // zoom = FitBH ? ZOOM_FIT_CONTENT : ZOOM_FIT_WIDTH
+        zoom = Str::Eq(type, "FitH") ? ZOOM_FIT_WIDTH : ZOOM_FIT_CONTENT;
     }
-    // else if (Fit || FitV) zoom = ZOOM_FIT_PAGE
-    // else if (FitB || FitBV) zoom = ZOOM_FIT_CONTENT
+    else if (Str::Eq(type, "Fit") || Str::Eq(type, "FitV")) {
+        zoom = ZOOM_FIT_PAGE;
+    }
+    else if (Str::Eq(type, "FitB") || Str::Eq(type, "FitBV")) {
+        zoom = ZOOM_FIT_CONTENT;
+    }
     /* // ignore author-set zoom settings (at least as long as there's no way to overrule them)
     if (zoom != INVALID_ZOOM) {
         // TODO: adjust the zoom level before calculating the scrolling coordinates
@@ -523,13 +527,11 @@ void LinkHandler::ScrollTo(PageDestination *dest)
     dm->goToPage(pageNo, scroll.y, true, scroll.x);
 }
 
-void LinkHandler::GotoNamedDest(const TCHAR *name)
+void PdfLinkHandler::GotoNamedDest(const TCHAR *name)
 {
     assert(owner && owner->linkHandler == this);
-    PageDestination *dest = engine() ? engine()->GetNamedDest(name) : NULL;
-    if (!dest)
+    if (!engine())
         return;
 
-    ScrollTo(dest);
-    delete dest;
+    GotoPdfDest(engine()->GetNamedDest(name));
 }

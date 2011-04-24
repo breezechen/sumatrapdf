@@ -39,7 +39,6 @@ EXPORTS
 	fz_hash_get_val
 	fz_concat
 	fz_scale
-	fz_shear
 	fz_rotate
 	fz_translate
 	fz_invert_matrix
@@ -322,10 +321,8 @@ EXPORTS
 	pdf_needs_password
 	pdf_authenticate_password
 	pdf_has_permission
-	pdf_get_crypt_revision
-	pdf_get_crypt_method
-	pdf_get_crypt_length
 	pdf_get_crypt_key
+	pdf_get_crypt_revision
 	pdf_debug_crypt
 	pdf_new_store
 	pdf_free_store
@@ -384,8 +381,7 @@ EXPORTS
 	pdf_load_to_unicode
 	pdf_font_cid_to_gid
 	pdf_find_builtin_font
-	pdf_find_substitute_font
-	pdf_find_substitute_cjk_font
+	pdf_find_builtin_cjk_font
 	pdf_load_windows_font
 	pdf_load_similar_cjk_font
 	pdf_load_type3_font
@@ -470,13 +466,6 @@ EXPORTS
 	xps_open_file
 	xps_open_stream
 	xps_free_context
-	xps_parse_outline
-	xps_free_outline
-	xps_parse_named_dests
-	xps_free_named_dest
-	xps_extract_link_info
-	xps_free_link
-	xps_extract_doc_props
 
 ; zlib exports
 

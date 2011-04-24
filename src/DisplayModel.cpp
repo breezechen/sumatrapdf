@@ -90,31 +90,6 @@ int columnsFromDisplayMode(DisplayMode displayMode)
     return 1;
 }
 
-int normalizeRotation(int rotation)
-{
-    assert((rotation % 90) == 0);
-    rotation = rotation % 360;
-    if (rotation < 0)
-        rotation += 360;
-    if (rotation < 0 || rotation >= 360 || (rotation % 90) != 0) {
-        DBG_OUT("normalizeRotation() invalid rotation: %d\n", rotation);
-        return 0;
-    }
-    return rotation;
-}
-
-static bool ValidZoomVirtual(float zoomVirtual)
-{
-    if ((ZOOM_FIT_PAGE == zoomVirtual) || (ZOOM_FIT_WIDTH == zoomVirtual) ||
-        (ZOOM_FIT_CONTENT == zoomVirtual) || (ZOOM_ACTUAL_SIZE == zoomVirtual))
-        return true;
-    if ((zoomVirtual < ZOOM_MIN) || (zoomVirtual > ZOOM_MAX)) {
-        DBG_OUT("ValidZoomVirtual() invalid zoom: %.4f\n", zoomVirtual);
-        return false;
-    }
-    return true;
-}
-
 bool DisplayModel::displayStateFromModel(DisplayState *ds)
 {
     if (!ds->filePath || !Str::Eq(ds->filePath, fileName())) {
@@ -233,6 +208,7 @@ PageInfo *DisplayModel::getPageInfo(int pageNo) const
 {
     if (!validPageNo(pageNo))
         return NULL;
+    assert(validPageNo(pageNo));
     assert(_pagesInfo);
     if (!_pagesInfo) return NULL;
     return &(_pagesInfo[pageNo-1]);
@@ -287,7 +263,7 @@ bool DisplayModel::load(const TCHAR *fileName, int startPage, SizeI viewPort)
         return false;
 
     textSelection = new TextSelection(engine);
-    textSearch = new TextSearch(engine);
+    textSearch = new TextSearch(engine, _callback);
     return true;
 }
 
@@ -546,7 +522,9 @@ void DisplayModel::Relayout(float zoomVirtual, int rotation)
     if (!_pagesInfo)
         return;
 
-    _rotation = normalizeRotation(rotation);
+    normalizeRotation(&rotation);
+    assert(validRotation(rotation));
+    _rotation = rotation;
 
     bool needHScroll = false;
     bool needVScroll = false;
@@ -893,12 +871,15 @@ RectD DisplayModel::CvtFromScreen(RectI r, int pageNo)
    */
 PageElement *DisplayModel::GetElementAtPos(PointI pt)
 {
+    if (!pdfEngine)
+        return NULL;
+
     int pageNo = GetPageNoByPoint(pt);
     if (!validPageNo(pageNo))
         return NULL;
 
     PointD pos = CvtFromScreen(pt, pageNo);
-    return engine->GetElementAtPos(pageNo, pos);
+    return pdfEngine->GetElementAtPos(pageNo, pos);
 }
 
 bool DisplayModel::IsOverText(PointI pt)
@@ -1319,11 +1300,19 @@ void DisplayModel::zoomBy(float zoomFactor, PointI *fixPt)
 
 void DisplayModel::rotateBy(int newRotation)
 {
-    newRotation = normalizeRotation(newRotation);
+    normalizeRotation(&newRotation);
     assert(0 != newRotation);
     if (0 == newRotation)
         return;
-    newRotation = normalizeRotation(newRotation + _rotation);
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
+        return;
+
+    newRotation += _rotation;
+    normalizeRotation(&newRotation);
+    assert(validRotation(newRotation));
+    if (!validRotation(newRotation))
+        return;
 
     int currPageNo = currentPageNo();
     Relayout(_zoomVirtual, newRotation);

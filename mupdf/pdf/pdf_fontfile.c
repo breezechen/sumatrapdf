@@ -7,10 +7,6 @@
 
 #include "../generated/font_base14.h"
 
-#ifndef NODROIDFONT
-#include "../generated/font_droid.h"
-#endif
-
 #ifndef NOCJKFONT
 #include "../generated/font_cjk.h"
 #endif
@@ -87,42 +83,7 @@ pdf_find_builtin_font(char *name, unsigned int *len)
 }
 
 unsigned char *
-pdf_find_substitute_font(int mono, int serif, int bold, int italic, unsigned int *len)
-{
-#ifdef NODROIDFONT
-	if (mono) {
-		if (bold) {
-			if (italic) return pdf_find_builtin_font("Courier-BoldOblique", len);
-			else return pdf_find_builtin_font("Courier-Bold", len);
-		} else {
-			if (italic) return pdf_find_builtin_font("Courier-Oblique", len);
-			else return pdf_find_builtin_font("Courier", len);
-		}
-	} else if (serif) {
-		if (bold) {
-			if (italic) return pdf_find_builtin_font("Times-BoldItalic", len);
-			else return pdf_find_builtin_font("Times-Bold", len);
-		} else {
-			if (italic) return pdf_find_builtin_font("Times-Italic", len);
-			else return pdf_find_builtin_font("Times-Roman", len);
-		}
-	} else {
-		if (bold) {
-			if (italic) return pdf_find_builtin_font("Helvetica-BoldOblique", len);
-			else return pdf_find_builtin_font("Helvetica-Bold", len);
-		} else {
-			if (italic) return pdf_find_builtin_font("Helvetica-Oblique", len);
-			else return pdf_find_builtin_font("Helvetica", len);
-		}
-	}
-#else
-	*len = sizeof pdf_font_DroidSans;
-	return (unsigned char*) pdf_font_DroidSans;
-#endif
-}
-
-unsigned char *
-pdf_find_substitute_cjk_font(int ros, int serif, unsigned int *len)
+pdf_find_builtin_cjk_font(int ros, int gothic, unsigned int *len)
 {
 #ifndef NOCJKFONT
 	*len = sizeof pdf_font_DroidSansFallback;
@@ -723,9 +684,9 @@ pdf_load_windows_font(pdf_font_desc *font, char *fontname)
 }
 
 fz_error
-pdf_load_similar_cjk_font(pdf_font_desc *font, int ros, int serif)
+pdf_load_similar_cjk_font(pdf_font_desc *font, int ros, int gothic)
 {
-	if (serif)
+	if (!gothic)
 	{
 		switch (ros)
 		{

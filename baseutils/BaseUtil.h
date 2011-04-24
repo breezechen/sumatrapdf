@@ -107,10 +107,10 @@ public:
     operator T*() const { return obj; }
 };
 
-class CallbackFunc {
+class CallbackFunc
+{
 public:
-    virtual ~CallbackFunc() { }
-    virtual void Callback() = 0;
+    virtual void Callback(void *arg=NULL) = 0;
 };
 
 #endif

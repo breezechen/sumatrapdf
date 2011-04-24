@@ -345,17 +345,11 @@ Texte trouvé à la page %d
 Found text at page %d (again)
 Texte trouvé page %d (suivant)
 
-Frequently Read
-Documents lus fréquemment
-
 GB
 Go
 
 Go to page
 Aller à la page
-
-Hide frequently read
-Masquer les documents lus fréquemment
 
 Hint: Use the F3 key for finding again
 Remarque : utilisez la touche F3 pour trouver de nouveau
@@ -407,9 +401,6 @@ OK
 
 Open
 Ouvrir
-
-Open a document...
-Ouvrir un document...
 
 Open in &Adobe Reader
 Ouvrir dans &Adobe Reader
@@ -507,9 +498,6 @@ Afficher la &barre d'outils
 Show &pages continuously
 &Vue continue
 
-Show frequently read
-Montrer les documents fréquemment lus
-
 Show the &bookmarks sidebar when available
 Voir la barre latérale des &signets lorsqu'elle est disponible
 
@@ -587,8 +575,4 @@ copie du texte
 
 printing document
 impression du document
-
-# Untranslated:
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 

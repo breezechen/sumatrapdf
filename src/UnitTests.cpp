@@ -9,6 +9,8 @@
 #include "AppTools.h"
 #include "Benchmark.h"
 
+extern DWORD FileTimeDiffInSecs(FILETIME& ft1, FILETIME& ft2);
+
 static void hexstrTest()
 {
     unsigned char buf[6] = {1, 2, 33, 255, 0, 18};
@@ -61,7 +63,7 @@ static void ParseCommandLineTest()
     {
         CommandLineInfo i;
         i.ParseCommandLine(_T("SumatraPDF.exe -bench bar.pdf 1 -invert-colors"));
-        assert(true == i.invertColors);
+        assert(TRUE == i.invertColors);
         assert(2 == i.filesToBenchmark.Count());
         assert(Str::Eq(_T("bar.pdf"), i.filesToBenchmark.At(0)));
         assert(Str::Eq(_T("1"), i.filesToBenchmark.At(1)));

@@ -382,22 +382,16 @@ RectI ShiftRectToWorkArea(RectI rect, bool bFully)
     return rect;
 }
 
-void PaintRect(HDC hdc, RectI& rect)
+void PaintRect(HDC hdc, RECT * rect)
 {
-    MoveToEx(hdc, rect.x, rect.y, NULL);
-    LineTo(hdc, rect.x + rect.dx - 1, rect.y);
-    LineTo(hdc, rect.x + rect.dx - 1, rect.y + rect.dy - 1);
-    LineTo(hdc, rect.x, rect.y + rect.dy - 1);
-    LineTo(hdc, rect.x, rect.y);
+    MoveToEx(hdc, rect->left, rect->top, NULL);
+    LineTo(hdc, rect->right - 1, rect->top);
+    LineTo(hdc, rect->right - 1, rect->bottom - 1);
+    LineTo(hdc, rect->left, rect->bottom - 1);
+    LineTo(hdc, rect->left, rect->top);
 }
 
-void PaintLine(HDC hdc, RectI& rect)
-{
-    MoveToEx(hdc, rect.x, rect.y, NULL);
-    LineTo(hdc, rect.x + rect.dx, rect.y + rect.dy);
-}
-
-void DrawCenteredText(HDC hdc, RectI& r, const TCHAR *txt)
+void DrawCenteredText(HDC hdc, RectI r, const TCHAR *txt)
 {    
     SetBkMode(hdc, TRANSPARENT);
     DrawText(hdc, txt, -1, &r.ToRECT(), DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -485,11 +479,6 @@ DoubleBuffer::DoubleBuffer(HWND hwnd, RectI rect) :
     if (!hdcBuffer)
         return;
 
-    if (rect.x != 0 || rect.y != 0) {
-        SetGraphicsMode(hdcBuffer, GM_ADVANCED);
-        XFORM ctm = { 1.0, 0, 0, 1.0, (float)-rect.x, (float)-rect.y };
-        SetWorldTransform(hdcBuffer, &ctm);
-    }
     DeleteObject(SelectObject(hdcBuffer, doubleBuffer));
 }
 

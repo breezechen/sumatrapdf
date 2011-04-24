@@ -99,16 +99,6 @@ static int ft_kind(FT_Face face)
 	return UNKNOWN;
 }
 
-static int ft_is_bold(FT_Face face)
-{
-	return face->style_flags & FT_STYLE_FLAG_BOLD;
-}
-
-static int ft_is_italic(FT_Face face)
-{
-	return face->style_flags & FT_STYLE_FLAG_ITALIC;
-}
-
 static int ft_char_index(FT_Face face, int cid)
 {
 	int gid = FT_Get_Char_Index(face, cid);
@@ -190,12 +180,14 @@ pdf_load_builtin_font(pdf_font_desc *fontdesc, char *fontname)
 		if (fz_okay == error)
 			return fz_okay;
 #endif
-		return fz_throw("cannot find builtin font: '%s'", fontname);
+		return fz_throw("cannot find font: '%s'", fontname);
 	}
 
 	error = fz_new_font_from_memory(&fontdesc->font, data, len, 0);
 	if (error)
 		return fz_rethrow(error, "cannot load freetype font from memory");
+
+	fz_strlcpy(fontdesc->font->name, fontname, sizeof fontdesc->font->name);
 
 	if (!strcmp(fontname, "Symbol") || !strcmp(fontname, "ZapfDingbats"))
 		fontdesc->flags |= PDF_FD_SYMBOLIC;
@@ -204,28 +196,7 @@ pdf_load_builtin_font(pdf_font_desc *fontdesc, char *fontname)
 }
 
 static fz_error
-pdf_load_substitute_font(pdf_font_desc *fontdesc, int mono, int serif, int bold, int italic)
-{
-	fz_error error;
-	unsigned char *data;
-	unsigned int len;
-
-	data = pdf_find_substitute_font(mono, serif, bold, italic, &len);
-	if (!data)
-		return fz_throw("cannot find substitute font");
-
-	error = fz_new_font_from_memory(&fontdesc->font, data, len, 0);
-	if (error)
-		return fz_rethrow(error, "cannot load freetype font from memory");
-
-	fontdesc->font->ft_substitute = 1;
-	fontdesc->font->ft_bold = bold && !ft_is_bold(fontdesc->font->ft_face);
-	fontdesc->font->ft_italic = italic && !ft_is_italic(fontdesc->font->ft_face);
-	return fz_okay;
-}
-
-static fz_error
-pdf_load_substitute_cjk_font(pdf_font_desc *fontdesc, int ros, int serif)
+pdf_load_builtin_cjk_font(pdf_font_desc *fontdesc, int ros, int gothic)
 {
 	fz_error error;
 	unsigned char *data;
@@ -233,7 +204,7 @@ pdf_load_substitute_cjk_font(pdf_font_desc *fontdesc, int ros, int serif)
 
 #ifdef WIN32
 	/* Try to fall back to a reasonable TrueType font that might be installed locally */
-	error = pdf_load_similar_cjk_font(fontdesc, ros, serif);
+	error = pdf_load_similar_cjk_font(fontdesc, ros, gothic);
 	if (!error)
 	{
 		fontdesc->font->ft_substitute = 1;
@@ -250,7 +221,7 @@ pdf_load_substitute_cjk_font(pdf_font_desc *fontdesc, int ros, int serif)
 #endif
 #endif
 
-	data = pdf_find_substitute_cjk_font(ros, serif, &len);
+	data = pdf_find_builtin_cjk_font(ros, gothic, &len);
 	if (!data)
 		return fz_throw("cannot find builtin CJK font");
 
@@ -266,10 +237,13 @@ static fz_error
 pdf_load_system_font(pdf_font_desc *fontdesc, char *fontname, char *collection)
 {
 	fz_error error;
-	int bold = 0;
-	int italic = 0;
-	int serif = 0;
-	int mono = 0;
+	char *name;
+
+	int isbold = 0;
+	int isitalic = 0;
+	int isserif = 0;
+	int isscript = 0;
+	int isfixed = 0;
 
 #ifdef WIN32
 	/* try to find a precise match in Windows' fonts before falling back to a built-in one */
@@ -284,37 +258,80 @@ pdf_load_system_font(pdf_font_desc *fontdesc, char *fontname, char *collection)
 #endif
 
 	if (strstr(fontname, "Bold"))
-		bold = 1;
+		isbold = 1;
 	if (strstr(fontname, "Italic"))
-		italic = 1;
+		isitalic = 1;
 	if (strstr(fontname, "Oblique"))
-		italic = 1;
+		isitalic = 1;
 
 	if (fontdesc->flags & PDF_FD_FIXED_PITCH)
-		mono = 1;
+		isfixed = 1;
 	if (fontdesc->flags & PDF_FD_SERIF)
-		serif = 1;
+		isserif = 1;
 	if (fontdesc->flags & PDF_FD_ITALIC)
-		italic = 1;
+		isitalic = 1;
+	if (fontdesc->flags & PDF_FD_SCRIPT)
+		isscript = 1;
 	if (fontdesc->flags & PDF_FD_FORCE_BOLD)
-		bold = 1;
+		isbold = 1;
 
 	if (collection)
 	{
 		if (!strcmp(collection, "Adobe-CNS1"))
-			return pdf_load_substitute_cjk_font(fontdesc, PDF_ROS_CNS, serif);
+			return pdf_load_builtin_cjk_font(fontdesc, PDF_ROS_CNS, !isserif);
 		else if (!strcmp(collection, "Adobe-GB1"))
-			return pdf_load_substitute_cjk_font(fontdesc, PDF_ROS_GB, serif);
+			return pdf_load_builtin_cjk_font(fontdesc, PDF_ROS_GB, !isserif);
 		else if (!strcmp(collection, "Adobe-Japan1"))
-			return pdf_load_substitute_cjk_font(fontdesc, PDF_ROS_JAPAN, serif);
+			return pdf_load_builtin_cjk_font(fontdesc, PDF_ROS_JAPAN, !isserif);
+		else if (!strcmp(collection, "Adobe-Japan2"))
+			return pdf_load_builtin_cjk_font(fontdesc, PDF_ROS_JAPAN, !isserif);
 		else if (!strcmp(collection, "Adobe-Korea1"))
-			return pdf_load_substitute_cjk_font(fontdesc, PDF_ROS_KOREA, serif);
+			return pdf_load_builtin_cjk_font(fontdesc, PDF_ROS_KOREA, !isserif);
 		return fz_throw("unknown cid collection: %s", collection);
 	}
 
-	error = pdf_load_substitute_font(fontdesc, mono, serif, bold, italic);
+	else if (isfixed)
+	{
+		if (isitalic) {
+			if (isbold) name = "Courier-BoldOblique";
+			else name = "Courier-Oblique";
+		}
+		else {
+			if (isbold) name = "Courier-Bold";
+			else name = "Courier";
+		}
+	}
+
+	else if (isserif)
+	{
+		if (isitalic) {
+			if (isbold) name = "Times-BoldItalic";
+			else name = "Times-Italic";
+		}
+		else {
+			if (isbold) name = "Times-Bold";
+			else name = "Times-Roman";
+		}
+	}
+
+	else
+	{
+		if (isitalic) {
+			if (isbold) name = "Helvetica-BoldOblique";
+			else name = "Helvetica-Oblique";
+		}
+		else {
+			if (isbold) name = "Helvetica-Bold";
+			else name = "Helvetica";
+		}
+	}
+
+	error = pdf_load_builtin_font(fontdesc, name);
 	if (error)
-		return fz_rethrow(error, "cannot load substitute font");
+		return fz_throw("cannot load builtin substitute font: %s", name);
+
+	/* it's a substitute font: override the metrics */
+	fontdesc->font->ft_substitute = 1;
 
 	return fz_okay;
 }

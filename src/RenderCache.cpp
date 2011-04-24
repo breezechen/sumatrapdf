@@ -43,7 +43,7 @@ BitmapCacheEntry *RenderCache::Find(DisplayModel *dm, int pageNo, int rotation, 
 {
     ScopedCritSec scope(&_cacheAccess);
     BitmapCacheEntry *entry;
-    rotation = normalizeRotation(rotation);
+    normalizeRotation(&rotation);
     for (int i = 0; i < _cacheCount; i++) {
         entry = _cache[i];
         if ((dm == entry->dm) && (pageNo == entry->pageNo) && (rotation == entry->rotation) &&
@@ -78,8 +78,9 @@ void RenderCache::Add(PageRenderRequest &req, RenderedBitmap *bitmap)
 {
     ScopedCritSec scope(&_cacheAccess);
     assert(req.dm);
+    assert(validRotation(req.rotation));
 
-    req.rotation = normalizeRotation(req.rotation);
+    normalizeRotation(&req.rotation);
     DBG_OUT("RenderCache::Add(pageNo=%d, rotation=%d, zoom=%.2f%%)\n", req.pageNo, req.rotation, req.zoom);
     assert(_cacheCount <= MAX_BITMAPS_CACHED);
 
@@ -293,7 +294,7 @@ bool RenderCache::ReduceTileSize()
     return true;
 }
 
-void RenderCache::Render(DisplayModel *dm, int pageNo, RenderingCallback *callback)
+void RenderCache::Render(DisplayModel *dm, int pageNo, CallbackFunc *callback)
 {
     TilePosition tile = { GetTileRes(dm, pageNo), 0, 0 };
     Render(dm, pageNo, tile, true, callback);
@@ -307,16 +308,17 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, RenderingCallback *callba
 }
 
 /* Render a bitmap for page <pageNo> in <dm>. */
-void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile, bool clearQueue, RenderingCallback *callback)
+void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile, bool clearQueue, CallbackFunc *callback)
 {
     DBG_OUT("RenderCache::Render(pageNo=%d)\n", pageNo);
     assert(dm);
+    PageRenderRequest* newRequest = NULL;
 
     ScopedCritSec scope(&_requestAccess);
-    bool ok = false;
     if (!dm || dm->_dontRenderFlag) goto Exit;
 
-    int rotation = normalizeRotation(dm->rotation());
+    int rotation = dm->rotation();
+    normalizeRotation(&rotation);
     float zoom = dm->zoomReal(pageNo);
 
     if (_curReq && (_curReq->pageNo == pageNo) && (_curReq->dm == dm) && (_curReq->tile == tile)) {
@@ -367,33 +369,6 @@ void RenderCache::Render(DisplayModel *dm, int pageNo, TilePosition tile, bool c
         goto Exit;
     }
 
-    ok = Render(dm, pageNo, rotation, zoom, &tile, NULL, callback);
-
-Exit:
-    if (!ok && callback)
-        callback->Callback();
-}
-
-void RenderCache::Render(DisplayModel *dm, int pageNo, int rotation, float zoom, RectD pageRect, RenderingCallback& callback)
-{
-    bool ok = Render(dm, pageNo, rotation, zoom, NULL, &pageRect, &callback);
-    if (!ok)
-        callback.Callback();
-}
-
-bool RenderCache::Render(DisplayModel *dm, int pageNo, int rotation, float zoom, TilePosition *tile, RectD *pageRect, RenderingCallback *callback)
-{
-    assert(dm);
-    if (!dm || dm->_dontRenderFlag)
-        return false;
-
-    assert(tile || pageRect && callback);
-    if (!tile && !(pageRect && callback))
-        return false;
-
-    ScopedCritSec scope(&_requestAccess);
-    PageRenderRequest* newRequest;
-
     /* add request to the queue */
     if (_requestCount == MAX_PAGE_REQUESTS) {
         /* queue is full -> remove the oldest items on the queue */
@@ -406,29 +381,20 @@ bool RenderCache::Render(DisplayModel *dm, int pageNo, int rotation, float zoom,
         _requestCount++;
     }
     assert(_requestCount <= MAX_PAGE_REQUESTS);
-
     newRequest->dm = dm;
     newRequest->pageNo = pageNo;
     newRequest->rotation = rotation;
     newRequest->zoom = zoom;
-    if (tile) {
-        newRequest->pageRect = GetTileRect(dm->engine, pageNo, rotation, zoom, *tile);
-        newRequest->tile = *tile;
-    }
-    else if (pageRect) {
-        newRequest->pageRect = *pageRect;
-        // can't cache bitmaps that aren't for a given tile
-        assert(callback);
-    }
-    else
-        assert(0);
+    newRequest->tile = tile;
     newRequest->abort = false;
     newRequest->timestamp = GetTickCount();
     newRequest->callback = callback;
 
     SetEvent(startRendering);
 
-    return true;
+Exit:
+    if (!newRequest && callback)
+        callback->Callback();
 }
 
 UINT RenderCache::GetRenderDelay(DisplayModel *dm, int pageNo, TilePosition tile)
@@ -549,7 +515,8 @@ DWORD WINAPI RenderCache::RenderCacheThread(LPVOID data)
             continue;
         }
 
-        bmp = req.dm->engine->RenderBitmap(req.pageNo, req.zoom, req.rotation, &req.pageRect, Target_View,
+        RectD pageRect = GetTileRect(req.dm->engine, req.pageNo, req.rotation, req.zoom, req.tile);
+        bmp = req.dm->engine->RenderBitmap(req.pageNo, req.zoom, req.rotation, &pageRect, Target_View,
                                            cache->useGdiRenderer && *cache->useGdiRenderer);
         if (req.abort) {
             delete bmp;
@@ -559,23 +526,21 @@ DWORD WINAPI RenderCache::RenderCacheThread(LPVOID data)
         }
 
         if (bmp && cache->invertColors && *cache->invertColors)
-            bmp->InvertColors();
+            bmp->invertColors();
         if (bmp)
             DBG_OUT("RenderCacheThread(): finished rendering %d\n", req.pageNo);
         else
             DBG_OUT("RenderCacheThread(): failed to render a bitmap of page %d\n", req.pageNo);
-        if (req.callback) {
-            // the callback must free the RenderedBitmap
-            req.callback->Callback(bmp);
-            req.callback = (RenderingCallback *)1; // will crash if accessed again, which should not happen
-        }
-        else {
-            cache->Add(req, bmp);
+        cache->Add(req, bmp);
 #ifdef CONSERVE_MEMORY
-            cache->FreeNotVisible();
+        cache->FreeNotVisible();
 #endif
-            req.dm->RepaintDisplay();
+        if (req.callback) {
+            req.callback->Callback((void *)true);
+            req.callback = (CallbackFunc *)1; // will crash if accessed again, which should not happen
         }
+        else
+            req.dm->RepaintDisplay();
     }
 
     DBG_OUT("RenderCacheThread() finished\n");
@@ -600,7 +565,7 @@ UINT RenderCache::PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo
             Render(dm, pageNo, tile);
     }
     RenderedBitmap *renderedBmp = entry ? entry->bitmap : NULL;
-    HBITMAP hbmp = renderedBmp ? renderedBmp->GetBitmap() : NULL;
+    HBITMAP hbmp = renderedBmp ? renderedBmp->getBitmap() : NULL;
 
     if (!hbmp) {
         if (entry && !(renderedBmp && ReduceTileSize()))
@@ -616,7 +581,7 @@ UINT RenderCache::PaintTile(HDC hdc, RectI *bounds, DisplayModel *dm, int pageNo
 
     HDC bmpDC = CreateCompatibleDC(hdc);
     if (bmpDC) {
-        SizeI bmpSize = renderedBmp->Size();
+        SizeI bmpSize = renderedBmp->size();
         int xSrc = -min(tileOnScreen->x, 0);
         int ySrc = -min(tileOnScreen->y, 0);
         float factor = min(1.0f * bmpSize.dx / tileOnScreen->dx, 1.0f * bmpSize.dy / tileOnScreen->dy);

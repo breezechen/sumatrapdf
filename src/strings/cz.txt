@@ -343,17 +343,11 @@ Položka nalezena na stránce %d
 Found text at page %d (again)
 Položka nalezena na stránce %d (znovu)
 
-Frequently Read
-Často čtené dokumenty
-
 GB
 GB
 
 Go to page
 Přejít na stránku
-
-Hide frequently read
-Skrýt často čtené dokumenty
 
 Hint: Use the F3 key for finding again
 Nápověda: Klávesou F3 vyhledáte další výskyt
@@ -405,9 +399,6 @@ OK
 
 Open
 Otevřít
-
-Open a document...
-Otevřít dokument...
 
 Open in &Adobe Reader
 Otevřít v programu &Adobe Reader
@@ -466,12 +457,6 @@ Předchozí stránka
 Print range
 Rozsah tisku
 
-Printing is still in progress. Abort and start over?
-Tisk je stále probíhá. Přerušit a začít znovu?
-
-Printing page %d of %d...
-Tisk stránky %d z %d...
-
 Printing problem.
 Potíže s tiskem
 
@@ -510,9 +495,6 @@ Zobrazit panel nás&trojů
 
 Show &pages continuously
 Zobrazit stránky &průběžně
-
-Show frequently read
-Zobrazit často čtené dokumenty
 
 Show the &bookmarks sidebar when available
 Zo&brazit záložky v postranním panelu, jsou-li dostupné

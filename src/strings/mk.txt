@@ -340,17 +340,11 @@ Found text at page %d
 Found text at page %d (again)
 Пронајдов текст на страница %d (повторно)
 
-Frequently Read
-Често читани
-
 GB
 GB
 
 Go to page
 Појди на страница
-
-Hide frequently read
-Сокриј често читани
 
 Hint: Use the F3 key for finding again
 Совет: За повторно пребарување користете F3 од тастатурата
@@ -402,9 +396,6 @@ OK
 
 Open
 Отвори
-
-Open a document...
-Отвори документ...
 
 Open in &Adobe Reader
 Отвори со &Adobe Reader
@@ -463,12 +454,6 @@ Previous Page
 Print range
 Опсег за печатење
 
-Printing is still in progress. Abort and start over?
-Печатењето трае сè уште. Да го запрам и да почнам одново?
-
-Printing page %d of %d...
-Печатење на страница %d од %d...
-
 Printing problem.
 Проблем при печатење.
 
@@ -507,9 +492,6 @@ Show &Toolbar
 
 Show &pages continuously
 Прикажувај страници непрекинато
-
-Show frequently read
-Прикажи често читани
 
 Show the &bookmarks sidebar when available
 Прикажи го алатникот со &обележувачи кога е достапен

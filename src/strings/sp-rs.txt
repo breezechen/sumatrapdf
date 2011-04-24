@@ -421,12 +421,9 @@ Faktor uvećanja
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Image files (*.%s)
 #Modified:
 #Number of Pages:
-#Open a document...
 #P&roperties
 #P&roperties\tCtrl-D
 #PDF Producer:
@@ -436,13 +433,10 @@ Faktor uvećanja
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
 #Select &All\tCtrl-A
 #Send by &E-mail...
-#Show frequently read
 #Source file %s has no synchronization point
 #Subject:
 #SumatraPDF Update
