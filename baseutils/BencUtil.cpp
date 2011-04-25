@@ -50,11 +50,15 @@ static const char *ParseBencInt(const char *bytes, int64_t& value)
 
 BencString::BencString(const TCHAR *value) : BencObj(BT_STRING)
 {
+    assert(value);
     this->value = Str::Conv::ToUtf8(value);
 }
 
 BencString::BencString(const char *rawValue, size_t len) : BencObj(BT_STRING)
 {
+    assert(rawValue);
+    if (len == (size_t)-1)
+        len = Str::Len(rawValue);
     value = Str::DupN(rawValue, len);
 }
 
@@ -84,11 +88,8 @@ BencString *BencString::Decode(const char *bytes, size_t *lenOut)
 
     if (lenOut)
         *lenOut = (start - bytes) + (size_t)len;
-    return new BencRawString(start, (size_t)len);
+    return new BencString(start, (size_t)len);
 }
-
-BencRawString::BencRawString(const char *value, size_t len)
-    : BencString(value, len == (size_t)-1 ? Str::Len(value) : len) { }
 
 char *BencInt::Encode() const
 {
@@ -172,6 +173,7 @@ BencObj *BencDict::GetObj(const char *key) const
 void BencDict::Add(const char *key, BencObj *obj)
 {
     assert(key && obj && values.Find(obj) == -1);
+    if (!key || !obj || values.Find(obj) != -1) return;
 
     // determine the ordered insertion index
     size_t oix = 0;
