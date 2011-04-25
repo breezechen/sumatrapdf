@@ -38,11 +38,11 @@ static BencDict* SerializeGlobalPrefs(SerializableGlobalPrefs *globalPrefs)
     prefs->Add(GLOBAL_PREFS_ONLY_STR, globalPrefs->m_globalPrefsOnly);
 
     const char *txt = DisplayModeNameFromEnum(globalPrefs->m_defaultDisplayMode);
-    prefs->Add(DISPLAY_MODE_STR, new BencRawString(txt));
+    prefs->AddRaw(DISPLAY_MODE_STR, txt);
 
     txt = Str::Format("%.4f", globalPrefs->m_defaultZoom);
     if (txt) {
-        prefs->Add(ZOOM_VIRTUAL_STR, new BencRawString(txt));
+        prefs->AddRaw(ZOOM_VIRTUAL_STR, txt);
         free((void*)txt);
     }
     prefs->Add(WINDOW_STATE_STR, globalPrefs->m_windowState);
@@ -57,8 +57,8 @@ static BencDict* SerializeGlobalPrefs(SerializableGlobalPrefs *globalPrefs)
     if (globalPrefs->m_versionToSkip)
         prefs->Add(VERSION_TO_SKIP_STR, globalPrefs->m_versionToSkip);
     if (globalPrefs->m_lastUpdateTime)
-        prefs->Add(LAST_UPDATE_STR, new BencRawString(globalPrefs->m_lastUpdateTime));
-    prefs->Add(UI_LANGUAGE_STR, new BencRawString(globalPrefs->m_currentLanguage));
+        prefs->AddRaw(LAST_UPDATE_STR, globalPrefs->m_lastUpdateTime);
+    prefs->AddRaw(UI_LANGUAGE_STR, globalPrefs->m_currentLanguage);
     prefs->Add(FWDSEARCH_OFFSET, globalPrefs->m_fwdsearchOffset);
     prefs->Add(FWDSEARCH_COLOR, globalPrefs->m_fwdsearchColor);
     prefs->Add(FWDSEARCH_WIDTH, globalPrefs->m_fwdsearchWidth);
@@ -75,7 +75,7 @@ static BencDict *DisplayState_Serialize(DisplayState *ds, bool globalPrefsOnly)
 
     prefs->Add(FILE_STR, ds->filePath);
     if (ds->decryptionKey)
-        prefs->Add(DECRYPTION_KEY_STR, new BencRawString(ds->decryptionKey));
+        prefs->AddRaw(DECRYPTION_KEY_STR, ds->decryptionKey);
 
     if (globalPrefsOnly || ds->useGlobalValues) {
         prefs->Add(USE_GLOBAL_VALUES_STR, TRUE);
@@ -84,7 +84,7 @@ static BencDict *DisplayState_Serialize(DisplayState *ds, bool globalPrefsOnly)
 
     const char *txt = DisplayModeNameFromEnum(ds->displayMode);
     if (txt)
-        prefs->Add(DISPLAY_MODE_STR, new BencRawString(txt));
+        prefs->AddRaw(DISPLAY_MODE_STR, txt);
     prefs->Add(PAGE_NO_STR, ds->pageNo);
     prefs->Add(ROTATION_STR, ds->rotation);
     prefs->Add(SCROLL_X_STR, ds->scrollPos.x);
@@ -100,7 +100,7 @@ static BencDict *DisplayState_Serialize(DisplayState *ds, bool globalPrefsOnly)
 
     txt = Str::Format("%.4f", ds->zoomVirtual);
     if (txt) {
-        prefs->Add(ZOOM_VIRTUAL_STR, new BencRawString(txt));
+        prefs->AddRaw(ZOOM_VIRTUAL_STR, txt);
         free((void*)txt);
     }
 
