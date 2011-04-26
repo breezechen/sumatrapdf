@@ -26,6 +26,9 @@ Toate paginile selectate
 &Close\tCtrl-W
 Înc&hidere\tCtrl-W
 
+&Copy Selection
+&Copiază selecția
+
 &Copy Selection\tCtrl-C
 &Copiere selecţie\tCtrl-C
 
@@ -92,6 +95,9 @@ Doar paginile impare
 &Previous Page\tLeft Arrow
 Pagina anterioară\t<-
 
+&Print...
+&Tipărește...
+
 &Print...\tCtrl-P
 I&mprimare\tCtrl-P
 
@@ -103,6 +109,9 @@ I&mprimare\tCtrl-P
 
 &Remember these settings for each document
 &Reţine aceste opţiuni pentru fiecare document
+
+&Save As...
+&Salvează ca...
 
 &Save As...\tCtrl-S
 Salvare c&a...\tCtrl-S
@@ -140,6 +149,9 @@ Avansat
 All files
 Toate fişierele
 
+All supported documents
+Toate formatele suportate
+
 Application:
 Program:
 
@@ -163,6 +175,12 @@ Vedere în format carte
 
 Book&marks\tF12
 Marcaje\tF12
+
+Bookmark Shortcuts
+Legături rapide - semne de carte
+
+Bookmark shortcut to page %d of %s
+Legătură rapidă către pagina %d din %s
 
 Bookmarks
 Marcaje
@@ -188,6 +206,9 @@ Schimbare limbă (Change Language)
 Check for &Updates
 Verifică apariţia unei versiuni noi
 
+Comic books
+Benzi desenate
+
 Continuous
 Continuu
 
@@ -199,6 +220,12 @@ Pagină dublă continuu
 
 Contribute Translation
 Contribuie la traducere
+
+Copy &Link Address
+Copiază adresa &legăturii
+
+Copy Co&mment
+Copiază co&mentariul
 
 Copying text was denied (copying as image only)
 Copierea textului interzisă (s-a copiat ca imagine)
@@ -247,6 +274,9 @@ Introduceţi parola pentru %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Introduceţi comanda invocată la dublu click pe documentul PDF:
+
+Error loading %s
+Eroare la încărcarea %s
 
 F&orward\tAlt+Right Arrow
 Înainte\tAlt+Right Arrow
@@ -308,6 +338,9 @@ Potrivire pentru o singură pagină
 Found text at page %d
 Am găsit text la pagina %d
 
+Found text at page %d (again)
+Găsit textul la pagina %d (din nou)
+
 GB
 GB
 
@@ -316,6 +349,9 @@ Salt la pagina
 
 Hint: Use the F3 key for finding again
 Sugestie: Utilizaţi tasta F3 pentru a căuta mai departe
+
+Image files (*.%s)
+Fișiere-imagine (*.%s)
 
 KB
 KB
@@ -370,6 +406,9 @@ Deschide în &Foxit Reader
 
 Open in PDF-XChange
 Deschide în PDF-XChange
+
+P&roperties
+P&roprietăți
 
 P&roperties\tCtrl-D
 P&roprietăţi\tCtrl-D
@@ -428,8 +467,14 @@ Roteşte spre stânga\tCtrl-Shift--
 Rotate &Right\tCtrl-Shift-+
 Roteşte spre dreapta\tCtrl-Shift-+
 
+Save S&hortcut...\tCtrl-Shift-S
+Salvează legătura...\tCtrl-Shift-S
+
 Searching %d of %d...
 Caut %d din %d...
+
+Select &All
+Selecte&ază tot
 
 Select &All\tCtrl-A
 Selectează to&ate\tCtrl-A
@@ -497,6 +542,9 @@ Visit &Website
 Warning
 Avertisment
 
+XPS documents
+Documente XPS
+
 You have the latest version.
 Aveţi ultima versiune.
 
@@ -523,22 +571,4 @@ se copiază text
 
 printing document
 se imprimă documentul
-
-# Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#Error loading %s
-#Found text at page %d (again)
-#Image files (*.%s)
-#P&roperties
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#XPS documents
 
