@@ -1,29 +1,24 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+#ifndef TRANSLATIONS_H__
+#define TRANSLATIONS_H__
 
-#ifndef Translations_h
-#define Translations_h
+//bool Translations_FromData(const char* langs, const char* data, size_t data_len);
+bool         Translations_SetCurrentLanguage(const char* lang);
+const char*  Translations_GetTranslationA(const char* txt);
+const WCHAR* Translations_GetTranslationW(const char* txt);
 
-namespace Trans {
+void Translations_FreeData();
 
-const char * GuessLanguage();
-const char * ConfirmLanguage(const char *code);
-bool         SetCurrentLanguage(const char *code);
-const TCHAR *GetTranslation(const char *txt);
+#define _TRA(x) Translations_GetTranslationA(x)
+#define _TRN(x) x
+#define _TRW(x) Translations_GetTranslationW(x)
+#define _TRWN(x) x
 
-int          GetLanguageIndex(const char *code);
-const char * GetLanguageCode(int index);
-TCHAR       *GetLanguageName(int index);
-
-}
-
-// _TR() marks strings that need to be translated
-#define _TR(x)  Trans::GetTranslation(x)
-
-// _TRN() marks strings that need to be translated but are used in a context
-// that doesn't allow calling Trans::GetTranslation() (e.g. when used as part
-// of a struct). This allows the translation manager script to see the string
-// but they'll need additional code that does Trans::GetTranslation() on them
-#define _TRN(x) (x)
+#ifdef UNICODE
+#define Translations_GetTranslation Translations_GetTranslationW
+#define _TR(x) Translatations_GetTranslationW(x)
+#else
+#define Translations_GetTranslation Translations_GetTranslationA
+#define _TR(x) Translations_GetTranslationA(x)
+#endif
 
 #endif

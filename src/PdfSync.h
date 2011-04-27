@@ -1,16 +1,94 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+// Copyright William Blum 2008 http://william.famille-blum.org/
 // PDF-source synchronizer based on .pdfsync file
+// License: GPLv2
 
-#ifndef PdfSync_h
-#define PdfSync_h
+#ifndef _PDF_SYNC_H__
+#define _PDF_SYNC_H__
 
-#include "BaseUtil.h"
-#include "StrUtil.h"
-#include "FileUtil.h"
-#include "GeomUtil.h"
-#include "Vec.h"
-#include <time.h>
+#include <windows.h>
+#include <assert.h>
+
+#include "base_util.h"
+#include "str_util.h"
+#include "tstr_util.h"
+#include "file_util.h"
+#ifdef SYNCTEX_FEATURE
+#include "synctex_parser.h"
+#endif
+
+#ifdef USE_STL
+#include <vector>
+#include <stack>
+using namespace std;
+#else
+#define ALLOC_INCREMENT  10
+template <class _Ty>
+class vector {
+public:
+    _Ty &operator[](size_t i) const
+    {
+        assert(i<m_size);
+        return m_data[i];
+    }
+    void clear()
+    {
+        m_size = 0;
+    }
+    void push_back(_Ty v)
+    {
+        if (m_size>=m_allocsize) {
+            m_allocsize += ALLOC_INCREMENT;
+            m_data = (_Ty *)realloc(m_data, sizeof(_Ty) * m_allocsize); 
+        }
+        m_data[m_size] = v;
+        m_size++;
+    }
+    void resize(size_t s)
+    {
+        if (s>m_allocsize) {
+            m_allocsize = s+ALLOC_INCREMENT-s%ALLOC_INCREMENT;
+            m_data = (_Ty *)realloc(m_data, sizeof(_Ty) * m_allocsize); 
+        }
+        m_size = s;
+    }
+    size_t size()
+    {
+        return m_size;
+    }
+    vector()
+    {
+        m_allocsize = ALLOC_INCREMENT;
+        m_size = 0;
+        m_data = (_Ty *)malloc(sizeof(_Ty) * m_allocsize); 
+    }
+    ~vector()
+    {
+        for(size_t i=0; i<m_size; i++)
+            m_data[i].~_Ty();
+        free(m_data);
+    }
+private:
+    _Ty *m_data;
+    size_t m_allocsize, m_size;
+};
+
+template <class _Ty>
+class stack : public vector<_Ty> {
+public:
+    void push(_Ty v) {
+        push_back(v);
+    }
+    void pop() {
+        assert(this->size()>0);
+        resize(this->size()-1);
+    }
+    _Ty &top() {
+        assert(this->size()>0);
+        return (*this)[this->size()-1];
+    }
+};
+
+#endif
 
 // size of the mark highlighting the location calculated by forward-search
 #define MARK_SIZE                            10 
@@ -27,20 +105,17 @@
 //////
 // Error codes returned by the synchronization functions
 enum {  PDFSYNCERR_SUCCESS,                   // the synchronization succeeded
-        PDFSYNCERR_SYNCFILE_NOTFOUND,         // no sync file found
-        PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED, // sync file cannot be opened
+        PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED, // the sync file cannot be opened
         PDFSYNCERR_INVALID_PAGE_NUMBER,       // the given page number does not exist in the sync file
         PDFSYNCERR_NO_SYNC_AT_LOCATION,       // no synchronization found at this location
         PDFSYNCERR_UNKNOWN_SOURCEFILE,        // the source file is not present in the sync file
         PDFSYNCERR_NORECORD_IN_SOURCEFILE,    // there is not any record declaration for that particular source file
         PDFSYNCERR_NORECORD_FOR_THATLINE,     // no record found for the requested line
         PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD,// a record is found for the given source line but there is not point in the PDF that corresponds to it
-        PDFSYNCERR_OUTOFMEMORY,
-        PDFSYNCERR_INVALID_ARGUMENT
 };
 
 typedef struct {
-    char filename[_MAX_PATH]; // source file name
+    TCHAR filename[_MAX_PATH]; // source file name
 #ifndef NDEBUG
     fpos_t openline_pos;    // start of the scope in the sync file
     fpos_t closeline_pos;   // end of the scope
@@ -71,44 +146,35 @@ typedef struct {
 } record_section;
 
 
-#define PDF_EXTENSION     _T(".PDF")
-#define PDFSYNC_EXTENSION _T(".PDFSYNC")
+#define PDF_EXTENSION     ".PDF"
+#define PDFSYNC_EXTENSION ".PDFSYNC"
+#define SYNCTEX_EXTENSION ".SYNCTEX"
 
 // System of point coordinates
 typedef enum { TopLeft,    // origin at the top-left corner
-               BottomLeft, // origin at the bottom-left corner
+       BottomLeft, // origin at the bottom-left corner
 } CoordSystem;
 
 class Synchronizer
 {
 public:
-    Synchronizer(const TCHAR* _syncfilepath) {
+    Synchronizer(LPCTSTR filename) {
         this->index_discarded = true;
         this->coordsys = BottomLeft; // by default set the internal coordinate system to bottom-left
-        this->dir = Path::GetDir(_syncfilepath);
-        Str::BufSet(this->syncfilepath, dimof(this->syncfilepath), _syncfilepath);
-        _tstat(_syncfilepath, &syncfileTimestamp);
-    }
-    virtual ~Synchronizer() {
-        free(dir);
     }
 
     // conversion from one coordinate system to another
-    void convert_coord_to_internal(int *x, int *y, int pageHeight, CoordSystem src)
+    void convert_coord_to_internal(UINT *x, UINT *y, UINT pageHeight, CoordSystem src)
     {
-        if (src != this->coordsys)
-            *y = pageHeight - *y;
+        if (src==this->coordsys)
+            return;    
+        *y = pageHeight - *y;
     }
-    void convert_coord_from_internal(int *x, int *y, int pageHeight, CoordSystem dst)
+    void convert_coord_from_internal(UINT *x, UINT *y, UINT pageHeight, CoordSystem dst)
     {
-        if (dst != this->coordsys)
-            *y = pageHeight - *y;
-    }
-
-    void convert_coord_from_internal(RectI *rc, int pageHeight, CoordSystem dst)
-    {
-        if (dst != this->coordsys)
-            rc->y = pageHeight - (rc->y + rc->dy);
+        if (dst==this->coordsys)
+            return;    
+        *y = pageHeight - *y;
     }
     
     // Inverse-search:
@@ -126,85 +192,125 @@ public:
     // Forward-search:
     // The result is returned in (page,x,y). The coordinates x,y are specified in the internal 
     // coordinate system.
-    virtual UINT source_to_pdf(const TCHAR* srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects) = 0;
+    virtual UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, UINT *x, UINT *y) = 0;
 
     void discard_index() { this->index_discarded = true; }
-    bool is_index_discarded() const
-    {
-        // was the index manually discarded?
-        if (this->index_discarded)
-            return true;
+    bool is_index_discarded() { return this->index_discarded; }
+    int rebuild_index() { this->index_discarded = false; return 0; }
 
-        // has the synchronization file been changed on disk?
-        struct _stat newstamp;
-        if (_tstat(syncfilepath, &newstamp) == 0 &&
-            difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0) {
-            DBG_OUT("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
-            // update time stamp
-            memcpy((void *)&syncfileTimestamp, &newstamp, sizeof(syncfileTimestamp));
-            return true; // the file has changed!
-        }
-
-        return false;
-    }
-
-    int rebuild_index()
-    {
-        this->index_discarded = false;
-        // save sync file timestamp
-        _tstat(syncfilepath, &syncfileTimestamp);
-        return 0;
-    }
-
-    // the caller must free() the command line
-    TCHAR * prepare_commandline(const TCHAR* pattern, const TCHAR* filename, UINT line, UINT col);
+    UINT prepare_commandline(LPCTSTR pattern, LPCTSTR filename, UINT line, UINT col, PTSTR cmdline, UINT cchCmdline);
 
 private:
     bool index_discarded; // true if the index needs to be recomputed (needs to be set to true when a change to the pdfsync file is detected)
-    struct _stat syncfileTimestamp; // time stamp of sync file when index was last built
 
 protected:
-    TCHAR syncfilepath[MAX_PATH]; // path  to the synchronization file
     CoordSystem coordsys; // system used internally by the syncfile for the PDF coordinates
-    TCHAR * dir;          // directory where the syncfile lies
+};
 
+// Synchronizer based on .synctex file generated with SyncTex
+class SyncTex : public Synchronizer
+{
 public:
-    static int Create(const TCHAR *pdffilename, Synchronizer **sync);
+    SyncTex(LPCTSTR _syncfilename) : Synchronizer(_syncfilename)
+    {
+        size_t n = _tcslen(_syncfilename);
+        size_t u = dimof(SYNCTEX_EXTENSION)-1;
+        assert(n>u && _tcsicmp(_syncfilename+(n-u),SYNCTEX_EXTENSION) == 0 );
+        tstr_copy(this->syncfilename, dimof(this->syncfilename), _syncfilename);
+        this->dir = FilePath_GetDir(_syncfilename);
+
+#ifdef SYNCTEX_FEATURE
+        this->scanner = NULL;
+#endif
+        this->coordsys = TopLeft;
+    }
+    ~SyncTex()
+    {
+#ifdef SYNCTEX_FEATURE
+        if (scanner)
+          synctex_scanner_free(scanner);
+#endif
+        if (dir)
+            free(dir);
+    }
+    void discard_index() { Synchronizer::discard_index();}
+    bool is_index_discarded() { return Synchronizer::is_index_discarded(); }
+
+    UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT cchFilepath, UINT *line, UINT *col);
+    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, UINT *x, UINT *y);
+    int rebuild_index();
+
+private:
+    TCHAR syncfilename[_MAX_PATH];
+    PTSTR dir;
+#ifdef SYNCTEX_FEATURE
+    synctex_scanner_t scanner;
+#endif
 };
 
 
-#define PDFSYNC_DDE_SERVICE   _T("SUMATRA")
-#define PDFSYNC_DDE_TOPIC     _T("control")
+// Synchronizer based on .sync file generated with the pdfsync tex package
+class Pdfsync : public Synchronizer
+{
+public:
+    Pdfsync(LPCTSTR _syncfilename) : Synchronizer(_syncfilename)
+    {
+        size_t n = _tcslen(_syncfilename);
+        size_t u = dimof(PDFSYNC_EXTENSION)-1;
+        assert(n>u && _tcsicmp(_syncfilename+(n-u),PDFSYNC_EXTENSION) == 0 );
+        tstr_copy(this->syncfilename, dimof(this->syncfilename), _syncfilename);
+        this->coordsys = BottomLeft;
+    }
+
+    int rebuild_index();
+    UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR filename, UINT cchFilename, UINT *line, UINT *col);
+    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, UINT *x, UINT *y);
+
+private:
+    int get_record_section(int record_index);
+    int scan_and_build_index(FILE *fp);
+    UINT source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, vector<size_t> &records);
+    FILE *opensyncfile();
+
+private:
+    vector<size_t> pdfsheet_index; // pdfsheet_index[i] contains the index in pline_sections of the first pline section for that sheet
+    vector<plines_section> pline_sections;
+    vector<record_section> record_sections;
+    vector<src_file> srcfiles;
+    TCHAR syncfilename[_MAX_PATH];
+};
+
+
+// create a synchronizer for the given PDF file
+Synchronizer *CreateSynchronizer(LPCTSTR pdffilename);
+
+
+#define PDFSYNC_DDE_SERVICE_A         "SUMATRA"
+#define PDFSYNC_DDE_SERVICE_W         L"SUMATRA"
+#define PDFSYNC_DDE_TOPIC_A           "control"
+#define PDFSYNC_DDE_TOPIC_W           L"control"
 
 // forward-search command
 //  format: [ForwardSearch("<pdffilepath>","<sourcefilepath>",<line>,<column>[,<newwindow>, <setfocus>])]
 //    if newwindow = 1 then a new window is created even if the file is already open
 //    if focus = 1 then the focus is set to the window
 //  eg: [ForwardSearch("c:\file.pdf","c:\folder\source.tex",298,0)]
-#define DDECOMMAND_SYNC       _T("ForwardSearch")
+#define DDECOMMAND_SYNC_A         "ForwardSearch"
+#define DDECOMMAND_SYNC_W         L DDECOMMAND_SYNC_A
 
 // open file command
-//  format: [Open("<pdffilepath>"[,<newwindow>,<setfocus>,<forcerefresh>])]
+//  format: [Open("<pdffilepath>"[,<newwindow>,<setfocus>])]
 //    if newwindow = 1 then a new window is created even if the file is already open
 //    if focus = 1 then the focus is set to the window
-//  eg: [Open("c:\file.pdf", 1, 1, 0)]
-#define DDECOMMAND_OPEN       _T("Open")
+//  eg: [Open("c:\file.pdf", 1, 1)]
+#define DDECOMMAND_OPEN_A         "Open"
+#define DDECOMMAND_OPEN_W         L DDECOMMAND_OPEN_A
 
 // jump to named destination command
 //  format: [GoToNamedDest("<pdffilepath>","<destination name>")]
 //  eg: [GoToNamedDest("c:\file.pdf", "chapter.1")]. pdf file must be already opened
-#define DDECOMMAND_GOTO       _T("GotoNamedDest")
-
-// jump to page command
-//  format: [GoToPage("<pdffilepath>",<page number>)]
-//  eg: [GoToPage("c:\file.pdf", 37)]. pdf file must be already opened
-#define DDECOMMAND_PAGE       _T("GotoPage")
-
-// set view mode and zoom level
-//  format: [SetView("<pdffilepath>", "<view mode>", <zoom level>[, <scrollX>, <scrollY>])]
-//  eg: [SetView("c:\file.pdf", "book view", -2)]
-//  note: use -1 for ZOOM_FIT_PAGE, -2 for ZOOM_FIT_WIDTH and -3 for ZOOM_FIT_CONTENT
-#define DDECOMMAND_SETVIEW    _T("SetView")
+#define DDECOMMAND_GOTO_A         "GotoNamedDest"
+#define DDECOMMAND_GOTO_W         L DDECOMMAND_GOTO_A
 
 LRESULT OnDDEInitiate(HWND hwnd, WPARAM wparam, LPARAM lparam);
 LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam);

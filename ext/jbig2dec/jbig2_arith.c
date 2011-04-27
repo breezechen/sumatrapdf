@@ -11,9 +11,12 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2_arith.c 465 2008-05-16 23:48:20Z giles $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -180,7 +183,8 @@ jbig2_arith_new (Jbig2Ctx *ctx, Jbig2WordStream *ws)
 {
   Jbig2ArithState *result;
 
-  result = jbig2_new(ctx, Jbig2ArithState, 1);
+  result = (Jbig2ArithState *)jbig2_alloc(ctx->allocator,
+	sizeof(Jbig2ArithState));
 
   result->ws = ws;
 
