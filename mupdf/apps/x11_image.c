@@ -1,5 +1,5 @@
 /*
- * Blit RGBA images to X with X(Shm)Images
+ * Blit ARGB images to X with X(Shm)Images
  */
 
 #ifndef _XOPEN_SOURCE
@@ -10,9 +10,7 @@
 # define _XOPEN_SOURCE 1
 #endif
 
-#define noSHOWINFO
-
-#include "fitz.h"
+#include <fitz.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -51,7 +49,6 @@ enum {
 	UNKNOWN
 };
 
-#ifdef SHOWINFO
 static char *modename[] = {
 	"ARGB8888",
 	"BGRA8888",
@@ -66,7 +63,6 @@ static char *modename[] = {
 	"BGR233",
 	"UNKNOWN"
 };
-#endif
 
 extern ximage_convert_func_t ximage_convert_funcs[];
 
@@ -99,12 +95,9 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 	XImage *img;
 	Status status;
 
-	if (!XShmQueryExtension(dpy))
-		goto fallback;
-	if (!info.useshm)
-		goto fallback;
+	if (!XShmQueryExtension(dpy)) goto fallback;
 
-	img = XShmCreateImage(dpy, vis, depth, ZPixmap, NULL, xsi, w, h);
+	img = XShmCreateImage(dpy, vis, depth, ZPixmap, nil, xsi, w, h);
 	if (!img)
 	{
 		fprintf(stderr, "warn: could not XShmCreateImage\n");
@@ -121,7 +114,7 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 		goto fallback;
 	}
 
-	img->data = xsi->shmaddr = shmat(xsi->shmid, NULL, 0);
+	img->data = xsi->shmaddr = shmat(xsi->shmid, nil, 0);
 	if (img->data == (char*)-1)
 	{
 		XDestroyImage(img);
@@ -141,14 +134,14 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 
 	XSync(dpy, False);
 
-	shmctl(xsi->shmid, IPC_RMID, NULL);
+	shmctl(xsi->shmid, IPC_RMID, nil);
 
 	return img;
 
 fallback:
 	info.useshm = 0;
 
-	img = XCreateImage(dpy, vis, depth, ZPixmap, 0, NULL, w, h, 32, 0);
+	img = XCreateImage(dpy, vis, depth, ZPixmap, 0, nil, w, h, 32, 0);
 	if (!img)
 	{
 		fprintf(stderr, "fail: could not XCreateImage");
@@ -212,10 +205,11 @@ select_mode(void)
 	unsigned long rs, gs, bs;
 
 	byteorder = ImageByteOrder(info.display);
-	if (fz_is_big_endian())
-		byterev = byteorder != MSBFirst;
-	else
-		byterev = byteorder != LSBFirst;
+#if BYTE_ORDER == BIG_ENDIAN
+	byterev = byteorder != MSBFirst;
+#else
+	byterev = byteorder != LSBFirst;
+#endif
 
 	rm = info.visual.red_mask;
 	gm = info.visual.green_mask;
@@ -225,14 +219,12 @@ select_mode(void)
 	gs = ffs(gm) - 1;
 	bs = ffs(bm) - 1;
 
-#ifdef SHOWINFO
 	printf("ximage: mode %d/%d %08lx %08lx %08lx (%ld,%ld,%ld) %s%s\n",
 		info.visual.depth,
 		info.bitsperpixel,
 		rm, gm, bm, rs, gs, bs,
 		byteorder == MSBFirst ? "msb" : "lsb",
 		byterev ? " <swap>":"");
-#endif
 
 	info.mode = UNKNOWN;
 	if (info.bitsperpixel == 8) {
@@ -252,19 +244,17 @@ select_mode(void)
 			info.mode = byteorder == MSBFirst ? BGR888 : RGB888;
 	}
 	else if (info.bitsperpixel == 32) {
-		if (rs == 0 && gs == 8 && bs == 16)
+		if (rs ==  0 && gs ==  8 && bs == 16)
 			info.mode = byteorder == MSBFirst ? ABGR8888 : RGBA8888;
-		if (rs == 8 && gs == 16 && bs == 24)
+		if (rs ==  8 && gs == 16 && bs == 24)
 			info.mode = byteorder == MSBFirst ? BGRA8888 : ARGB8888;
-		if (rs == 16 && gs == 8 && bs == 0)
+		if (rs == 16 && gs ==  8 && bs ==  0)
 			info.mode = byteorder == MSBFirst ? ARGB8888 : BGRA8888;
-		if (rs == 24 && gs == 16 && bs == 8)
+		if (rs == 24 && gs == 16 && bs ==  8)
 			info.mode = byteorder == MSBFirst ? RGBA8888 : ABGR8888;
 	}
 
-#ifdef SHOWINFO
-	printf("ximage: RGBA8888 to %s\n", modename[info.mode]);
-#endif
+	printf("ximage: ARGB8888 to %s\n", modename[info.mode]);
 
 	/* select conversion function */
 	info.convert_func = ximage_convert_funcs[info.mode];
@@ -278,14 +268,14 @@ create_pool(void)
 	info.lastused = 0;
 
 	for (i = 0; i < POOLSIZE; i++) {
-		info.pool[i] = NULL;
+		info.pool[i] = nil;
 	}
 
 	for (i = 0; i < POOLSIZE; i++) {
 		info.pool[i] = createximage(info.display,
 			info.visual.visual, &info.shminfo[i], info.visual.depth,
 			WIDTH, HEIGHT);
-		if (info.pool[i] == NULL) {
+		if (info.pool[i] == nil) {
 			return 0;
 		}
 	}
@@ -314,7 +304,7 @@ ximage_error_handler(Display *display, XErrorEvent *event)
 	{
 		char buf[80];
 		XGetErrorText(display, event->error_code, buf, sizeof buf);
-		fprintf(stderr, "ximage: disabling shared memory extension: %s\n", buf);
+		printf("ximage: disabling shared memory extension: %s\n", buf);
 		info.useshm = 0;
 		return 0;
 	}
@@ -386,9 +376,7 @@ ximage_init(Display *display, int screen, Visual *visual)
 	if (!ok)
 		return 0;
 
-#ifdef SHOWINFO
 	printf("ximage: %sPutImage\n", info.useshm ? "XShm" : "X");
-#endif
 
 	return 1;
 }
@@ -474,30 +462,29 @@ ximage_blit(Drawable d, GC gc,
 #endif
 
 #define PARAMS \
-	const unsigned char * restrict src, \
-	int srcstride, \
-	unsigned char * restrict dst, \
-	int dststride, \
-	int w, \
-	int h
+	 const unsigned char * restrict src, \
+	 int srcstride, \
+	 unsigned char * restrict dst, \
+	 int dststride, \
+	 int w, \
+	 int h
 
 /*
- * Convert byte:RGBA8888 to various formats
+ * Convert byte:ARGB8888 to various formats
  */
 
 static void
 ximage_convert_argb8888(PARAMS)
 {
 	int x, y;
+	unsigned * restrict s = (unsigned *)src;
+	unsigned * restrict d = (unsigned *)dst;
 	for (y = 0; y < h; y++) {
-		for (x = 0; x < w; x ++) {
-			dst[x * 4 + 0] = src[x * 4 + 3]; /* a */
-			dst[x * 4 + 1] = src[x * 4 + 0]; /* r */
-			dst[x * 4 + 2] = src[x * 4 + 1]; /* g */
-			dst[x * 4 + 3] = src[x * 4 + 2]; /* b */
+		for (x = 0; x < w; x++) {
+			d[x] = s[x];
 		}
-		dst += dststride;
-		src += srcstride;
+		d += dststride>>2;
+		s += srcstride>>2;
 	}
 }
 
@@ -505,31 +492,52 @@ static void
 ximage_convert_bgra8888(PARAMS)
 {
 	int x, y;
+	unsigned * restrict s = (unsigned *)src;
+	unsigned * restrict d = (unsigned *)dst;
+	unsigned val;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			dst[x * 4 + 0] = src[x * 4 + 2];
-			dst[x * 4 + 1] = src[x * 4 + 1];
-			dst[x * 4 + 2] = src[x * 4 + 0];
-			dst[x * 4 + 3] = src[x * 4 + 3];
+			val = s[x];
+			d[x] =
+			(val >> 24) |
+			((val >> 8) & 0xff00) |
+			(val << 24) |
+			((val << 8) & 0xff0000);
+			/*
+			d[x] =
+			(((val >> 24) & 0xff) <<  0) |
+			(((val >> 16) & 0xff) <<  8) |
+			(((val >>  8) & 0xff) << 16) |
+			(((val >>  0) & 0xff) << 24);
+			*/
 		}
-		dst += dststride;
-		src += srcstride;
+		d += dststride>>2;
+		s += srcstride>>2;
 	}
 }
+
+/* following have yet to receive some MMX love ;-) */
 
 static void
 ximage_convert_abgr8888(PARAMS)
 {
 	int x, y;
+	unsigned * restrict s = (unsigned *)src;
+	unsigned * restrict d = (unsigned *)dst;
+	unsigned val;
+
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			dst[x * 4 + 0] = src[x * 4 + 3];
-			dst[x * 4 + 1] = src[x * 4 + 2];
-			dst[x * 4 + 2] = src[x * 4 + 1];
-			dst[x * 4 + 3] = src[x * 4 + 0];
+			val = s[x];
+#if 1 /* FZ_MSB */
+			d[x] = (val & 0xff00ff00) |
+			(((val << 16) | (val >> 16)) & 0x00ff00ff);
+#else /* FZ_LSB */
+			d[x] = (val << 24) | ((val >> 8) & 0xff);
+#endif
 		}
-		dst += dststride;
-		src += srcstride;
+		d += dststride>>2;
+		s += srcstride>>2;
 	}
 }
 
@@ -539,7 +547,10 @@ ximage_convert_rgba8888(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			dst[x] = src[x];
+			dst[x * 4 + 0] = src[x * 4 + 1];
+			dst[x * 4 + 1] = src[x * 4 + 2];
+			dst[x * 4 + 2] = src[x * 4 + 3];
+			dst[x * 4 + 3] = src[x * 4 + 0];
 		}
 		dst += dststride;
 		src += srcstride;
@@ -552,9 +563,9 @@ ximage_convert_bgr888(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			dst[3*x + 0] = src[4*x + 2];
-			dst[3*x + 1] = src[4*x + 1];
-			dst[3*x + 2] = src[4*x + 0];
+			dst[3*x + 0] = src[4*x + 3];
+			dst[3*x + 1] = src[4*x + 2];
+			dst[3*x + 2] = src[4*x + 1];
 		}
 		src += srcstride;
 		dst += dststride;
@@ -567,9 +578,9 @@ ximage_convert_rgb888(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			dst[3*x + 0] = src[4*x + 0];
-			dst[3*x + 1] = src[4*x + 1];
-			dst[3*x + 2] = src[4*x + 2];
+			dst[3*x + 0] = src[4*x + 1];
+			dst[3*x + 1] = src[4*x + 2];
+			dst[3*x + 2] = src[4*x + 3];
 		}
 		src += srcstride;
 		dst += dststride;
@@ -583,9 +594,9 @@ ximage_convert_rgb565(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			r = src[4*x + 0];
-			g = src[4*x + 1];
-			b = src[4*x + 2];
+			r = src[4*x + 1];
+			g = src[4*x + 2];
+			b = src[4*x + 3];
 			((unsigned short *)dst)[x] =
 			((r & 0xF8) << 8) |
 			((g & 0xFC) << 3) |
@@ -603,11 +614,11 @@ ximage_convert_rgb565_br(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			r = src[4*x + 0];
-			g = src[4*x + 1];
-			b = src[4*x + 2];
+			r = src[4*x + 1];
+			g = src[4*x + 2];
+			b = src[4*x + 3];
 			/* final word is:
-			g4 g3 g2 b7 b6 b5 b4 b3 : r7 r6 r5 r4 r3 g7 g6 g5
+			g4 g3 g2 b7 b6 b5 b4 b3  r7 r6 r5 r4 r3 g7 g6 g5
 			*/
 			((unsigned short *)dst)[x] =
 			(r & 0xF8) |
@@ -627,9 +638,9 @@ ximage_convert_rgb555(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			r = src[4*x + 0];
-			g = src[4*x + 1];
-			b = src[4*x + 2];
+			r = src[4*x + 1];
+			g = src[4*x + 2];
+			b = src[4*x + 3];
 			((unsigned short *)dst)[x] =
 			((r & 0xF8) << 7) |
 			((g & 0xF8) << 2) |
@@ -647,11 +658,11 @@ ximage_convert_rgb555_br(PARAMS)
 	int x, y;
 	for (y = 0; y < h; y++) {
 		for (x = 0; x < w; x++) {
-			r = src[4*x + 0];
-			g = src[4*x + 1];
-			b = src[4*x + 2];
+			r = src[4*x + 1];
+			g = src[4*x + 2];
+			b = src[4*x + 3];
 			/* final word is:
-			g5 g4 g3 b7 b6 b5 b4 b3 : 0 r7 r6 r5 r4 r3 g7 g6
+			g5 g4 g3 b7 b6 b5 b4 b3  0 r7 r6 r5 r4 r3 g7 g6
 			*/
 			((unsigned short *)dst)[x] =
 			((r & 0xF8) >> 1) |
@@ -671,9 +682,9 @@ ximage_convert_bgr233(PARAMS)
 	int x,y;
 	for(y = 0; y < h; y++) {
 		for(x = 0; x < w; x++) {
-			r = src[4*x + 0];
-			g = src[4*x + 1];
-			b = src[4*x + 2];
+			r = src[4*x + 1];
+			g = src[4*x + 2];
+			b = src[4*x + 3];
 			/* format: b7 b6 g7 g6 g5 r7 r6 r5 */
 			dst[x] = (b&0xC0) | ((g>>2)&0x38) | ((r>>5)&0x7);
 		}
@@ -695,3 +706,4 @@ ximage_convert_func_t ximage_convert_funcs[] = {
 	ximage_convert_rgb555_br,
 	ximage_convert_bgr233,
 };
+

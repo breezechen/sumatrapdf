@@ -98,8 +98,7 @@
 #undef  FT_USE_MODULE
 #define FT_USE_MODULE( type, x )  MODULE_CLASS_##x,
 
-  enum
-  {
+  enum {
 #include FT_CONFIG_MODULES_H
     FT_NUM_MODULE_CLASSES
   };
@@ -116,7 +115,7 @@
     FT_Module_Class** classes;
     FT_Memory         memory;
     FT_UInt           i;
-    BasePIC*          pic_container = (BasePIC*)library->pic_container.base;
+    BasePIC*          pic_container = library->pic_container.base;
 
     if ( !pic_container->default_module_classes )
       return;
@@ -146,7 +145,7 @@
     FT_Module_Class** classes;
     FT_Module_Class*  clazz;
     FT_UInt           i;
-    BasePIC*          pic_container = (BasePIC*)library->pic_container.base;
+    BasePIC*          pic_container = library->pic_container.base;
 
     memory = library->memory;  
     pic_container->default_module_classes = 0;

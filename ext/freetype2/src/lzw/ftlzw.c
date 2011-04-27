@@ -8,7 +8,7 @@
 /*  be used to parse compressed PCF fonts, as found with many X11 server   */
 /*  distributions.                                                         */
 /*                                                                         */
-/*  Copyright 2004, 2005, 2006, 2009, 2010 by                              */
+/*  Copyright 2004, 2005, 2006, 2009 by                                    */
 /*  Albert Chin-A-Young.                                                   */
 /*                                                                         */
 /*  Based on code in src/gzip/ftgzip.c, Copyright 2004 by                  */
@@ -122,9 +122,13 @@
     zip->pos    = 0;
 
     /* check and skip .Z header */
-    error = ft_lzw_check_header( source );
-    if ( error )
-      goto Exit;
+    {
+      stream = source;
+
+      error = ft_lzw_check_header( source );
+      if ( error )
+        goto Exit;
+    }
 
     /* initialize internal lzw variable */
     ft_lzwstate_init( lzw, source );
@@ -171,7 +175,7 @@
   {
     FT_LzwState  lzw = &zip->lzw;
     FT_ULong     count;
-    FT_Error     error = LZW_Err_Ok;
+    FT_Error     error   = 0;
 
 
     zip->cursor = zip->buffer;

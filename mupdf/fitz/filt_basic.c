@@ -1,61 +1,103 @@
-#include "fitz.h"
+#include "fitz_base.h"
+#include "fitz_stream.h"
 
-/* Pretend we have a filter that just copies data forever */
-
-fz_stream *
-fz_open_copy(fz_stream *chain)
+fz_filter *
+fz_newcopyfilter(void)
 {
-	return fz_keep_stream(chain);
+	FZ_NEWFILTER(fz_filter, f, copyfilter);
+	return f;
 }
 
-/* Null filter copies a specified amount of data */
-
-struct null_filter
+void
+fz_dropcopyfilter(fz_filter *f)
 {
-	fz_stream *chain;
-	int remain;
+}
+
+fz_error
+fz_processcopyfilter(fz_filter *filter, fz_buffer *in, fz_buffer *out)
+{
+	int n;
+
+	while (1)
+	{
+		if (in->rp + 1 > in->wp)
+		{
+			if (in->eof)
+				return fz_iodone;
+			return fz_ioneedin;
+		}
+
+		if (out->wp + 1 > out->ep)
+			return fz_ioneedout;
+
+		n = MIN(in->wp - in->rp, out->ep - out->wp);
+		if (n)
+		{
+			memcpy(out->wp, in->rp, n);
+			in->rp += n;
+			out->wp += n;
+		}
+	}
+}
+
+typedef struct fz_nullfilter_s fz_nullfilter;
+
+struct fz_nullfilter_s
+{
+	fz_filter super;
+	int len;
+	int cur;
 };
 
-static int
-read_null(fz_stream *stm, unsigned char *buf, int len)
+fz_filter *
+fz_newnullfilter(int len)
 {
-	struct null_filter *state = stm->state;
-	int amount = MIN(len, state->remain);
-	int n = fz_read(state->chain, buf, amount);
-	if (n < 0)
-		return fz_rethrow(n, "read error in null filter");
-	state->remain -= n;
-	return n;
+	FZ_NEWFILTER(fz_nullfilter, f, nullfilter);
+	f->len = len;
+	f->cur = 0;
+	return (fz_filter *)f;
 }
 
-static void
-close_null(fz_stream *stm)
+void
+fz_dropnullfilter(fz_filter *f)
 {
-	struct null_filter *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
 }
 
-fz_stream *
-fz_open_null(fz_stream *chain, int len)
+fz_error
+fz_processnullfilter(fz_filter *filter, fz_buffer *in, fz_buffer *out)
 {
-	struct null_filter *state;
+	fz_nullfilter *f = (fz_nullfilter*)filter;
+	int n;
 
-	state = fz_malloc(sizeof(struct null_filter));
-	state->chain = chain;
-	state->remain = len;
+	n = MIN(in->wp - in->rp, out->ep - out->wp);
+	if (f->len >= 0)
+		n = MIN(n, f->len - f->cur);
 
-	return fz_new_stream(state, read_null, close_null);
+	if (n)
+	{
+		memcpy(out->wp, in->rp, n);
+		in->rp += n;
+		out->wp += n;
+		f->cur += n;
+	}
+
+	if (f->cur == f->len)
+		return fz_iodone;
+	if (in->rp == in->wp)
+		return fz_ioneedin;
+	if (out->wp == out->ep)
+		return fz_ioneedout;
+
+	return fz_throw("braindead programmer trapped in nullfilter");
 }
-
-/* ASCII Hex Decode */
 
 typedef struct fz_ahxd_s fz_ahxd;
 
 struct fz_ahxd_s
 {
-	fz_stream *chain;
-	int eod;
+	fz_filter super;
+	int odd;
+	int a;
 };
 
 static inline int iswhite(int a)
@@ -75,430 +117,271 @@ static inline int ishex(int a)
 		(a >= '0' && a <= '9');
 }
 
-static inline int unhex(int a)
+static inline int fromhex(int a)
 {
-	if (a >= 'A' && a <= 'F') return a - 'A' + 0xA;
-	if (a >= 'a' && a <= 'f') return a - 'a' + 0xA;
-	if (a >= '0' && a <= '9') return a - '0';
+	if (a >= 'A' && a <= 'F')
+		return a - 'A' + 0xA;
+	if (a >= 'a' && a <= 'f')
+		return a - 'a' + 0xA;
+	if (a >= '0' && a <= '9')
+		return a - '0';
 	return 0;
 }
 
-static int
-read_ahxd(fz_stream *stm, unsigned char *buf, int len)
+fz_filter *
+fz_newahxd(fz_obj *params)
 {
-	fz_ahxd *state = stm->state;
-	unsigned char *p = buf;
-	unsigned char *ep = buf + len;
-	int a, b, c, odd;
+	FZ_NEWFILTER(fz_ahxd, f, ahxd);
+	f->odd = 0;
+	f->a = 0;
+	return (fz_filter *)f;
+}
 
-	odd = 0;
+void
+fz_dropahxd(fz_filter *f)
+{
+}
 
-	while (p < ep)
+fz_error
+fz_processahxd(fz_filter *filter, fz_buffer *in, fz_buffer *out)
+{
+	fz_ahxd *f = (fz_ahxd*)filter;
+	int b, c;
+
+	while (1)
 	{
-		if (state->eod)
-			return p - buf;
+		if (in->rp == in->wp)
+			return fz_ioneedin;
 
-		c = fz_read_byte(state->chain);
-		if (c < 0)
-			return p - buf;
+		if (out->wp == out->ep)
+			return fz_ioneedout;
 
-		if (ishex(c))
-		{
-			if (!odd)
-			{
-				a = unhex(c);
-				odd = 1;
+		c = *in->rp++;
+
+		if (ishex(c)) {
+			if (!f->odd) {
+				f->a = fromhex(c);
+				f->odd = 1;
 			}
-			else
-			{
-				b = unhex(c);
-				*p++ = (a << 4) | b;
-				odd = 0;
+			else {
+				b = fromhex(c);
+				*out->wp++ = (f->a << 4) | b;
+				f->odd = 0;
 			}
 		}
-		else if (c == '>')
-		{
-			if (odd)
-				*p++ = (a << 4);
-			state->eod = 1;
+
+		else if (c == '>') {
+			if (f->odd)
+				*out->wp++ = (f->a << 4);
+			return fz_iodone;
 		}
-		else if (!iswhite(c))
-		{
+
+		else if (!iswhite(c)) {
 			return fz_throw("bad data in ahxd: '%c'", c);
 		}
 	}
-
-	return p - buf;
 }
 
-static void
-close_ahxd(fz_stream *stm)
+void
+fz_pushbackahxd(fz_filter *filter, fz_buffer *in, fz_buffer *out, int n)
 {
-	fz_ahxd *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
+	int k;
+
+	assert(filter->process == fz_processahxd);
+	assert(out->wp - n >= out->rp);
+
+	k = 0;
+	while (k < n * 2) {
+		in->rp --;
+		if (ishex(*in->rp))
+			k ++;
+	}
+
+	out->wp -= n;
 }
-
-fz_stream *
-fz_open_ahxd(fz_stream *chain)
-{
-	fz_ahxd *state;
-
-	state = fz_malloc(sizeof(fz_ahxd));
-	state->chain = chain;
-	state->eod = 0;
-
-	return fz_new_stream(state, read_ahxd, close_ahxd);
-}
-
-/* ASCII 85 Decode */
 
 typedef struct fz_a85d_s fz_a85d;
 
 struct fz_a85d_s
 {
-	fz_stream *chain;
-	unsigned char bp[4];
-	unsigned char *rp, *wp;
-	int eod;
+	fz_filter super;
+	unsigned long word;
+	int count;
 };
 
-static int
-read_a85d(fz_stream *stm, unsigned char *buf, int len)
+fz_filter *
+fz_newa85d(fz_obj *params)
 {
-	fz_a85d *state = stm->state;
-	unsigned char *p = buf;
-	unsigned char *ep = buf + len;
-	int count = 0;
-	int word = 0;
+	FZ_NEWFILTER(fz_a85d, f, a85d);
+	f->word = 0;
+	f->count = 0;
+	return (fz_filter *)f;
+}
+
+void
+fz_dropa85d(fz_filter *f)
+{
+}
+
+fz_error
+fz_processa85d(fz_filter *filter, fz_buffer *in, fz_buffer *out)
+{
+	fz_a85d *f = (fz_a85d*)filter;
 	int c;
 
-	while (state->rp < state->wp && p < ep)
-		*p++ = *state->rp++;
-
-	while (p < ep)
+	while (1)
 	{
-		if (state->eod)
-			return p - buf;
+		if (in->rp == in->wp)
+			return fz_ioneedin;
 
-		c = fz_read_byte(state->chain);
-		if (c < 0)
-			return p - buf;
+		c = *in->rp++;
 
-		if (c >= '!' && c <= 'u')
-		{
-			if (count == 4)
-			{
-				word = word * 85 + (c - '!');
+		if (c >= '!' && c <= 'u') {
+			if (f->count == 4) {
+				if (out->wp + 4 > out->ep) {
+					in->rp --;
+					return fz_ioneedout;
+				}
 
-				state->bp[0] = (word >> 24) & 0xff;
-				state->bp[1] = (word >> 16) & 0xff;
-				state->bp[2] = (word >> 8) & 0xff;
-				state->bp[3] = (word) & 0xff;
-				state->rp = state->bp;
-				state->wp = state->bp + 4;
+				f->word = f->word * 85 + (c - '!');
 
-				word = 0;
-				count = 0;
+				*out->wp++ = (f->word >> 24) & 0xff;
+				*out->wp++ = (f->word >> 16) & 0xff;
+				*out->wp++ = (f->word >> 8) & 0xff;
+				*out->wp++ = (f->word) & 0xff;
+
+				f->word = 0;
+				f->count = 0;
 			}
-			else
-			{
-				word = word * 85 + (c - '!');
-				count ++;
+			else {
+				f->word = f->word * 85 + (c - '!');
+				f->count ++;
 			}
 		}
 
-		else if (c == 'z' && count == 0)
-		{
-			state->bp[0] = 0;
-			state->bp[1] = 0;
-			state->bp[2] = 0;
-			state->bp[3] = 0;
-			state->rp = state->bp;
-			state->wp = state->bp + 4;
+		else if (c == 'z' && f->count == 0) {
+			if (out->wp + 4 > out->ep) {
+				in->rp --;
+				return fz_ioneedout;
+			}
+			*out->wp++ = 0;
+			*out->wp++ = 0;
+			*out->wp++ = 0;
+			*out->wp++ = 0;
 		}
 
-		else if (c == '~')
-		{
-			c = fz_read_byte(state->chain);
-			if (c != '>')
-				fz_warn("bad eod marker in a85d");
+		else if (c == '~') {
+			if (in->rp == in->wp) {
+				in->rp --;
+				return fz_ioneedin;
+			}
 
-			switch (count) {
+			c = *in->rp++;
+
+			if (c != '>') {
+				return fz_throw("bad eod marker in a85d");
+			}
+
+			if (out->wp + f->count - 1 > out->ep) {
+				in->rp -= 2;
+				return fz_ioneedout;
+			}
+
+			switch (f->count) {
 			case 0:
 				break;
 			case 1:
 				return fz_throw("partial final byte in a85d");
 			case 2:
-				word = word * (85 * 85 * 85) + 0xffffff;
-				state->bp[0] = word >> 24;
-				state->rp = state->bp;
-				state->wp = state->bp + 1;
-				break;
+				f->word = f->word * (85L * 85 * 85) + 0xffffffL;
+				goto o1;
 			case 3:
-				word = word * (85 * 85) + 0xffff;
-				state->bp[0] = word >> 24;
-				state->bp[1] = word >> 16;
-				state->rp = state->bp;
-				state->wp = state->bp + 2;
-				break;
+				f->word = f->word * (85L * 85) + 0xffffL;
+				goto o2;
 			case 4:
-				word = word * 85 + 0xff;
-				state->bp[0] = word >> 24;
-				state->bp[1] = word >> 16;
-				state->bp[2] = word >> 8;
-				state->rp = state->bp;
-				state->wp = state->bp + 3;
+				f->word = f->word * 85 + 0xffL;
+				*(out->wp+2) = f->word >> 8;
+				o2:				*(out->wp+1) = f->word >> 16;
+				o1:				*(out->wp+0) = f->word >> 24;
+				out->wp += f->count - 1;
 				break;
 			}
-			state->eod = 1;
+			return fz_iodone;
 		}
 
-		else if (!iswhite(c))
-		{
+		else if (!iswhite(c)) {
 			return fz_throw("bad data in a85d: '%c'", c);
 		}
-
-		while (state->rp < state->wp && p < ep)
-			*p++ = *state->rp++;
 	}
-
-	return p - buf;
 }
 
-static void
-close_a85d(fz_stream *stm)
+fz_filter *
+fz_newrld(fz_obj *params)
 {
-	fz_a85d *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
+	FZ_NEWFILTER(fz_filter, f, rld);
+	return f;
 }
 
-fz_stream *
-fz_open_a85d(fz_stream *chain)
+void
+fz_droprld(fz_filter *rld)
 {
-	fz_a85d *state;
-
-	state = fz_malloc(sizeof(fz_a85d));
-	state->chain = chain;
-	state->rp = state->bp;
-	state->wp = state->bp;
-	state->eod = 0;
-
-	return fz_new_stream(state, read_a85d, close_a85d);
 }
 
-/* Run Length Decode */
-
-typedef struct fz_rld_s fz_rld;
-
-struct fz_rld_s
+fz_error
+fz_processrld(fz_filter *filter, fz_buffer *in, fz_buffer *out)
 {
-	fz_stream *chain;
-	int run, n, c;
-};
+	int run, i;
+	unsigned char c;
 
-static int
-read_rld(fz_stream *stm, unsigned char *buf, int len)
-{
-	fz_rld *state = stm->state;
-	unsigned char *p = buf;
-	unsigned char *ep = buf + len;
-
-	while (p < ep)
+	while (1)
 	{
-		if (state->run == 128)
-			return p - buf;
-
-		if (state->n == 0)
+		if (in->rp == in->wp)
 		{
-			state->run = fz_read_byte(state->chain);
-			if (state->run < 0)
-				state->run = 128;
-			if (state->run < 128)
-				state->n = state->run + 1;
-			if (state->run > 128)
+			if (in->eof)
 			{
-				state->n = 257 - state->run;
-				state->c = fz_read_byte(state->chain);
-				if (state->c < 0)
-					return fz_throw("premature end of data in run length decode");
+				return fz_iodone;
 			}
+			return fz_ioneedin;
 		}
 
-		if (state->run < 128)
+		if (out->wp == out->ep)
+			return fz_ioneedout;
+
+		run = *in->rp++;
+
+		if (run == 128)
 		{
-			while (p < ep && state->n)
-			{
-				int c = fz_read_byte(state->chain);
-				if (c < 0)
-					return fz_throw("premature end of data in run length decode");
-				*p++ = c;
-				state->n--;
-			}
+			return fz_iodone;
 		}
 
-		if (state->run > 128)
-		{
-			while (p < ep && state->n)
-			{
-				*p++ = state->c;
-				state->n--;
+		else if (run < 128) {
+			run = run + 1;
+			if (in->rp + run > in->wp) {
+				in->rp --;
+				return fz_ioneedin;
 			}
+			if (out->wp + run > out->ep) {
+				in->rp --;
+				return fz_ioneedout;
+			}
+			for (i = 0; i < run; i++)
+				*out->wp++ = *in->rp++;
+		}
+
+		else if (run > 128) {
+			run = 257 - run;
+			if (in->rp + 1 > in->wp) {
+				in->rp --;
+				return fz_ioneedin;
+			}
+			if (out->wp + run > out->ep) {
+				in->rp --;
+				return fz_ioneedout;
+			}
+			c = *in->rp++;
+			for (i = 0; i < run; i++)
+				*out->wp++ = c;
 		}
 	}
-
-	return p - buf;
 }
 
-static void
-close_rld(fz_stream *stm)
-{
-	fz_rld *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
-}
-
-fz_stream *
-fz_open_rld(fz_stream *chain)
-{
-	fz_rld *state;
-
-	state = fz_malloc(sizeof(fz_rld));
-	state->chain = chain;
-	state->run = 0;
-	state->n = 0;
-	state->c = 0;
-
-	return fz_new_stream(state, read_rld, close_rld);
-}
-
-/* RC4 Filter */
-
-typedef struct fz_arc4c_s fz_arc4c;
-
-struct fz_arc4c_s
-{
-	fz_stream *chain;
-	fz_arc4 arc4;
-};
-
-static int
-read_arc4(fz_stream *stm, unsigned char *buf, int len)
-{
-	fz_arc4c *state = stm->state;
-	int n;
-
-	n = fz_read(state->chain, buf, len);
-	if (n < 0)
-		return fz_rethrow(n, "read error in arc4 filter");
-
-	fz_arc4_encrypt(&state->arc4, buf, buf, n);
-
-	return n;
-}
-
-static void
-close_arc4(fz_stream *stm)
-{
-	fz_arc4c *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
-}
-
-fz_stream *
-fz_open_arc4(fz_stream *chain, unsigned char *key, unsigned keylen)
-{
-	fz_arc4c *state;
-
-	state = fz_malloc(sizeof(fz_arc4c));
-	state->chain = chain;
-	fz_arc4_init(&state->arc4, key, keylen);
-
-	return fz_new_stream(state, read_arc4, close_arc4);
-}
-
-/* AES Filter */
-
-typedef struct fz_aesd_s fz_aesd;
-
-struct fz_aesd_s
-{
-	fz_stream *chain;
-	fz_aes aes;
-	unsigned char iv[16];
-	int ivcount;
-	unsigned char bp[16];
-	unsigned char *rp, *wp;
-};
-
-static int
-read_aesd(fz_stream *stm, unsigned char *buf, int len)
-{
-	fz_aesd *state = stm->state;
-	unsigned char *p = buf;
-	unsigned char *ep = buf + len;
-
-	while (state->ivcount < 16)
-	{
-		int c = fz_read_byte(state->chain);
-		if (c < 0)
-			return fz_throw("premature end in aes filter");
-		state->iv[state->ivcount++] = c;
-	}
-
-	while (state->rp < state->wp && p < ep)
-		*p++ = *state->rp++;
-
-	while (p < ep)
-	{
-		int n = fz_read(state->chain, state->bp, 16);
-		if (n < 0)
-			return fz_rethrow(n, "read error in aes filter");
-		else if (n == 0)
-			return p - buf;
-		else if (n < 16)
-			return fz_throw("partial block in aes filter");
-
-		aes_crypt_cbc(&state->aes, AES_DECRYPT, 16, state->iv, state->bp, state->bp);
-		state->rp = state->bp;
-		state->wp = state->bp + 16;
-
-		/* strip padding at end of file */
-		if (fz_is_eof(state->chain))
-		{
-			int pad = state->bp[15];
-			if (pad < 1 || pad > 16)
-				return fz_throw("aes padding out of range: %d", pad);
-			state->wp -= pad;
-		}
-
-		while (state->rp < state->wp && p < ep)
-			*p++ = *state->rp++;
-	}
-
-	return p - buf;
-}
-
-static void
-close_aesd(fz_stream *stm)
-{
-	fz_aesd *state = stm->state;
-	fz_close(state->chain);
-	fz_free(state);
-}
-
-fz_stream *
-fz_open_aesd(fz_stream *chain, unsigned char *key, unsigned keylen)
-{
-	fz_aesd *state;
-
-	state = fz_malloc(sizeof(fz_aesd));
-	state->chain = chain;
-	aes_setkey_dec(&state->aes, key, keylen * 8);
-	state->ivcount = 0;
-	state->rp = state->bp;
-	state->wp = state->bp;
-
-	return fz_new_stream(state, read_aesd, close_aesd);
-}

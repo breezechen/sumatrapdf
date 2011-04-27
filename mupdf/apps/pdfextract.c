@@ -2,122 +2,170 @@
  * pdfextract -- the ultimate way to extract images and fonts from pdfs
  */
 
-#include "fitz.h"
-#include "mupdf.h"
+#include "pdftool.h"
 
-static pdf_xref *xref = NULL;
-static int dorgb = 0;
-
-void die(fz_error error)
+static void showusage(void)
 {
-	fz_catch(error, "aborting");
-	if (xref)
-		pdf_free_xref(xref);
-	exit(1);
-}
-
-static void usage(void)
-{
-	fprintf(stderr, "usage: pdfextract [options] file.pdf [object numbers]\n");
-	fprintf(stderr, "\t-p\tpassword\n");
-	fprintf(stderr, "\t-r\tconvert images to rgb\n");
+	fprintf(stderr, "usage: pdfextract [-d password] <file> [object numbers]\n");
+	fprintf(stderr, "  -d  \tdecrypt password\n");
 	exit(1);
 }
 
 static int isimage(fz_obj *obj)
 {
-	fz_obj *type = fz_dict_gets(obj, "Subtype");
-	return fz_is_name(type) && !strcmp(fz_to_name(type), "Image");
+	fz_obj *type = fz_dictgets(obj, "Subtype");
+	return fz_isname(type) && !strcmp(fz_toname(type), "Image");
 }
 
 static int isfontdesc(fz_obj *obj)
 {
-	fz_obj *type = fz_dict_gets(obj, "Type");
-	return fz_is_name(type) && !strcmp(fz_to_name(type), "FontDescriptor");
+	fz_obj *type = fz_dictgets(obj, "Type");
+	return fz_isname(type) && !strcmp(fz_toname(type), "FontDescriptor");
 }
 
-static void saveimage(int num)
+static void saveimage(fz_obj *obj, int num, int gen)
 {
-	fz_error error;
-	fz_pixmap *img;
+	pdf_image *img = nil;
 	fz_obj *ref;
+	fz_error error;
+	fz_pixmap *pix;
 	char name[1024];
+	FILE *f;
+	int bpc;
+	int w;
+	int h;
+	int n;
+	int x;
+	int y;
 
-	ref = fz_new_indirect(num, 0, xref);
+	ref = fz_newindirect(num, gen, xref);
 
-	/* TODO: detect DCTD and save as jpeg */
+	xref->store = pdf_newstore();
 
-	error = pdf_load_image(&img, xref, ref);
+	error = pdf_loadimage(&img, xref, ref);
 	if (error)
 		die(error);
 
-	if (dorgb && img->colorspace && img->colorspace != fz_device_rgb)
+	n = img->super.n;
+	w = img->super.w;
+	h = img->super.h;
+	bpc = img->bpc;
+
+	error = fz_newpixmap(&pix, 0, 0, w, h, n + 1);
+	if (error)
+		die(error);
+
+	error = img->super.loadtile(&img->super, pix);
+	if (error)
+		die(error);
+
+	if (bpc == 1 && n == 0)
 	{
 		fz_pixmap *temp;
-		temp = fz_new_pixmap_with_rect(fz_device_rgb, fz_bound_pixmap(img));
-		fz_convert_pixmap(img, temp);
-		fz_drop_pixmap(img);
-		img = temp;
+
+		error = fz_newpixmap(&temp, pix->x, pix->y, pix->w, pix->h, pdf_devicergb->n + 1);
+		if (error)
+			die(error);
+
+		for (y = 0; y < pix->h; y++)
+			for (x = 0; x < pix->w; x++)
+		{
+			int pixel = y * pix->w + x;
+			temp->samples[pixel * temp->n + 0] = 255;
+			temp->samples[pixel * temp->n + 1] = pix->samples[pixel];
+			temp->samples[pixel * temp->n + 2] = pix->samples[pixel];
+			temp->samples[pixel * temp->n + 3] = pix->samples[pixel];
+		}
+
+		fz_droppixmap(pix);
+		pix = temp;
 	}
 
-	if (img->n <= 4)
+	if (img->super.cs && strcmp(img->super.cs->name, "DeviceRGB"))
 	{
-		sprintf(name, "img-%04d.png", num);
-		printf("extracting image %s\n", name);
-		fz_write_png(img, name, 0);
-	}
-	else
-	{
-		sprintf(name, "img-%04d.pam", num);
-		printf("extracting image %s\n", name);
-		fz_write_pam(img, name, 0);
+		fz_pixmap *temp;
+
+		error = fz_newpixmap(&temp, pix->x, pix->y, pix->w, pix->h, pdf_devicergb->n + 1);
+		if (error)
+			die(error);
+
+		fz_convertpixmap(img->super.cs, pix, pdf_devicergb, temp);
+		fz_droppixmap(pix);
+		pix = temp;
 	}
 
-	fz_drop_pixmap(img);
-	fz_drop_obj(ref);
+	sprintf(name, "img-%04d.pnm", num);
+
+	f = fopen(name, "wb");
+	if (f == NULL)
+		die(fz_throw("Error creating image file"));
+
+	fprintf(f, "P6\n%d %d\n%d\n", w, h, 255);
+
+	for (y = 0; y < pix->h; y++)
+		for (x = 0; x < pix->w; x++)
+	{
+		fz_sample *sample = &pix->samples[(y * pix->w + x) * (pdf_devicergb->n + 1)];
+		unsigned char r = sample[1];
+		unsigned char g = sample[2];
+		unsigned char b = sample[3];
+		fprintf(f, "%c%c%c", r, g, b);
+	}
+
+	if (fclose(f) < 0)
+		die(fz_throw("Error closing image file"));
+
+	fz_droppixmap(pix);
+
+	pdf_dropstore(xref->store);
+	xref->store = nil;
+
+	fz_dropimage(&img->super);
+
+	fz_dropobj(ref);
 }
 
-static void savefont(fz_obj *dict, int num)
+static void savefont(fz_obj *dict, int num, int gen)
 {
 	fz_error error;
 	char name[1024];
 	char *subtype;
 	fz_buffer *buf;
-	fz_obj *stream = NULL;
+	fz_obj *stream = nil;
 	fz_obj *obj;
 	char *ext = "";
 	FILE *f;
+	unsigned char *p;
 	char *fontname = "font";
-	int n;
 
-	obj = fz_dict_gets(dict, "FontName");
+	obj = fz_dictgets(dict, "FontName");
 	if (obj)
-		fontname = fz_to_name(obj);
+		fontname = fz_toname(obj);
 
-	obj = fz_dict_gets(dict, "FontFile");
+	obj = fz_dictgets(dict, "FontFile");
 	if (obj)
 	{
 		stream = obj;
 		ext = "pfa";
 	}
 
-	obj = fz_dict_gets(dict, "FontFile2");
+	obj = fz_dictgets(dict, "FontFile2");
 	if (obj)
 	{
 		stream = obj;
 		ext = "ttf";
 	}
 
-	obj = fz_dict_gets(dict, "FontFile3");
+	obj = fz_dictgets(dict, "FontFile3");
 	if (obj)
 	{
 		stream = obj;
 
-		obj = fz_dict_gets(obj, "Subtype");
-		if (obj && !fz_is_name(obj))
+		obj = fz_dictgets(obj, "Subtype");
+		if (obj && !fz_isname(obj))
 			die(fz_throw("Invalid font descriptor subtype"));
 
-		subtype = fz_to_name(obj);
+		subtype = fz_toname(obj);
 		if (!strcmp(subtype, "Type1C"))
 			ext = "cff";
 		else if (!strcmp(subtype, "CIDFontType0C"))
@@ -132,30 +180,28 @@ static void savefont(fz_obj *dict, int num)
 		return;
 	}
 
-	buf = fz_new_buffer(0);
+	buf = fz_newbuffer(0);
 
-	error = pdf_load_stream(&buf, xref, fz_to_num(stream), fz_to_gen(stream));
+	error = pdf_loadstream(&buf, xref, fz_tonum(stream), fz_togen(stream));
 	if (error)
 		die(error);
 
 	sprintf(name, "%s-%04d.%s", fontname, num, ext);
-	printf("extracting font %s\n", name);
 
 	f = fopen(name, "wb");
 	if (f == NULL)
-		die(fz_throw("Error creating font file"));
+		die(fz_throw("Error creating image file"));
 
-	n = fwrite(buf->data, 1, buf->len, f);
-	if (n < buf->len)
-		die(fz_throw("Error writing font file"));
+	for (p = buf->rp; p < buf->wp; p ++)
+		fprintf(f, "%c", *p);
 
 	if (fclose(f) < 0)
-		die(fz_throw("Error closing font file"));
+		die(fz_throw("Error closing image file"));
 
-	fz_drop_buffer(buf);
+	fz_dropbuffer(buf);
 }
 
-static void showobject(int num)
+static void showobject(int num, int gen)
 {
 	fz_error error;
 	fz_obj *obj;
@@ -163,60 +209,49 @@ static void showobject(int num)
 	if (!xref)
 		die(fz_throw("no file specified"));
 
-	error = pdf_load_object(&obj, xref, num, 0);
+	error = pdf_loadobject(&obj, xref, num, gen);
 	if (error)
 		die(error);
 
 	if (isimage(obj))
-		saveimage(num);
+		saveimage(obj, num, gen);
 	else if (isfontdesc(obj))
-		savefont(obj, num);
+		savefont(obj, num, gen);
 
-	fz_drop_obj(obj);
+	fz_dropobj(obj);
 }
 
 int main(int argc, char **argv)
 {
-	fz_error error;
-	char *infile;
 	char *password = "";
 	int c, o;
 
-	while ((c = fz_getopt(argc, argv, "p:r")) != -1)
+	while ((c = fz_getopt(argc, argv, "d:")) != -1)
 	{
 		switch (c)
 		{
-		case 'p': password = fz_optarg; break;
-		case 'r': dorgb++; break;
-		default: usage(); break;
+		case 'd': password = fz_optarg; break;
+		default:
+			showusage();
+			break;
 		}
 	}
 
 	if (fz_optind == argc)
-		usage();
+		showusage();
 
-	infile = argv[fz_optind++];
-	error = pdf_open_xref(&xref, infile, password);
-	if (error)
-		die(fz_rethrow(error, "cannot open input file '%s'", infile));
+	openxref(argv[fz_optind++], password, 0);
 
 	if (fz_optind == argc)
-	{
 		for (o = 0; o < xref->len; o++)
-			showobject(o);
-	}
+			showobject(o, 0);
 	else
-	{
 		while (fz_optind < argc)
-		{
-			showobject(atoi(argv[fz_optind]));
-			fz_optind++;
-		}
+	{
+		showobject(atoi(argv[fz_optind]), 0);
+		fz_optind++;
 	}
 
-	pdf_free_xref(xref);
-
-	fz_flush_warnings();
-
-	return 0;
+	closexref();
 }
+

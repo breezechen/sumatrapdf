@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    Auto-fitter hinting routines for latin script (body).                */
 /*                                                                         */
-/*  Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010 by            */
+/*  Copyright 2003, 2004, 2005, 2006, 2007, 2008, 2009 by                  */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -77,7 +77,7 @@
 
       af_glyph_hints_rescale( hints, (AF_ScriptMetrics)dummy );
 
-      error = af_glyph_hints_reload( hints, &face->glyph->outline );
+      error = af_glyph_hints_reload( hints, &face->glyph->outline, 0 );
       if ( error )
         goto Exit;
 
@@ -402,16 +402,16 @@
   af_latin_metrics_check_digits( AF_LatinMetrics  metrics,
                                  FT_Face          face )
   {
-    FT_UInt   i;
-    FT_Bool   started = 0, same_width = 1;
-    FT_Fixed  advance, old_advance = 0;
+    FT_UInt  i;
+    FT_Bool  started = 0, same_width = 1;
 
 
     /* check whether all ASCII digits have the same advance width; */
     /* digit `0' is 0x30 in all supported charmaps                 */
     for ( i = 0x30; i <= 0x39; i++ )
     {
-      FT_UInt  glyph_index;
+      FT_UInt   glyph_index;
+      FT_Fixed  advance, old_advance = 0;
 
 
       glyph_index = FT_Get_Char_Index( face, i );
@@ -1534,18 +1534,21 @@
 
 
         /* compare to standard width */
-        delta = dist - axis->widths[0].cur;
-
-        if ( delta < 0 )
-          delta = -delta;
-
-        if ( delta < 40 )
+        if ( axis->width_count > 0 )
         {
-          dist = axis->widths[0].cur;
-          if ( dist < 48 )
-            dist = 48;
+          delta = dist - axis->widths[0].cur;
 
-          goto Done_Width;
+          if ( delta < 0 )
+            delta = -delta;
+
+          if ( delta < 40 )
+          {
+            dist = axis->widths[0].cur;
+            if ( dist < 48 )
+              dist = 48;
+
+            goto Done_Width;
+          }
         }
 
         if ( dist < 3 * 64 )
@@ -2102,7 +2105,7 @@
     int       dim;
 
 
-    error = af_glyph_hints_reload( hints, outline );
+    error = af_glyph_hints_reload( hints, outline, 1 );
     if ( error )
       goto Exit;
 

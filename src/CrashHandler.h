@@ -1,10 +1,6 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+#ifndef CRASH_HANDLER_H__
+#define CRASH_HANDLER_H__
 
-#ifndef CrashHandler_h
-#define CrashHandler_h
-
-void InstallCrashHandler(const TCHAR *crashDumpPath);
-void SubmitCrashInfo();
+void InstallCrashHandler(const TCHAR *crashDumpDir, const TCHAR *crashDumpBaseName);
 
 #endif

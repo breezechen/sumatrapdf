@@ -82,7 +82,7 @@ jbig2_page_info (Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_da
             index++;
             if (index >= ctx->max_page_index) {
                 /* grow the list */
-		ctx->pages = (Jbig2Page*)jbig2_realloc(ctx->allocator, ctx->pages,
+		ctx->pages = jbig2_realloc(ctx->allocator, ctx->pages,
 			(ctx->max_page_index <<= 2) * sizeof(Jbig2Page));
                 for (j=index; j < ctx->max_page_index; j++) {
                     ctx->pages[j].state = JBIG2_PAGE_FREE;
@@ -213,7 +213,6 @@ jbig2_complete_page (Jbig2Ctx *ctx)
         ctx->segment_index++;
       }
     }
-    if (ctx->pages[ctx->current_page].image) /* cf. http://bugs.ghostscript.com/show_bug.cgi?id=691958 */
     ctx->pages[ctx->current_page].state = JBIG2_PAGE_COMPLETE;
 
     return 0;

@@ -1,49 +1,88 @@
-#include "fitz.h"
+#include "fitz_base.h"
+#include "fitz_stream.h"
 
 fz_buffer *
-fz_new_buffer(int size)
+fz_newbuffer(int size)
 {
 	fz_buffer *b;
 
-	size = size > 1 ? size : 16;
-
 	b = fz_malloc(sizeof(fz_buffer));
 	b->refs = 1;
-	b->data = fz_malloc(size);
-	b->cap = size;
-	b->len = 0;
+	b->ownsdata = 1;
+	b->bp = fz_malloc(size);
+	b->rp = b->bp;
+	b->wp = b->bp;
+	b->ep = b->bp + size;
+	b->eof = 0;
 
 	return b;
 }
 
 fz_buffer *
-fz_keep_buffer(fz_buffer *buf)
+fz_newbufferwithmemory(unsigned char *data, int size)
+{
+	fz_buffer *b;
+
+	b = fz_malloc(sizeof(fz_buffer));
+	b->refs = 1;
+	b->ownsdata = 0;
+	b->bp = data;
+	b->rp = b->bp;
+	b->wp = b->bp + size;
+	b->ep = b->bp + size;
+	b->eof = 0;
+
+	return b;
+}
+
+fz_buffer *
+fz_keepbuffer(fz_buffer *buf)
 {
 	buf->refs ++;
 	return buf;
 }
 
 void
-fz_drop_buffer(fz_buffer *buf)
+fz_dropbuffer(fz_buffer *buf)
 {
 	if (--buf->refs == 0)
 	{
-		fz_free(buf->data);
+		if (buf->ownsdata)
+			fz_free(buf->bp);
 		fz_free(buf);
 	}
 }
 
 void
-fz_resize_buffer(fz_buffer *buf, int size)
+fz_growbuffer(fz_buffer *buf)
 {
-	buf->data = fz_realloc(buf->data, size, 1);
-	buf->cap = size;
-	if (buf->len > buf->cap)
-		buf->len = buf->cap;
+	int rp = buf->rp - buf->bp;
+	int wp = buf->wp - buf->bp;
+	int ep = buf->ep - buf->bp;
+
+	if (!buf->ownsdata)
+	{
+		fz_warn("assert: grow borrowed memory");
+		return;
+	}
+
+	buf->bp = fz_realloc(buf->bp, (ep * 3) / 2);
+	buf->rp = buf->bp + rp;
+	buf->wp = buf->bp + wp;
+	buf->ep = buf->bp + (ep * 3) / 2;
 }
 
 void
-fz_grow_buffer(fz_buffer *buf)
+fz_rewindbuffer(fz_buffer *buf)
 {
-	fz_resize_buffer(buf, (buf->cap * 3) / 2);
+	if (!buf->ownsdata)
+	{
+		fz_warn("assert: rewind borrowed memory");
+		return;
+	}
+
+	memmove(buf->bp, buf->rp, buf->wp - buf->rp);
+	buf->wp = buf->bp + (buf->wp - buf->rp);
+	buf->rp = buf->bp;
 }
+

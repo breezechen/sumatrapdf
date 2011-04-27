@@ -366,13 +366,11 @@
 
       if ( count == 0 )
       {
-        /* No unicode chars here! */
         FT_FREE( table->maps );
         if ( !error )
-          error = PSnames_Err_No_Unicode_Glyph_Name;
+          error = PSnames_Err_Invalid_Argument;  /* No unicode chars here! */
       }
-      else
-      {
+      else {
         /* Reallocate if the number of used entries is much smaller. */
         if ( count < num_glyphs / 2 )
         {
@@ -563,7 +561,8 @@
   psnames_get_service( FT_Module    module,
                        const char*  service_id )
   {
-    FT_UNUSED( module );
+    FT_Library library = module->library;
+    FT_UNUSED(library);
 
     return ft_service_list_lookup( FT_PSCMAPS_SERVICES_GET, service_id );
   }

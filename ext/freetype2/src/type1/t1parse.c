@@ -397,18 +397,15 @@
 
       T1_Skip_PS_Token( parser );
       cur = parser->root.cursor;
-
-      /* according to the Type1 spec, the first cipher byte must not be  */
-      /* an ASCII whitespace character code (blank, tab, carriage return */
-      /* or line feed).  We have seen Type 1 fonts with two line feed    */
-      /* characters...  So skip now all whitespace character codes.      */
-      while ( cur < limit       &&
-              ( *cur == ' '  ||
-                *cur == '\t' || 
-                *cur == '\r' ||
-                *cur == '\n' ) )
-        ++cur;
-      if ( cur >= limit )
+      if ( *cur == '\r' )
+      {
+        cur++;
+        if ( *cur == '\n' )
+          cur++;
+      }
+      else if ( *cur == '\n' )
+        cur++;
+      else
       {
         FT_ERROR(( "T1_Get_Private_Dict:"
                    " `eexec' not properly terminated\n" ));

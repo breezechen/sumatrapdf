@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    TrueType GX Font Variation loader                                    */
 /*                                                                         */
-/*  Copyright 2004, 2005, 2006, 2007, 2008, 2009, 2010 by                  */
+/*  Copyright 2004, 2005, 2006, 2007, 2008, 2009 by                        */
 /*  David Turner, Robert Wilhelm, Werner Lemberg, and George Williams.     */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -94,8 +94,11 @@
 #define ALL_POINTS  (FT_UShort*)( -1 )
 
 
-#define GX_PT_POINTS_ARE_WORDS      0x80
-#define GX_PT_POINT_RUN_COUNT_MASK  0x7F
+  enum
+  {
+    GX_PT_POINTS_ARE_WORDS     = 0x80,
+    GX_PT_POINT_RUN_COUNT_MASK = 0x7F
+  };
 
 
   /*************************************************************************/
@@ -130,7 +133,7 @@
     FT_Int     j;
     FT_Int     first;
     FT_Memory  memory = stream->memory;
-    FT_Error   error  = TT_Err_Ok;
+    FT_Error   error = TT_Err_Ok;
 
     FT_UNUSED( error );
 
@@ -154,7 +157,7 @@
         runcnt = runcnt & GX_PT_POINT_RUN_COUNT_MASK;
         first  = points[i++] = FT_GET_USHORT();
 
-        if ( runcnt < 1 || i + runcnt >= n )
+        if ( runcnt < 1 )
           goto Exit;
 
         /* first point not included in runcount */
@@ -165,7 +168,7 @@
       {
         first = points[i++] = FT_GET_BYTE();
 
-        if ( runcnt < 1 || i + runcnt >= n )
+        if ( runcnt < 1 )
           goto Exit;
 
         for ( j = 0; j < runcnt; ++j )
@@ -210,12 +213,12 @@
   ft_var_readpackeddeltas( FT_Stream  stream,
                            FT_Offset  delta_cnt )
   {
-    FT_Short  *deltas = NULL;
-    FT_UInt    runcnt;
+    FT_Short  *deltas;
+    FT_Int     runcnt;
     FT_Offset  i;
-    FT_UInt    j;
+    FT_Offset  j;
     FT_Memory  memory = stream->memory;
-    FT_Error   error  = TT_Err_Ok;
+    FT_Error   error = TT_Err_Ok;
 
     FT_UNUSED( error );
 
@@ -682,11 +685,7 @@
       if ( fvar_head.version != (FT_Long)0x00010000L                      ||
            fvar_head.countSizePairs != 2                                  ||
            fvar_head.axisSize != 20                                       ||
-           /* axisCount limit implied by 16-bit instanceSize */
-           fvar_head.axisCount > 0x3FFE                                   ||
            fvar_head.instanceSize != 4 + 4 * fvar_head.axisCount          ||
-           /* instanceCount limit implied by limited range of name IDs */
-           fvar_head.instanceCount > 0x7EFF                               ||
            fvar_head.offsetToData + fvar_head.axisCount * 20U +
              fvar_head.instanceCount * fvar_head.instanceSize > table_len )
       {
@@ -697,7 +696,7 @@
       if ( FT_NEW( face->blend ) )
         goto Exit;
 
-      /* cannot overflow 32-bit arithmetic because of limits above */
+      /* XXX: TODO - check for overflows */
       face->blend->mmvar_len =
         sizeof ( FT_MM_Var ) +
         fvar_head.axisCount * sizeof ( FT_Var_Axis ) +
