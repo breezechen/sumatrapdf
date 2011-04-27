@@ -1,10 +1,8 @@
 ﻿# Translations for Welsh (Cymraeg) (cy) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: cy Welsh (Cymraeg)
 
@@ -16,9 +14,6 @@ Contributor: Glenn Wall
 
 &Actual Size\tCtrl-1
 &Gwir Faint\tCtrl-1
-
-&All selected pages
-&Pob tudalen dewiswyd
 
 &Back\tAlt+Left Arrow
 Nôl\tAlt+Saeth Chwith
@@ -32,9 +27,6 @@ Copïo'r Dewis\tCtrl-C
 &Don't ask me again
 &Peidio gofyn eto
 
-&Even pages only
-Tudalennau &eilrif yn unig
-
 &File
 &Ffeil
 
@@ -43,9 +35,6 @@ Tudalennau &eilrif yn unig
 
 &First Page\tHome
 Tudalen Gyntaf\tHome
-
-&Fit pages to printable area
-&Ffitio tudalennau i ardal argraffu
 
 &Go To
 &Mynd
@@ -77,9 +66,6 @@ Tudalen Nesaf\t->
 &No, thanks
 &Dim diolch
 
-&Odd pages only
-Tudalennau &odrif yn unig
-
 &Open\tCtrl-O
 &Agor\tCtrl-O
 
@@ -98,9 +84,6 @@ Tudalen Flaenorol\t<-
 &Print... (denied)
 &Argraffu... (gwrthodwyd)
 
-&Remember the password for this document
-&Cofio cyfrinair y ddogfen
-
 &Remember these settings for each document
 C&ofio'r gosodiadau hyn ar gyfer pob dogfen
 
@@ -110,14 +93,8 @@ C&ofio'r gosodiadau hyn ar gyfer pob dogfen
 &Settings
 &Gosodiadau
 
-&Shrink pages to printable area (if necessary)
-C&rebachu tudalennau i'r ardal argraffu (os oes angen)
-
 &Skip this version
 &Hepgor y fersiwn yma.
-
-&Use original page sizes
-&Defnyddio maint gwreiddiol y dudalen
 
 &View
 &Gweld
@@ -146,9 +123,6 @@ Rhaglen:
 Associate with PDF files?
 Cysylltu gyda ffeiliau PDF?
 
-Attachment: %s
-Atodiad: %s
-
 Author:
 Awdur:
 
@@ -164,14 +138,8 @@ Golwg llyfr
 Book&marks\tF12
 Nodau Tudalen\tF12
 
-Bookmarks
-Nodau Tudalen
-
 Bytes
 Beit
-
-Can't connect to the Internet (error %#x).
-Methu cysylltu â'r Rhyngrwyd (gwall %#x).
 
 Cancel
 Diddymu
@@ -199,9 +167,6 @@ Gwynebu'n Ddidor
 
 Contribute Translation
 Cyfrannu cyfieithiad.
-
-Copying text was denied (copying as image only)
-Copïo testun wedi ei atal (copïo fel delwedd yn unig)
 
 Could not open Printer
 Methu agor Argraffydd
@@ -245,6 +210,9 @@ Rhoi cyfrinair
 Enter password for %s
 Rhoi cyfrinair ar gyfer %s
 
+Error loading PDF file.
+Gwall wrth lwytho ffeil.
+
 F&orward\tAlt+Right Arrow
 Ymlaen\tAlt+Saeth Dde
 
@@ -278,29 +246,17 @@ Canfod y Blaenorol
 Find:
 Canfod:
 
-Fit &Content\tCtrl-3
-Ffitio'r &Cynnwys\tCtrl-3
-
 Fit &Page\tCtrl-0
 &Ffitio'r Dudalen\tCtrl-0
 
 Fit &Width\tCtrl-2
 &Fitio'r Lled\tCtrl-2
 
-Fit Content
-Ffitio'r Cynnwys
-
 Fit Page
 Ffitio'r Dudalen
 
 Fit Width
 Fitio'r Lled
-
-Fit Width and Show Pages Continuously
-Ffitio'r Lled a Dangos Tudalennau'n Barhaus
-
-Fit a Single Page
-Ffitio Tudalen Unigol
 
 Found text at page %d
 Canfod testun ar dudalen %d
@@ -392,26 +348,14 @@ Maint Tudalen:
 Page number %u inexistant
 Nid yw tudalen rhif %u yn bodoli
 
-Page scaling
-Graddio tudalen
-
 Page:
 Tudalen:
-
-Please include the following file in your crash report:
-Cofiwch gynnwys y ffeil ganlynol yn eich adroddiad chwalu:
 
 Please wait - rendering...
 Arhoswch, wrthi'n cyflwyno...
 
-Pr&esentation\tCtrl-L
-Cyflwyniad\tCtrl-L
-
 Previous Page
 Tudalen Flaenorol
-
-Print range
-Ystod argraffu
 
 Printing problem.
 Anhawster argraffu
@@ -427,9 +371,6 @@ Troi i'r dde\tCtrl-Shift-+
 
 Searching %d of %d...
 Chwilio am %d o %d...
-
-Select &All\tCtrl-A
-Dewis &Popeth\tCtrl-A
 
 Select content with Ctrl+left mouse button
 Dewis cynnwys drwy Ctrl a botwm chwith y llygoden
@@ -460,12 +401,6 @@ Pwnc:
 
 SumatraPDF Options
 Dewisiadau SumatraPDF
-
-SumatraPDF Update
-Diweddaru SumatraPDF
-
-SumatraPDF crashed
-Chwalodd SumatraPDF
 
 SumatraPDF is your default PDF reader
 SumatraPDF yw eich prif ddarllenydd PDF
@@ -512,6 +447,9 @@ Chwyddo Allan
 Zoom factor
 Ffactor Chwyddo
 
+[Changes detected; refreshing] %s
+[Newidiadau wedi eu canfod; adnewyddu]
+
 copying text
 copïo testun
 
@@ -519,29 +457,27 @@ printing document
 argraffu dogfen
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Attachment: %s
+#Bookmarks
+#Can't connect to the Internet (error %#x).
+#Copying text was denied (copying as image only)
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#XPS documents
-#[Changes detected; refreshing] %s
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Page scaling
+#Please include the following file in your crash report:
+#Pr&esentation\tCtrl-L
+#Print range
+#Select &All\tCtrl-A
+#SumatraPDF Update
+#SumatraPDF crashed
 

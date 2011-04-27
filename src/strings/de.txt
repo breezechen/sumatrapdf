@@ -1,10 +1,8 @@
 ﻿# Translations for German (Deutsch) (de) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: de German (Deutsch)
 
@@ -27,9 +25,6 @@ Contributor: Andreas Hopp (teraflop@arcor.de)
 
 &Close\tCtrl-W
 &Schließen\tStrg+W
-
-&Copy Selection
-Auswahl &kopieren
 
 &Copy Selection\tCtrl-C
 Auswahl &kopieren\tStrg+C
@@ -97,9 +92,6 @@ Nur &ungerade Seiten
 &Previous Page\tLeft Arrow
 &Vorherige Seite\t<-
 
-&Print...
-&Drucken…
-
 &Print...\tCtrl-P
 &Drucken…\tStrg+P
 
@@ -111,9 +103,6 @@ Passwort für dieses Dokument &merken
 
 &Remember these settings for each document
 Ansicht-&Einstellungen für jedes Dokument einzeln merken
-
-&Save As...
-&Speichern unter…
 
 &Save As...\tCtrl-S
 Speichern &unter…\tStrg+S
@@ -151,9 +140,6 @@ Weiteres
 All files
 Alle Dateien
 
-All supported documents
-Alle unterstützten Dokumente
-
 Application:
 Anwendung:
 
@@ -177,12 +163,6 @@ Buchansicht
 
 Book&marks\tF12
 Lese&zeichen\tF12
-
-Bookmark Shortcuts
-Lesezeichen-Verknüpfungen
-
-Bookmark shortcut to page %d of %s
-Lesezeichen-Verknüpfung zu Seite %d von %s
 
 Bookmarks
 Lesezeichen
@@ -208,9 +188,6 @@ Sprache ändern… (Change Language)
 Check for &Updates
 Nach &neuer Version suchen
 
-Comic books
-Comicbücher
-
 Continuous
 Fortlaufend
 
@@ -222,12 +199,6 @@ Fortlaufende Doppelseiten
 
 Contribute Translation
 Übersetzung beisteuern
-
-Copy &Link Address
-Adresse des &Links kopieren
-
-Copy Co&mment
-K&ommentar kopieren
 
 Copying text was denied (copying as image only)
 Text kopieren verweigert (nur als Bild kopiert)
@@ -259,9 +230,6 @@ Standardanwendung im portablen Modus nicht veränderbar
 Denied Permissions:
 Einschränkungen:
 
-DjVu documents
-DjVu-Dokumente
-
 Document Properties
 Dokumenteigenschaften
 
@@ -280,8 +248,8 @@ Bitte Passwort für %s eingeben
 Enter the command-line to invoke when you double-click on the PDF document:
 Beim Doppelklicken im PDF Dokument wird der folgende Befehl ausgeführt:
 
-Error loading %s
-Fehler beim Öffnen von %s
+Error loading PDF file.
+Fehler beim Öffnen der Datei!
 
 F&orward\tAlt+Right Arrow
 Vor&wärts\tAlt+->
@@ -343,26 +311,14 @@ An eine einzelne Seite anpassen
 Found text at page %d
 Text auf Seite %d gefunden
 
-Found text at page %d (again)
-Text auf Seite %d gefunden (erneut)
-
-Frequently Read
-Oft gelesenene Dokumente
-
 GB
 GB
 
 Go to page
 Gehe zu Seite
 
-Hide frequently read
-Oft gelesene Dokumente ausblenden
-
 Hint: Use the F3 key for finding again
 Tipp: F3-Taste verwenden, um weiterzusuchen
-
-Image files (*.%s)
-Bilder (*.%s)
 
 KB
 KB
@@ -409,9 +365,6 @@ OK
 Open
 Ö&ffnen…
 
-Open a document...
-Dokument öffnen…
-
 Open in &Adobe Reader
 Mit &Adobe Reader öffnen
 
@@ -420,9 +373,6 @@ Mit F&oxit Reader öffnen
 
 Open in PDF-XChange
 Mit PDF-XChange öffnen
-
-P&roperties
-Ei&genschaften
 
 P&roperties\tCtrl-D
 Ei&genschaften\tStrg+D
@@ -469,12 +419,6 @@ Previous Page
 Print range
 Druckbereich
 
-Printing is still in progress. Abort and start over?
-Bestehenden Druckvorgang abbrechen und neu beginnen?
-
-Printing page %d of %d...
-Drucke Seite %d von %d…
-
 Printing problem.
 Druckerproblem
 
@@ -487,14 +431,8 @@ Drehung &links\tStrg+Umschalt+-
 Rotate &Right\tCtrl-Shift-+
 Drehung &rechts\tStrg+Umschalt++
 
-Save S&hortcut...\tCtrl-Shift-S
-&Verknüpfung speichern…\tStrg+Umschalt+S
-
 Searching %d of %d...
 Suche auf Seite %d von %d…
-
-Select &All
-Alles &markieren
 
 Select &All\tCtrl-A
 Alles &markieren\tStrg+A
@@ -513,9 +451,6 @@ Show &Toolbar
 
 Show &pages continuously
 Seiten &fortlaufend anzeigen
-
-Show frequently read
-Oft gelesene Dokumente einblenden
 
 Show the &bookmarks sidebar when available
 &Lesezeichenleiste beim Start anzeigen
@@ -564,9 +499,6 @@ Visit &Website
 
 Warning
 Warnung
-
-XPS documents
-XPS-Dokumente
 
 You have the latest version.
 Sie haben die neuste Version installiert.

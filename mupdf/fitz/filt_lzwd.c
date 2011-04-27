@@ -4,13 +4,13 @@
 
 enum
 {
-	MIN_BITS = 9,
-	MAX_BITS = 12,
-	NUM_CODES = (1 << MAX_BITS),
+	MINBITS = 9,
+	MAXBITS = 12,
+	NUMCODES = (1 << MAXBITS),
 	LZW_CLEAR = 256,
 	LZW_EOD = 257,
 	LZW_FIRST = 258,
-	MAX_LENGTH = 4097
+	MAXLENGTH = 4097
 };
 
 typedef struct lzw_code_s lzw_code;
@@ -20,7 +20,7 @@ struct lzw_code_s
 	int prev;			/* prev code (in string) */
 	unsigned short length;		/* string len, including this token */
 	unsigned char value;		/* data value */
-	unsigned char first_char;	/* first token of string */
+	unsigned char firstchar;	/* first token of string */
 };
 
 typedef struct fz_lzwd_s fz_lzwd;
@@ -30,21 +30,21 @@ struct fz_lzwd_s
 	fz_stream *chain;
 	int eod;
 
-	int early_change;
+	int earlychange;
 
-	int code_bits;			/* num bits/code */
+	int codebits;			/* num bits/code */
 	int code;			/* current code */
-	int old_code;			/* previously recognized code */
-	int next_code;			/* next free entry */
+	int oldcode;			/* previously recognized code */
+	int nextcode;			/* next free entry */
 
-	lzw_code table[NUM_CODES];
+	lzw_code table[NUMCODES];
 
-	unsigned char bp[MAX_LENGTH];
+	unsigned char bp[MAXLENGTH];
 	unsigned char *rp, *wp;
 };
 
 static int
-read_lzwd(fz_stream *stm, unsigned char *buf, int len)
+readlzwd(fz_stream *stm, unsigned char *buf, int len)
 {
 	fz_lzwd *lzw = stm->state;
 	lzw_code *table = lzw->table;
@@ -53,10 +53,10 @@ read_lzwd(fz_stream *stm, unsigned char *buf, int len)
 	unsigned char *s;
 	int codelen;
 
-	int code_bits = lzw->code_bits;
+	int codebits = lzw->codebits;
 	int code = lzw->code;
-	int old_code = lzw->old_code;
-	int next_code = lzw->next_code;
+	int oldcode = lzw->oldcode;
+	int nextcode = lzw->nextcode;
 
 	while (lzw->rp < lzw->wp && p < ep)
 		*p++ = *lzw->rp++;
@@ -66,9 +66,9 @@ read_lzwd(fz_stream *stm, unsigned char *buf, int len)
 		if (lzw->eod)
 			return 0;
 
-		code = fz_read_bits(lzw->chain, code_bits);
+		code = fz_readbits(lzw->chain, codebits);
 
-		if (fz_is_eof_bits(lzw->chain))
+		if (fz_peekbyte(lzw->chain) == EOF)
 		{
 			lzw->eod = 1;
 			break;
@@ -82,40 +82,40 @@ read_lzwd(fz_stream *stm, unsigned char *buf, int len)
 
 		if (code == LZW_CLEAR)
 		{
-			code_bits = MIN_BITS;
-			next_code = LZW_FIRST;
-			old_code = -1;
+			codebits = MINBITS;
+			nextcode = LZW_FIRST;
+			oldcode = -1;
 			continue;
 		}
 
-		/* if stream starts without a clear code, old_code is undefined... */
-		if (old_code == -1)
+		/* if stream starts without a clear code, oldcode is undefined... */
+		if (oldcode == -1)
 		{
-			old_code = code;
+			oldcode = code;
 		}
 		else
 		{
 			/* add new entry to the code table */
-			table[next_code].prev = old_code;
-			table[next_code].first_char = table[old_code].first_char;
-			table[next_code].length = table[old_code].length + 1;
-			if (code < next_code)
-				table[next_code].value = table[code].first_char;
-			else if (code == next_code)
-				table[next_code].value = table[next_code].first_char;
+			table[nextcode].prev = oldcode;
+			table[nextcode].firstchar = table[oldcode].firstchar;
+			table[nextcode].length = table[oldcode].length + 1;
+			if (code < nextcode)
+				table[nextcode].value = table[code].firstchar;
+			else if (code == nextcode)
+				table[nextcode].value = table[nextcode].firstchar;
 			else
 				fz_warn("out of range code encountered in lzw decode");
 
-			next_code ++;
+			nextcode ++;
 
-			if (next_code > (1 << code_bits) - lzw->early_change - 1)
+			if (nextcode > (1 << codebits) - lzw->earlychange - 1)
 			{
-				code_bits ++;
-				if (code_bits > MAX_BITS)
-					code_bits = MAX_BITS;	/* FIXME */
+				codebits ++;
+				if (codebits > MAXBITS)
+					codebits = MAXBITS;	/* FIXME */
 			}
 
-			old_code = code;
+			oldcode = code;
 		}
 
 		/* code maps to a string, copy to output (in reverse...) */
@@ -125,7 +125,7 @@ read_lzwd(fz_stream *stm, unsigned char *buf, int len)
 			lzw->rp = lzw->bp;
 			lzw->wp = lzw->bp + codelen;
 
-			assert(codelen < MAX_LENGTH);
+			assert(codelen < MAXLENGTH);
 
 			s = lzw->wp;
 			do {
@@ -147,16 +147,16 @@ read_lzwd(fz_stream *stm, unsigned char *buf, int len)
 			*p++ = *lzw->rp++;
 	}
 
-	lzw->code_bits = code_bits;
+	lzw->codebits = codebits;
 	lzw->code = code;
-	lzw->old_code = old_code;
-	lzw->next_code = next_code;
+	lzw->oldcode = oldcode;
+	lzw->nextcode = nextcode;
 
 	return p - buf;
 }
 
 static void
-close_lzwd(fz_stream *stm)
+closelzwd(fz_stream *stm)
 {
 	fz_lzwd *lzw = stm->state;
 	fz_close(lzw->chain);
@@ -164,7 +164,7 @@ close_lzwd(fz_stream *stm)
 }
 
 fz_stream *
-fz_open_lzwd(fz_stream *chain, fz_obj *params)
+fz_openlzwd(fz_stream *chain, fz_obj *params)
 {
 	fz_lzwd *lzw;
 	fz_obj *obj;
@@ -173,34 +173,34 @@ fz_open_lzwd(fz_stream *chain, fz_obj *params)
 	lzw = fz_malloc(sizeof(fz_lzwd));
 	lzw->chain = chain;
 	lzw->eod = 0;
-	lzw->early_change = 1;
+	lzw->earlychange = 1;
 
-	obj = fz_dict_gets(params, "EarlyChange");
+	obj = fz_dictgets(params, "EarlyChange");
 	if (obj)
-		lzw->early_change = !!fz_to_int(obj);
+		lzw->earlychange = !!fz_toint(obj);
 
 	for (i = 0; i < 256; i++)
 	{
 		lzw->table[i].value = i;
-		lzw->table[i].first_char = i;
+		lzw->table[i].firstchar = i;
 		lzw->table[i].length = 1;
 		lzw->table[i].prev = -1;
 	}
 
-	for (i = 256; i < NUM_CODES; i++)
+	for (i = 256; i < NUMCODES; i++)
 	{
 		lzw->table[i].value = 0;
-		lzw->table[i].first_char = 0;
+		lzw->table[i].firstchar = 0;
 		lzw->table[i].length = 0;
 		lzw->table[i].prev = -1;
 	}
 
-	lzw->code_bits = MIN_BITS;
+	lzw->codebits = MINBITS;
 	lzw->code = -1;
-	lzw->next_code = LZW_FIRST;
-	lzw->old_code = -1;
+	lzw->nextcode = LZW_FIRST;
+	lzw->oldcode = -1;
 	lzw->rp = lzw->bp;
 	lzw->wp = lzw->bp;
 
-	return fz_new_stream(lzw, read_lzwd, close_lzwd);
+	return fz_newstream(lzw, readlzwd, closelzwd);
 }

@@ -1,10 +1,8 @@
 ﻿# Translations for Dutch (Nederlands) (nl) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: nl Dutch (Nederlands)
 
@@ -30,9 +28,6 @@ Terug\tAlt+<-
 
 &Close\tCtrl-W
 &Sluiten\tCtrl-W
-
-&Copy Selection
-Selectie kopiëren
 
 &Copy Selection\tCtrl-C
 Kopieer selectie\tCtrl-C
@@ -100,9 +95,6 @@ Alleen &Oneven pagina's
 &Previous Page\tLeft Arrow
 Vorige pagina\t<-
 
-&Print...
-Afdrukken...
-
 &Print...\tCtrl-P
 &Afdrukken\tCtrl-P
 
@@ -114,9 +106,6 @@ Wachtwoord onthouden voor dit bestand
 
 &Remember these settings for each document
 &Bewaar deze instellingen voor elk bestand
-
-&Save As...
-Op&slaan als...
 
 &Save As...\tCtrl-S
 &Opslaan als...\tCtrl-S
@@ -154,9 +143,6 @@ Geavanceerd
 All files
 Alle bestanden
 
-All supported documents
-Ondersteunde bestandsformaten
-
 Application:
 Programma:
 
@@ -180,12 +166,6 @@ Boekaanzicht
 
 Book&marks\tF12
 Bladwijzers\tF12
-
-Bookmark Shortcuts
-Bladwijzer maken
-
-Bookmark shortcut to page %d of %s
-Bladwijzer maken naar pagina %d van %s
 
 Bookmarks
 Bladwijzers
@@ -211,9 +191,6 @@ Taal wijzigen (Change Language)
 Check for &Updates
 Controleren op &Updates
 
-Comic books
-Stripboeken
-
 Continuous
 Doorlopend
 
@@ -225,12 +202,6 @@ Dubbele pagina doorlopend
 
 Contribute Translation
 Help met vertalen
-
-Copy &Link Address
-&Verwijzing kopiëren
-
-Copy Co&mment
-Notitie kopiëren
 
 Copying text was denied (copying as image only)
 Tekst kopiëren niet toegestaan (kopieer als afbeelding)
@@ -280,8 +251,8 @@ Wachtwoord invoeren voor %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Opdracht-regel die gestart moet worden bij het dubbelklikken van een PDF-bestand:
 
-Error loading %s
-Fout bij het laden van %s
+Error loading PDF file.
+Fout bij laden PDF bestand.
 
 F&orward\tAlt+Right Arrow
 Verder\tAlt+->
@@ -343,9 +314,6 @@ Hele pagina passend maken
 Found text at page %d
 Tekst gevonden op pagina %d
 
-Found text at page %d (again)
-Tekst gevonden op pagina %d (opnieuw)
-
 GB
 GB
 
@@ -354,9 +322,6 @@ Ga naar pagina
 
 Hint: Use the F3 key for finding again
 Tip: Gebruik de funtietoets F3 om verder te zoeken
-
-Image files (*.%s)
-Afbeeldingen (*.%s)
 
 KB
 KB
@@ -386,7 +351,7 @@ No matches were found
 Geen zoekresultaat gevonden
 
 No result found around line %u in file %s
-Geen resultaat gevonden bij regel %u in bestand %s
+Geen resultaat gevonden in bestand %s bij regel %u
 
 No synchronization file found
 Geen synchronisatiebestand gevonden
@@ -411,9 +376,6 @@ Openen met &Foxit Reader
 
 Open in PDF-XChange
 Openen met PDF-XChange
-
-P&roperties
-Eigenschappen
 
 P&roperties\tCtrl-D
 E&igenschappen...\tCtrl-D
@@ -472,14 +434,8 @@ Linksom draaien\tCtrl-Shift--
 Rotate &Right\tCtrl-Shift-+
 Rechtsom draaien\tCtrl-Shift-+
 
-Save S&hortcut...\tCtrl-Shift-S
-Snelkoppeling opslaan...\tCtrl-Shift-s
-
 Searching %d of %d...
 Zoek %d van %d...
-
-Select &All
-&Alles selecteren
 
 Select &All\tCtrl-A
 Selecteer &Alles\tCtrl-A
@@ -547,9 +503,6 @@ Bezoek de &website
 Warning
 Waarschuwing
 
-XPS documents
-XPS-bestanden
-
 You have the latest version.
 U gebruikt de meest recente versie.
 
@@ -576,13 +529,4 @@ tekst kopieren
 
 printing document
 bestand afdrukken
-
-# Untranslated:
-#DjVu documents
-#Frequently Read
-#Hide frequently read
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Show frequently read
 

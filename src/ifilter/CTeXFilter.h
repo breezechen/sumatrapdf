@@ -45,8 +45,8 @@ public:
         return cRef;
     }
 
-    virtual HRESULT OnInit();
-    virtual HRESULT GetNextChunkValue(CChunkValue &chunkValue);
+    HRESULT OnInit();
+    HRESULT GetNextChunkValue(CChunkValue &chunkValue);
 
     VOID CleanUp()
     {

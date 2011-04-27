@@ -3,7 +3,6 @@ import os
 import os.path
 import re
 import sys
-from util import uniquify
 
 """
 Extracts translatable strings from *.c and *.h files, dumps statistics
@@ -11,10 +10,10 @@ about untranslated strings to stdout and adds untranslated strings as
 comments at the end of strings file for each language.
 """
 
-C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraAbout.cpp", "SumatraProperties.cpp", "SumatraDialogs.cpp", "CrashHandler.cpp", "AppTools.cpp"]
+C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraAbout.cpp", "SumatraProperties.cpp", "SumatraDialogs.cc", "CrashHandler.cpp", "AppTools.cc"]
 C_FILES_TO_PROCESS = [os.path.join("..", "src", f) for f in C_FILES_TO_PROCESS]
 STRINGS_PATH = os.path.join("..", "src", "strings")
-TRANSLATION_PATTERN = r'\b_TRN?\("(.*?)"\)'
+TRANSLATION_PATTERN = r'_TRN?\("(.*?)"\)'
 
 LANG_TXT = "Lang:"
 CONTRIBUTOR_TXT = "Contributor:"
@@ -23,17 +22,37 @@ def is_lang_line(l): return l.startswith(LANG_TXT)
 def is_comment_line(l): return l.startswith("#")
 def is_contributor_line(l): return l.startswith(CONTRIBUTOR_TXT)
 
+def seq_uniq(seq): 
+    # Not order preserving
+    return list(set(seq))
+
 def parse_lang_line(l):
     assert is_lang_line(l)
-    match = re.match(r"Lang: (\w{2}(?:-\w{2})?) (.*)", l)
-    assert match
-    lang_iso, lang_name = match.group(1), match.group(2)
+    l = l[len(LANG_TXT)+1:]
+    l_parts = l.split(" ", 1)
+    assert len(l_parts) == 2
+    lang_iso = l_parts[0]
+    lang_name = l_parts[1].strip()
     # lang format is either "fr" or "en-us"
+    assert len(lang_iso) in [2, 5]
     return (lang_iso, lang_name)
 
 def parse_contrib_line(l):
     assert is_contributor_line(l)
-    return l[len(CONTRIBUTOR_TXT):].strip()
+    parts = l.split(":", 1)
+    assert 2 == len(parts), "line: '%s'" % l
+    return parts[1].strip()
+
+def report_error(line_no, line, err_txt):
+    print "Error on line %d:" % line_no
+    print "'%s'" % line
+    print err_txt
+    raise ValueError
+
+def assert_unique_translation(curr_trans, lang, line_no):
+    for el in curr_trans[1:]:
+        (lang2, trans2) = el
+        assert lang != lang2, "Duplicate translation in lang '%s' at line %d" % (lang, line_no)
 
 # Extract language code (e.g. "br") from language translation file name
 # (e.g. "br.txt" or "sr-sr.txt"). Returns None if file name doesn't fit expected pattern
@@ -57,13 +76,11 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
         line_no = line_no + 1
         l = l.strip("\r\n") # strip trailing new line
         #print "'%s'" % l
-        if l == "":
+        if 0 == len(l):
             if curr_orig is None: continue
             assert curr_orig not in all_origs, "Duplicate entry for '%s'" % curr_orig
             assert curr_trans is not None, "File %s, line %d" % (file_path, line_no)
-            if re.findall(r"%#?[sdux]", curr_orig) != re.findall(r"%#?[sdux]", curr_trans):
-                pass # ignore translation with different variable configuration
-            elif curr_orig not in strings_dict:
+            if curr_orig not in strings_dict:
                 strings_dict[curr_orig] = [(lang_code, curr_trans)]
             else:
                 strings_dict[curr_orig].append((lang_code, curr_trans))
@@ -77,7 +94,7 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
                 top_comments.append(l)
         elif is_lang_line(l):
             assert not seen_lang
-            assert not contributors
+            assert 0 == len(contributors)
             (lang_iso, lang_name) = parse_lang_line(l)
             assert lang_iso == lang_code, "lang code ('%s') in file '%s' must match code in file name ('%s')" % (lang_iso, file_path, lang_code)
             assert lang_iso not in langs_dict
@@ -90,7 +107,7 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
             curr_orig = l
             #print l
         else:
-            if curr_trans is not None:
+            if curr_trans != None:
                 print("curr_trans: '%s', line: %d in '%s'" % (curr_trans, line_no, os.path.basename(file_path)))
             assert curr_trans is None, "curr_trans: '%s', line: %d in '%s'" % (curr_trans, line_no, os.path.basename(file_path))
             curr_trans = l
@@ -114,12 +131,11 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
 # [language, text translated into this language]
 # 'langs' is an array of language definition tuples. First item in a tuple
 # is language iso code (e.g. "en" or "sp-rs" and second is language name
-def load_strings_file():
+def load_strings_file_new():
     strings_dict = {}
     langs_dict = { "en" : "English" }
     contributors_dict = {}
-    lang_codes = [lang_code_from_file_name(f) for f in os.listdir(STRINGS_PATH)]
-    lang_codes = filter(lambda code: code is not None, lang_codes)
+    lang_codes = [lang_code_from_file_name(f) for f in os.listdir(STRINGS_PATH) if lang_code_from_file_name(f) is not None]
     for lang_code in lang_codes:
         path = os.path.join(STRINGS_PATH, lang_code + ".txt")
         load_one_strings_file(path, lang_code, strings_dict, langs_dict, contributors_dict)
@@ -139,7 +155,7 @@ def extract_strings_from_c_files():
     for f in C_FILES_TO_PROCESS:
         file_content = open(f, "r").read()
         strings += re.findall(TRANSLATION_PATTERN, file_content)
-    return uniquify(strings)
+    return seq_uniq(strings)
 
 (SS_ONLY_IN_C, SS_ONLY_IN_TXT, SS_IN_BOTH) = range(3)
 
@@ -157,8 +173,8 @@ def gen_diff(strings_dict, strings):
             assert strings_all[s] == SS_IN_BOTH
     return strings_all
 
-def langs_sort_func(x, y):
-    return cmp(len(y[1]), len(x[1])) or cmp(x[0], y[0])
+def langs_sort_func(x,y):
+    return cmp(len(y[1]),len(x[1]))
 
 # strings_dict maps a string to a list of [lang, translations...] list
 def dump_missing_per_language(strings, strings_dict, dump_strings=False):
@@ -183,19 +199,11 @@ def dump_missing_per_language(strings, strings_dict, dump_strings=False):
             print "  " + u
     return untranslated_dict
 
-STRING_FILE_TEMPLATE = """\
-# Translations for %(lang_name)s (%(lang_id)s) language
+TOP_COMMENT = """
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %%s, %%d or %%u), the
-#   variables must remain in that exact order in the translation.
-
-Lang: %(lang_id)s %(lang_name)s
-
-%(contributors)s%(translations)s
-%(untranslated)s
 """
 
 # correctly sorts strings containing escaped tabulators
@@ -214,22 +222,30 @@ def gen_translations_for_languages(strings_dict):
             if lang_id not in translations_for_language:
                 translations_for_language[lang_id] = []
             trans = translations_for_language[lang_id]
-            trans.append((english, translation))
+            trans.append([english, translation])
     return translations_for_language
 
 def gen_strings_file_for_lang(lang_id, lang_name, translations, contributors, untranslated):
-    contributors = "\n".join(["Contributor: " + c for c in contributors])
-    if contributors: contributors += "\n\n"
-
-    translations = "\n\n".join(["%s\n%s" % english_tr for english_tr in translations[lang_id]])
-    if untranslated:
-        untranslated = "\n# Untranslated:\n#%s\n" % "\n#".join(untranslated)
-    else:
-        untranslated = ""
-
-    content = STRING_FILE_TEMPLATE % locals()
     file_name = os.path.join(STRINGS_PATH, lang_id + ".txt")
-    open(file_name, "wb").write(content.encode("utf-8-sig"))
+    trans = translations[lang_id]
+    fo = codecs.open(file_name, "w", "utf-8-sig")
+    fo.write("# Translations for %s (%s) language\n" % (lang_name, lang_id))
+    fo.write(TOP_COMMENT)
+    fo.write("Lang: %s %s\n\n" % (lang_id, lang_name))
+    for c in contributors:
+        fo.write("Contributor: %s\n" % c)
+    if len(contributors) > 0:
+        fo.write("\n")
+    for (english, tr) in trans:
+        fo.write(english + "\n")
+        fo.write("%s\n\n" % tr)
+    
+    if len(untranslated) > 0:
+        fo.write("# Untranslated:\n")
+        for s in untranslated:
+            fo.write("#%s\n" % s)
+        fo.write("\n")
+    fo.close()
     #print("%d translations in %s" % (len(trans), file_name))
 
 def write_out_strings_files(strings_dict, langs, contributors={}, untranslated={}):
@@ -263,8 +279,8 @@ def load_lang_index():
     return re.findall("^(\S+)\t([^\t\r\n]*)(?:\t(.*))?", index, re.M)
 
 def main_obsolete():
-    (strings_dict, langs, contributors) = load_strings_file()
-    strings = extract_strings_from_c_files()[0]
+    (strings_dict, langs, contributors) = load_strings_file_new()
+    strings = extract_strings_from_c_files()
     if len(sys.argv) == 1:
         untranslated = dump_missing_per_language(strings, strings_dict)
         write_out_strings_files(strings_dict, langs, contributors, untranslated)

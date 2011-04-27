@@ -1,10 +1,8 @@
 ﻿# Translations for Slovak (Slovenčina) (sk) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sk Slovak (Slovenčina)
 
@@ -203,6 +201,9 @@ Zadať heslo
 
 Enter password for %s
 Zadať heslo pre %s
+
+Error loading PDF file.
+Chyba pri pokuse načítať PDF súbor.
 
 F&orward\tAlt+Right Arrow
 Dopredu\tAlt+Right Arrow
@@ -437,56 +438,33 @@ prebieha tlač dokumentu
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Go to page:
 #&Odd pages only
-#&Print...
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
 #Copying text was denied (copying as image only)
 #Couldn't initialize printer
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
 #No synchronization file found
 #No synchronization info at this position
-#Open a document...
-#P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
-#Show frequently read
 #Source file %s has no synchronization point
 #SumatraPDF Update
 #SumatraPDF crashed
 #Synchronization file cannot be opened
-#XPS documents
 

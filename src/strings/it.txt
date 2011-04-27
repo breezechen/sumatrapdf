@@ -1,10 +1,8 @@
 ﻿# Translations for Italian (Italiano) (it) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: it Italian (Italiano)
 
@@ -253,6 +251,9 @@ Inserisci password per %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Inserire la linea di comando da eseguire quando fai doppio clic su un documento PDF:
+
+Error loading PDF file.
+Errore durante il caricamento del file.
 
 F&orward\tAlt+Right Arrow
 A&vanti\tAlt+Freccia Destra
@@ -529,29 +530,4 @@ sto copiando il testo
 
 printing document
 documento in stampa
-
-# Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#XPS documents
 

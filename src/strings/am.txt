@@ -1,10 +1,8 @@
 ﻿# Translations for Armenian (Հայերեն) (am) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: am Armenian (Հայերեն)
 
@@ -59,13 +57,13 @@ Contributor: Hrant Ohanyan »»» http://haysoft.org (hrantohanyan@mail.am)
 Վերջին էջը\tEnd
 
 &Magnification:
-&Մեծացնել
+&Մեժացնել
 
 &Manual
 &Օգնություն
 
 &Match case
-&Հաշվի առնել մեծատառ/փոքրատառը
+&Հաշվի առնել գրանցումները
 
 &Next Page\tRight Arrow
 Հաջորդ էջը\t->
@@ -74,7 +72,7 @@ Contributor: Hrant Ohanyan »»» http://haysoft.org (hrantohanyan@mail.am)
 &Ոչ
 
 &No, thanks
-&Ոչ, շնորհակալություն
+&Ոչ
 
 &Odd pages only
 &Միայն կենտ էջերը
@@ -86,7 +84,7 @@ Contributor: Hrant Ohanyan »»» http://haysoft.org (hrantohanyan@mail.am)
 &Ընտրանքներ...
 
 &Password:
-&Ծածկագիրը
+&Գաղտնաբառը
 
 &Previous Page\tLeft Arrow
 Նախորդ էջը\t<-
@@ -143,7 +141,7 @@ Application:
 Ծրագիրը.
 
 Associate with PDF files?
-Ասոցիացնե՞լ PDF ֆայլերի հետ։
+Ասոցացնե՞լ PDF ֆայլերի հետ։
 
 Attachment: %s
 Կցորդ. %s
@@ -185,7 +183,7 @@ Change Language
 Փոխել լեզուն (Change Language)
 
 Check for &Updates
-&Ստուգել նոր տարբերակը
+&Ստուգել նոր տարբերակները
 
 Continuous
 Անդադար
@@ -218,10 +216,10 @@ Custom &Zoom...\tCtrl-Y
 &Ընտրված չափը\tCtrl-Y
 
 Default &Layout:
-Ծրագրային &լայնքը.
+Չափը &Լռելայն
 
 Default &Zoom:
-Ծրագրային &չափը.
+Մեծությունը &Լռելայն
 
 Default PDF reader can't be changed in portable mode
 Շարժական վիճակում հնարավոր չէ փոխել PDF կարդալու հիմնական ծրագիրը
@@ -236,16 +234,19 @@ Download
 Բեռնել
 
 E&xit\tCtrl-Q
-Փա&կել\tCtrl-Q
+Դուրս &գալ\tCtrl-Q
 
 Enter password
-Գրել ծածկագիրը
+Գրել գաղտնագիրը
 
 Enter password for %s
-Գրել ծածկագիրը՝ %s-ի համար
+Գրել գաղտնագիրը՝ %s-ի համար
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Մուտքագրեք հրաման, որը կկատարվի PDF փաստաթղթում մկնիկի կրկնակի սեղման ժամանակ. 
+
+Error loading PDF file.
+Սխալ՝ PDF ֆայլը բեռնելիս։
 
 F&orward\tAlt+Right Arrow
 Առաջ\tAlt+->
@@ -329,19 +330,22 @@ Make SumatraPDF my default PDF reader
 Ասոցացնել PDF ֆայլերը SumatraPDF-ի հետ
 
 Match Case
-Հաշվի առնել մեծատառ/փոքրատառը
+Հաշվի առնել գրանցումները
 
 Modified:
 Փոփոխված.
 
 New version %s is available. Download new version?
-Հասանելի է նոր՝ %s տարբերակը։ Բեռնե՞լ նոր տարբերակը։
+Նոր՝ %s տարբերակը հասանելի է։ Բեռնե՞լ նոր տարբերակը։
 
 Next Page
 Հաջորդ էջը
 
 No matches were found
 Օրինակներ չի գտնվել
+
+No result found around line %u in file %s
+%s ֆայլում %u տողին համապատասխան արդյունքը չի գտնվել
 
 No synchronization file found
 Չեն գտնվել համանման ֆայլեր
@@ -488,7 +492,7 @@ View
 Դիտել
 
 Visit &Website
-Ծրագրի &կայքը
+&Ծրագրի կայքը
 
 Warning
 Զգուշացում
@@ -519,30 +523,4 @@ copying text
 
 printing document
 փաստաթուղթը տպվում է
-
-# Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#XPS documents
 

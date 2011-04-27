@@ -12,24 +12,24 @@
 #include "fitz.h"
 #include "mupdf.h"
 
-static FILE *out = NULL;
+static FILE *out = nil;
 
-static char *uselist = NULL;
-static int *ofslist = NULL;
-static int *genlist = NULL;
-static int *renumbermap = NULL;
+static char *uselist = nil;
+static int *ofslist = nil;
+static int *genlist = nil;
+static int *renumbermap = nil;
 
 static int dogarbage = 0;
 static int doexpand = 0;
 static int doascii = 0;
 
-static pdf_xref *xref = NULL;
+static pdf_xref *xref = nil;
 
 void die(fz_error error)
 {
 	fz_catch(error, "aborting");
 	if (xref)
-		pdf_free_xref(xref);
+		pdf_freexref(xref);
 	exit(1);
 }
 
@@ -57,22 +57,22 @@ static void sweepobj(fz_obj *obj)
 {
 	int i;
 
-	if (fz_is_indirect(obj))
+	if (fz_isindirect(obj))
 		sweepref(obj);
 
-	else if (fz_is_dict(obj))
-		for (i = 0; i < fz_dict_len(obj); i++)
-			sweepobj(fz_dict_get_val(obj, i));
+	else if (fz_isdict(obj))
+		for (i = 0; i < fz_dictlen(obj); i++)
+			sweepobj(fz_dictgetval(obj, i));
 
-	else if (fz_is_array(obj))
-		for (i = 0; i < fz_array_len(obj); i++)
-			sweepobj(fz_array_get(obj, i));
+	else if (fz_isarray(obj))
+		for (i = 0; i < fz_arraylen(obj); i++)
+			sweepobj(fz_arrayget(obj, i));
 }
 
 static void sweepref(fz_obj *obj)
 {
-	int num = fz_to_num(obj);
-	int gen = fz_to_gen(obj);
+	int num = fz_tonum(obj);
+	int gen = fz_togen(obj);
 
 	if (num < 0 || num >= xref->len)
 		return;
@@ -82,18 +82,18 @@ static void sweepref(fz_obj *obj)
 	uselist[num] = 1;
 
 	/* Bake in /Length in stream objects */
-	if (pdf_is_stream(xref, num, gen))
+	if (pdf_isstream(xref, num, gen))
 	{
-		fz_obj *len = fz_dict_gets(obj, "Length");
-		if (fz_is_indirect(len))
+		fz_obj *len = fz_dictgets(obj, "Length");
+		if (fz_isindirect(len))
 		{
-			uselist[fz_to_num(len)] = 0;
-			len = fz_resolve_indirect(len);
-			fz_dict_puts(obj, "Length", len);
+			uselist[fz_tonum(len)] = 0;
+			len = fz_resolveindirect(len);
+			fz_dictputs(obj, "Length", len);
 		}
 	}
 
-	sweepobj(fz_resolve_indirect(obj));
+	sweepobj(fz_resolveindirect(obj));
 }
 
 /*
@@ -117,17 +117,17 @@ static void removeduplicateobjs(void)
 			/*
 			 * Comparing stream objects data contents would take too long.
 			 *
-			 * pdf_is_stream calls pdf_cache_object and ensures
+			 * pdf_isstream calls pdf_cacheobject and ensures
 			 * that the xref table has the objects loaded.
 			 */
-			if (pdf_is_stream(xref, num, 0) || pdf_is_stream(xref, other, 0))
+			if (pdf_isstream(xref, num, 0) || pdf_isstream(xref, other, 0))
 				continue;
 
 			a = xref->table[num].obj;
 			b = xref->table[other].obj;
 
-			a = fz_resolve_indirect(a);
-			b = fz_resolve_indirect(b);
+			a = fz_resolveindirect(a);
+			b = fz_resolveindirect(b);
 
 			if (fz_objcmp(a, b))
 				continue;
@@ -177,17 +177,17 @@ static void renumberobj(fz_obj *obj)
 {
 	int i;
 
-	if (fz_is_dict(obj))
+	if (fz_isdict(obj))
 	{
-		for (i = 0; i < fz_dict_len(obj); i++)
+		for (i = 0; i < fz_dictlen(obj); i++)
 		{
-			fz_obj *key = fz_dict_get_key(obj, i);
-			fz_obj *val = fz_dict_get_val(obj, i);
-			if (fz_is_indirect(val))
+			fz_obj *key = fz_dictgetkey(obj, i);
+			fz_obj *val = fz_dictgetval(obj, i);
+			if (fz_isindirect(val))
 			{
-				val = fz_new_indirect(renumbermap[fz_to_num(val)], 0, xref);
-				fz_dict_put(obj, key, val);
-				fz_drop_obj(val);
+				val = fz_newindirect(renumbermap[fz_tonum(val)], 0, xref);
+				fz_dictput(obj, key, val);
+				fz_dropobj(val);
 			}
 			else
 			{
@@ -196,16 +196,16 @@ static void renumberobj(fz_obj *obj)
 		}
 	}
 
-	else if (fz_is_array(obj))
+	else if (fz_isarray(obj))
 	{
-		for (i = 0; i < fz_array_len(obj); i++)
+		for (i = 0; i < fz_arraylen(obj); i++)
 		{
-			fz_obj *val = fz_array_get(obj, i);
-			if (fz_is_indirect(val))
+			fz_obj *val = fz_arrayget(obj, i);
+			if (fz_isindirect(val))
 			{
-				val = fz_new_indirect(renumbermap[fz_to_num(val)], 0, xref);
-				fz_array_put(obj, i, val);
-				fz_drop_obj(val);
+				val = fz_newindirect(renumbermap[fz_tonum(val)], 0, xref);
+				fz_arrayput(obj, i, val);
+				fz_dropobj(val);
 			}
 			else
 			{
@@ -217,7 +217,7 @@ static void renumberobj(fz_obj *obj)
 
 static void renumberobjs(void)
 {
-	pdf_xref_entry *oldxref;
+	pdf_xrefentry *oldxref;
 	int newlen;
 	int num;
 
@@ -227,11 +227,11 @@ static void renumberobjs(void)
 	{
 		fz_obj *obj = xref->table[num].obj;
 
-		if (fz_is_indirect(obj))
+		if (fz_isindirect(obj))
 		{
-			obj = fz_new_indirect(renumbermap[fz_to_num(obj)], 0, xref);
-			pdf_update_object(xref, num, 0, obj);
-			fz_drop_obj(obj);
+			obj = fz_newindirect(renumbermap[fz_tonum(obj)], 0, xref);
+			pdf_updateobject(xref, num, 0, obj);
+			fz_dropobj(obj);
 		}
 		else
 		{
@@ -241,7 +241,7 @@ static void renumberobjs(void)
 
 	/* Create new table for the reordered, compacted xref */
 	oldxref = xref->table;
-	xref->table = fz_calloc(xref->len, sizeof(pdf_xref_entry));
+	xref->table = fz_calloc(xref->len, sizeof(pdf_xrefentry));
 	xref->table[0] = oldxref[0];
 
 	/* Move used objects into the new compacted xref */
@@ -257,7 +257,7 @@ static void renumberobjs(void)
 		else
 		{
 			if (oldxref[num].obj)
-				fz_drop_obj(oldxref[num].obj);
+				fz_dropobj(oldxref[num].obj);
 		}
 	}
 
@@ -281,25 +281,25 @@ static void retainpages(int argc, char **argv)
 	fz_obj *oldroot, *root, *pages, *kids, *countobj, *parent;
 
 	/* Load the old page tree */
-	error = pdf_load_page_tree(xref);
+	error = pdf_loadpagetree(xref);
 	if (error)
 		die(fz_rethrow(error, "cannot load page tree"));
 
 	/* Keep only pages/type entry to avoid references to unretained pages */
-	oldroot = fz_dict_gets(xref->trailer, "Root");
-	pages = fz_dict_gets(oldroot, "Pages");
+	oldroot = fz_dictgets(xref->trailer, "Root");
+	pages = fz_dictgets(oldroot, "Pages");
 
-	root = fz_new_dict(2);
-	fz_dict_puts(root, "Type", fz_dict_gets(oldroot, "Type"));
-	fz_dict_puts(root, "Pages", fz_dict_gets(oldroot, "Pages"));
+	root = fz_newdict(2);
+	fz_dictputs(root, "Type", fz_dictgets(oldroot, "Type"));
+	fz_dictputs(root, "Pages", fz_dictgets(oldroot, "Pages"));
 
-	pdf_update_object(xref, fz_to_num(oldroot), fz_to_gen(oldroot), root);
+	pdf_updateobject(xref, fz_tonum(oldroot), fz_togen(oldroot), root);
 
-	fz_drop_obj(root);
+	fz_dropobj(root);
 
 	/* Create a new kids array with only the pages we want to keep */
-	parent = fz_new_indirect(fz_to_num(pages), fz_to_gen(pages), xref);
-	kids = fz_new_array(1);
+	parent = fz_newindirect(fz_tonum(pages), fz_togen(pages), xref);
+	kids = fz_newarray(1);
 
 	/* Retain pages specified */
 	while (argc - fz_optind)
@@ -314,7 +314,7 @@ static void retainpages(int argc, char **argv)
 			dash = strchr(spec, '-');
 
 			if (dash == spec)
-				spage = epage = pdf_count_pages(xref);
+				spage = epage = pdf_getpagecount(xref);
 			else
 				spage = epage = atoi(spec);
 
@@ -323,7 +323,7 @@ static void retainpages(int argc, char **argv)
 				if (strlen(dash) > 1)
 					epage = atoi(dash + 1);
 				else
-					epage = pdf_count_pages(xref);
+					epage = pdf_getpagecount(xref);
 			}
 
 			if (spage > epage)
@@ -331,18 +331,18 @@ static void retainpages(int argc, char **argv)
 
 			if (spage < 1)
 				spage = 1;
-			if (epage > pdf_count_pages(xref))
-				epage = pdf_count_pages(xref);
+			if (epage > pdf_getpagecount(xref))
+				epage = pdf_getpagecount(xref);
 
 			for (page = spage; page <= epage; page++)
 			{
-				fz_obj *pageobj = xref->page_objs[page-1];
-				fz_obj *pageref = xref->page_refs[page-1];
+				fz_obj *pageobj = pdf_getpageobject(xref, page);
+				fz_obj *pageref = pdf_getpageref(xref, page);
 
-				fz_dict_puts(pageobj, "Parent", parent);
+				fz_dictputs(pageobj, "Parent", parent);
 
 				/* Store page object in new kids array */
-				fz_array_push(kids, pageref);
+				fz_arraypush(kids, pageref);
 			}
 
 			spec = fz_strsep(&pagelist, ",");
@@ -351,14 +351,14 @@ static void retainpages(int argc, char **argv)
 		fz_optind++;
 	}
 
-	fz_drop_obj(parent);
+	fz_dropobj(parent);
 
 	/* Update page count and kids array */
-	countobj = fz_new_int(fz_array_len(kids));
-	fz_dict_puts(pages, "Count", countobj);
-	fz_drop_obj(countobj);
-	fz_dict_puts(pages, "Kids", kids);
-	fz_drop_obj(kids);
+	countobj = fz_newint(fz_arraylen(kids));
+	fz_dictputs(pages, "Count", countobj);
+	fz_dropobj(countobj);
+	fz_dictputs(pages, "Kids", kids);
+	fz_dropobj(kids);
 }
 
 /*
@@ -375,10 +375,10 @@ static void preloadobjstms(void)
 	{
 		if (xref->table[num].type == 'o')
 		{
-			error = pdf_load_object(&obj, xref, num, 0);
+			error = pdf_loadobject(&obj, xref, num, 0);
 			if (error)
 				die(error);
-			fz_drop_obj(obj);
+			fz_dropobj(obj);
 		}
 	}
 }
@@ -409,7 +409,7 @@ static fz_buffer *hexbuf(unsigned char *p, int n)
 	fz_buffer *buf;
 	int x = 0;
 
-	buf = fz_new_buffer(n * 2 + (n / 32) + 2);
+	buf = fz_newbuffer(n * 2 + (n / 32) + 2);
 
 	while (n--)
 	{
@@ -434,46 +434,46 @@ static void addhexfilter(fz_obj *dict)
 	fz_obj *f, *dp, *newf, *newdp;
 	fz_obj *ahx, *nullobj;
 
-	ahx = fz_new_name("ASCIIHexDecode");
-	nullobj = fz_new_null();
-	newf = newdp = NULL;
+	ahx = fz_newname("ASCIIHexDecode");
+	nullobj = fz_newnull();
+	newf = newdp = nil;
 
-	f = fz_dict_gets(dict, "Filter");
-	dp = fz_dict_gets(dict, "DecodeParms");
+	f = fz_dictgets(dict, "Filter");
+	dp = fz_dictgets(dict, "DecodeParms");
 
-	if (fz_is_name(f))
+	if (fz_isname(f))
 	{
-		newf = fz_new_array(2);
-		fz_array_push(newf, ahx);
-		fz_array_push(newf, f);
+		newf = fz_newarray(2);
+		fz_arraypush(newf, ahx);
+		fz_arraypush(newf, f);
 		f = newf;
-		if (fz_is_dict(dp))
+		if (fz_isdict(dp))
 		{
-			newdp = fz_new_array(2);
-			fz_array_push(newdp, nullobj);
-			fz_array_push(newdp, dp);
+			newdp = fz_newarray(2);
+			fz_arraypush(newdp, nullobj);
+			fz_arraypush(newdp, dp);
 			dp = newdp;
 		}
 	}
-	else if (fz_is_array(f))
+	else if (fz_isarray(f))
 	{
-		fz_array_insert(f, ahx);
-		if (fz_is_array(dp))
-			fz_array_insert(dp, nullobj);
+		fz_arrayinsert(f, ahx);
+		if (fz_isarray(dp))
+			fz_arrayinsert(dp, nullobj);
 	}
 	else
 		f = ahx;
 
-	fz_dict_puts(dict, "Filter", f);
+	fz_dictputs(dict, "Filter", f);
 	if (dp)
-		fz_dict_puts(dict, "DecodeParms", dp);
+		fz_dictputs(dict, "DecodeParms", dp);
 
-	fz_drop_obj(ahx);
-	fz_drop_obj(nullobj);
+	fz_dropobj(ahx);
+	fz_dropobj(nullobj);
 	if (newf)
-		fz_drop_obj(newf);
+		fz_dropobj(newf);
 	if (newdp)
-		fz_drop_obj(newdp);
+		fz_dropobj(newdp);
 }
 
 static void copystream(fz_obj *obj, int num, int gen)
@@ -482,30 +482,30 @@ static void copystream(fz_obj *obj, int num, int gen)
 	fz_buffer *buf, *tmp;
 	fz_obj *newlen;
 
-	error = pdf_load_raw_stream(&buf, xref, num, gen);
+	error = pdf_loadrawstream(&buf, xref, num, gen);
 	if (error)
 		die(error);
 
 	if (doascii && isbinarystream(buf))
 	{
 		tmp = hexbuf(buf->data, buf->len);
-		fz_drop_buffer(buf);
+		fz_dropbuffer(buf);
 		buf = tmp;
 
 		addhexfilter(obj);
 
-		newlen = fz_new_int(buf->len);
-		fz_dict_puts(obj, "Length", newlen);
-		fz_drop_obj(newlen);
+		newlen = fz_newint(buf->len);
+		fz_dictputs(obj, "Length", newlen);
+		fz_dropobj(newlen);
 	}
 
 	fprintf(out, "%d %d obj\n", num, gen);
-	fz_fprint_obj(out, obj, !doexpand);
+	fz_fprintobj(out, obj, !doexpand);
 	fprintf(out, "stream\n");
 	fwrite(buf->data, 1, buf->len, out);
 	fprintf(out, "endstream\nendobj\n\n");
 
-	fz_drop_buffer(buf);
+	fz_dropbuffer(buf);
 }
 
 static void expandstream(fz_obj *obj, int num, int gen)
@@ -514,33 +514,33 @@ static void expandstream(fz_obj *obj, int num, int gen)
 	fz_buffer *buf, *tmp;
 	fz_obj *newlen;
 
-	error = pdf_load_stream(&buf, xref, num, gen);
+	error = pdf_loadstream(&buf, xref, num, gen);
 	if (error)
 		die(error);
 
-	fz_dict_dels(obj, "Filter");
-	fz_dict_dels(obj, "DecodeParms");
+	fz_dictdels(obj, "Filter");
+	fz_dictdels(obj, "DecodeParms");
 
 	if (doascii && isbinarystream(buf))
 	{
 		tmp = hexbuf(buf->data, buf->len);
-		fz_drop_buffer(buf);
+		fz_dropbuffer(buf);
 		buf = tmp;
 
 		addhexfilter(obj);
 	}
 
-	newlen = fz_new_int(buf->len);
-	fz_dict_puts(obj, "Length", newlen);
-	fz_drop_obj(newlen);
+	newlen = fz_newint(buf->len);
+	fz_dictputs(obj, "Length", newlen);
+	fz_dropobj(newlen);
 
 	fprintf(out, "%d %d obj\n", num, gen);
-	fz_fprint_obj(out, obj, !doexpand);
+	fz_fprintobj(out, obj, !doexpand);
 	fprintf(out, "stream\n");
 	fwrite(buf->data, 1, buf->len, out);
 	fprintf(out, "endstream\nendobj\n\n");
 
-	fz_drop_buffer(buf);
+	fz_dropbuffer(buf);
 }
 
 static void writeobject(int num, int gen)
@@ -549,43 +549,43 @@ static void writeobject(int num, int gen)
 	fz_obj *obj;
 	fz_obj *type;
 
-	error = pdf_load_object(&obj, xref, num, gen);
+	error = pdf_loadobject(&obj, xref, num, gen);
 	if (error)
 		die(error);
 
 	/* skip ObjStm and XRef objects */
-	if (fz_is_dict(obj))
+	if (fz_isdict(obj))
 	{
-		type = fz_dict_gets(obj, "Type");
-		if (fz_is_name(type) && !strcmp(fz_to_name(type), "ObjStm"))
+		type = fz_dictgets(obj, "Type");
+		if (fz_isname(type) && !strcmp(fz_toname(type), "ObjStm"))
 		{
 			uselist[num] = 0;
-			fz_drop_obj(obj);
+			fz_dropobj(obj);
 			return;
 		}
-		if (fz_is_name(type) && !strcmp(fz_to_name(type), "XRef"))
+		if (fz_isname(type) && !strcmp(fz_toname(type), "XRef"))
 		{
 			uselist[num] = 0;
-			fz_drop_obj(obj);
+			fz_dropobj(obj);
 			return;
 		}
 	}
 
-	if (!pdf_is_stream(xref, num, gen))
+	if (!pdf_isstream(xref, num, gen))
 	{
 		fprintf(out, "%d %d obj\n", num, gen);
-		fz_fprint_obj(out, obj, !doexpand);
+		fz_fprintobj(out, obj, !doexpand);
 		fprintf(out, "endobj\n\n");
 	}
 	else
 	{
-		if (doexpand && !pdf_is_jpx_image(obj))
+		if (doexpand && !pdf_isjpximage(obj))
 			expandstream(obj, num, gen);
 		else
 			copystream(obj, num, gen);
 	}
 
-	fz_drop_obj(obj);
+	fz_dropobj(obj);
 }
 
 static void writexref(void)
@@ -607,29 +607,29 @@ static void writexref(void)
 	}
 	fprintf(out, "\n");
 
-	trailer = fz_new_dict(5);
+	trailer = fz_newdict(5);
 
-	obj = fz_new_int(xref->len);
-	fz_dict_puts(trailer, "Size", obj);
-	fz_drop_obj(obj);
+	obj = fz_newint(xref->len);
+	fz_dictputs(trailer, "Size", obj);
+	fz_dropobj(obj);
 
-	obj = fz_dict_gets(xref->trailer, "Info");
+	obj = fz_dictgets(xref->trailer, "Info");
 	if (obj)
-		fz_dict_puts(trailer, "Info", obj);
+		fz_dictputs(trailer, "Info", obj);
 
-	obj = fz_dict_gets(xref->trailer, "Root");
+	obj = fz_dictgets(xref->trailer, "Root");
 	if (obj)
-		fz_dict_puts(trailer, "Root", obj);
+		fz_dictputs(trailer, "Root", obj);
 
-	obj = fz_dict_gets(xref->trailer, "ID");
+	obj = fz_dictgets(xref->trailer, "ID");
 	if (obj)
-		fz_dict_puts(trailer, "ID", obj);
+		fz_dictputs(trailer, "ID", obj);
 
 	fprintf(out, "trailer\n");
-	fz_fprint_obj(out, trailer, !doexpand);
+	fz_fprintobj(out, trailer, !doexpand);
 	fprintf(out, "\n");
 
-	fz_drop_obj(trailer);
+	fz_dropobj(trailer);
 
 	fprintf(out, "startxref\n%d\n%%%%EOF\n", startxref);
 }
@@ -710,7 +710,7 @@ int main(int argc, char **argv)
 	if (argc - fz_optind > 0)
 		subset = 1;
 
-	error = pdf_open_xref(&xref, infile, password);
+	error = pdf_openxref(&xref, infile, password);
 	if (error)
 		die(fz_rethrow(error, "cannot open input file '%s'", infile));
 
@@ -767,9 +767,7 @@ int main(int argc, char **argv)
 	fz_free(genlist);
 	fz_free(renumbermap);
 
-	pdf_free_xref(xref);
-
-	fz_flush_warnings();
+	pdf_freexref(xref);
 
 	return 0;
 }

@@ -1,47 +1,36 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see ../AUTHORS file).
-   License: Simplified BSD (see ./COPYING) */
+/* Written by Krzysztof Kowalczyk (http://blog.kowalczyk.info)
+   The author disclaims copyright to this source code. 
+   Take all the code you want, we'll just write more.
+*/
 
+#include "base_util.h"
+#include "WinUtil.hpp"
+#include "tstr_util.h"
 #include <shlwapi.h>
 #include <shlobj.h>
 #include <io.h>
 #include <fcntl.h>
 
-#include "BaseUtil.h"
-#include "FileUtil.h"
-#include "StrUtil.h"
-#include "WinUtil.h"
-
-// Loads a DLL explicitly from the system's library collection
-HMODULE SafeLoadLibrary(const TCHAR *dllName)
-{
-    TCHAR dllPath[MAX_PATH];
-    GetSystemDirectory(dllPath, dimof(dllPath));
-    PathAppend(dllPath, dllName);
-    return LoadLibrary(dllPath);
-}
-
-FARPROC LoadDllFunc(TCHAR *dllName, const char *funcName)
-{
-    HMODULE h = SafeLoadLibrary(dllName);
-    if (!h)
-        return NULL;
-    return GetProcAddress(h, funcName);
-
-    // Note: we don't unload the dll. It's harmless for those that would stay
-    // loaded anyway but we would crash trying to call a function that
-    // was grabbed from a dll that was unloaded in the meantime
-}
+#define DONT_INHERIT_HANDLES FALSE
 
 // Return true if application is themed. Wrapper around IsAppThemed() in uxtheme.dll
 // that is compatible with earlier windows versions.
-bool IsAppThemed()
-{
-    FARPROC pIsAppThemed = LoadDllFunc(_T("uxtheme.dll"), "IsAppThemed");
+bool IsAppThemed() {
+    WinLibrary lib(_T("uxtheme.dll"));
+    FARPROC pIsAppThemed = lib.GetProcAddr("IsAppThemed");
     if (!pIsAppThemed) 
         return false;
     if (pIsAppThemed())
         return true;
     return false;
+}
+
+// Loads a DLL explicitly from the system's library collection
+HMODULE WinLibrary::_LoadSystemLibrary(const TCHAR *libName) {
+    TCHAR dllPath[MAX_PATH];
+    GetSystemDirectory(dllPath, dimof(dllPath));
+    PathAppend(dllPath, libName);
+    return LoadLibrary(dllPath);
 }
 
 static int WindowsVerMajor()
@@ -63,58 +52,29 @@ bool WindowsVerVistaOrGreater()
     return false;
 }
 
-void SeeLastError(DWORD err)
-{
-    TCHAR *msgBuf = NULL;
+void SeeLastError(DWORD err) {
+    char *msgBuf = NULL;
     if (err == 0)
         err = GetLastError();
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+    FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR)&msgBuf, 0, NULL);
+        (LPSTR)&msgBuf, 0, NULL);
     if (!msgBuf) return;
     DBG_OUT("SeeLastError(): %s\n", msgBuf);
     LocalFree(msgBuf);
 }
 
-// called needs to free() the result
-TCHAR *ReadRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName)
+bool ReadRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, const TCHAR *buffer, DWORD bufLen)
 {
-    TCHAR *val = NULL;
-    REGSAM access = KEY_READ;
-    HKEY hKey;
-TryAgainWOW64:
-    LONG res = RegOpenKeyEx(keySub, keyName, 0, access, &hKey);
-    if (ERROR_SUCCESS == res) {
-        DWORD valLen;
-        res = RegQueryValueEx(hKey, valName, NULL, NULL, NULL, &valLen);
-        if (ERROR_SUCCESS == res) {
-            val = SAZA(TCHAR, valLen / sizeof(TCHAR) + 1);
-            res = RegQueryValueEx(hKey, valName, NULL, NULL, (LPBYTE)val, &valLen);
-            if (ERROR_SUCCESS != res) {
-                free(val);
-                val = NULL;
-            }
-        }
-        RegCloseKey(hKey);
-    }
-    if (ERROR_FILE_NOT_FOUND == res && HKEY_LOCAL_MACHINE == keySub && KEY_READ == access) {
-        // try the (non-)64-bit key as well, as HKLM\Software is not shared between 32-bit and
-        // 64-bit applications per http://msdn.microsoft.com/en-us/library/aa384253(v=vs.85).aspx
-#ifdef _WIN64
-        access = KEY_READ | KEY_WOW64_32KEY;
-#else
-        access = KEY_READ | KEY_WOW64_64KEY;
-#endif
-        goto TryAgainWOW64;
-    }
+    LONG res = SHGetValue(keySub, keyName, valName, NULL, (VOID *)buffer, &bufLen);
     if (ERROR_SUCCESS != res && ERROR_FILE_NOT_FOUND != res)
         SeeLastError(res);
-    return val;
+    return ERROR_SUCCESS == res;
 }
 
 bool WriteRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, const TCHAR *value)
 {
-    LSTATUS res = SHSetValue(keySub, keyName, valName, REG_SZ, (const VOID *)value, (DWORD)(Str::Len(value) + 1) * sizeof(TCHAR));
+    LONG res = SHSetValue(keySub, keyName, valName, REG_SZ, (const VOID *)value, (DWORD)(tstr_len(value) + 1) * sizeof(TCHAR));
     if (ERROR_SUCCESS != res)
         SeeLastError(res);
     return ERROR_SUCCESS == res;
@@ -122,32 +82,10 @@ bool WriteRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, const 
 
 bool WriteRegDWORD(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, DWORD value)
 {
-    LSTATUS res = SHSetValue(keySub, keyName, valName, REG_DWORD, (const VOID *)&value, sizeof(DWORD));
+    LONG res = SHSetValue(keySub, keyName, valName, REG_DWORD, (const VOID *)&value, sizeof(DWORD));
     if (ERROR_SUCCESS != res)
         SeeLastError(res);
     return ERROR_SUCCESS == res;
-}
-
-bool DeleteRegKey(HKEY keySub, const TCHAR *keyName, bool resetACLFirst)
-{
-    if (resetACLFirst) {
-        // try to remove any access restrictions on the key to delete
-        // by first granting everybody all access to this key (NULL DACL)
-        HKEY hKey;
-        LONG res = RegOpenKeyEx(keySub, keyName, 0, WRITE_DAC, &hKey);
-        if (ERROR_SUCCESS == res) {
-            SECURITY_DESCRIPTOR secdesc;
-            InitializeSecurityDescriptor(&secdesc, SECURITY_DESCRIPTOR_REVISION);
-            SetSecurityDescriptorDacl(&secdesc, TRUE, NULL, TRUE);
-            RegSetKeySecurity(hKey, DACL_SECURITY_INFORMATION, &secdesc);
-            RegCloseKey(hKey);
-        }
-    }
-
-    LSTATUS res = SHDeleteKey(keySub, keyName);
-    if (ERROR_SUCCESS != res && ERROR_FILE_NOT_FOUND != res)
-        SeeLastError(res);
-    return ERROR_SUCCESS == res || ERROR_FILE_NOT_FOUND == res;
 }
 
 #define PROCESS_EXECUTE_FLAGS 0x22
@@ -163,18 +101,19 @@ typedef HRESULT (WINAPI *_NtSetInformationProcess)(
    ULONG   ProcessInformationLength
    );
 
-void EnableNx()
+void EnableNx(void)
 {
+    WinLibrary lib(_T("ntdll.dll"));
     _NtSetInformationProcess ntsip;
     DWORD dep_mode = 13; /* ENABLE | DISABLE_ATL | PERMANENT */
 
-    ntsip = (_NtSetInformationProcess)LoadDllFunc(_T("ntdll.dll"), "NtSetInformationProcess");
+    ntsip = (_NtSetInformationProcess)lib.GetProcAddr("NtSetInformationProcess");
     if (ntsip)
         ntsip(GetCurrentProcess(), PROCESS_EXECUTE_FLAGS, &dep_mode, sizeof(dep_mode));
 }
 
 // Code from http://www.halcyon.com/~ast/dload/guicon.htm
-void RedirectIOToConsole()
+void RedirectIOToConsole(void)
 {
     CONSOLE_SCREEN_BUFFER_INFO coninfo;
     int hConHandle;
@@ -203,13 +142,13 @@ void RedirectIOToConsole()
     setvbuf(stdin, NULL, _IONBF, 0);
 }
 
-TCHAR *ResolveLnk(const TCHAR * path)
+TCHAR *ResolveLnk(TCHAR * path)
 {
     IShellLink *lnk = NULL;
     IPersistFile *file = NULL;
     TCHAR *resolvedPath = NULL;
 
-    ScopedMem<OLECHAR> olePath(Str::Conv::ToWStr(path));
+    LPCOLESTR olePath = tstr_to_wstr(path);
     if (!olePath)
         return NULL;
 
@@ -235,67 +174,20 @@ TCHAR *ResolveLnk(const TCHAR * path)
     if (FAILED(hRes))
         goto Exit;
 
-    resolvedPath = Str::Dup(newPath);
+    resolvedPath = tstr_dup(newPath);
 
 Exit:
     if (file)
         file->Release();
     if (lnk)
         lnk->Release();
+    free((void *)olePath);
 
     return resolvedPath;
 }
 
-bool CreateShortcut(const TCHAR *shortcutPath, const TCHAR *exePath,
-                    const TCHAR *args, const TCHAR *description, int iconIndex)
-{
-    IShellLink *lnk = NULL;
-    IPersistFile *file = NULL;
-    bool ok = false;
-
-    ScopedCom com;
-    HRESULT hr = CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
-                                  IID_IShellLink, (LPVOID *)&lnk);
-    if (FAILED(hr)) 
-        goto Exit;
-
-    hr = lnk->QueryInterface(IID_IPersistFile, (LPVOID *)&file);
-    if (FAILED(hr))
-        goto Exit;
-
-    hr = lnk->SetPath(exePath);
-    if (FAILED(hr))
-        goto Exit;
-
-    lnk->SetWorkingDirectory(ScopedMem<TCHAR>(Path::GetDir(exePath)));
-    // lnk->SetShowCmd(SW_SHOWNORMAL);
-    // lnk->SetHotkey(0);
-    lnk->SetIconLocation(exePath, iconIndex);
-    if (args)
-        lnk->SetArguments(args);
-    if (description)
-        lnk->SetDescription(description);
-
-#ifndef _UNICODE
-    hr = file->Save(ScopedMem<WCHAR>(Str::Conv::ToWStr(shortcutPath)), TRUE);
-#else
-    hr = file->Save(shortcutPath, TRUE);
-#endif
-    ok = SUCCEEDED(hr);
-
-Exit:
-    if (file)
-        file->Release();
-    if (lnk)
-        lnk->Release();
-    if (FAILED(hr))
-        SeeLastError();
-
-    return ok;
-}
-
 /* adapted from http://blogs.msdn.com/oldnewthing/archive/2004/09/20/231739.aspx */
-IDataObject* GetDataObjectForFile(LPCTSTR filePath, HWND hwnd)
+IDataObject* GetDataObjectForFile(LPCTSTR pszPath, HWND hwnd)
 {
     IDataObject* pDataObject = NULL;
     IShellFolder *pDesktopFolder;
@@ -303,7 +195,7 @@ IDataObject* GetDataObjectForFile(LPCTSTR filePath, HWND hwnd)
     if (FAILED(hr))
         return NULL;
 
-    LPWSTR lpWPath = Str::Conv::ToWStr(filePath);
+    LPWSTR lpWPath = tstr_to_wstr(pszPath);
     LPITEMIDLIST pidl;
     hr = pDesktopFolder->ParseDisplayName(NULL, NULL, lpWPath, NULL, &pidl, NULL);
     if (SUCCEEDED(hr)) {
@@ -339,198 +231,4 @@ DWORD GetFileVersion(TCHAR *path)
 
     free(versionInfo);
     return fileVersion;
-}
-
-void LaunchFile(const TCHAR *path, const TCHAR *params, const TCHAR *verb, bool hidden)
-{
-    if (!path)
-        return;
-
-    SHELLEXECUTEINFO sei = { 0 };
-    sei.cbSize  = sizeof(sei);
-    sei.fMask   = SEE_MASK_FLAG_NO_UI;
-    sei.lpVerb  = verb;
-    sei.lpFile  = path;
-    sei.lpParameters = params;
-    sei.nShow   = hidden ? SW_HIDE : SW_SHOWNORMAL;
-    ShellExecuteEx(&sei);
-}
-
-/* Ensure that the rectangle is at least partially in the work area on a
-   monitor. The rectangle is shifted into the work area if necessary. */
-RectI ShiftRectToWorkArea(RectI rect, bool bFully)
-{
-    MONITORINFO mi = { 0 };
-    mi.cbSize = sizeof mi;
-    GetMonitorInfo(MonitorFromRect(&rect.ToRECT(), MONITOR_DEFAULTTONEAREST), &mi);
-    RectI monitor = RectI::FromRECT(mi.rcWork);
-
-    if (rect.y + rect.dy <= monitor.x || bFully && rect.y < monitor.y)
-        /* Rectangle is too far above work area */
-        rect.Offset(0, monitor.y - rect.y);
-    else if (rect.y >= monitor.y + monitor.dy || bFully && rect.y + rect.dy > monitor.y + monitor.dy)
-        /* Rectangle is too far below */
-        rect.Offset(0, monitor.y - rect.y + monitor.dy - rect.dy);
-
-    if (rect.x + rect.dx <= monitor.x || bFully && rect.x < monitor.x)
-        /* Too far left */
-        rect.Offset(monitor.x - rect.x, 0);
-    else if (rect.x >= monitor.x + monitor.dx || bFully && rect.x + rect.dx > monitor.x + monitor.dx)
-        /* Too far right */
-        rect.Offset(monitor.x - rect.x + monitor.dx - rect.dx, 0);
-
-    return rect;
-}
-
-void PaintRect(HDC hdc, RectI& rect)
-{
-    MoveToEx(hdc, rect.x, rect.y, NULL);
-    LineTo(hdc, rect.x + rect.dx - 1, rect.y);
-    LineTo(hdc, rect.x + rect.dx - 1, rect.y + rect.dy - 1);
-    LineTo(hdc, rect.x, rect.y + rect.dy - 1);
-    LineTo(hdc, rect.x, rect.y);
-}
-
-void PaintLine(HDC hdc, RectI& rect)
-{
-    MoveToEx(hdc, rect.x, rect.y, NULL);
-    LineTo(hdc, rect.x + rect.dx, rect.y + rect.dy);
-}
-
-void DrawCenteredText(HDC hdc, RectI& r, const TCHAR *txt)
-{    
-    SetBkMode(hdc, TRANSPARENT);
-    DrawText(hdc, txt, -1, &r.ToRECT(), DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-}
-
-bool IsCursorOverWindow(HWND hwnd)
-{
-    POINT pt;
-    GetCursorPos(&pt);
-    WindowRect rcWnd(hwnd);
-    return rcWnd.Inside(PointI(pt.x, pt.y));
-}
-
-void CenterDialog(HWND hDlg)
-{
-    // RECT rcDialog, rcOwner, rcRect;
-    HWND hParent = GetParent(hDlg);
-
-    RectI rcDialog = WindowRect(hDlg);
-    rcDialog.Offset(-rcDialog.x, -rcDialog.y);
-    RectI rcOwner = WindowRect(hParent ? hParent : GetDesktopWindow());
-    RectI rcRect = rcOwner;
-    rcRect.Offset(-rcRect.x, -rcRect.y);
-
-    // center dialog on its parent window
-    rcDialog.Offset(rcOwner.x + (rcRect.x - rcDialog.x + rcRect.dx - rcDialog.dx) / 2,
-                    rcOwner.y + (rcRect.y - rcDialog.y + rcRect.dy - rcDialog.dy) / 2);
-    // ensure that the dialog is fully visible on one monitor
-    rcDialog = ShiftRectToWorkArea(rcDialog, true);
-
-    SetWindowPos(hDlg, 0, rcDialog.x, rcDialog.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
-}
-
-/* Get the name of default printer or NULL if not exists.
-   The caller needs to free() the result */
-TCHAR *GetDefaultPrinterName()
-{
-    TCHAR buf[512];
-    DWORD bufSize = dimof(buf);
-    if (GetDefaultPrinter(buf, &bufSize))
-        return Str::Dup(buf);
-    return NULL;
-}
-
-bool CopyTextToClipboard(const TCHAR *text, bool appendOnly)
-{
-    assert(text);
-    if (!text) return false;
-
-    if (!appendOnly) {
-        if (!OpenClipboard(NULL))
-            return false;
-        EmptyClipboard();
-    }
-
-    HGLOBAL handle = GlobalAlloc(GMEM_MOVEABLE, (Str::Len(text) + 1) * sizeof(TCHAR));
-    if (handle) {
-        TCHAR *globalText = (TCHAR *)GlobalLock(handle);
-        lstrcpy(globalText, text);
-        GlobalUnlock(handle);
-
-        if (!SetClipboardData(CF_T_TEXT, handle))
-            SeeLastError();
-    }
-
-    if (!appendOnly)
-        CloseClipboard();
-
-    return handle != NULL;
-}
-
-DoubleBuffer::DoubleBuffer(HWND hwnd, RectI rect) :
-    hTarget(hwnd), rect(rect), hdcBuffer(NULL), doubleBuffer(NULL)
-{
-    hdcCanvas = ::GetDC(hwnd);
-
-    if (rect.IsEmpty())
-        return;
-
-    doubleBuffer = CreateCompatibleBitmap(hdcCanvas, rect.dx, rect.dy);
-    if (!doubleBuffer)
-        return;
-
-    hdcBuffer = CreateCompatibleDC(hdcCanvas);
-    if (!hdcBuffer)
-        return;
-
-    if (rect.x != 0 || rect.y != 0) {
-        SetGraphicsMode(hdcBuffer, GM_ADVANCED);
-        XFORM ctm = { 1.0, 0, 0, 1.0, (float)-rect.x, (float)-rect.y };
-        SetWorldTransform(hdcBuffer, &ctm);
-    }
-    DeleteObject(SelectObject(hdcBuffer, doubleBuffer));
-}
-
-DoubleBuffer::~DoubleBuffer()
-{
-    DeleteObject(doubleBuffer);
-    DeleteDC(hdcBuffer);
-    ReleaseDC(hTarget, hdcCanvas);
-}
-
-void DoubleBuffer::Flush(HDC hdc)
-{
-    assert(hdc != hdcBuffer);
-    if (hdcBuffer)
-        BitBlt(hdc, rect.x, rect.y, rect.dx, rect.dy, hdcBuffer, 0, 0, SRCCOPY);
-}
-
-namespace Win {
-    namespace Font {
-
-HFONT GetSimple(HDC hdc, TCHAR *fontName, int fontSize)
-{
-    LOGFONT lf = { 0 };
-
-    lf.lfWidth = 0;
-    lf.lfHeight = -MulDiv(fontSize, GetDeviceCaps(hdc, LOGPIXELSY), USER_DEFAULT_SCREEN_DPI);
-    lf.lfItalic = FALSE;
-    lf.lfUnderline = FALSE;
-    lf.lfStrikeOut = FALSE;
-    lf.lfCharSet = DEFAULT_CHARSET;
-    lf.lfOutPrecision = OUT_TT_PRECIS;
-    lf.lfQuality = DEFAULT_QUALITY;
-    lf.lfPitchAndFamily = DEFAULT_PITCH;    
-    Str::BufSet(lf.lfFaceName, dimof(lf.lfFaceName), fontName);
-    lf.lfWeight = FW_DONTCARE;
-    lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-    lf.lfEscapement = 0;
-    lf.lfOrientation = 0;
-
-    return CreateFontIndirect(&lf);
-}
-
-    }
 }

@@ -30,9 +30,6 @@ MUPDF_DIR=mupdf
 EXTLIBSDIR=ext
 !endif
 
-# include SumatraPDF's version number in libmupdf.dll
-LIBMUPDF_RES = $(O)\libmupdf.res
-
 # default target
 all_sumatrapdf: SumatraPDF Installer PDFFilter BrowserPlugin
 
@@ -42,22 +39,20 @@ all_sumatrapdf: SumatraPDF Installer PDFFilter BrowserPlugin
 
 ##### add configuration changes that should NOT affect MuPDF after this line #####
 
-# include build data for the remaining third-party libraries
-!INCLUDE $(EXTLIBSDIR)\makefile.msvc
-
 # Modify the following defines if you have to target a platform prior to the ones specified below.
 # Their meaning: http://msdn.microsoft.com/en-us/library/aa383745(VS.85).aspx
 # and http://blogs.msdn.com/oldnewthing/archive/2007/04/11/2079137.aspx
-# We set the features uniformly to Windows 2000 or later.
+# We set the features uniformly to Win 2000 or later.
 CFLAGS = $(CFLAGS) /D "WINVER=0x0500" /D "_WIN32_WINNT=0x0500"
 
-SUMATRA_CFLAGS = $(CFLAGS) $(EXTCFLAGS) \
-	/wd4800 \
-	/Ibaseutils /Ibaseutils/msvc /I$(MUPDF_DIR)\fitz /I$(MUPDF_DIR)\pdf /I$(MUPDF_DIR)\xps \
-	/Isrc /I$(EXTLIBSDIR)/synctex /D "SYNCTEX_FEATURE" /I$(ZLIB_DIR) /I$(ZLIB_DIR)/minizip \
-	/I$(EXTLIBSDIR)/libdjvu
+# /D "_WIN32_WINDOWS=0x0500" /D "_WIN32_IE=0x0600"
 
-INSTALLER_CFLAGS = $(CFLAGS) $(EXTCFLAGS) /wd4800 \
+SUMATRA_CFLAGS = $(CFLAGS) $(EXTCFLAGS) \
+	/Ibaseutils /Ibaseutils/msvc /I$(MUPDF_DIR)\fitz /I$(MUPDF_DIR)\mupdf \
+	/I$(ZLIB_DIR) /I$(ZLIB_DIR)/minizip \
+	/Isrc /IDialogSizer /I$(EXTLIBSDIR)/synctex /D "SYNCTEX_FEATURE"
+
+INSTALLER_CFLAGS = $(CFLAGS) $(EXTCFLAGS) \
 	/Ibaseutils /Ibaseutils/msvc /Isrc /Isrc/installer /I$(ZLIB_DIR) /I$(ZLIB_DIR)/minizip
 
 !if "$(CFG)"=="dbg"
@@ -65,58 +60,56 @@ SUMATRA_CFLAGS = $(SUMATRA_CFLAGS) /D "DEBUG" /D "_DEBUG"
 INSTALLER_CFLAGS = $(INSTALLER_CFLAGS) /D "DEBUG" /D "_DEBUG"
 !endif
 
-LIBS = $(LIBS) comctl32.lib Msimg32.lib Winspool.lib wininet.lib ole32.lib shlwapi.lib version.lib
+SYNCTEX_CFLAGS = $(CFLAGS) /I$(EXTLIBSDIR)/synctex /I$(ZLIB_DIR)
+!if "$(PLATFORM)"=="X64"
+SYNCTEX_CFLAGS = $(SYNCTEX_CFLAGS) /wd4244
+!endif
 
-OS = $(O)\sumatrapdf
+LIBS = $(LIBS) comctl32.lib Msimg32.lib Winspool.lib wininet.lib ole32.lib shlwapi.lib version.lib
 
 SUMATRA_APP = $(O)\SumatraPDF.exe
 SUMATRA_APP_NO_MUPDF = $(O)\SumatraPDF-no-MuPDF.exe
-SUMATRA_RES = $(OS)\sumatrapdf.res
+SUMATRA_RES = $(O)\sumatrapdf.res
 
 INSTALLER_APP = $(O)\Installer.exe
-INSTALLER_RES = $(OS)\Installer.res
+INSTALLER_RES = $(O)\Installer.res
 
 PDFFILTER_DLL = $(O)\PdfFilter.dll
-PDFFILTER_RES = $(OS)\PdfFilter.res
+PDFFILTER_RES = $(O)\PdfFilter.res
 PDFFILTER_CFLAGS = $(SUMATRA_CFLAGS)
 
 BROWSER_PLUGIN = $(O)\npPdfViewer.dll
-BROWSER_PLUGIN_RES = $(OS)\npPdfViewer.res
-BROWSER_PLUGIN_CFLAGS = $(CFLAGS) /Ibaseutils /Ibaseutils/msvc /wd4819
+BROWSER_PLUGIN_RES = $(O)\npPdfViewer.res
+BROWSER_PLUGIN_CFLAGS = $(CFLAGS) /Ibaseutils/msvc /wd4819
+LIBS_BROWSER_PLUGIN = user32.lib gdi32.lib advapi32.lib shlwapi.lib
 
 BASEUTILS_OBJS = \
-	$(OS)\BencUtil.obj $(OS)\FileUtil.obj $(OS)\Http.obj $(OS)\SimpleLog.obj \
-	$(OS)\StrUtil.obj $(OS)\UtilTests.obj $(OS)\WinUtil.obj $(OS)\DialogSizer.obj \
-	$(OS)\ZipUtil.obj
+	$(O)\base_util.obj $(O)\benc_util.obj $(O)\file_util.obj $(O)\geom_util.obj \
+	$(O)\str_util.obj $(O)\tstr_util.obj $(O)\win_util.obj $(O)\WinUtil.obj \
+	$(O)\wstr_util.obj $(O)\dialogsizer_set.obj
 
 SUMATRA_OBJS = \
-	$(OS)\AppPrefs.obj $(OS)\DisplayModel.obj $(OS)\CrashHandler.obj $(OS)\PdfEngine.obj \
-	$(OS)\TextSearch.obj $(OS)\SumatraAbout.obj $(OS)\SumatraDialogs.obj $(OS)\SumatraProperties.obj \
-	$(OS)\SumatraPDF.obj $(OS)\translations.obj $(OS)\FileWatch.obj $(OS)\PdfSync.obj \
-	$(OS)\RenderCache.obj $(OS)\TextSelection.obj $(OS)\WindowInfo.obj $(OS)\ParseCommandLine.obj \
-	$(OS)\Benchmark.obj $(OS)\UnitTests.obj $(OS)\AppTools.obj $(SUMATRA_RES) \
-	$(OS)\ImagesEngine.obj $(OS)\DjVuEngine.obj $(BASEUTILS_OBJS) \
-	$(BZIP2_OBJS) $(MINIZIP_OBJS) $(UNRAR_OBJS) $(SYNCTEX_OBJS) $(DJVU_OBJS)
-# $(TIFF_OBJS) 
+	$(O)\AppPrefs.obj $(O)\DisplayModel.obj $(O)\DisplayState.obj $(O)\Http.obj \
+	$(O)\CrashHandler.obj $(O)\MemSegment.obj $(O)\FileHistory.obj $(O)\PdfEngine.obj \
+	$(O)\PdfSearch.obj $(O)\SumatraAbout.obj $(O)\SumatraDialogs.obj $(O)\SumatraProperties.obj \
+	$(O)\SumatraPDF.obj $(O)\translations.obj $(O)\translations_txt.obj $(O)\LangMenuDef.obj \
+	$(O)\FileWatch.obj $(O)\PdfSync.obj $(O)\synctex_parser.obj $(O)\synctex_parser_utils.obj \
+	$(O)\RenderCache.obj $(O)\PdfSelection.obj $(O)\WindowInfo.obj $(O)\ParseCommandLine.obj \
+	$(O)\Benchmark.obj $(O)\UnitTests.obj $(O)\AppTools.obj $(SUMATRA_RES)
 
 INSTALLER_OBJS = \
-	$(OS)\Installer.obj $(INSTALLER_RES)
+	$(O)\Installer.obj $(INSTALLER_RES)
 
 PDFFILTER_OBJS = \
-	$(OS)\PdfFilterDll.obj $(OS)\CPdfFilter.obj $(PDFFILTER_RES) \
-	$(OS)\StrUtil.obj $(OS)\FileUtil.obj \
-	$(LIBMUPDF_LIB) $(OS)\MuPDF_Exports.obj $(OS)\PdfEngine.obj
+	$(O)\PdfFilterDll.obj $(O)\CPdfFilter.obj $(PDFFILTER_RES) \
+	$(O)\base_util.obj $(O)\wstr_util.obj $(O)\str_util.obj $(O)\file_util.obj \
+	$(LIBMUPDF_LIB) $(O)\MuPDF_Exports.obj $(O)\PdfEngine.obj
 
 BROWSER_PLUGIN_OBJS = \
-	$(OS)\npPdfViewer.obj $(BROWSER_PLUGIN_RES) \
-	$(OS)\StrUtil.obj $(OS)\FileUtil.obj $(OS)\WinUtil.obj
+	$(O)\npPdfViewer.obj $(BROWSER_PLUGIN_RES)
 
-!if "$(BUILD_XPS_IFILTER)"!=""
-PDFFILTER_OBJS = $(PDFFILTER_OBJS) $(OS)\CXpsFilter.obj
-PDFFILTER_CFLAGS = $(PDFFILTER_CFLAGS) /D "BUILD_XPS_IFILTER"
-!endif
 !if "$(BUILD_TEX_IFILTER)"!=""
-PDFFILTER_OBJS = $(PDFFILTER_OBJS) $(OS)\CTeXFilter.obj
+PDFFILTER_OBJS = $(PDFFILTER_OBJS) $(O)\CTeXFilter.obj
 PDFFILTER_CFLAGS = $(PDFFILTER_CFLAGS) /D "BUILD_TEX_IFILTER"
 !endif
 
@@ -125,31 +118,25 @@ PDFFILTER_CFLAGS = $(PDFFILTER_CFLAGS) /D "BUILD_TEX_IFILTER"
 rebuild: clean SumatraPDF
 
 cleanmupdf: force
-	-del $(FITZ_DRAW_OBJS) $(FITZ_OBJS) $(MUPDF_OBJS) $(MUXPS_OBJS)
+	-del $(FITZ_DRAW_OBJS) $(FITZ_OBJS) $(MUPDF_OBJS) $(FONT_OBJS) $(CMAP_OBJS)
 
 ## Note: the following command does not work on Windows
 cleanall: force
 	-rmdir /S /Q obj-*
 
-SumatraPDF:    $(OS) $(LIBMUPDF_DLL) $(SUMATRA_APP) $(SUMATRA_APP_NO_MUPDF)
-Installer:     $(OS) $(INSTALLER_APP)
-PDFFilter:     $(OS) $(LIBMUPDF_DLL) $(PDFFILTER_DLL)
-BrowserPlugin: $(OS) $(BROWSER_PLUGIN)
-
-$(OS): $(O) $(OE)
-	@if not exist $(OS) mkdir $(OS)
+SumatraPDF:    $(O) $(LIBMUPDF_DLL) $(SUMATRA_APP) $(SUMATRA_APP_NO_MUPDF)
+Installer:     $(O) $(INSTALLER_APP)
+PDFFilter:     $(O) $(LIBMUPDF_DLL) $(PDFFILTER_DLL)
+BrowserPlugin: $(O) $(BROWSER_PLUGIN)
 
 $(SUMATRA_RES): src\SumatraPDF.rc src\Resource.h src\Version.h
 	rc /r /fo$@ $(EXTCFLAGS) src\SumatraPDF.rc
 
-$(SUMATRA_APP): $(LIBS_OBJS) $(SUMATRA_OBJS)
+$(SUMATRA_APP): $(LIBS_OBJS) $(BZIP2_OBJS) $(MINIZIP_OBJS) $(BASEUTILS_OBJS) $(SUMATRA_OBJS)
 	$(LD) $(LDFLAGS) $** $(LIBS) /PDB:$*.pdb /OUT:$@
 
-$(SUMATRA_APP_NO_MUPDF): $(SUMATRA_OBJS) $(OS)\MuPDF_Exports.obj
+$(SUMATRA_APP_NO_MUPDF): $(BZIP2_OBJS) $(MINIZIP_OBJS) $(BASEUTILS_OBJS) $(SUMATRA_OBJS) $(O)\MuPDF_Exports.obj
 	$(LD) $(LDFLAGS) $** $(LIBS) /PDB:$*.pdb /OUT:$@ $(LIBMUPDF_LIB)
-
-$(LIBMUPDF_RES): src\libmupdf.rc src\Version.h
-	rc /r /fo$@ $(EXTCFLAGS) src\libmupdf.rc
 
 $(INSTALLER_RES): src\installer\Installer.rc src\installer\Resource.h src\Version.h
 	rc /r /fo$@ $(EXTCFLAGS) src\installer\Installer.rc
@@ -167,161 +154,178 @@ $(BROWSER_PLUGIN_RES): src\browserplugin\npPdfViewer.rc
 	rc /r /fo$@ $(EXTCFLAGS) src\browserplugin\npPdfViewer.rc
 
 $(BROWSER_PLUGIN): $(BROWSER_PLUGIN_OBJS)
-	$(LD) /DLL $(LDFLAGS) $** $(LIBS) /PDB:$*.pdb /OUT:$@
+	$(LD) /DLL $(LDFLAGS) $** $(LIBS_BROWSER_PLUGIN) /PDB:$*.pdb /OUT:$@
 
 # baseutils directory
-{baseutils}.cpp{$(OS)}.obj::
-	$(CC) $(SUMATRA_CFLAGS) /Fo$(OS)\ /Fd$(O)\vc80.pdb $<
+{baseutils}.c{$(O)}.obj::
+	$(CC) /TC $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
+
+{baseutils}.cpp{$(O)}.obj::
+	$(CC) $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
+
+{DialogSizer}.cpp{$(O)}.obj::
+	$(CC) $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
+
+{$(EXTLIBSDIR)\synctex}.c{$(O)}.obj::
+	$(CC) /TC $(SYNCTEX_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 # SumatraPDF app directory
-{src}.cpp{$(OS)}.obj::
-	$(CC) $(SUMATRA_CFLAGS) /Fo$(OS)\ /Fd$(O)\vc80.pdb $<
+{src}.cc{$(O)}.obj::
+	$(CC) $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
+
+{src}.cpp{$(O)}.obj::
+	$(CC) $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
+
+{src}.c{$(O)}.obj::
+	$(CC) /TC $(SUMATRA_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 # browserplugin directory
-{src\browserplugin}.cpp{$(OS)}.obj::
-	$(CC) $(BROWSER_PLUGIN_CFLAGS) /Fo$(OS)\ /Fd$(O)\vc80.pdb $<
+{src\browserplugin}.c{$(O)}.obj::
+	$(CC) /TC $(BROWSER_PLUGIN_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 # IFilter directory
-{src\ifilter}.cpp{$(OS)}.obj::
-	$(CC) $(PDFFILTER_CFLAGS) /Fo$(OS)\ /Fd$(O)\vc80.pdb $<
+{src\ifilter}.cpp{$(O)}.obj::
+	$(CC) $(PDFFILTER_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 # Installer directory
-{src\installer}.cpp{$(OS)}.obj::
-	$(CC) $(INSTALLER_CFLAGS) /Fo$(OS)\ /Fd$(O)\vc80.pdb $<
+{src\installer}.cpp{$(O)}.obj::
+	$(CC) $(INSTALLER_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 ## Header-dependencies for baseutils\* and src\*
 ### the list below is auto-generated by update_dependencies.py
-$(OS)\AppPrefs.obj: baseutils\BaseUtil.h baseutils\BencUtil.h baseutils\FileUtil.h
-$(OS)\AppPrefs.obj: baseutils\GeomUtil.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\AppPrefs.obj: src\AppPrefs.h src\BaseEngine.h src\DisplayState.h
-$(OS)\AppPrefs.obj: src\FileHistory.h src\translations.h
-$(OS)\AppTools.obj: baseutils\BaseUtil.h baseutils\CmdLineParser.h baseutils\FileUtil.h
-$(OS)\AppTools.obj: baseutils\GeomUtil.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\AppTools.obj: baseutils\WinUtil.h src\AppTools.h src\translations.h
-$(OS)\AppTools.obj: src\Version.h
-$(OS)\Benchmark.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\Benchmark.obj: baseutils\SimpleLog.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\Benchmark.obj: baseutils\WinUtil.h src\BaseEngine.h src\Benchmark.h
-$(OS)\Benchmark.obj: src\DjVuEngine.h src\PdfEngine.h
-$(OS)\BencUtil.obj: baseutils\BaseUtil.h baseutils\BencUtil.h baseutils\StrUtil.h
-$(OS)\BencUtil.obj: baseutils\Vec.h
-$(OS)\CPdfFilter.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\CPdfFilter.obj: baseutils\Vec.h src\BaseEngine.h src\ifilter\CPdfFilter.h
-$(OS)\CPdfFilter.obj: src\ifilter\FilterBase.h src\ifilter\PdfFilter.h src\PdfEngine.h
-$(OS)\CrashHandler.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\CrashHandler.obj: baseutils\Http.h baseutils\SimpleLog.h baseutils\StrUtil.h
-$(OS)\CrashHandler.obj: baseutils\Vec.h baseutils\WinUtil.h baseutils\ZipUtil.h
-$(OS)\CrashHandler.obj: src\AppPrefs.h src\AppTools.h src\BaseEngine.h
-$(OS)\CrashHandler.obj: src\CrashHandler.h src\DisplayState.h src\SumatraPDF.h
-$(OS)\CrashHandler.obj: src\translations.h src\Version.h
-$(OS)\CTeXFilter.obj: baseutils\BaseUtil.h baseutils\StrUtil.h src\ifilter\CTeXFilter.h
-$(OS)\CTeXFilter.obj: src\ifilter\FilterBase.h src\ifilter\PdfFilter.h
-$(OS)\CXpsFilter.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\CXpsFilter.obj: baseutils\Vec.h src\BaseEngine.h src\ifilter\CXpsFilter.h
-$(OS)\CXpsFilter.obj: src\ifilter\FilterBase.h src\ifilter\PdfFilter.h src\PdfEngine.h
-$(OS)\DialogSizer.obj: baseutils\BaseUtil.h baseutils\DialogSizer.h baseutils\GeomUtil.h
-$(OS)\DialogSizer.obj: baseutils\WinUtil.h
-$(OS)\DisplayModel.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\DisplayModel.obj: baseutils\Vec.h src\BaseEngine.h src\DisplayModel.h
-$(OS)\DisplayModel.obj: src\DisplayState.h src\DjVuEngine.h src\ImagesEngine.h
-$(OS)\DisplayModel.obj: src\PdfEngine.h src\TextSearch.h src\TextSelection.h
-$(OS)\DjVuEngine.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\DjVuEngine.obj: baseutils\StrUtil.h baseutils\Vec.h src\BaseEngine.h
-$(OS)\DjVuEngine.obj: src\DjVuEngine.h
-$(OS)\FileUtil.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\StrUtil.h
-$(OS)\FileWatch.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\StrUtil.h
-$(OS)\FileWatch.obj: src\FileWatch.h
-$(OS)\Http.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\Http.obj: baseutils\Http.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\Http.obj: baseutils\WinUtil.h
-$(OS)\ImagesEngine.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\ImagesEngine.obj: baseutils\StrUtil.h baseutils\Vec.h src\..\ext\unrar\dll.hpp
-$(OS)\ImagesEngine.obj: src\BaseEngine.h src\ImagesEngine.h
-$(OS)\Installer.obj: baseutils\BaseUtil.h baseutils\CmdLineParser.h baseutils\FileUtil.h
-$(OS)\Installer.obj: baseutils\GeomUtil.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\Installer.obj: baseutils\WinUtil.h src\installer\..\ifilter\PdfFilter.h src\installer\Resource.h
-$(OS)\Installer.obj: src\Version.h
-$(OS)\MuPDF_Exports.obj: mupdf\fitz\fitz.h
-$(OS)\npPdfViewer.obj: baseutils\BaseUtil.h baseutils\CmdLineParser.h baseutils\FileUtil.h
-$(OS)\npPdfViewer.obj: baseutils\GeomUtil.h baseutils\SimpleLog.h baseutils\StrUtil.h
-$(OS)\npPdfViewer.obj: baseutils\Vec.h baseutils\WinUtil.h src\browserplugin\npapi\npapi.h
-$(OS)\npPdfViewer.obj: src\browserplugin\npapi\npfunctions.h src\browserplugin\npapi\npruntime.h src\browserplugin\npapi\nptypes.h
-$(OS)\ParseCommandLine.obj: baseutils\BaseUtil.h baseutils\CmdLineParser.h baseutils\GeomUtil.h
-$(OS)\ParseCommandLine.obj: baseutils\StrUtil.h baseutils\Vec.h baseutils\WinUtil.h
-$(OS)\ParseCommandLine.obj: src\AppPrefs.h src\BaseEngine.h src\Benchmark.h
-$(OS)\ParseCommandLine.obj: src\DisplayState.h src\ParseCommandLine.h src\SumatraPDF.h
-$(OS)\PdfEngine.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\PdfEngine.obj: baseutils\StrUtil.h baseutils\Vec.h mupdf\fitz\fitz.h
-$(OS)\PdfEngine.obj: mupdf\pdf\mupdf.h mupdf\xps\muxps.h src\BaseEngine.h
-$(OS)\PdfEngine.obj: src\PdfEngine.h
-$(OS)\PdfFilterDll.obj: src\ifilter\CPdfFilter.h src\ifilter\CTeXFilter.h src\ifilter\CXpsFilter.h
-$(OS)\PdfFilterDll.obj: src\ifilter\FilterBase.h src\ifilter\PdfFilter.h
-$(OS)\PdfSync.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\PdfSync.obj: baseutils\StrUtil.h baseutils\Vec.h src\AppPrefs.h
-$(OS)\PdfSync.obj: src\BaseEngine.h src\DisplayModel.h src\DisplayState.h
-$(OS)\PdfSync.obj: src\DjVuEngine.h src\ImagesEngine.h src\PdfEngine.h
-$(OS)\PdfSync.obj: src\PdfSync.h src\TextSearch.h src\TextSelection.h
-$(OS)\PdfSync.obj: src\WindowInfo.h
-$(OS)\RenderCache.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\RenderCache.obj: baseutils\Vec.h src\BaseEngine.h src\DisplayModel.h
-$(OS)\RenderCache.obj: src\DisplayState.h src\DjVuEngine.h src\ImagesEngine.h
-$(OS)\RenderCache.obj: src\PdfEngine.h src\RenderCache.h src\TextSearch.h
-$(OS)\RenderCache.obj: src\TextSelection.h
-$(OS)\SimpleLog.obj: baseutils\BaseUtil.h baseutils\SimpleLog.h baseutils\StrUtil.h
-$(OS)\SimpleLog.obj: baseutils\Vec.h
-$(OS)\StrUtil.obj: baseutils\BaseUtil.h baseutils\StrUtil.h
-$(OS)\SumatraAbout.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\SumatraAbout.obj: baseutils\StrUtil.h baseutils\Vec.h baseutils\WinUtil.h
-$(OS)\SumatraAbout.obj: src\AppPrefs.h src\AppTools.h src\BaseEngine.h
-$(OS)\SumatraAbout.obj: src\DisplayModel.h src\DisplayState.h src\DjVuEngine.h
-$(OS)\SumatraAbout.obj: src\FileHistory.h src\ImagesEngine.h src\PdfEngine.h
-$(OS)\SumatraAbout.obj: src\SumatraAbout.h src\SumatraPDF.h src\TextSearch.h
-$(OS)\SumatraAbout.obj: src\TextSelection.h src\translations.h src\Version.h
-$(OS)\SumatraAbout.obj: src\WindowInfo.h
-$(OS)\SumatraDialogs.obj: baseutils\BaseUtil.h baseutils\DialogSizer.h baseutils\GeomUtil.h
-$(OS)\SumatraDialogs.obj: baseutils\StrUtil.h baseutils\Vec.h baseutils\WinUtil.h
-$(OS)\SumatraDialogs.obj: src\AppPrefs.h src\AppTools.h src\BaseEngine.h
-$(OS)\SumatraDialogs.obj: src\DisplayState.h src\Resource.h src\SumatraDialogs.h
-$(OS)\SumatraDialogs.obj: src\SumatraPDF.h src\translations.h
-$(OS)\SumatraPDF.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\SumatraPDF.obj: baseutils\Http.h baseutils\StrUtil.h baseutils\Vec.h
-$(OS)\SumatraPDF.obj: baseutils\WinUtil.h src\AppPrefs.h src\AppTools.h
-$(OS)\SumatraPDF.obj: src\BaseEngine.h src\Benchmark.h src\CrashHandler.h
-$(OS)\SumatraPDF.obj: src\DisplayModel.h src\DisplayState.h src\DjVuEngine.h
-$(OS)\SumatraPDF.obj: src\FileHistory.h src\FileWatch.h src\ImagesEngine.h
-$(OS)\SumatraPDF.obj: src\Notifications.h src\ParseCommandLine.h src\PdfEngine.h
-$(OS)\SumatraPDF.obj: src\PdfSync.h src\RenderCache.h src\Resource.h
-$(OS)\SumatraPDF.obj: src\SumatraAbout.h src\SumatraDialogs.h src\SumatraPDF.h
-$(OS)\SumatraPDF.obj: src\SumatraProperties.h src\TextSearch.h src\TextSelection.h
-$(OS)\SumatraPDF.obj: src\translations.h src\Version.h src\WindowInfo.h
-$(OS)\SumatraProperties.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\SumatraProperties.obj: baseutils\StrUtil.h baseutils\Vec.h baseutils\WinUtil.h
-$(OS)\SumatraProperties.obj: src\AppPrefs.h src\BaseEngine.h src\DisplayModel.h
-$(OS)\SumatraProperties.obj: src\DisplayState.h src\DjVuEngine.h src\ImagesEngine.h
-$(OS)\SumatraProperties.obj: src\PdfEngine.h src\SumatraPDF.h src\SumatraProperties.h
-$(OS)\SumatraProperties.obj: src\TextSearch.h src\TextSelection.h src\translations.h
-$(OS)\SumatraProperties.obj: src\WindowInfo.h
-$(OS)\TextSearch.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\TextSearch.obj: baseutils\Vec.h src\BaseEngine.h src\TextSearch.h
-$(OS)\TextSearch.obj: src\TextSelection.h
-$(OS)\TextSelection.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\TextSelection.obj: baseutils\Vec.h src\BaseEngine.h src\TextSelection.h
-$(OS)\translations.obj: baseutils\BaseUtil.h baseutils\StrUtil.h src\translations.h
-$(OS)\translations.obj: src\translations_txt.cpp
-$(OS)\UnitTests.obj: baseutils\BaseUtil.h baseutils\GeomUtil.h baseutils\StrUtil.h
-$(OS)\UnitTests.obj: baseutils\Vec.h src\AppTools.h src\BaseEngine.h
-$(OS)\UnitTests.obj: src\Benchmark.h src\DisplayState.h src\ParseCommandLine.h
-$(OS)\UtilTests.obj: baseutils\BaseUtil.h baseutils\BencUtil.h baseutils\FileUtil.h
-$(OS)\UtilTests.obj: baseutils\GeomUtil.h baseutils\SimpleLog.h baseutils\StrUtil.h
-$(OS)\UtilTests.obj: baseutils\Vec.h
-$(OS)\WindowInfo.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\WindowInfo.obj: baseutils\StrUtil.h baseutils\Vec.h baseutils\WinUtil.h
-$(OS)\WindowInfo.obj: src\AppPrefs.h src\BaseEngine.h src\DisplayModel.h
-$(OS)\WindowInfo.obj: src\DisplayState.h src\DjVuEngine.h src\FileWatch.h
-$(OS)\WindowInfo.obj: src\ImagesEngine.h src\Notifications.h src\PdfEngine.h
-$(OS)\WindowInfo.obj: src\PdfSync.h src\Resource.h src\SumatraPDF.h
-$(OS)\WindowInfo.obj: src\TextSearch.h src\TextSelection.h src\WindowInfo.h
-$(OS)\WinUtil.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\GeomUtil.h
-$(OS)\WinUtil.obj: baseutils\StrUtil.h baseutils\WinUtil.h
-$(OS)\ZipUtil.obj: baseutils\BaseUtil.h baseutils\FileUtil.h baseutils\StrUtil.h
-$(OS)\ZipUtil.obj: baseutils\ZipUtil.h
+$(O)\AppPrefs.obj: baseutils\base_util.h baseutils\benc_util.h baseutils\file_util.h
+$(O)\AppPrefs.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\wstr_util.h
+$(O)\AppPrefs.obj: src\AppPrefs.h src\DisplayState.h src\FileHistory.h
+$(O)\AppTools.obj: baseutils\base_util.h baseutils\file_util.h baseutils\str_util.h
+$(O)\AppTools.obj: baseutils\tstr_util.h baseutils\WinUtil.hpp baseutils\wstr_util.h
+$(O)\AppTools.obj: src\LangMenuDef.h src\SumatraPDF.h src\translations.h
+$(O)\base_util.obj: baseutils\base_util.h
+$(O)\benc_util.obj: baseutils\base_util.h baseutils\benc_util.h baseutils\file_util.h
+$(O)\benc_util.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\wstr_util.h
+$(O)\Benchmark.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\Benchmark.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\Benchmark.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\Benchmark.obj: mupdf\mupdf\mupdf.h src\Benchmark.h src\PdfEngine.h
+$(O)\CPdfFilter.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\CPdfFilter.obj: baseutils\tstr_util.h baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\CPdfFilter.obj: mupdf\mupdf\mupdf.h src\ifilter\CPdfFilter.h src\ifilter\FilterBase.h
+$(O)\CPdfFilter.obj: src\ifilter\PdfFilter.h src\PdfEngine.h
+$(O)\CrashHandler.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\CrashHandler.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h src\CrashHandler.h
+$(O)\CrashHandler.obj: src\translations.h
+$(O)\CTeXFilter.obj: baseutils\base_util.h baseutils\wstr_util.h src\ifilter\CTeXFilter.h
+$(O)\CTeXFilter.obj: src\ifilter\FilterBase.h src\ifilter\PdfFilter.h
+$(O)\DisplayModel.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\DisplayModel.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\DisplayModel.obj: baseutils\win_util.h baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\DisplayModel.obj: mupdf\mupdf\mupdf.h src\DisplayModel.h src\DisplayState.h
+$(O)\DisplayModel.obj: src\FileWatch.h src\PdfEngine.h src\PdfSearch.h
+$(O)\DisplayModel.obj: src\PdfSelection.h src\Resource.h src\WindowInfo.h
+$(O)\DisplayState.obj: baseutils\base_util.h baseutils\str_util.h src\DisplayState.h
+$(O)\file_util.obj: baseutils\base_util.h baseutils\file_util.h baseutils\str_util.h
+$(O)\file_util.obj: baseutils\tstr_util.h baseutils\wstr_util.h
+$(O)\FileHistory.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\FileHistory.obj: baseutils\wstr_util.h src\DisplayState.h src\FileHistory.h
+$(O)\FileWatch.obj: baseutils\base_util.h baseutils\file_util.h baseutils\str_util.h
+$(O)\FileWatch.obj: baseutils\tstr_util.h baseutils\wstr_util.h src\FileWatch.h
+$(O)\geom_util.obj: baseutils\base_util.h baseutils\geom_util.h
+$(O)\Http.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\Http.obj: baseutils\vstrlist.h baseutils\wstr_util.h src\Http.h
+$(O)\Http.obj: src\MemSegment.h src\SumatraPDF.h src\Version.h
+$(O)\Installer.obj: baseutils\base_util.h baseutils\file_util.h baseutils\str_util.h
+$(O)\Installer.obj: baseutils\tstr_util.h baseutils\win_util.h baseutils\WinUtil.hpp
+$(O)\Installer.obj: baseutils\wstr_util.h src\installer\..\ifilter\PdfFilter.h src\installer\Resource.h
+$(O)\Installer.obj: src\Version.h
+$(O)\LangMenuDef.obj: src\LangMenuDef.h
+$(O)\MemSegment.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\MemSegment.obj: baseutils\wstr_util.h src\MemSegment.h
+$(O)\MuPDF_Exports.obj: mupdf\fitz\fitz.h
+$(O)\npPdfViewer.obj: src\browserplugin\npapi\npapi.h src\browserplugin\npapi\npfunctions.h src\browserplugin\npapi\npruntime.h
+$(O)\npPdfViewer.obj: src\browserplugin\npapi\nptypes.h
+$(O)\ParseCommandLine.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\ParseCommandLine.obj: baseutils\tstr_util.h baseutils\vstrlist.h baseutils\WinUtil.hpp
+$(O)\ParseCommandLine.obj: baseutils\wstr_util.h mupdf\fitz\fitz.h mupdf\mupdf\mupdf.h
+$(O)\ParseCommandLine.obj: src\Benchmark.h src\DisplayState.h src\FileWatch.h
+$(O)\ParseCommandLine.obj: src\ParseCommandLine.h src\PdfEngine.h src\PdfSearch.h
+$(O)\ParseCommandLine.obj: src\PdfSelection.h src\SumatraPDF.h src\WindowInfo.h
+$(O)\PdfEngine.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\PdfEngine.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\wstr_util.h
+$(O)\PdfEngine.obj: mupdf\fitz\fitz.h mupdf\mupdf\mupdf.h src\PdfEngine.h
+$(O)\PdfFilterDll.obj: src\ifilter\CPdfFilter.h src\ifilter\CTeXFilter.h src\ifilter\FilterBase.h
+$(O)\PdfFilterDll.obj: src\ifilter\PdfFilter.h
+$(O)\PdfSearch.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\PdfSearch.obj: baseutils\tstr_util.h baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\PdfSearch.obj: mupdf\mupdf\mupdf.h src\PdfEngine.h src\PdfSearch.h
+$(O)\PdfSearch.obj: src\PdfSelection.h
+$(O)\PdfSelection.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\PdfSelection.obj: baseutils\tstr_util.h baseutils\vstrlist.h baseutils\wstr_util.h
+$(O)\PdfSelection.obj: mupdf\fitz\fitz.h mupdf\mupdf\mupdf.h src\PdfEngine.h
+$(O)\PdfSelection.obj: src\PdfSelection.h
+$(O)\PdfSync.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\PdfSync.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\PdfSync.obj: baseutils\wstr_util.h mupdf\fitz\fitz.h mupdf\mupdf\mupdf.h
+$(O)\PdfSync.obj: src\DisplayModel.h src\DisplayState.h src\FileWatch.h
+$(O)\PdfSync.obj: src\PdfEngine.h src\PdfSearch.h src\PdfSelection.h
+$(O)\PdfSync.obj: src\PdfSync.h src\Resource.h src\WindowInfo.h
+$(O)\RenderCache.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\RenderCache.obj: baseutils\tstr_util.h baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\RenderCache.obj: mupdf\mupdf\mupdf.h src\DisplayModel.h src\DisplayState.h
+$(O)\RenderCache.obj: src\PdfEngine.h src\PdfSearch.h src\PdfSelection.h
+$(O)\RenderCache.obj: src\RenderCache.h
+$(O)\str_util.obj: baseutils\base_util.h baseutils\str_util.h
+$(O)\SumatraAbout.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\SumatraAbout.obj: baseutils\tstr_util.h baseutils\vstrlist.h baseutils\win_util.h
+$(O)\SumatraAbout.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\SumatraAbout.obj: mupdf\mupdf\mupdf.h src\AppPrefs.h src\AppTools.h
+$(O)\SumatraAbout.obj: src\DisplayState.h src\FileWatch.h src\PdfEngine.h
+$(O)\SumatraAbout.obj: src\PdfSearch.h src\PdfSelection.h src\SumatraAbout.h
+$(O)\SumatraAbout.obj: src\SumatraPDF.h src\translations.h src\Version.h
+$(O)\SumatraAbout.obj: src\WindowInfo.h
+$(O)\SumatraDialogs.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\SumatraDialogs.obj: baseutils\tstr_util.h baseutils\vstrlist.h baseutils\win_util.h
+$(O)\SumatraDialogs.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\SumatraDialogs.obj: mupdf\mupdf\mupdf.h src\AppPrefs.h src\AppTools.h
+$(O)\SumatraDialogs.obj: src\DisplayModel.h src\DisplayState.h src\FileWatch.h
+$(O)\SumatraDialogs.obj: src\LangMenuDef.h src\PdfEngine.h src\PdfSearch.h
+$(O)\SumatraDialogs.obj: src\PdfSelection.h src\Resource.h src\SumatraDialogs.h
+$(O)\SumatraDialogs.obj: src\translations.h src\WindowInfo.h
+$(O)\SumatraPDF.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\SumatraPDF.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\SumatraPDF.obj: baseutils\win_util.h baseutils\WinUtil.hpp baseutils\wstr_util.h
+$(O)\SumatraPDF.obj: mupdf\fitz\fitz.h mupdf\mupdf\mupdf.h src\AppPrefs.h
+$(O)\SumatraPDF.obj: src\AppTools.h src\Benchmark.h src\CrashHandler.h
+$(O)\SumatraPDF.obj: src\DisplayModel.h src\DisplayState.h src\FileHistory.h
+$(O)\SumatraPDF.obj: src\FileWatch.h src\Http.h src\LangMenuDef.h
+$(O)\SumatraPDF.obj: src\MemSegment.h src\ParseCommandLine.h src\PdfEngine.h
+$(O)\SumatraPDF.obj: src\PdfSearch.h src\PdfSelection.h src\PdfSync.h
+$(O)\SumatraPDF.obj: src\RenderCache.h src\Resource.h src\SumatraAbout.h
+$(O)\SumatraPDF.obj: src\SumatraDialogs.h src\SumatraPDF.h src\SumatraProperties.h
+$(O)\SumatraPDF.obj: src\translations.h src\Version.h src\WindowInfo.h
+$(O)\SumatraProperties.obj: baseutils\base_util.h baseutils\geom_util.h baseutils\str_util.h
+$(O)\SumatraProperties.obj: baseutils\tstr_util.h baseutils\vstrlist.h baseutils\win_util.h
+$(O)\SumatraProperties.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\SumatraProperties.obj: mupdf\mupdf\mupdf.h src\AppPrefs.h src\AppTools.h
+$(O)\SumatraProperties.obj: src\DisplayModel.h src\DisplayState.h src\FileWatch.h
+$(O)\SumatraProperties.obj: src\PdfEngine.h src\PdfSearch.h src\PdfSelection.h
+$(O)\SumatraProperties.obj: src\SumatraPDF.h src\SumatraProperties.h src\translations.h
+$(O)\SumatraProperties.obj: src\WindowInfo.h
+$(O)\translations.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\translations.obj: baseutils\wstr_util.h src\translations.h src\translations_txt.h
+$(O)\tstr_util.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\tstr_util.obj: baseutils\wstr_util.h
+$(O)\UnitTests.obj: baseutils\base_util.h baseutils\benc_util.h baseutils\geom_util.h
+$(O)\UnitTests.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\UnitTests.obj: baseutils\wstr_util.h src\AppTools.h src\DisplayState.h
+$(O)\UnitTests.obj: src\MemSegment.h src\ParseCommandLine.h
+$(O)\win_util.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\win_util.obj: baseutils\win_util.h baseutils\wstr_util.h
+$(O)\WindowInfo.obj: baseutils\base_util.h baseutils\file_util.h baseutils\geom_util.h
+$(O)\WindowInfo.obj: baseutils\str_util.h baseutils\tstr_util.h baseutils\vstrlist.h
+$(O)\WindowInfo.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h mupdf\fitz\fitz.h
+$(O)\WindowInfo.obj: mupdf\mupdf\mupdf.h src\DisplayModel.h src\DisplayState.h
+$(O)\WindowInfo.obj: src\FileWatch.h src\PdfEngine.h src\PdfSearch.h
+$(O)\WindowInfo.obj: src\PdfSelection.h src\PdfSync.h src\Resource.h
+$(O)\WindowInfo.obj: src\WindowInfo.h
+$(O)\WinUtil.obj: baseutils\base_util.h baseutils\str_util.h baseutils\tstr_util.h
+$(O)\WinUtil.obj: baseutils\WinUtil.hpp baseutils\wstr_util.h
+$(O)\wstr_util.obj: baseutils\base_util.h baseutils\wstr_util.h

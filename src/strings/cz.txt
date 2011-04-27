@@ -1,10 +1,8 @@
 ﻿# Translations for Czech (Čeština) (cz) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: cz Czech (Čeština)
 
@@ -27,9 +25,6 @@ Z&pět\tAlt+Šipka vlevo
 
 &Close\tCtrl-W
 &Zavřít\tCtrl+W
-
-&Copy Selection
-&Kopírovat výběr
 
 &Copy Selection\tCtrl-C
 &Kopírovat výběr\tCtrl+C
@@ -97,9 +92,6 @@ Další strá&nka\tŠipka vpravo
 &Previous Page\tLeft Arrow
 &Předchozí stránka\tŠipka vlevo
 
-&Print...
-&Tisk...
-
 &Print...\tCtrl-P
 &Tisk...\tCtrl+P
 
@@ -111,9 +103,6 @@ P&amatovat si heslo tohoto dokumentu
 
 &Remember these settings for each document
 &Pamatovat si tato nastavení pro každý dokument
-
-&Save As...
-&Uložit jako...
 
 &Save As...\tCtrl-S
 &Uložit jako...\tCtrl+S
@@ -151,9 +140,6 @@ Upřesnit
 All files
 Všechny soubory
 
-All supported documents
-Všechny podporované dokumenty
-
 Application:
 Aplikace:
 
@@ -177,12 +163,6 @@ Kniha
 
 Book&marks\tF12
 Zál&ožky\tF12
-
-Bookmark Shortcuts
-Zástupce záložky
-
-Bookmark shortcut to page %d of %s
-Zástupce záložky na straně %d souboru %s
 
 Bookmarks
 Záložky
@@ -208,9 +188,6 @@ Změnit jazyk (Change Language)
 Check for &Updates
 &Zkontrolovat aktualizace
 
-Comic books
-Komiksy
-
 Continuous
 Jedna stránka průběžně
 
@@ -223,14 +200,8 @@ Dvojstránky průběžně
 Contribute Translation
 Zaslat překlad
 
-Copy &Link Address
-Kopírovat &adresu odkazu
-
-Copy Co&mment
-Kopírovat ko&mentář
-
 Copying text was denied (copying as image only)
-Kopírování textu bylo odepřeno (zkopírováno jako obraz)
+Kopírování textu bylo odepřeno (lze kopírovat jako obraz)
 
 Could not open Printer
 Tiskárnu nelze otevřít
@@ -277,8 +248,8 @@ Zadejte heslo pro %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Dvojité kliknutí na PDF dokument vykoná zadaný příkazový řádek:
 
-Error loading %s
-Chyba při načítání %s
+Error loading PDF file.
+Při načítání PDF souboru došlo k chybě.
 
 F&orward\tAlt+Right Arrow
 V&před\tAlt+Šipka vpravo
@@ -340,26 +311,14 @@ Přizpůsobit pro jednu celou stránku v okně
 Found text at page %d
 Položka nalezena na stránce %d
 
-Found text at page %d (again)
-Položka nalezena na stránce %d (znovu)
-
-Frequently Read
-Často čtené dokumenty
-
 GB
 GB
 
 Go to page
 Přejít na stránku
 
-Hide frequently read
-Skrýt často čtené dokumenty
-
 Hint: Use the F3 key for finding again
 Nápověda: Klávesou F3 vyhledáte další výskyt
-
-Image files (*.%s)
-Soubory obrázků (*.%s)
 
 KB
 KB
@@ -406,9 +365,6 @@ OK
 Open
 Otevřít
 
-Open a document...
-Otevřít dokument...
-
 Open in &Adobe Reader
 Otevřít v programu &Adobe Reader
 
@@ -417,9 +373,6 @@ Otevřít v programu &Foxit Reader
 
 Open in PDF-XChange
 Otevřít v programu PDF-XChange
-
-P&roperties
-&Vlastnosti
 
 P&roperties\tCtrl-D
 &Vlastnosti...\tCtrl+D
@@ -466,12 +419,6 @@ Předchozí stránka
 Print range
 Rozsah tisku
 
-Printing is still in progress. Abort and start over?
-Tisk je stále probíhá. Přerušit a začít znovu?
-
-Printing page %d of %d...
-Tisk stránky %d z %d...
-
 Printing problem.
 Potíže s tiskem
 
@@ -484,14 +431,8 @@ Otočit do&leva\tCtrl+Shift+Num-
 Rotate &Right\tCtrl-Shift-+
 Otočit dop&rava\tCtrl+Shift+Num+
 
-Save S&hortcut...\tCtrl-Shift-S
-U&ložit zástupce...\tCtrl+Shift+S
-
 Searching %d of %d...
 Prohledává se %d z %d...
-
-Select &All
-Vybrat &vše
 
 Select &All\tCtrl-A
 Vybrat &vše\tCtrl+A
@@ -510,9 +451,6 @@ Zobrazit panel nás&trojů
 
 Show &pages continuously
 Zobrazit stránky &průběžně
-
-Show frequently read
-Zobrazit často čtené dokumenty
 
 Show the &bookmarks sidebar when available
 Zo&brazit záložky v postranním panelu, jsou-li dostupné
@@ -562,9 +500,6 @@ Navštívit &webovou stránku
 Warning
 Upozornění
 
-XPS documents
-XPS dokumenty
-
 You have the latest version.
 Používáte nejnovější verzi.
 
@@ -591,7 +526,4 @@ kopírování textu
 
 printing document
 tisk dokumentu
-
-# Untranslated:
-#DjVu documents
 

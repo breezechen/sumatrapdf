@@ -1,16 +1,14 @@
 ﻿# Translations for Slovenian (Slovenščina) (sl) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sl Slovenian (Slovenščina)
 
 Contributor: Janez Vehovec
 Contributor: Martin Srebotnjak
-Contributor: Damjan Gerl
+Contributor: Damjan Gerli
 
 &About
 &O programu …
@@ -26,9 +24,6 @@ Contributor: Damjan Gerl
 
 &Close\tCtrl-W
 &Zapri\tCtrl-W
-
-&Copy Selection
-Kopiraj izbor
 
 &Copy Selection\tCtrl-C
 Kopiraj izbor\tCtrl-C
@@ -96,9 +91,6 @@ Samo &lihe strani
 &Previous Page\tLeft Arrow
 Predhodna stran\tPuščica levo
 
-&Print...
-&Natisni …
-
 &Print...\tCtrl-P
 &Natisni …\tCtrl-P
 
@@ -110,9 +102,6 @@ Predhodna stran\tPuščica levo
 
 &Remember these settings for each document
 Zapomni si te &nastavitve za vsak dokument
-
-&Save As...
-Shrani &kot …
 
 &Save As...\tCtrl-S
 Shrani &kot …\tCtrl-S
@@ -210,12 +199,6 @@ Nepretrgano dvostransko
 Contribute Translation
 Prispevajte prevod
 
-Copy &Link Address
-Kopiraj nas&lov povezave
-
-Copy Co&mment
-Kopiraj ko&mentar
-
 Copying text was denied (copying as image only)
 Kopiranje besedila je bilo zavrnjeno (kopiranje samo kot slika)
 
@@ -263,6 +246,9 @@ Vnesite geslo za %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Vnesite ukazno vrstico, ki se bo izvedla, ko boste dvokliknili na PDF dokument:
+
+Error loading PDF file.
+Napaka pri branju datoteke PDF.
 
 F&orward\tAlt+Right Arrow
 Naprej\tAlt+Desna puščica
@@ -387,9 +373,6 @@ Odpri s programom &Foxit Reader
 Open in PDF-XChange
 Odpri s programom PDF-XChange
 
-P&roperties
-Lastnosti
-
 P&roperties\tCtrl-D
 Lastnosti\tCtrl-D
 
@@ -449,12 +432,6 @@ Zasukaj v desno\tCtrl-Shift-+
 
 Searching %d of %d...
 Preiskovanje strani %d od %d …
-
-Select &All
-Izberi vse
-
-Select &All\tCtrl-A
-Izberi vse\tCtrl-A
 
 Select content with Ctrl+left mouse button
 Izberite vsebino s pritisnjeno tipko Ctrl in levim gumbom miške
@@ -547,20 +524,5 @@ printing document
 tiskanje dokumenta
 
 # Untranslated:
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Show frequently read
-#XPS documents
+#Select &All\tCtrl-A
 

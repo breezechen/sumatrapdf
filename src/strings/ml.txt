@@ -1,10 +1,8 @@
 ﻿# Translations for Malayalam (മലയാളം) (ml) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: ml Malayalam (മലയാളം)
 
@@ -72,6 +70,9 @@ Could not open Printer
 
 E&xit\tCtrl-Q
 പുറത്തേക്ക് \tCtrl-Q
+
+Error loading PDF file.
+PDF ഫയല്‍ തുറക്കാന്‍ സാധിച്ചില്ല
 
 F&ullscreen\tCtrl-Shift-L
 മുഴുവന്‍ കാണിക്കുക\tCtrl-Shift-L
@@ -160,7 +161,6 @@ Zoom Out
 # Untranslated:
 #&All selected pages
 #&Back\tAlt+Left Arrow
-#&Copy Selection
 #&Copy Selection\tCtrl-C
 #&Don't ask me again
 #&Even pages only
@@ -175,11 +175,9 @@ Zoom Out
 #&Odd pages only
 #&Options...
 #&Password:
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
 #&Remember these settings for each document
-#&Save As...
 #&Settings
 #&Shrink pages to printable area (if necessary)
 #&Skip this version
@@ -188,7 +186,6 @@ Zoom Out
 #(of %d)
 #Advanced
 #All files
-#All supported documents
 #Application:
 #Associate with PDF files?
 #Attachment: %s
@@ -197,8 +194,6 @@ Zoom Out
 #Automatically check for &updates
 #Book View
 #Book&marks\tF12
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Bytes
 #Can't connect to the Internet (error %#x).
@@ -207,10 +202,7 @@ Zoom Out
 #Cannot start inverse search command. Please check the command line in the settings.
 #Change Language
 #Check for &Updates
-#Comic books
 #Continuous Book View
-#Copy &Link Address
-#Copy Co&mment
 #Copying text was denied (copying as image only)
 #Couldn't initialize printer
 #Couldn't render the page
@@ -220,13 +212,11 @@ Zoom Out
 #Default &Zoom:
 #Default PDF reader can't be changed in portable mode
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Download
 #Enter password
 #Enter password for %s
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #F&orward\tAlt+Right Arrow
 #File Size:
 #File:
@@ -236,12 +226,8 @@ Zoom Out
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d
-#Found text at page %d (again)
-#Frequently Read
 #Go to page
-#Hide frequently read
 #Hint: Use the F3 key for finding again
-#Image files (*.%s)
 #Make SumatraPDF default application for PDF files?
 #Match Case
 #Modified:
@@ -252,11 +238,9 @@ Zoom Out
 #No synchronization info at this position
 #Number of Pages:
 #OK
-#Open a document...
 #Open in &Adobe Reader
 #Open in &Foxit Reader
 #Open in PDF-XChange
-#P&roperties
 #P&roperties\tCtrl-D
 #PDF Document
 #PDF Producer:
@@ -270,18 +254,13 @@ Zoom Out
 #Please wait - rendering...
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Remember &opened files
-#Save S&hortcut...\tCtrl-Shift-S
 #Searching %d of %d...
-#Select &All
 #Select &All\tCtrl-A
 #Select content with Ctrl+left mouse button
 #Send by &E-mail...
 #Set inverse search command-line
 #Show &pages continuously
-#Show frequently read
 #Show the &bookmarks sidebar when available
 #Source file %s has no synchronization point
 #Subject:
@@ -295,7 +274,6 @@ Zoom Out
 #Title:
 #Unknown source file (%s)
 #Warning
-#XPS documents
 #You have the latest version.
 #You have version %s
 #Zoom

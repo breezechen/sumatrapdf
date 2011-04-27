@@ -1,19 +1,48 @@
 /* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef WindowInfo_h
-#define WindowInfo_h
+#ifndef _WINDOWINFO_H_
+#define _WINDOWINFO_H_
 
 #include <shlobj.h>
-#include "GeomUtil.h"
-#include "DisplayModel.h"
+#include "geom_util.h"
+#include "DisplayState.h"
+#include "FileWatch.h"
+#include "PdfSearch.h"
+#include "vstrlist.h"
 
-class FileWatcher;
+// TODO: the final division is meant to be:
+// WindowInfoBase
+// WindowInfoAbout : WindowInfoBase
+// WindowInfoPdf : WindowInfoBase
+// WindowInfoComic : WindowInfoBase
+// WindowInfoError : WindowInfoBase
+// (eventually I would prefer to show 'error opening a file' and other
+// similar messages as Growl-style, dismissable notifications
+// in the lower right corner of the window, which would be a solution
+// to issue 1214)
+
+class DisplayModel;
 class Synchronizer;
-class DoubleBuffer;
-class SelectionOnPage;
-class LinkHandler;
-class MessageWndList;
+
+/* Current state of a window:
+  - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
+  - WS_SHOWING_PDF - showing a PDF file
+  - WS_ABOUT - showing "about" screen */
+enum WinState {
+    WS_ERROR_LOADING_PDF = 1,
+    WS_SHOWING_PDF,
+    WS_ABOUT
+};
+
+// TODO: WindowInfoType is meant to replace WinState
+enum WindowInfoType {
+    WitInvalid = 0,
+    WitAbout,       // WindowInfoAbout
+    WitError,       // WindowInfoError
+    WitPdf,         // WindowInfoPdf
+    WitComic        // WindowInfoComic
+};
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -32,41 +61,36 @@ enum PresentationMode {
     PM_WHITE_SCREEN
 };
 
-enum NotificationGroup {
-    NG_RESPONSE_TO_ACTION = 1,
-    NG_FIND_PROGRESS,
-    NG_PRINT_PROGRESS,
-    NG_PAGE_INFO_HELPER
-};
+/* Represents selected area on given page */
+typedef struct SelectionOnPage {
+    int              pageNo;
+    RectD            selectionPage;     /* position of selection rectangle on page */
+    RectI            selectionCanvas;   /* position of selection rectangle on canvas */
+    SelectionOnPage* next;              /* pointer to next page with selected area
+                                         * or NULL if such page not exists */
+} SelectionOnPage;
 
-/* Describes position, the target (URL or file path) and infotip of a "hyperlink" */
-struct StaticLinkInfo {
-    StaticLinkInfo() : target(NULL), infotip(NULL) { }
-    StaticLinkInfo(RectI rect, const TCHAR *target, const TCHAR *infotip=NULL) :
-        rect(rect), target(target), infotip(infotip) { }
-
-    RectI rect;
-    const TCHAR *target;
-    const TCHAR *infotip;
-};
-
-/* Describes information related to one window with (optional) a document
+/* Describes information related to one window with (optional) pdf document
    on the screen */
-class WindowInfo : public DisplayModelCallback
+class WindowInfoBase
 {
 public:
-    WindowInfo(HWND hwnd);
-    ~WindowInfo();
+    WindowInfoBase(HWND hwnd);
+    ~WindowInfoBase();
+    
+    void GetCanvasSize() { 
+        GetClientRect(hwndCanvas, &canvasRc);
+    }
 
-    // TODO: error windows currently have
-    //       !IsAboutWindow() && !IsDocLoaded()
-    //       which doesn't allow distinction between PDF, XPS and ComicBook errors
-    bool IsAboutWindow() const { return !loadedFilePath; }
-    bool IsDocLoaded() const { return this->dm != NULL; }
+    int winDx() const { return canvasRc.right - canvasRc.left; }
+    int winDy() const { return canvasRc.bottom - canvasRc.top; }
+    SizeI winSize() const { return SizeI(winDx(), winDy()); }
 
+    WinState        state;
+    bool            needrefresh; // true if the view of the PDF is not synchronized with the content of the file on disk
     TCHAR *         loadedFilePath;
-    DisplayModel *  dm;
 
+    DisplayModel *  dm;
     HWND            hwndFrame;
     HWND            hwndCanvas;
     HWND            hwndToolbar;
@@ -74,6 +98,7 @@ public:
     HWND            hwndFindText;
     HWND            hwndFindBox;
     HWND            hwndFindBg;
+    HWND            hwndFindStatus;
     HWND            hwndPageText;
     HWND            hwndPageBox;
     HWND            hwndPageBg;
@@ -82,15 +107,29 @@ public:
     HWND            hwndTocTree;
     HWND            hwndSpliter;
     HWND            hwndInfotip;
-    HWND            hwndProperties;
+    HWND            hwndPdfProperties;
 
     bool            infotipVisible;
-    HMENU           menu;
+    HMENU           hMenu;
 
+    HDC             hdc;
     int             dpi;
     float           uiDPIFactor;
 
-    DoubleBuffer *  buffer;
+    HANDLE          findThread;
+    bool            findCanceled;
+    int             findPercent;
+    bool            findStatusVisible;    
+    HANDLE          findStatusThread; // handle of the thread showing the status of the search result
+    HANDLE          stopFindStatusThreadEvent; // event raised to tell the findstatus thread to stop
+
+    /* bitmap and hdc for (optional) double-buffering */
+    HDC             hdcToDraw;
+    HDC             hdcDoubleBuffer;
+    HBITMAP         bmpDoubleBuffer;
+
+    pdf_link *      linkOnLastButtonDown;
+    const TCHAR *   url;
 
     MouseAction     mouseAction;
     bool            dragStartPending;
@@ -98,14 +137,23 @@ public:
     /* when dragging the document around, this is previous position of the
        cursor. A delta between previous and current is by how much we
        moved */
-    PointI          dragPrevPos;
+    int             dragPrevPosX, dragPrevPosY;
+
     /* when dragging, mouse x/y position when dragging was started */
-    PointI          dragStart;
+    int             dragStartX, dragStartY;
 
     /* when moving the document by smooth scrolling, this keeps track of
        the speed at which we should scroll, which depends on the distance
        of the mouse from the point where the user middle clicked. */
     int             xScrollSpeed, yScrollSpeed;
+
+    /* when doing a forward search, the result location is highlighted with
+     * rectangular marks in the document. These variables indicate the position of the markers
+     * and whether they should be shown. */
+    bool            showForwardSearchMark; // are the markers visible?
+    vector<RectI>   fwdsearchmarkRects;    // location of the markers in user coordinates
+    int             fwdsearchmarkPage;     // page 
+    int             fwdsearchmarkHideStep; // value used to gradually hide the markers
 
     bool            showSelection;
 
@@ -115,86 +163,42 @@ public:
 
     /* after selection is done, the selected area is converted
      * to user coordinates for each page which has not empty intersection with it */
-    Vec<SelectionOnPage> *selectionOnPage;
-
-    // a list of static links (mainly used for About and Frequently Read pages)
-    Vec<StaticLinkInfo> staticLinks;
+    SelectionOnPage *selectionOnPage;
 
     // file change watcher
-    FileWatcher *   watcher;
-
-    bool            fullScreen;
-    PresentationMode presentation;
-    bool            _tocBeforeFullScreen;
-    bool            _tocBeforePresentation;
-    int             _windowStateBeforePresentation;
-
-    long            prevStyle;
-    RectI           frameRc; // window position before entering presentation/fullscreen mode
-    float           prevZoomVirtual;
-    DisplayMode     prevDisplayMode;
-
-    RectI           canvasRc; // size of the canvas (excluding any scroll bars)
-    int             currPageNo; // cached value, needed to determine when to auto-update the ToC selection
-
-    int             wheelAccumDelta;
-    UINT_PTR        delayedRepaintTimer;
-
-    bool            threadStressRunning;
-    int             stressLastRenderedPage;
-
-    MessageWndList *messages;
-
-    HANDLE          printThread;
-    bool            printCanceled;
-
-    HANDLE          findThread;
-    bool            findCanceled;
-
-    LinkHandler *   linkHandler;
-    PageElement *   linkOnLastButtonDown;
-    const TCHAR *   url;
+    FileWatcher     watcher;
+    
+    // synchronizer based on .pdfsync file
+    Synchronizer *  pdfsync;
 
     bool            tocLoaded;
     bool            tocShow;
     // tocState is an array of ids for ToC items that have been expanded/collapsed
     // by the user (tocState[0] is the length of the list)
     int *           tocState;
-    DocToCItem *    tocRoot;
+    PdfTocItem *    tocRoot;
+
+    bool            fullScreen;
+    bool            _tocBeforeFullScreen;
+    PresentationMode presentation;
+    BOOL            _tocBeforePresentation;
+    int             _windowStateBeforePresentation;
+
+    long            prevStyle;
+    RECT            frameRc;
+    RECT            canvasRc;
+    POINT           prevCanvasBR;
+    float           prevZoomVirtual;
+    DisplayMode     prevDisplayMode;
+
+    int             currPageNo;
+
+    int             wheelAccumDelta;
+    UINT_PTR        delayedRepaintTimer;
     bool            resizingTocBox;
 
-    // synchronizer based on .pdfsync file
-    Synchronizer *  pdfsync;
-
-    /* when doing a forward search, the result location is highlighted with
-     * rectangular marks in the document. These variables indicate the position of the markers
-     * and whether they should be shown. */
-    struct          {
-                        bool show;          // are the markers visible?
-                        Vec<RectI> rects;   // location of the markers in user coordinates
-                        int page;
-                        int hideStep;       // value used to gradually hide the markers
-                    } fwdsearchmark;
-
-    void UpdateToolbarState();
-
-    void UpdateCanvasSize();
-    SizeI GetViewPortSize();
-    void RedrawAll(bool update=false);
-    void RepaintAsync(UINT delay=0);
-    void Reload(bool autorefresh=false);
-
-    void ChangePresentationMode(PresentationMode mode) {
-        presentation = mode;
-        RedrawAll();
-    }
-
-    void ToggleZoom();
-    void ZoomToSelection(float factor, bool relative);
-    void SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous=false);
-    void MoveDocBy(int dx, int dy);
-    void AbortPrinting();
-    void AbortFinding(bool hideMessage=false);
+    // (browser) parent, when displayed as a frame-less plugin
+    HWND            pluginParent;
 
     void ShowTocBox();
     void HideTocBox();
@@ -202,69 +206,95 @@ public:
     void LoadTocTree();
     void ToggleTocBox();
 
+    void FindStart();
+    void AbortFinding();
+    void FocusPageNoEdit();
+
+    bool DoubleBuffer_New();
+    void DoubleBuffer_Show(HDC hdc);
+    void DoubleBuffer_Delete();
+    void RedrawAll(bool update=false);
+
+    bool PdfLoaded() const { return this->dm != NULL; }
     HTREEITEM TreeItemForPageNo(HTREEITEM hItem, int pageNo);
     void UpdateTocSelection(int currPageNo);
     void UpdateToCExpansionState(HTREEITEM hItem);
     void DisplayStateFromToC(DisplayState *ds);
+    void UpdateToolbarState();
 
-    void CreateInfotip(const TCHAR *text, RectI& rc);
-    void DeleteInfotip();
+    void ResizeIfNeeded(bool resizeWindow=true);
+    void ToggleZoom();
+    void ZoomToSelection(float factor, bool relative);
+    void SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous=false);
+    void MoveDocBy(int dx, int dy);
+};
 
-    void ShowNotification(const TCHAR *message, bool autoDismiss=true, bool highlight=false, NotificationGroup groupId=NG_RESPONSE_TO_ACTION);
-    void ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT col, UINT ret, UINT page, Vec<RectI>& rects);
-
-    // DisplayModelCallback implementation (incl. PasswordUI)
+class WindowInfo : public WindowInfoBase, public PdfSearchTracker, public PasswordUI
+{
+public:
+    WindowInfo(HWND hwnd) : WindowInfoBase(hwnd) {
+    }
+    ~WindowInfo() {
+    }
+    virtual bool FindUpdateStatus(int count, int total);
     virtual TCHAR * GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
                                 unsigned char decryptionKeyOut[32], bool *saveKey);
-    virtual void Repaint() { RepaintAsync(); };
-    virtual void PageNoChanged(int pageNo);
-    virtual void UpdateScrollbars(SizeI canvas);
-    virtual void RenderPage(int pageNo);
-    virtual int  GetScreenDPI() { return dpi; }
-    virtual void CleanUp(DisplayModel *dm);
 };
 
-/* Represents selected area on given page */
-class SelectionOnPage {
+#if 0 // TODO: not used yet
+class WindowInfoPdf : public WindowInfoBase, public PdfSearchTracker
+{
 public:
-    SelectionOnPage(int pageNo=0, RectD *rect=NULL) :
-        pageNo(pageNo), rect(rect ? *rect : RectD()) { }
-
-    int     pageNo; // page this selection is on
-    RectD   rect;   // position of selection rectangle on page (in page coordinates)
-
-    // position of selection rectangle in the view port
-    RectI   GetRect(DisplayModel *dm);
-
-    static Vec<SelectionOnPage> *FromRectangle(DisplayModel *dm, RectI rect);
-    static Vec<SelectionOnPage> *FromTextSelect(TextSel *textSel);
+    WindowInfoPdf(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitPdf;
+    }
+    ~WindowInfoPdf() {
+    }
+    virtual bool FindUpdateStatus(int count, int total);
 };
 
-class LinkHandler {
-    WindowInfo *owner;
-    BaseEngine *engine() const;
+class WindowInfoAbout : public WindowInfoBase
+{
+    WindowInfoAbout(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitAbout;
+    }
+    ~WindowInfoAbout() {
+    }
+};
 
-    void ScrollTo(PageDestination *dest);
+class WindowInfoError : public WindowInfoBase
+{
+    WindowInfoError(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitError;
+    }
+    ~WindowInfoError() {
+    }
+};
 
+class WindowInfoComic : public WindowInfoBase
+{
+    WindowInfoComic(HWND hwnd) : WindowInfoBase(hwnd) {
+        type = WitComic;
+    }
+    ~WindowInfoComic() {
+    }
+};
+#endif
+
+class WindowInfoList : public vector<WindowInfo *>
+{
 public:
-    LinkHandler(WindowInfo& win) : owner(&win) { }
+    void remove(WindowInfo *win);
+    WindowInfo * find(HWND hwnd);
+    WindowInfo * find(TCHAR *filepath);
 
-    void GotoLink(PageDestination *link);
-    void GotoNamedDest(const TCHAR *name);
+    static WindowInfo * Find(HWND hwnd);
+    static WindowInfo * Find(TCHAR *filepath);
 };
 
-class LinkSaver : public LinkSaverUI {
-    HWND hwnd;
-    const TCHAR *fileName;
-
-public:
-    LinkSaver(HWND hwnd, const TCHAR *fileName) : hwnd(hwnd), fileName(fileName) { }
-
-    virtual bool SaveEmbedded(unsigned char *data, int cbCount);
-};
-
-WindowInfo* FindWindowInfoByFile(TCHAR *file);
-WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
-WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, bool forceReuse=false);
+WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
+WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
+WindowInfo* LoadComicBook(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true);
+void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
 
 #endif

@@ -4,8 +4,8 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-project(libjpeg-turbo C)
-set(VERSION 1.1.0)
+project(libjpeg-turbo)
+set(VERSION 1.0.90)
 
 if(MINGW OR CYGWIN)
   execute_process(COMMAND "date" "+%Y%m%d" OUTPUT_VARIABLE BUILD)
@@ -46,16 +46,16 @@ endif()
 
 if(WITH_ARITH_ENC)
   set(C_ARITH_CODING_SUPPORTED 1)
-  message(STATUS "Arithmetic encoding support enabled")
+  message(STATUS "Arithmetic encoding enabled")
 else()
-  message(STATUS "Arithmetic encoding support disabled")
+  message(STATUS "Arithmetic encoding disabled")
 endif()
 
 if(WITH_ARITH_DEC)
   set(D_ARITH_CODING_SUPPORTED 1)
-  message(STATUS "Arithmetic decoding support enabled")
+  message(STATUS "Arithmetic decoding enabled")
 else()
-  message(STATUS "Arithmetic decoding support disabled")
+  message(STATUS "Arithmetic decoding disabled")
 endif()
 
 set(JPEG_LIB_VERSION 62)
@@ -65,7 +65,7 @@ if(WITH_JPEG8)
   set(JPEG_LIB_VERSION 80)
   set(DLL_VERSION 8)
   set(FULLVERSION ${DLL_VERSION}.0.2)
-  message(STATUS "Emulating libjpeg v8 API/ABI")
+  message(STATUS "Emulating libjpeg v8b API/ABI")
 elseif(WITH_JPEG7)
   set(JPEG_LIB_VERSION 70)
   set(DLL_VERSION 7)
@@ -76,7 +76,9 @@ endif(WITH_JPEG8)
 if(MSVC)
   # Use the static C library for all build types
   foreach(var CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-    CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+    CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+    CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+    CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
     if(${var} MATCHES "/MD")
       string(REGEX REPLACE "/MD" "/MT" ${var} "${${var}}")
     endif()
@@ -175,10 +177,10 @@ target_link_libraries(jpegut turbojpeg)
 add_executable(jpegut-static jpegut.c)
 target_link_libraries(jpegut-static turbojpeg-static)
 
-add_executable(jpgtest jpgtest.c bmp.c)
+add_executable(jpgtest jpgtest.cxx bmp.c)
 target_link_libraries(jpgtest turbojpeg)
 
-add_executable(jpgtest-static jpgtest.c bmp.c)
+add_executable(jpgtest-static jpgtest.cxx bmp.c)
 target_link_libraries(jpgtest-static turbojpeg-static)
 
 add_executable(cjpeg-static cjpeg.c cdjpeg.c rdbmp.c rdgif.c rdppm.c rdswitch.c
@@ -212,8 +214,6 @@ add_test(cjpeg-int sharedlib/cjpeg -dct int -outfile testoutint.jpg ${CMAKE_SOUR
 add_test(cjpeg-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.jpg testoutint.jpg)
 add_test(cjpeg-fast sharedlib/cjpeg -dct fast -opt -outfile testoutfst.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 add_test(cjpeg-fast-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst.jpg testoutfst.jpg)
-add_test(cjpeg-fast-100 sharedlib/cjpeg -dct fast -quality 100 -opt -outfile testoutfst100.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
-add_test(cjpeg-fast-100-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst100.jpg testoutfst100.jpg)
 add_test(cjpeg-float sharedlib/cjpeg -dct float -outfile testoutflt.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 if(WITH_SIMD)
 add_test(cjpeg-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgflt.jpg testoutflt.jpg)
@@ -257,8 +257,6 @@ add_test(cjpeg-static-int cjpeg-static -dct int -outfile testoutint.jpg ${CMAKE_
 add_test(cjpeg-static-int-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgint.jpg testoutint.jpg)
 add_test(cjpeg-static-fast cjpeg-static -dct fast -opt -outfile testoutfst.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 add_test(cjpeg-static-fast-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst.jpg testoutfst.jpg)
-add_test(cjpeg-static-fast-100 cjpeg-static -dct fast -quality 100 -opt -outfile testoutfst100.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
-add_test(cjpeg-static-fast-100-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgfst100.jpg testoutfst100.jpg)
 add_test(cjpeg-static-float cjpeg-static -dct float -outfile testoutflt.jpg ${CMAKE_SOURCE_DIR}/testorig.ppm)
 if(WITH_SIMD)
 add_test(cjpeg-static-float-cmp ${CMAKE_COMMAND} -E compare_files ${CMAKE_SOURCE_DIR}/testimgflt.jpg testoutflt.jpg)
@@ -330,7 +328,7 @@ add_custom_target(installer
   DEPENDS jpeg jpeg-static turbojpeg turbojpeg-static
   SOURCES libjpeg-turbo.nsi)
 
-install(TARGETS jpeg-static turbojpeg turbojpeg-static rdjpgcom wrjpgcom jpgtest
+install(TARGETS jpeg-static turbojpeg turbojpeg-static rdjpgcom wrjpgcom
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

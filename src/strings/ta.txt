@@ -1,10 +1,8 @@
 ﻿# Translations for Tamil (தமிழ்) (ta) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: ta Tamil (தமிழ்)
 
@@ -209,6 +207,9 @@ Enter password
 Enter password for %s
 %s  காண கடவுச்சொல்லை வழங்கு
 
+Error loading PDF file.
+PDF கோப்பு ஏற்று பிழை
+
 F&orward\tAlt+Right Arrow
 முன்னோகி\tAlt+Right Arrow
 
@@ -292,6 +293,9 @@ Next Page
 
 No matches were found
 ஒரு பொருத்தமும் இல்லை
+
+No result found around line %u in file %s
+முடிவுகள் எதுவும் கோப்பு %s இல் உள்ள வரி %u கண்டுபிடிக்க முடியவில்லை
 
 No synchronization file found
 ஒத்தியங்கு கோப்பு எதுவும் கண்டுபிடிக்கவில்லை
@@ -407,6 +411,9 @@ Text documents
 Title:
 தலைப்பு:
 
+Unknown source file (%s)
+தெரியாத மூல கோப்பு
+
 View
 நோக்கு
 
@@ -445,53 +452,28 @@ printing document
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Odd pages only
-#&Print...
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
 #Copying text was denied (copying as image only)
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
 #Set inverse search command-line
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
-#Unknown source file (%s)
-#XPS documents
 

@@ -1,10 +1,8 @@
 ﻿# Translations for Hebrew (עברית) (he) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: he Hebrew (עברית)
 
@@ -146,6 +144,9 @@ Application:
 Associate with PDF files?
 ?PDF לשייך לקבצי
 
+Attachment: %s
+מצורף:
+
 Author:
 עורך:
 
@@ -242,6 +243,9 @@ Enter password
 Enter password for %s
 %s הכנס סיסמה עבור
 
+Error loading PDF file.
+PDF שגיאה בהעלאת קובץ
+
 F&orward\tAlt+Right Arrow
 קדימה\tAlt+ ?
 
@@ -331,6 +335,9 @@ Next Page
 
 No matches were found
 לא נמצאו התאמות
+
+No result found around line %u in file %s
+%s בקובץ %u אין תוצאה באזור שורה
 
 No synchronization file found
 לא נמצא קובץ סנכרון
@@ -498,36 +505,11 @@ printing document
 מדפיס מסמך
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
-#Show frequently read
 #SumatraPDF crashed
-#XPS documents
 

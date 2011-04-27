@@ -1,10 +1,8 @@
 ﻿# Translations for Belarusian (Беларуская) (by) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: by Belarusian (Беларуская)
 
@@ -160,6 +158,9 @@ Enter password
 
 Enter password for %s
 Увядзіце пароль для %s
+
+Error loading PDF file.
+Памылка пры адчыненні файла.
 
 F&ullscreen\tCtrl-Shift-L
 Поўны экран\tCtrl-Shift-L
@@ -344,44 +345,33 @@ Zoom Out
 # Untranslated:
 #&All selected pages
 #&Back\tAlt+Left Arrow
-#&Copy Selection
 #&Copy Selection\tCtrl-C
 #&Even pages only
 #&Fit pages to printable area
 #&Magnification:
 #&Manual
 #&Odd pages only
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Application:
 #Attachment: %s
 #Author:
 #Automatic
 #Book View
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Bytes
 #Can't connect to the Internet (error %#x).
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
 #Continuous Book View
-#Copy &Link Address
-#Copy Co&mment
 #Copying text was denied (copying as image only)
 #Couldn't initialize printer
 #Created:
 #Custom &Zoom...\tCtrl-Y
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #F&orward\tAlt+Right Arrow
 #File Size:
 #File:
@@ -389,16 +379,10 @@ Zoom Out
 #Fit Content
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Hint: Use the F3 key for finding again
-#Image files (*.%s)
 #Modified:
 #No synchronization file found
 #Number of Pages:
-#Open a document...
-#P&roperties
 #P&roperties\tCtrl-D
 #PDF Producer:
 #PDF Version:
@@ -407,21 +391,15 @@ Zoom Out
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
 #Select content with Ctrl+left mouse button
 #Send by &E-mail...
 #Show &pages continuously
-#Show frequently read
 #Subject:
 #SumatraPDF Update
 #SumatraPDF crashed
 #Text documents
 #Title:
-#XPS documents
 #Zoom
 #Zoom factor
 #copying text

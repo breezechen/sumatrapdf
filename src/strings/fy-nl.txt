@@ -1,10 +1,8 @@
 ﻿# Translations for Frisian (Frysk) (fy-nl) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: fy-nl Frisian (Frysk)
 
@@ -205,6 +203,9 @@ Wachtwurd ynfiere
 Enter password for %s
 Wachtwurd ynfiere foar %s
 
+Error loading PDF file.
+Flater by laden PDF bestân.
+
 F&orward\tAlt+Right Arrow
 Fierder\tAlt+->
 
@@ -288,6 +289,9 @@ Folgjende side
 
 No matches were found
 Gjin sykresultaat fûn
+
+No result found around line %u in file %s
+Gjin resultaat fûn yn bestând %s by rigel %u
 
 No synchronization file found
 Gjin syngronisaasjebestân fûn
@@ -438,55 +442,31 @@ Zoomfaktor
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Odd pages only
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
 #Copying text was denied (copying as image only)
 #Denied Permissions:
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
-#Show frequently read
 #Subject:
 #SumatraPDF Update
 #SumatraPDF crashed
-#XPS documents
 #copying text
 #printing document
 

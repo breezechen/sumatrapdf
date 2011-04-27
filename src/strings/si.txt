@@ -1,10 +1,8 @@
 ﻿# Translations for Sinhala (සිංහල) (si) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: si Sinhala (සිංහල)
 
@@ -247,6 +245,9 @@ Enter password for %s
 Enter the command-line to invoke when you double-click on the PDF document:
 PDF ගොනුව මත double-click කළ විට සිදුවන ක්‍රියාව සදහා විධාන පෙළට අවතීර්ණවන්න:
 
+Error loading PDF file.
+PDF ගොනුව පුරණය දෝෂ සහිතයි
+
 F&orward\tAlt+Right Arrow
 ඉදිරියට\tAlt+Right Arrow
 
@@ -342,6 +343,9 @@ Next Page
 
 No matches were found
 සෙවුම් යතුර සොයාගැනීමට නොහැකි විය
+
+No result found around line %u in file %s
+%s ගොනුවේ %u පේළිය වටා කිසිදු ප්‍රතිඵලයක් හමුනොවිණි.
 
 No synchronization file found
 සමකාලනයකල ගොනුවක් සොයාගැනීමට නොහැකි විය
@@ -497,36 +501,12 @@ printing document
 ලේඛනය මුද්‍රණය
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
 #Select &All\tCtrl-A
 #Set inverse search command-line
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
-#XPS documents
 

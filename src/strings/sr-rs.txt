@@ -1,10 +1,8 @@
 ﻿# Translations for Serbian (Cyrillic) (sr-rs) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sr-rs Serbian (Cyrillic)
 
@@ -26,9 +24,6 @@ Contributor: Милан Гашић
 
 &Close\tCtrl-W
 Затвори\tCtrl-W
-
-&Copy Selection
-Копирај изабрано
 
 &Copy Selection\tCtrl-C
 Копирај изабрано
@@ -96,9 +91,6 @@ Contributor: Милан Гашић
 &Previous Page\tLeft Arrow
 Претходна страна\t<-
 
-&Print...
-Штампај...
-
 &Print...\tCtrl-P
 Штампај\tCtrl-P
 
@@ -110,9 +102,6 @@ Contributor: Милан Гашић
 
 &Remember these settings for each document
 Запамти ова подешавања за сваки појединачни документ
-
-&Save As...
-Сачувај као...
 
 &Save As...\tCtrl-S
 Сачувај као...\tCtrl-S
@@ -150,9 +139,6 @@ Advanced
 All files
 Све датотеке
 
-All supported documents
-Сви подржани документи
-
 Application:
 Апликација:
 
@@ -176,12 +162,6 @@ Book View
 
 Book&marks\tF12
 Белешке\tF12
-
-Bookmark Shortcuts
-Запамти пречице
-
-Bookmark shortcut to page %d of %s
-Запамти пречицу на страни %d од %s
 
 Bookmarks
 Одабир
@@ -207,9 +187,6 @@ Change Language
 Check for &Updates
 Провери постојање новије верзије
 
-Comic books
-Стрипови
-
 Continuous
 Непрекидно
 
@@ -221,12 +198,6 @@ Continuous Facing
 
 Contribute Translation
 Помози у превођењу овог програма
-
-Copy &Link Address
-Копирај адресу везе
-
-Copy Co&mment
-Копирај коментар
 
 Copying text was denied (copying as image only)
 Копирање текста је одбијено (може се копирати само као слика)
@@ -276,8 +247,8 @@ Enter password for %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Искористи двоструки клик на документ као позив командне линије:
 
-Error loading %s
-Грешка у учитавању %s
+Error loading PDF file.
+Грешка при учитавању PDF документа
 
 F&orward\tAlt+Right Arrow
 Напред\tAlt+->
@@ -339,26 +310,14 @@ Fit a Single Page
 Found text at page %d
 Текст је пронађен на страни %d
 
-Found text at page %d (again)
-Пронађи текст на страни %d (поново)
-
-Frequently Read
-Често читано
-
 GB
 GB
 
 Go to page
 Иди на страну
 
-Hide frequently read
-Сакриј често читано
-
 Hint: Use the F3 key for finding again
 Савет: Користите тастер F3 за наставак претраге
-
-Image files (*.%s)
-Датотеке слика (*.%s)
 
 KB
 KB
@@ -405,9 +364,6 @@ OK
 Open
 Отвори
 
-Open a document...
-Отвори документ...
-
 Open in &Adobe Reader
 Отвори у програму Adobe Reader
 
@@ -417,11 +373,8 @@ Open in &Foxit Reader
 Open in PDF-XChange
 Отвори у програму PDF-XChange
 
-P&roperties
-Особине
-
 P&roperties\tCtrl-D
-Особине\tCtrl-D
+Прибор\tCtrl-D
 
 PDF Document
 PDF документ
@@ -477,14 +430,8 @@ Rotate &Left\tCtrl-Shift--
 Rotate &Right\tCtrl-Shift-+
 Ротирај удесно\tCtrl-Shift-+
 
-Save S&hortcut...\tCtrl-Shift-S
-Сачувај пречицу...\tCtrl-Shift-S
-
 Searching %d of %d...
 Претражујем страну %d од %d...
-
-Select &All
-Изабери све
 
 Select &All\tCtrl-A
 Изабери све\tCtrl-A
@@ -504,9 +451,6 @@ Show &Toolbar
 Show &pages continuously
 Непрекидни приказ страна
 
-Show frequently read
-Прикажи често читано
-
 Show the &bookmarks sidebar when available
 Прикажи траку са белешкама када је доступна
 
@@ -514,7 +458,7 @@ Single Page
 Једна страна
 
 Source file %s has no synchronization point
-Изворна датотека %s нема тачку синхронизације
+Изворна датотека нема тачку усклађивања
 
 Subject:
 Предмет:
@@ -555,9 +499,6 @@ Visit &Website
 Warning
 Упозорење
 
-XPS documents
-XPS документи
-
 You have the latest version.
 Имате најновију верзију.
 
@@ -584,9 +525,4 @@ copying text
 
 printing document
 штампање документа
-
-# Untranslated:
-#DjVu documents
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 

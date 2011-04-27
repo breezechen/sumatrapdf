@@ -23,17 +23,15 @@ Translations by various translators (see src/strings/*.txt)
 
 External projects are by their various authors:
 
-* MuPDF         see http://mupdf.com/
+* MuPDF         see http://ccxvii.net/mupdf/
 * FreeType      see http://www.freetype.org/
 * OpenJPEG      see http://www.openjpeg.org/
 * jbig2dec      see http://jbig2dec.sf.net/
 * libjpeg       see http://www.ijg.org/
 * libjpeg-turbo see http://libjpeg-turbo.virtualgl.org/
 * zlib          see http://www.zlib.net/
+* Dialog sizer  see http://gipsysoft.com/articles/dialogsizer/
 * SyncTeX       see http://itexmac.sourceforge.net/SyncTeX.html
 * bzip2         see http://bzip.org/
-* UnRAR         see http://www.rarlab.com/
-* LibTIFF       see http://www.remotesensing.org/libtiff/
-* DjVuLibre     see http://djvu.sourceforge.net/
 
 * Fugue Icons   see http://p.yusukekamiyamane.com/
