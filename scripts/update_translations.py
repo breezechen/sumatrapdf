@@ -35,7 +35,7 @@ TRANSLATIONS_TXT_C = """\
 #define LANGS_COUNT   %(langs_count)d
 #define STRINGS_COUNT %(translations_count)d
 
-typedef struct {
+typedef struct LangDef {
     const char *code;
     const char *fullName;
     LANGID id;
@@ -147,12 +147,12 @@ def gen_c_code(langs_ex, strings_dict, file_name, lang_index):
 def contributors_for_lang(contributors, lang):
     return sorted(contributors.get(lang, []))
 
-def gen_js_data(strings_dict, langs, contributors):
+def gen_js_data(strings_dict, langs, contributors, tb_strings):
     res = []
     for (lang_iso, lang_name) in langs:
         if DEFAULT_LANG == lang_iso: continue
         lang_name = lang_name.split(" (")[0]
-        count = untranslated_count_for_lang(strings_dict, lang_iso)
+        count = untranslated_count_for_lang(strings_dict, lang_iso, tb_strings)
         svnurl = "http://sumatrapdf.googlecode.com/svn/trunk/src/strings/" + lang_iso + ".txt"
         c = contributors_for_lang(contributors, lang_iso)
         res.append([lang_iso, lang_name, count, svnurl, c])
@@ -161,11 +161,11 @@ def gen_js_data(strings_dict, langs, contributors):
 # Generate json data as array of arrays in the format:
 # [langname, lang-iso-code, untranslated_strings_count, svn_url, [contributors]]
 # sorted by untranslated string count (biggest at the top)
-def gen_and_upload_js(strings_dict, langs, contributors):
+def gen_and_upload_js(strings_dict, langs, contributors, tb_strings):
     if not g_can_upload:
         print("Can't upload javascript to s3")
         return
-    data = gen_js_data(strings_dict, langs, contributors)
+    data = gen_js_data(strings_dict, langs, contributors, tb_strings)
     js = simplejson.dumps(data)
     js = "var g_langsData = " + js + ";\n"
     #print(js)
@@ -176,20 +176,20 @@ def get_untranslated_as_list(untranslated_dict):
 
 def main():
     (strings_dict, langs, contributors) = load_strings_file()
-    strings = extract_strings_from_c_files()
+    (strings, tb_strings) = extract_strings_from_c_files()
     for s in strings_dict.keys():
-        if s not in strings:
+        if s not in strings and s not in tb_strings:
             del strings_dict[s]
     untranslated_dict = dump_missing_per_language(strings, strings_dict)
     write_out_strings_files(strings_dict, langs, contributors, untranslated_dict)
     untranslated = get_untranslated_as_list(untranslated_dict)
-    for s in untranslated:
+    for s in (untranslated + tb_strings):
         if s not in strings_dict:
             strings_dict[s] = []
 
     c_file_name = os.path.join(g_src_dir, "translations_txt.cpp")
     gen_c_code(langs, strings_dict, c_file_name, load_lang_index())
-    gen_and_upload_js(strings_dict, langs, contributors)
+    gen_and_upload_js(strings_dict, langs, contributors, tb_strings)
 
 if __name__ == "__main__":
     main()

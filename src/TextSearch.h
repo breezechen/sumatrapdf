@@ -13,27 +13,28 @@ enum TextSearchDirection {
     FIND_FORWARD  = true
 };
 
-class ProgressUpdateUI
+class TextSearchTracker
 {
 public:
-    virtual bool ProgressUpdate(int current, int total) = 0;
+    virtual bool FindUpdateStatus(int count, int total) = 0;
 };
 
 class TextSearch : public TextSelection
 {
 public:
-    TextSearch(BaseEngine *engine);
+    TextSearch(BaseEngine *engine, TextSearchTracker *tracker=NULL);
     ~TextSearch();
 
     void SetSensitive(bool sensitive);
     void SetDirection(TextSearchDirection direction);
-    TextSel *FindFirst(int page, TCHAR *text, ProgressUpdateUI *tracker=NULL);
-    TextSel *FindNext(ProgressUpdateUI *tracker=NULL);
+    TextSel *FindFirst(int page, TCHAR *text);
+    TextSel *FindNext();
 
     // note: the result might not be a valid page number!
     int GetCurrentPageNo() { return findPage; }
 
 protected:
+    TextSearchTracker *tracker;
     TCHAR *findText;
     TCHAR *anchor;
     int findPage;
@@ -45,7 +46,7 @@ protected:
 
     void SetText(TCHAR *text);
     bool FindTextInPage(int pageNo = 0);
-    bool FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker);
+    bool FindStartingAtPage(int pageNo);
     int MatchLen(TCHAR *start);
 
     void Clear()
@@ -59,6 +60,14 @@ protected:
         Reset();
     }
     void Reset();
+
+    // returns false, if the search has been canceled
+    bool CheckTracker(int pageNo, int total)
+    {
+        if (!tracker)
+            return true;
+        return tracker->FindUpdateStatus(pageNo, total);
+    }
 
 private:
     TCHAR *pageText;

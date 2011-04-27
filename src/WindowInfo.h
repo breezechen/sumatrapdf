@@ -12,8 +12,7 @@ class FileWatcher;
 class Synchronizer;
 class DoubleBuffer;
 class SelectionOnPage;
-class LinkHandler;
-class MessageWndList;
+class PdfLinkHandler;
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -30,24 +29,6 @@ enum PresentationMode {
     PM_ENABLED,
     PM_BLACK_SCREEN,
     PM_WHITE_SCREEN
-};
-
-enum NotificationGroup {
-    NG_RESPONSE_TO_ACTION = 1,
-    NG_FIND_PROGRESS,
-    NG_PRINT_PROGRESS,
-    NG_PAGE_INFO_HELPER
-};
-
-/* Describes position, the target (URL or file path) and infotip of a "hyperlink" */
-struct StaticLinkInfo {
-    StaticLinkInfo() : target(NULL), infotip(NULL) { }
-    StaticLinkInfo(RectI rect, const TCHAR *target, const TCHAR *infotip=NULL) :
-        rect(rect), target(target), infotip(infotip) { }
-
-    RectI rect;
-    const TCHAR *target;
-    const TCHAR *infotip;
 };
 
 /* Describes information related to one window with (optional) a document
@@ -74,6 +55,7 @@ public:
     HWND            hwndFindText;
     HWND            hwndFindBox;
     HWND            hwndFindBg;
+    HWND            hwndFindStatus;
     HWND            hwndPageText;
     HWND            hwndPageBox;
     HWND            hwndPageBg;
@@ -117,9 +99,6 @@ public:
      * to user coordinates for each page which has not empty intersection with it */
     Vec<SelectionOnPage> *selectionOnPage;
 
-    // a list of static links (mainly used for About and Frequently Read pages)
-    Vec<StaticLinkInfo> staticLinks;
-
     // file change watcher
     FileWatcher *   watcher;
 
@@ -135,24 +114,28 @@ public:
     DisplayMode     prevDisplayMode;
 
     RectI           canvasRc; // size of the canvas (excluding any scroll bars)
-    int             currPageNo; // cached value, needed to determine when to auto-update the ToC selection
+    int             currPageNo;
 
     int             wheelAccumDelta;
     UINT_PTR        delayedRepaintTimer;
 
     bool            threadStressRunning;
-    int             stressLastRenderedPage;
 
-    MessageWndList *messages;
+    // the following properties only apply to PDF and XPS documents
 
-    HANDLE          printThread;
-    bool            printCanceled;
+    bool            findStatusHighlight; // whether to highlight the status text
+    HANDLE          findStatusThread; // handle of the thread showing the status of the search result
+    HANDLE          stopFindStatusThreadEvent; // event raised to tell the findstatus thread to stop
 
     HANDLE          findThread;
     bool            findCanceled;
+    int             findPercent;
+    bool            findStatusVisible;
 
-    LinkHandler *   linkHandler;
-    PageElement *   linkOnLastButtonDown;
+    // the following properties only apply to PDF documents
+
+    PdfLinkHandler *linkHandler;
+    PageDestination *linkOnLastButtonDown;
     const TCHAR *   url;
 
     bool            tocLoaded;
@@ -160,7 +143,7 @@ public:
     // tocState is an array of ids for ToC items that have been expanded/collapsed
     // by the user (tocState[0] is the length of the list)
     int *           tocState;
-    DocToCItem *    tocRoot;
+    PdfTocItem *    tocRoot;
     bool            resizingTocBox;
 
     // synchronizer based on .pdfsync file
@@ -193,8 +176,14 @@ public:
     void ZoomToSelection(float factor, bool relative);
     void SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous=false);
     void MoveDocBy(int dx, int dy);
-    void AbortPrinting();
-    void AbortFinding(bool hideMessage=false);
+
+    // the following methods only apply to PDF and XPS documents
+
+    void Find(TextSearchDirection direction=FIND_FORWARD);
+    void FindStart();
+    void AbortFinding();
+
+    // the following methods only apply to PDF documents
 
     void ShowTocBox();
     void HideTocBox();
@@ -210,10 +199,11 @@ public:
     void CreateInfotip(const TCHAR *text, RectI& rc);
     void DeleteInfotip();
 
-    void ShowNotification(const TCHAR *message, bool autoDismiss=true, bool highlight=false, NotificationGroup groupId=NG_RESPONSE_TO_ACTION);
     void ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT col, UINT ret, UINT page, Vec<RectI>& rects);
 
-    // DisplayModelCallback implementation (incl. PasswordUI)
+    // DisplayModelCallback implementation (incl. PasswordUI, TextSearchTracker)
+
+    virtual bool FindUpdateStatus(int count, int total);
     virtual TCHAR * GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
                                 unsigned char decryptionKeyOut[32], bool *saveKey);
     virtual void Repaint() { RepaintAsync(); };
@@ -240,25 +230,25 @@ public:
     static Vec<SelectionOnPage> *FromTextSelect(TextSel *textSel);
 };
 
-class LinkHandler {
+class PdfLinkHandler {
     WindowInfo *owner;
-    BaseEngine *engine() const;
+    PdfEngine *engine();
 
-    void ScrollTo(PageDestination *dest);
+    void GotoPdfDest(fz_obj *dest);
 
 public:
-    LinkHandler(WindowInfo& win) : owner(&win) { }
+    PdfLinkHandler(WindowInfo *win) : owner(win) { }
 
-    void GotoLink(PageDestination *link);
+    void GotoPdfLink(PageDestination *link);
     void GotoNamedDest(const TCHAR *name);
 };
 
-class LinkSaver : public LinkSaverUI {
+class PdfLinkSaver : public LinkSaverUI {
     HWND hwnd;
     const TCHAR *fileName;
 
 public:
-    LinkSaver(HWND hwnd, const TCHAR *fileName) : hwnd(hwnd), fileName(fileName) { }
+    PdfLinkSaver(HWND hwnd, const TCHAR *fileName) : hwnd(hwnd), fileName(fileName) { }
 
     virtual bool SaveEmbedded(unsigned char *data, int cbCount);
 };

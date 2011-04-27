@@ -506,26 +506,19 @@ printing document
 #Comic books
 #Copy &Link Address
 #Copy Co&mment
-#DjVu documents
 #Error loading %s
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Image files (*.%s)
 #No result found around line %u in file %s
-#Open a document...
 #P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
 #Select &All\tCtrl-A
 #Set inverse search command-line
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
 #XPS documents

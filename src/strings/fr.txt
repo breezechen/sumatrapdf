@@ -261,9 +261,6 @@ Le lecteur de PDF ne peut être changé en mode portable
 Denied Permissions:
 Interdictions :
 
-DjVu documents
-Documents DjVu
-
 Document Properties
 Propriétés du document
 
@@ -348,17 +345,11 @@ Texte trouvé à la page %d
 Found text at page %d (again)
 Texte trouvé page %d (suivant)
 
-Frequently Read
-Documents lus fréquemment
-
 GB
 Go
 
 Go to page
 Aller à la page
-
-Hide frequently read
-Masquer les documents lus fréquemment
 
 Hint: Use the F3 key for finding again
 Remarque : utilisez la touche F3 pour trouver de nouveau
@@ -410,9 +401,6 @@ OK
 
 Open
 Ouvrir
-
-Open a document...
-Ouvrir un document...
 
 Open in &Adobe Reader
 Ouvrir dans &Adobe Reader
@@ -471,12 +459,6 @@ Page précédente
 Print range
 Plage d'impression
 
-Printing is still in progress. Abort and start over?
-Une impression est déjà en cours. L'annuler et recommencer ?
-
-Printing page %d of %d...
-Impression de la page %d sur %d...
-
 Printing problem.
 Problème d'impression.
 
@@ -515,9 +497,6 @@ Afficher la &barre d'outils
 
 Show &pages continuously
 &Vue continue
-
-Show frequently read
-Montrer les documents fréquemment lus
 
 Show the &bookmarks sidebar when available
 Voir la barre latérale des &signets lorsqu'elle est disponible

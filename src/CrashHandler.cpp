@@ -188,8 +188,11 @@ static bool GetEnvOk(DWORD ret, DWORD cchBufSize)
 
 static TCHAR *GetCrashDumpDir()
 {
-    TCHAR *symDir = AppGenDataFilename(_T("symbols"));
-    if (symDir && !Dir::Create(symDir)) {
+    TCHAR *dir = AppGenDataDir();
+    if (!dir) return NULL;
+    TCHAR *symDir = Path::Join(dir, _T("symbols"));
+    free(dir);
+    if (!Dir::Create(symDir)) {
         free(symDir);
         return NULL;
     }
@@ -225,7 +228,7 @@ static WCHAR *GetSymbolPath()
     }
 #endif
 
-    ScopedMem<WCHAR> symDir(Str::Conv::ToWStrQ(GetCrashDumpDir()));
+    ScopedMem<TCHAR> symDir(GetCrashDumpDir());
     if (symDir) {
         path.Append(symDir);
         //path.Append(_T(";"));
@@ -241,8 +244,8 @@ static WCHAR *GetSymbolPath()
 #if 0
     // when running local builds, *.pdb is in the same dir as *.exe 
     ScopedMem<TCHAR> exePath(GetExePath());
-    ScopedMem<WCHAR> exeDir(Str::Conv::ToWStrQ(Path::GetDir(exePath)));
-    path.AppendFmt(L"%s", exeDir);
+    ScopedMem<TCHAR> exeDir(Path::GetDir(exePath));
+    path.AppendFmt(_T("%s"), exeDir);
 #endif
     return path.StealData();
 }
@@ -996,9 +999,13 @@ static bool DownloadSymbols(const TCHAR *symDir)
 #endif
 }
 
-// If we can't resolve the symbols, we assume it's because we don't have symbols
-// so we'll try to download them and retry. If we can resolve symbols, we'll
-// get the callstacks etc. and submit to our server for analysis.
+// We're (potentially) doing it twice for reliability reason. First with whatever symbols we already
+// have. Then, if we don't have symbols for our binaries, download the symbols from a website and
+// redo the callstacks. But if our state is so corrupted that we can't download symbols, we'll
+// at least have non-symbolized version of callstacks
+// TODO: if it turns out that that downloading symbols is reliable, we will
+// just do it once
+
 void SubmitCrashInfo()
 {
     char *s = NULL;
@@ -1045,7 +1052,7 @@ static void WriteMiniDump()
     if (NULL == _MiniDumpWrite)
         return;
 
-    HANDLE dumpFile = CreateFile(gCrashDumpPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
+    HANDLE dumpFile = CreateFile(gCrashDumpPath.Get(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
     if (INVALID_HANDLE_VALUE == dumpFile)
         return;
 

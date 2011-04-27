@@ -343,17 +343,11 @@ Teks ditemukan pada halaman %d
 Found text at page %d (again)
 Teks ditemukan pada halaman %d (lagi)
 
-Frequently Read
-Yang Sering Dibaca
-
 GB
 GB
 
 Go to page
 Pergi ke halaman
-
-Hide frequently read
-Sembunyikan Yang Sering Dibaca
 
 Hint: Use the F3 key for finding again
 Tips : Gunakan tombol F3 untuk mengulangi pencarian
@@ -405,9 +399,6 @@ OK
 
 Open
 Buka
-
-Open a document...
-Buka Dokumen...
 
 Open in &Adobe Reader
 Buka di &Adobe Reader
@@ -466,12 +457,6 @@ Halaman Sebelumnya
 Print range
 Kisaran cetakan
 
-Printing is still in progress. Abort and start over?
-Proses pencetakan sedang dilaksanakan. Gagalkan dan ulangi lagi?
-
-Printing page %d of %d...
-Mencetak halaman %d dari %d...
-
 Printing problem.
 Masalah pencetakan.
 
@@ -510,9 +495,6 @@ Tampilkan &Toolbar
 
 Show &pages continuously
 Tampilkan Halaman Secara &Kontinu
-
-Show frequently read
-Tampilkan Yang Sering Dibaca
 
 Show the &bookmarks sidebar when available
 Tampilkan kolom &markah jika tersedia
@@ -591,7 +573,4 @@ menyalin teks
 
 printing document
 mencetak dokumen
-
-# Untranslated:
-#DjVu documents
 
