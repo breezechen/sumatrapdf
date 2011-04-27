@@ -1,41 +1,25 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#ifndef Version_h
-#define Version_h
+#ifndef VERSION_H__
+#define VERSION_H__
 
 // CURR_VERSION can be over-written externally (via makefile)
 #ifndef CURR_VERSION
-#define CURR_VERSION 1.6
+#define CURR_VERSION "1.0.1"
 #endif
 
-#define APP_NAME_STR       _T("SumatraPDF")
+// version as included in resources
+#define VER_RESOURCE      1,0,1,0
+#define VER_RESOURCE_STR  "1.0.1.0\0"
 
-// #define SVN_PRE_RELEASE_VER 2295
+// #define SVN_PRE_RELEASE_VER 994
 
 #define _QUOTEME(x) #x
-#define _QUOTEME3(x, y, z) _QUOTEME(x##y##z)
 #define QM(x) _QUOTEME(x)
-#define QM3(x, y, z) _QUOTEME3(x, y, z)
 
-// version as displayed in UI and included in resources
-#ifndef SVN_PRE_RELEASE_VER
- #ifndef DEBUG
-  #define CURR_VERSION_STR _T(QM(CURR_VERSION))
- #else
-  // hack: adds " (dbg)" after the version
-  #define CURR_VERSION_STR _T(QM3(CURR_VERSION, \x20, (dbg)))
- #endif
- #define VER_RESOURCE      1,6,0,0
- #define VER_RESOURCE_STR  QM3(CURR_VERSION, .0., 0)
- #define UPDATE_CHECK_VER  _T(QM(CURR_VERSION))
+#ifdef SVN_PRE_RELEASE_VER
+#define UPDATE_CHECK_VER _T(QM(SVN_PRE_RELEASE_VER))
 #else
- #define CURR_VERSION_STR  _T(QM3(CURR_VERSION, ., SVN_PRE_RELEASE_VER))
- #define VER_RESOURCE      1,6,0,SVN_PRE_RELEASE_VER
- #define VER_RESOURCE_STR  QM3(CURR_VERSION, .0., SVN_PRE_RELEASE_VER)
- #define UPDATE_CHECK_VER  _T(QM(SVN_PRE_RELEASE_VER))
+#define UPDATE_CHECK_VER _T(CURR_VERSION)
 #endif
 
-#define COPYRIGHT_STR      "Copyright 2006-2011 all authors (GPLv3)"
-
 #endif
+

@@ -1,221 +1,232 @@
-#include "fitz.h"
+#include "fitz_base.h"
+#include "fitz_stream.h"
 
-#include <jpeglib.h>
-#include <setjmp.h>
+#include "filt_dctc.h"
 
 typedef struct fz_dctd_s fz_dctd;
 
-struct fz_dctd_s
+struct mysrcmgr
 {
-	fz_stream *chain;
-	int color_transform;
-	int init;
-	int stride;
-	unsigned char *scanline;
-	unsigned char *rp, *wp;
-	struct jpeg_decompress_struct cinfo;
-	struct jpeg_source_mgr srcmgr;
-	struct jpeg_error_mgr errmgr;
-	jmp_buf jb;
-	char msg[JMSG_LENGTH_MAX];
+	struct jpeg_source_mgr super;
+	fz_buffer *buf;
+	int skip;
 };
 
-static void error_exit(j_common_ptr cinfo)
+struct fz_dctd_s
 {
-	fz_dctd *state = cinfo->client_data;
-	cinfo->err->format_message(cinfo, state->msg);
-	longjmp(state->jb, 1);
-}
+	fz_filter super;
+	struct jpeg_decompress_struct cinfo;
+	struct mysrcmgr src;
+	struct myerrmgr err;
+	int colortransform;
+	int stage;
+};
 
-static void init_source(j_decompress_ptr cinfo)
+static void myinitsource(j_decompress_ptr cinfo) { /* empty */ }
+static boolean myfillinput(j_decompress_ptr cinfo) { return FALSE; }
+static void mytermsource(j_decompress_ptr cinfo) { /* empty */ }
+
+static void myskipinput(j_decompress_ptr cinfo, long n)
 {
-	/* nothing to do */
-}
+	struct mysrcmgr *src = (struct mysrcmgr *)cinfo->src;
+	fz_buffer *in = src->buf;
 
-static void term_source(j_decompress_ptr cinfo)
-{
-	/* nothing to do */
-}
+	assert(src->skip == 0);
 
-static boolean fill_input_buffer(j_decompress_ptr cinfo)
-{
-	struct jpeg_source_mgr *src = cinfo->src;
-	fz_dctd *state = cinfo->client_data;
-	fz_stream *chain = state->chain;
+	in->rp = in->wp - src->super.bytes_in_buffer;
 
-	chain->rp = chain->wp;
-	fz_fill_buffer(chain);
-	src->next_input_byte = chain->rp;
-	src->bytes_in_buffer = chain->wp - chain->rp;
-
-	if (src->bytes_in_buffer == 0)
-	{
-		static unsigned char eoi[2] = { 0xFF, JPEG_EOI };
-		fz_warn("premature end of file in jpeg");
-		src->next_input_byte = eoi;
-		src->bytes_in_buffer = 2;
+	if (in->rp + n > in->wp) {
+		src->skip = (in->rp + n) - in->wp;
+		in->rp = in->wp;
+	}
+	else {
+		src->skip = 0;
+		in->rp += n;
 	}
 
-	return 1;
+	src->super.bytes_in_buffer = in->wp - in->rp;
+	src->super.next_input_byte = in->rp;
 }
 
-static void skip_input_data(j_decompress_ptr cinfo, long num_bytes)
+fz_error
+fz_newdctd(fz_filter **fp, fz_obj *params)
 {
-	struct jpeg_source_mgr *src = cinfo->src;
-	if (num_bytes > 0)
-	{
-		while ((size_t)num_bytes > src->bytes_in_buffer)
-		{
-			num_bytes -= src->bytes_in_buffer;
-			(void) src->fill_input_buffer(cinfo);
-		}
-		src->next_input_byte += num_bytes;
-		src->bytes_in_buffer -= num_bytes;
-	}
-}
-
-static int
-read_dctd(fz_stream *stm, unsigned char *buf, int len)
-{
-	fz_dctd *state = stm->state;
-	j_decompress_ptr cinfo = &state->cinfo;
-	unsigned char *p = buf;
-	unsigned char *ep = buf + len;
-
-	if (setjmp(state->jb))
-	{
-		if (cinfo->src)
-			state->chain->rp = state->chain->wp - cinfo->src->bytes_in_buffer;
-		return fz_throw("jpeg error: %s", state->msg);
-	}
-
-	if (!state->init)
-	{
-		cinfo->client_data = state;
-		cinfo->err = &state->errmgr;
-		jpeg_std_error(cinfo->err);
-		cinfo->err->error_exit = error_exit;
-		jpeg_create_decompress(cinfo);
-
-		cinfo->src = &state->srcmgr;
-		cinfo->src->init_source = init_source;
-		cinfo->src->fill_input_buffer = fill_input_buffer;
-		cinfo->src->skip_input_data = skip_input_data;
-		cinfo->src->resync_to_restart = jpeg_resync_to_restart;
-		cinfo->src->term_source = term_source;
-		cinfo->src->next_input_byte = state->chain->rp;
-		cinfo->src->bytes_in_buffer = state->chain->wp - state->chain->rp;
-
-		jpeg_read_header(cinfo, 1);
-
-		/* speed up jpeg decoding a bit */
-		cinfo->dct_method = JDCT_FASTEST;
-		cinfo->do_fancy_upsampling = FALSE;
-
-		/* default value if ColorTransform is not set */
-		if (state->color_transform == -1)
-		{
-			if (state->cinfo.num_components == 3)
-				state->color_transform = 1;
-			else
-				state->color_transform = 0;
-		}
-
-		if (cinfo->saw_Adobe_marker)
-			state->color_transform = cinfo->Adobe_transform;
-
-		/* Guess the input colorspace, and set output colorspace accordingly */
-		switch (cinfo->num_components)
-		{
-		case 3:
-			if (state->color_transform)
-				cinfo->jpeg_color_space = JCS_YCbCr;
-			else
-				cinfo->jpeg_color_space = JCS_RGB;
-			break;
-		case 4:
-			if (state->color_transform)
-				cinfo->jpeg_color_space = JCS_YCCK;
-			else
-				cinfo->jpeg_color_space = JCS_CMYK;
-			break;
-		}
-
-		jpeg_start_decompress(cinfo);
-
-		state->stride = cinfo->output_width * cinfo->output_components;
-		state->scanline = fz_malloc(state->stride);
-		state->rp = state->scanline;
-		state->wp = state->scanline;
-
-		state->init = 1;
-	}
-
-	while (state->rp < state->wp && p < ep)
-		*p++ = *state->rp++;
-
-	while (p < ep)
-	{
-		if (cinfo->output_scanline == cinfo->output_height)
-			break;
-
-		if (p + state->stride <= ep)
-		{
-			jpeg_read_scanlines(cinfo, &p, 1);
-			p += state->stride;
-		}
-		else
-		{
-			jpeg_read_scanlines(cinfo, &state->scanline, 1);
-			state->rp = state->scanline;
-			state->wp = state->scanline + state->stride;
-		}
-
-		while (state->rp < state->wp && p < ep)
-			*p++ = *state->rp++;
-	}
-
-	return p - buf;
-}
-
-static void
-close_dctd(fz_stream *stm)
-{
-	fz_dctd *state = stm->state;
-
-	if (setjmp(state->jb))
-	{
-		state->chain->rp = state->chain->wp - state->cinfo.src->bytes_in_buffer;
-		fz_warn("jpeg error: %s", state->msg);
-		goto skip;
-	}
-
-	if (state->init)
-		jpeg_finish_decompress(&state->cinfo);
-
-skip:
-	state->chain->rp = state->chain->wp - state->cinfo.src->bytes_in_buffer;
-	jpeg_destroy_decompress(&state->cinfo);
-	fz_free(state->scanline);
-	fz_close(state->chain);
-	fz_free(state);
-}
-
-fz_stream *
-fz_open_dctd(fz_stream *chain, fz_obj *params)
-{
-	fz_dctd *state;
+	fz_error err;
 	fz_obj *obj;
+	int colortransform;
 
-	state = fz_malloc(sizeof(fz_dctd));
-	memset(state, 0, sizeof(fz_dctd));
-	state->chain = chain;
-	state->color_transform = -1; /* unset */
-	state->init = 0;
+	FZ_NEWFILTER(fz_dctd, d, dctd);
 
-	obj = fz_dict_gets(params, "ColorTransform");
-	if (obj)
-		state->color_transform = fz_to_int(obj);
+	colortransform = -1; /* "unset" */
 
-	return fz_new_stream(state, read_dctd, close_dctd);
+	if (params)
+	{
+		obj = fz_dictgets(params, "ColorTransform");
+		if (obj)
+			colortransform = fz_toint(obj);
+	}
+
+	d->colortransform = colortransform;
+	d->stage = 0;
+
+	/* setup error callback first thing */
+	myiniterr(&d->err);
+	d->cinfo.err = (struct jpeg_error_mgr*) &d->err;
+
+	if (setjmp(d->err.jb)) {
+		err = fz_throw("cannot decode jpeg: %s", d->err.msg);
+		fz_free(d);
+		return err;
+	}
+
+	/* create decompression object. this zeroes cinfo except for err. */
+	jpeg_create_decompress(&d->cinfo);
+
+	/* prepare source manager */
+	d->cinfo.src = (struct jpeg_source_mgr *)&d->src;
+	d->src.super.init_source = myinitsource;
+	d->src.super.fill_input_buffer = myfillinput;
+	d->src.super.skip_input_data = myskipinput;
+	d->src.super.resync_to_restart = jpeg_resync_to_restart;
+	d->src.super.term_source = mytermsource;
+
+	d->src.super.bytes_in_buffer = 0;
+	d->src.super.next_input_byte = nil;
+	d->src.skip = 0;
+
+	/* speed up jpeg decoding a bit */
+	d->cinfo.dct_method = JDCT_FASTEST;
+	d->cinfo.do_fancy_upsampling = FALSE;
+
+	return fz_okay;
 }
+
+void
+fz_dropdctd(fz_filter *filter)
+{
+	fz_dctd *d = (fz_dctd*)filter;
+	if (setjmp(d->err.jb)) {
+		fz_warn("jpeg error: jpeg_destroy_decompress: %s", d->err.msg);
+		return;
+	}
+	jpeg_destroy_decompress(&d->cinfo);
+}
+
+fz_error
+fz_processdctd(fz_filter *filter, fz_buffer *in, fz_buffer *out)
+{
+	fz_dctd *d = (fz_dctd*)filter;
+	boolean b;
+	int i;
+	int stride;
+	JSAMPROW scanlines[1];
+
+	d->src.buf = in;
+
+	/* skip any bytes left over from myskipinput() */
+	if (d->src.skip > 0) {
+		if (in->rp + d->src.skip > in->wp) {
+			d->src.skip = (in->rp + d->src.skip) - in->wp;
+			in->rp = in->wp;
+			goto needinput;
+		}
+		else {
+			in->rp += d->src.skip;
+			d->src.skip = 0;
+		}
+	}
+
+	d->src.super.bytes_in_buffer = in->wp - in->rp;
+	d->src.super.next_input_byte = in->rp;
+
+	if (setjmp(d->err.jb))
+	{
+		return fz_throw("cannot decode jpeg: %s", d->err.msg);
+	}
+
+	switch (d->stage)
+	{
+		case 0:
+			i = jpeg_read_header(&d->cinfo, TRUE);
+			if (i == JPEG_SUSPENDED)
+				goto needinput;
+
+			/* default value if ColorTransform is not set */
+			if (d->colortransform == -1)
+			{
+			    if (d->cinfo.num_components == 3)
+				d->colortransform = 1;
+			    else
+				d->colortransform = 0;
+			}
+
+			if (d->cinfo.saw_Adobe_marker)
+				d->colortransform = d->cinfo.Adobe_transform;
+
+			/* Guess the input colorspace, and set output colorspace accordingly */
+			switch (d->cinfo.num_components)
+			{
+				case 3:
+					if (d->colortransform)
+						d->cinfo.jpeg_color_space = JCS_YCbCr;
+					else
+						d->cinfo.jpeg_color_space = JCS_RGB;
+					break;
+				case 4:
+					if (d->colortransform)
+						d->cinfo.jpeg_color_space = JCS_YCCK;
+					else
+						d->cinfo.jpeg_color_space = JCS_CMYK;
+					break;
+			}
+
+			/* fall through */
+			d->stage = 1;
+
+		case 1:
+			b = jpeg_start_decompress(&d->cinfo);
+			if (b == FALSE)
+				goto needinput;
+
+			/* fall through */
+			d->stage = 2;
+
+		case 2:
+			stride = d->cinfo.output_width * d->cinfo.output_components;
+
+			while (d->cinfo.output_scanline < d->cinfo.output_height)
+			{
+				if (out->wp + stride > out->ep)
+					goto needoutput;
+
+				scanlines[0] = out->wp;
+
+				i = jpeg_read_scanlines(&d->cinfo, scanlines, 1);
+
+				if (i == 0)
+					goto needinput;
+
+				out->wp += stride;
+			}
+
+			/* fall through */
+			d->stage = 3;
+
+		case 3:
+			b = jpeg_finish_decompress(&d->cinfo);
+			if (b == FALSE)
+				goto needinput;
+			d->stage = 4;
+			in->rp = in->wp - d->src.super.bytes_in_buffer;
+			return fz_iodone;
+	}
+
+needinput:
+	in->rp = in->wp - d->src.super.bytes_in_buffer;
+	return fz_ioneedin;
+
+needoutput:
+	in->rp = in->wp - d->src.super.bytes_in_buffer;
+	return fz_ioneedout;
+}
+

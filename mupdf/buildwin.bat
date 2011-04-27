@@ -1,16 +1,8 @@
-@ECHO OFF
-SETLOCAL
+@rem this is for Visual Studio 2005 aka vs8
+@rem call "%ProgramFiles%\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
 
-REM assumes we're being run from mupdf directory as:
-REM buildwin.bat [rel]
+@rem this is for Visual Studio 2008 aka vs9
+call "%ProgramFiles%\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
 
-CALL ..\scripts\vc.bat
-IF ERRORLEVEL 1 EXIT /B 1
-
-REM add our nasm.exe to the path
-SET PATH=%CD%\..\bin;%PATH%
-
-SET CFG=dbg
-IF "%1" == "rel" SET CFG=rel
-
-nmake -f makefile.msvc EXTLIBSDIR=..\ext CFG=%CFG%
+nmake -f makefile.msvc EXTLIBSDIR=..\ CFG=dbg
+nmake -f makefile.msvc EXTLIBSDIR=..\ CFG=rel

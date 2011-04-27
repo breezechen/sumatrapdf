@@ -119,7 +119,7 @@ jbig2_decode_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
 	}
 
 	/* decode the symbol id codelengths using the runlength table */
-	symcodelengths = jbig2_new(ctx, Jbig2HuffmanLine, SBNUMSYMS);
+	symcodelengths = jbig2_alloc(ctx->allocator, SBNUMSYMS*sizeof(Jbig2HuffmanLine));
 	if (symcodelengths == NULL) {
 	  jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 	    "memory allocation failure reading symbol ID huffman table!");
@@ -354,7 +354,7 @@ jbig2_decode_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
 
 	    /* (3c.viii) */
 	    if (!params->TRANSPOSED) {
-		switch (params->REFCORNER) {
+		switch (params->REFCORNER) {  /* FIXME: double check offsets */
 		case JBIG2_CORNER_TOPLEFT: x = S; y = T; break;
 		case JBIG2_CORNER_TOPRIGHT: x = S - IB->width + 1; y = T; break;
 		case JBIG2_CORNER_BOTTOMLEFT: x = S; y = T - IB->height + 1; break;
@@ -362,10 +362,10 @@ jbig2_decode_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
 		}
 	    } else { /* TRANSPOSED */
 		switch (params->REFCORNER) {
-		case JBIG2_CORNER_TOPLEFT: x = T; y = S; break;
-		case JBIG2_CORNER_TOPRIGHT: x = T - IB->width + 1; y = S; break;
-		case JBIG2_CORNER_BOTTOMLEFT: x = T; y = S - IB->height + 1; break;
-		case JBIG2_CORNER_BOTTOMRIGHT: x = T - IB->width + 1; y = S - IB->height + 1; break;
+		case JBIG2_CORNER_TOPLEFT: y = S; x = T; break;
+		case JBIG2_CORNER_TOPRIGHT: y = S - IB->width + 1; x = T; break;
+		case JBIG2_CORNER_BOTTOMLEFT: y = S; x = T - IB->height + 1; break;
+		case JBIG2_CORNER_BOTTOMRIGHT: y = S - IB->width + 1; x = T - IB->height + 1; break;
 		}
 	    }
 
@@ -419,8 +419,6 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     int code = 0;
     Jbig2WordStream *ws = NULL;
     Jbig2ArithState *as = NULL;
-    int table_index = 0;
-    const Jbig2HuffmanParams *huffman_params;
 
     /* 7.4.1 */
     if (segment->data_length < 17)
@@ -439,9 +437,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     params.SBREFINE = flags & 0x0002;
     params.LOGSBSTRIPS = (flags & 0x000c) >> 2;
     params.SBSTRIPS = 1 << params.LOGSBSTRIPS;
-    params.REFCORNER = (Jbig2RefCorner)((flags & 0x0030) >> 4);
+    params.REFCORNER = (flags & 0x0030) >> 4;
     params.TRANSPOSED = flags & 0x0040;
-    params.SBCOMBOP = (Jbig2ComposeOp)((flags & 0x0180) >> 7);
+    params.SBCOMBOP = (flags & 0x0180) >> 7;
     params.SBDEFPIXEL = flags & 0x0200;
     /* SBDSOFFSET is a signed 5 bit integer */
     params.SBDSOFFSET = (flags & 0x7C00) >> 10;
@@ -498,15 +496,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_G);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom FS huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFFS = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
-            /* FIXME: this function leaks memory when error happens.
-               i.e. not calling jbig2_release_huffman_table() */
+		"text region uses custom FS huffman table (NYI)");
 	    break;
 	  case 2: /* invalid */
 	  default:
@@ -528,13 +520,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_J);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom DS huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFDS = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom DS huffman table (NYI)");
 	    break;
 	}
 	switch ((huffman_flags & 0x0030) >> 4) {
@@ -551,13 +539,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_M);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom DT huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFDT = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom DT huffman table (NYI)");
 	    break;
 	}
 	switch ((huffman_flags & 0x00c0) >> 6) {
@@ -570,13 +554,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_O);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom RDW huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFRDW = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom RDW huffman table (NYI)");
 	    break;
 	  case 2: /* invalid */
 	  default:
@@ -594,13 +574,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_O);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom RDH huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFRDH = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom RDH huffman table (NYI)");
 	    break;
 	  case 2: /* invalid */
 	  default:
@@ -618,13 +594,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_O);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom RDX huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFRDX = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom RDX huffman table (NYI)");
 	    break;
 	  case 2: /* invalid */
 	  default:
@@ -642,13 +614,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_O);
 	    break;
 	  case 3: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom RDY huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFRDY = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom RDY huffman table (NYI)");
 	    break;
 	  case 2: /* invalid */
 	  default:
@@ -662,13 +630,9 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 			&jbig2_huffman_params_A);
 	    break;
 	  case 1: /* Custom table from referred segment */
-            huffman_params = jbig2_find_table(ctx, segment, table_index);
-            if (huffman_params == NULL) {
+	    /* We handle this case later by leaving the table as NULL */
 	    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                    "Custom RSIZE huffman table not found (%d)", table_index);
-            }
-            params.SBHUFFRSIZE = jbig2_build_huffman_table(ctx, huffman_params);
-            ++table_index;
+		"text region uses custom RSIZE huffman table (NYI)");
 	    break;
 	}
 
@@ -716,7 +680,7 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     /* 7.4.3.2 (3) */
     if (!params.SBHUFF && params.SBREFINE) {
 	int stats_size = params.SBRTEMPLATE ? 1 << 10 : 1 << 13;
-	GR_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+	GR_stats = jbig2_alloc(ctx->allocator, stats_size);
 	memset(GR_stats, 0, stats_size);
     }
 
@@ -765,7 +729,7 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     code = jbig2_decode_text_region(ctx, segment, &params,
                 (const Jbig2SymbolDict * const *)dicts, n_dicts, image,
                 segment_data + offset, segment->data_length - offset,
-		GR_stats, as, as ? NULL : ws);
+		GR_stats, as, ws);
 
     if (!params.SBHUFF && params.SBREFINE) {
 	jbig2_free(ctx->allocator, GR_stats);
@@ -780,7 +744,6 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
       jbig2_release_huffman_table(ctx, params.SBHUFFRDW);
       jbig2_release_huffman_table(ctx, params.SBHUFFRDH);
       jbig2_release_huffman_table(ctx, params.SBHUFFRSIZE);
-      jbig2_word_stream_buf_free(ctx, ws);
     }
     else {
 	jbig2_arith_int_ctx_free(ctx, params.IADT);
@@ -794,8 +757,8 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
 	jbig2_arith_int_ctx_free(ctx, params.IARDX);
 	jbig2_arith_int_ctx_free(ctx, params.IARDY);
 	jbig2_free(ctx->allocator, as);
-	jbig2_word_stream_buf_free(ctx, ws);
     }
+    jbig2_word_stream_buf_free(ctx, ws);
 
     jbig2_free(ctx->allocator, dicts);
 
