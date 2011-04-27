@@ -476,7 +476,6 @@ tulostetaan asiakirjaa
 #Copy &Link Address
 #Copy Co&mment
 #Copying text was denied (copying as image only)
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
 #Error loading %s
 #Fit &Content\tCtrl-3
@@ -484,21 +483,15 @@ tulostetaan asiakirjaa
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Image files (*.%s)
-#Open a document...
 #P&roperties
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
 #Select &All\tCtrl-A
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
 #XPS documents

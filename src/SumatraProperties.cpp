@@ -16,8 +16,7 @@
 // See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
 // Format:  "D:YYYYMMDDHHMMSSxxxxxxx"
 // Example: "D:20091222171933-05'00'"
-static bool PdfDateParse(const TCHAR *pdfDate, SYSTEMTIME *timeOut)
-{
+static bool PdfDateParse(TCHAR *pdfDate, SYSTEMTIME *timeOut) {
     ZeroMemory(timeOut, sizeof(SYSTEMTIME));
     // "D:" at the beginning is optional
     if (Str::StartsWith(pdfDate, _T("D:")))
@@ -28,21 +27,22 @@ static bool PdfDateParse(const TCHAR *pdfDate, SYSTEMTIME *timeOut)
     // don't bother about the day of week, we won't display it anyway
 }
 
-// See: ISO 8601 specification
-// Format:  "YYYY-MM-DDTHH:MM:SSZ"
-// Example: "2011-04-19T22:10:48Z"
-static bool XpsDateParse(const TCHAR *xpsDate, SYSTEMTIME *timeOut)
-{
-    ZeroMemory(timeOut, sizeof(SYSTEMTIME));
-    const TCHAR *end = Str::Parse(xpsDate, _T("%4d-%2d-%2d"), &timeOut->wYear, &timeOut->wMonth, &timeOut->wDay);
-    if (end) // time is optional
-        Str::Parse(end, _T("T%2d:%2d:%2dZ"), &timeOut->wHour, &timeOut->wMinute, &timeOut->wSecond);
-    return end != NULL;
-    // don't bother about the day of week, we won't display it anyway
-}
+// Convert a date in PDF format, e.g. "D:20091222171933-05'00'" to a display
+// format e.g. "12/22/2009 5:19:33 PM"
+// See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
+// The conversion happens in place
+static void PdfDateToDisplay(TCHAR **s) {
+    SYSTEMTIME date;
 
-static TCHAR *FormatSystemTime(SYSTEMTIME& date)
-{
+    bool ok = false;
+    if (*s) {
+        ok = PdfDateParse(*s, &date);
+        free(*s);
+    }
+    *s = NULL;
+    if (!ok)
+        return;
+
     TCHAR buf[512];
     int cchBufLen = dimof(buf);
     int ret = GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &date, NULL, buf, cchBufLen);
@@ -56,30 +56,13 @@ static TCHAR *FormatSystemTime(SYSTEMTIME& date)
     if (0 == ret) // GetTimeFormat() failed
         *tmp = '\0';
 
-    return Str::Dup(buf);
-}
-
-// Convert a date in PDF or XPS format, e.g. "D:20091222171933-05'00'" to a display
-// format e.g. "12/22/2009 5:19:33 PM"
-// See: http://www.verypdf.com/pdfinfoeditor/pdf-date-format.htm
-// The conversion happens in place
-static void ConvDateToDisplay(TCHAR **s, bool (* DateParse)(const TCHAR *date, SYSTEMTIME *timeOut))
-{
-    if (!s || !*s || !DateParse)
-        return;
-
-    SYSTEMTIME date;
-    bool ok = DateParse(*s, &date);
-    free(*s);
-
-    *s = ok ? FormatSystemTime(date) : NULL;
+    *s = Str::Dup(buf);
 }
 
 // Format the file size in a short form that rounds to the largest size unit
 // e.g. "3.48 GB", "12.38 MB", "23 KB"
 // Caller needs to free the result.
-static TCHAR *FormatSizeSuccint(size_t size)
-{
+static TCHAR *FormatSizeSuccint(size_t size) {
     const TCHAR *unit = NULL;
     double s = (double)size;
 
@@ -100,8 +83,7 @@ static TCHAR *FormatSizeSuccint(size_t size)
 // format file size in a readable way e.g. 1348258 is shown
 // as "1.29 MB (1,348,258 Bytes)"
 // Caller needs to free the result
-static TCHAR *FormatFileSize(size_t size)
-{
+static TCHAR *FormatFileSize(size_t size) {
     ScopedMem<TCHAR> n1(FormatSizeSuccint(size));
     ScopedMem<TCHAR> n2(Str::FormatNumWithThousandSep(size));
 
@@ -135,8 +117,7 @@ static TCHAR *FormatPageSize(BaseEngine *engine, int pageNo, int rotation)
 
 // returns a list of permissions denied by this document
 // Caller needs to free the result
-static TCHAR *FormatPermissions(BaseEngine *engine)
-{
+static TCHAR *FormatPermissions(BaseEngine *engine) {
     StrVec denials;
 
     if (!engine->IsPrintingAllowed())
@@ -156,8 +137,7 @@ void PropertiesLayout::AddProperty(const TCHAR *key, TCHAR *value)
         free(value);
 }
 
-static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RectI *rect)
-{
+static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RectI *rect) {
     SIZE            txtSize;
     int             totalDx, totalDy;
     int             leftMaxDx, rightMaxDx;
@@ -224,37 +204,35 @@ static void UpdatePropertiesLayout(HWND hwnd, HDC hdc, RectI *rect)
     Win::Font::Delete(fontRightTxt);
 }
 
-static HWND CreatePropertiesWindow(PropertiesLayout& layoutData)
-{
-    HWND hwndProperties = CreateWindow(
+static void CreatePropertiesWindow(WindowInfo *win, PropertiesLayout *layoutData) {
+    win->hwndProperties = CreateWindow(
            PROPERTIES_CLASS_NAME, PROPERTIES_WIN_TITLE,
            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
            CW_USEDEFAULT, CW_USEDEFAULT,
            CW_USEDEFAULT, CW_USEDEFAULT,
            NULL, NULL,
            ghinst, NULL);
-    if (!hwndProperties)
-        return NULL;
+    if (!win->hwndProperties)
+        return;
 
-    assert(!GetWindowLongPtr(hwndProperties, GWLP_USERDATA));
-    SetWindowLongPtr(hwndProperties, GWLP_USERDATA, (LONG_PTR)&layoutData);
+    assert(!GetWindowLongPtr(win->hwndProperties, GWLP_USERDATA));
+    SetWindowLongPtr(win->hwndProperties, GWLP_USERDATA, (LONG_PTR)layoutData);
 
     // get the dimensions required for the about box's content
     RectI rc;
     PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwndProperties, &ps);
-    UpdatePropertiesLayout(hwndProperties, hdc, &rc);
-    EndPaint(hwndProperties, &ps);
+    HDC hdc = BeginPaint(win->hwndProperties, &ps);
+    UpdatePropertiesLayout(win->hwndProperties, hdc, &rc);
+    EndPaint(win->hwndProperties, &ps);
 
     // resize the new window to just match these dimensions
-    WindowRect wRc(hwndProperties);
-    ClientRect cRc(hwndProperties);
+    WindowRect wRc(win->hwndProperties);
+    ClientRect cRc(win->hwndProperties);
     wRc.dx += rc.dx - cRc.dx;
     wRc.dy += rc.dy - cRc.dy;
-    MoveWindow(hwndProperties, wRc.x, wRc.y, wRc.dx, wRc.dy, FALSE);
+    MoveWindow(win->hwndProperties, wRc.x, wRc.y, wRc.dx, wRc.dy, FALSE);
 
-    ShowWindow(hwndProperties, SW_SHOW);
-    return hwndProperties;
+    ShowWindow(win->hwndProperties, SW_SHOW);
 }
 
 /*
@@ -275,16 +253,16 @@ Example xref->info ("Info") object:
 */
 
 // TODO: add information about fonts ?
-void OnMenuProperties(WindowInfo& win)
+void OnMenuProperties(WindowInfo *win)
 {
-    if (win.hwndProperties) {
-        SetActiveWindow(win.hwndProperties);
+    if (win->hwndProperties) {
+        SetActiveWindow(win->hwndProperties);
         return;
     }
 
-    if (!win.IsDocLoaded())
+    if (!win->IsDocLoaded())
         return;
-    BaseEngine *engine = win.dm->engine;
+    BaseEngine *engine = win->dm->engine;
 
     PropertiesLayout *layoutData = new PropertiesLayout();
     if (!layoutData)
@@ -303,17 +281,13 @@ void OnMenuProperties(WindowInfo& win)
     layoutData->AddProperty(_TR("Author:"), str);
 
     str = engine->GetProperty("CreationDate");
-    if (win.dm->pdfEngine)
-        ConvDateToDisplay(&str, PdfDateParse);
-    else if (win.dm->xpsEngine)
-        ConvDateToDisplay(&str, XpsDateParse);
+    if (win->dm->pdfEngine)
+        PdfDateToDisplay(&str);
     layoutData->AddProperty(_TR("Created:"), str);
 
     str = engine->GetProperty("ModDate");
-    if (win.dm->pdfEngine)
-        ConvDateToDisplay(&str, PdfDateParse);
-    else if (win.dm->xpsEngine)
-        ConvDateToDisplay(&str, XpsDateParse);
+    if (win->dm->pdfEngine)
+        PdfDateToDisplay(&str);
     layoutData->AddProperty(_TR("Modified:"), str);
 
     str = engine->GetProperty("Creator");
@@ -338,7 +312,7 @@ void OnMenuProperties(WindowInfo& win)
     str = Str::Format(_T("%d"), engine->PageCount());
     layoutData->AddProperty(_TR("Number of Pages:"), str);
 
-    str = FormatPageSize(engine, win.dm->currentPageNo(), win.dm->rotation());
+    str = FormatPageSize(engine, win->dm->currentPageNo(), win->dm->rotation());
     layoutData->AddProperty(_TR("Page Size:"), str);
 
     str = FormatPermissions(engine);
@@ -354,7 +328,7 @@ void OnMenuProperties(WindowInfo& win)
     // http://www.adobe.com/devnet/acrobat/pdfs/PDF32000_2008.pdf
     // layoutData->AddProperty(_T("Tagged PDF:"), Str::Dup(_T("No")));
 
-    win.hwndProperties = CreatePropertiesWindow(*layoutData);
+    CreatePropertiesWindow(win, layoutData);
 }
 
 static void DrawProperties(HWND hwnd, HDC hdc)
@@ -458,10 +432,8 @@ LRESULT CALLBACK WndProcProperties(HWND hwnd, UINT message, WPARAM wParam, LPARA
 
         case WM_DESTROY:
             delete (PropertiesLayout *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            if (win) {
-                assert(win->hwndProperties);
-                win->hwndProperties = NULL;
-            }
+            assert(win->hwndProperties);
+            win->hwndProperties = NULL;
             break;
 
         /* TODO: handle mouse move/down/up so that links work (?) */

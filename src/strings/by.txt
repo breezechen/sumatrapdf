@@ -378,7 +378,6 @@ Zoom Out
 #Created:
 #Custom &Zoom...\tCtrl-Y
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Enter the command-line to invoke when you double-click on the PDF document:
 #Error loading %s
@@ -390,14 +389,11 @@ Zoom Out
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Hint: Use the F3 key for finding again
 #Image files (*.%s)
 #Modified:
 #No synchronization file found
 #Number of Pages:
-#Open a document...
 #P&roperties
 #P&roperties\tCtrl-D
 #PDF Producer:
@@ -407,15 +403,12 @@ Zoom Out
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
 #Select &All\tCtrl-A
 #Select content with Ctrl+left mouse button
 #Send by &E-mail...
 #Show &pages continuously
-#Show frequently read
 #Subject:
 #SumatraPDF Update
 #SumatraPDF crashed

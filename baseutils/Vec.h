@@ -50,31 +50,15 @@ protected:
     }
 
 public:
-    Vec(size_t initCap=0, size_t padding=0) : pad(padding) {
+    Vec(size_t initCap=0, size_t padding=0) {
+        pad = padding;
         els = buf;
         Reset();
         EnsureCap(initCap);
     }
+
     ~Vec() {
         FreeEls();
-    }
-
-    // ensure that a Vec never shares its els buffer with another after a clone/copy
-    Vec(const Vec& orig) : pad(orig.pad) {
-        els = buf;
-        Reset();
-        EnsureCap(orig.cap);
-        // use memcpy, as Vec only supports POD types
-        memcpy(els, orig.els, sizeof(T) * (len = orig.len));
-    }
-    Vec& operator=(const Vec& that) {
-        if (this != &that) {
-            Reset();
-            EnsureCap(that.cap);
-            // use memcpy, as Vec only supports POD types
-            memcpy(els, that.els, sizeof(T) * (len = that.len));
-        }
-        return *this;
     }
 
     void Reset() {
@@ -192,13 +176,6 @@ public:
     void Sort(int (*cmpFunc)(const void *a, const void *b)) {
         qsort(els, len, sizeof(T), cmpFunc);
     }
-
-    Vec<T> *Clone() const {
-        Vec<T> *clone = new Vec<T>(len);
-        for (size_t i = 0; i < len; i++)
-            clone->Append(At(i));
-        return clone;
-    }
 };
 
 // only suitable for T that are pointers that were malloc()ed
@@ -272,30 +249,11 @@ public:
 
 }
 
-// StrVec owns the strings in the list
 class StrVec : public Vec<TCHAR *>
 {
 public:
-    StrVec() : Vec() { }
-    StrVec(const StrVec& orig) : Vec(orig) {
-        // make sure not to share string pointers between StrVecs
-        for (size_t i = 0; i < len; i++)
-            if (At(i))
-                At(i) = Str::Dup(At(i));
-    }
     ~StrVec() {
         FreeVecMembers(*this);
-    }
-
-    StrVec& operator=(const StrVec& that) {
-        if (this != &that) {
-            FreeVecMembers(*this);
-            Vec::operator=(that);
-            for (size_t i = 0; i < that.len; i++)
-                if (At(i))
-                    At(i) = Str::Dup(At(i));
-        }
-        return *this;
     }
 
     TCHAR *Join(const TCHAR *joint=NULL) {

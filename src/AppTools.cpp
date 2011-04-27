@@ -61,25 +61,6 @@ int CompareVersion(TCHAR *txt1, TCHAR *txt2)
     return 0;
 }
 
-static ULARGE_INTEGER FileTimeToLargeInteger(FILETIME& ft)
-{
-    ULARGE_INTEGER res;
-    res.LowPart = ft.dwLowDateTime;
-    res.HighPart = ft.dwHighDateTime;
-    return res;
-}
-
-/* Return <ft1> - <ft2> in seconds */
-int FileTimeDiffInSecs(FILETIME& ft1, FILETIME& ft2)
-{
-    ULARGE_INTEGER t1 = FileTimeToLargeInteger(ft1);
-    ULARGE_INTEGER t2 = FileTimeToLargeInteger(ft2);
-    // diff is in 100 nanoseconds
-    LONGLONG diff = t1.QuadPart - t2.QuadPart;
-    diff = diff / (LONGLONG)10000000L;
-    return (int)diff;
-}
-
 
 /* Return the full exe path of my own executable.
    Caller needs to free() the result. */
@@ -96,34 +77,26 @@ TCHAR *GetExePath()
    location of a SumatraPDF installation (HKLM\Software\SumatraPDF\Install_Dir) */
 bool IsRunningInPortableMode()
 {
-    // cache the result so that it will be consistent during the lifetime of the process
-    static int sCacheIsPortable = -1; // -1 == uninitialized, 0 == installed, 1 == portable
-    if (sCacheIsPortable != -1)
-        return sCacheIsPortable != 0;
-    sCacheIsPortable = 1;
-
     ScopedMem<TCHAR> exePath(GetExePath());
-    if (!exePath)
+    if (NULL == exePath.Get())
         return true;
 
     // if we can't get a path, assume we're not running from "Program Files"
     ScopedMem<TCHAR> installedPath(NULL);
     installedPath.Set(ReadRegStr(HKEY_LOCAL_MACHINE, _T("Software\\") APP_NAME_STR, _T("Install_Dir")));
-    if (!installedPath)
+    if (NULL == installedPath.Get())
         installedPath.Set(ReadRegStr(HKEY_CURRENT_USER, _T("Software\\") APP_NAME_STR, _T("Install_Dir")));
-    if (installedPath) {
-        if (!Str::EndsWithI(installedPath.Get(), _T(".exe")))
+    if (NULL != installedPath.Get()) {
+        if (!Str::EndsWithI(installedPath.Get(), _T(".exe"))) {
             installedPath.Set(Path::Join(installedPath.Get(), Path::GetBaseName(exePath)));
-        if (Path::IsSame(installedPath, exePath)) {
-            sCacheIsPortable = 0;
-            return false;
         }
+        if (Path::IsSame(installedPath, exePath))
+            return false;
     }
 
-    TCHAR programFilesDir[MAX_PATH];
-    programFilesDir[0] = '\0';
+    TCHAR programFilesDir[MAX_PATH] = {0};
     BOOL ok = SHGetSpecialFolderPath(NULL, programFilesDir, CSIDL_PROGRAM_FILES, FALSE);
-    if (!ok)
+    if (FALSE == ok)
         return true;
 
     // check if one of the exePath's parent directories is "Program Files"
@@ -131,45 +104,54 @@ bool IsRunningInPortableMode()
     TCHAR *baseName;
     while ((baseName = (TCHAR*)Path::GetBaseName(exePath)) > exePath) {
         baseName[-1] = '\0';
-        if (Path::IsSame(programFilesDir, exePath)) {
-            sCacheIsPortable = 0;
+        if (Path::IsSame(programFilesDir, exePath))
             return false;
-        }
     }
 
     return true;
+}
+
+TCHAR *AppGenDataDir()
+{
+    /* Use %APPDATA% */
+    TCHAR dir[MAX_PATH] = {0};
+    SHGetSpecialFolderPath(NULL, dir, CSIDL_APPDATA, TRUE);
+    TCHAR *path = Path::Join(dir, APP_NAME_STR);
+    if (!path)
+        return NULL;
+    if (!Dir::Create(path)) {
+        free(path);
+        return NULL;
+    }
+    return path;
 }
 
 /* Generate the full path for a filename used by the app in the userdata path. */
 /* Caller needs to free() the result. */
 TCHAR *AppGenDataFilename(TCHAR *pFilename)
 {
-    ScopedMem<TCHAR> path;
+    assert(pFilename);
+    if (!pFilename) return NULL;
+
+    TCHAR * path = NULL;
     if (IsRunningInPortableMode()) {
         /* Use the same path as the binary */
         TCHAR *exePath = GetExePath();
         if (exePath) {
             assert(exePath[0]);
-            path.Set(Path::GetDir(exePath));
+            path = Path::GetDir(exePath);
             free(exePath);
         }
     } else {
-        /* Use %APPDATA% */
-        TCHAR dir[MAX_PATH];
-        dir[0] = '\0';
-        BOOL ok = SHGetSpecialFolderPath(NULL, dir, CSIDL_APPDATA, TRUE);
-        if (ok) {
-            path.Set(Path::Join(dir, APP_NAME_STR));
-            if (path && !Dir::Create(path))
-                path.Set(NULL);
-        }
+        path = AppGenDataDir();
     }
-
-    assert(path && pFilename);
-    if (!path || !pFilename)
+    if (!path)
         return NULL;
 
-    return Path::Join(path, pFilename);
+    TCHAR *filename = Path::Join(path, pFilename);
+    free(path);
+
+    return filename;
 }
 
 // Updates the drive letter for a path that could have been on a removable drive,

@@ -22,7 +22,7 @@
 
 #include "translations.h"
 
-//#define DEBUG_CRASH_INFO 1
+#define DEBUG_CRASH_INFO 1
 
 // TODO: maybe symbol directory should include build number, to disambiguate
 // them. On the other hand, dbghelp.dll doesn't seem to be confused and if
@@ -188,8 +188,11 @@ static bool GetEnvOk(DWORD ret, DWORD cchBufSize)
 
 static TCHAR *GetCrashDumpDir()
 {
-    TCHAR *symDir = AppGenDataFilename(_T("symbols"));
-    if (symDir && !Dir::Create(symDir)) {
+    TCHAR *dir = AppGenDataDir();
+    if (!dir) return NULL;
+    TCHAR *symDir = Path::Join(dir, _T("symbols"));
+    free(dir);
+    if (!Dir::Create(symDir)) {
         free(symDir);
         return NULL;
     }
@@ -225,7 +228,7 @@ static WCHAR *GetSymbolPath()
     }
 #endif
 
-    ScopedMem<WCHAR> symDir(Str::Conv::ToWStrQ(GetCrashDumpDir()));
+    ScopedMem<TCHAR> symDir(GetCrashDumpDir());
     if (symDir) {
         path.Append(symDir);
         //path.Append(_T(";"));
@@ -241,8 +244,8 @@ static WCHAR *GetSymbolPath()
 #if 0
     // when running local builds, *.pdb is in the same dir as *.exe 
     ScopedMem<TCHAR> exePath(GetExePath());
-    ScopedMem<WCHAR> exeDir(Str::Conv::ToWStrQ(Path::GetDir(exePath)));
-    path.AppendFmt(L"%s", exeDir);
+    ScopedMem<TCHAR> exeDir(Path::GetDir(exePath));
+    path.AppendFmt(_T("%s"), exeDir);
 #endif
     return path.StealData();
 }
@@ -562,15 +565,6 @@ static bool HasOwnSymbols()
     return HasSymbolsForAddress(addr);
 }
 
-static void AppendAddress(Str::Str<char>& s, DWORD64 addr)
-{
-#ifdef _WIN64
-    s.AppendFmt("%016I64X", addr);
-#else
-    s.AppendFmt("%08X", (DWORD)addr);
-#endif
-}
-
 static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
 {
     static const int MAX_SYM_LEN = 512;
@@ -593,11 +587,11 @@ static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
     if (GetAddrInfo((void*)addr, module, sizeof(module), section, offset)) {
         Str::ToLower(module);
         const char *moduleShort = Path::GetBaseName(module);
-        AppendAddress(s, addr);
-        s.AppendFmt(" %02X:", section);
-        AppendAddress(s, offset);
-        s.AppendFmt(" %s", moduleShort);
-
+#ifdef _WIN64
+        s.AppendFmt("%016I64X %02X:%016I64X %s", (DWORD64)addr, section, (DWORD64)offset, moduleShort);
+#else
+        s.AppendFmt("%08X %02X:%08X %s", (DWORD)addr, section, (DWORD)offset, moduleShort);
+#endif
         if (symName)
             s.AppendFmt("!%s+0x%x", symName, (int)symDisp);
         IMAGEHLP_LINE64 line;
@@ -606,10 +600,14 @@ static void GetAddressInfo(Str::Str<char>& s, DWORD64 addr)
         if (_SymGetLineFromAddr64(GetCurrentProcess(), addr, &disp, &line)) {
             s.AppendFmt(" %s+%d", line.FileName, line.LineNumber);
         }
+        s.Append("\r\n");
     } else {
-        AppendAddress(s, addr);
+#ifdef _WIN64
+        s.AppendFmt("%016I64X\r\n", addr);
+#else
+        s.AppendFmt("%08X\r\n", (DWORD)addr);
+#endif
     }
-    s.Append("\r\n");
 }
 
 static bool GetStackFrameInfo(Str::Str<char>& s, STACKFRAME64 *stackFrame,
@@ -785,30 +783,14 @@ static void GetExceptionInfo(Str::Str<char>& s, EXCEPTION_POINTERS *excPointers)
     DWORD excCode = excRecord->ExceptionCode;
     s.AppendFmt("Exception: %08X %s\r\n", (int)excCode, ExceptionNameFromCode(excCode));
 
-    s.AppendFmt("Faulting IP: ");
+    s.AppendFmt("Fault address: ");
     GetAddressInfo(s, (DWORD64)excRecord->ExceptionAddress);
-    if ((EXCEPTION_ACCESS_VIOLATION == excCode) ||
-        (EXCEPTION_IN_PAGE_ERROR == excCode)) 
-    {
-        int readWriteFlag = (int)excRecord->ExceptionInformation[0];
-        DWORD64 dataVirtAddr = (DWORD64)excRecord->ExceptionInformation[1];
-        if (0 == readWriteFlag) {
-            s.Append("Fault reading address "); AppendAddress(s, dataVirtAddr);
-        } else if (1 == readWriteFlag) {
-            s.Append("Fault writing address "); AppendAddress(s, dataVirtAddr);
-        } else if (8 == readWriteFlag) {
-            s.Append("DEP violation at address "); AppendAddress(s, dataVirtAddr);
-        } else {
-            s.Append("unknown readWriteFlag: %d", readWriteFlag);
-        }
-        s.Append("\r\n");
-    }
 
     PCONTEXT ctx = excPointers->ContextRecord;
     s.AppendFmt("\r\nRegisters:\r\n");
 
 #ifdef _WIN64
-    s.AppendFmt("RAX:%016I64X  RBX:%016I64X  RCX:%016I64X\r\nRDX:%016I64X  RSI:%016I64X  RDI:%016I64X\r\n"
+    s.AppendFmt("RAX:%016I64X\r\nRBX:%016I64X\r\nRCX:%016I64X\r\nRDX:%016I64X\r\nRSI:%016I64X\r\nRDI:%016I64X\r\n"
         "R8: %016I64X\r\nR9: %016I64X\r\nR10:%016I64X\r\nR11:%016I64X\r\nR12:%016I64X\r\nR13:%016I64X\r\nR14:%016I64X\r\nR15:%016I64X\r\n",
         ctx->Rax, ctx->Rbx, ctx->Rcx, ctx->Rdx, ctx->Rsi, ctx->Rdi,
         ctx->R9,ctx->R10,ctx->R11,ctx->R12,ctx->R13,ctx->R14,ctx->R15);
@@ -817,7 +799,7 @@ static void GetExceptionInfo(Str::Str<char>& s, EXCEPTION_POINTERS *excPointers)
     s.AppendFmt("DS:%04X  ES:%04X  FS:%04X  GS:%04X\r\n", ctx->SegDs, ctx->SegEs, ctx->SegFs, ctx->SegGs);
     s.AppendFmt("Flags:%08X\r\n", ctx->EFlags);
 #else
-    s.AppendFmt("EAX:%08X  EBX:%08X  ECX:%08X\r\nEDX:%08X  ESI:%08X  EDI:%08X\r\n",
+    s.AppendFmt("EAX:%08X\r\nEBX:%08X\r\nECX:%08X\r\nEDX:%08X\r\nESI:%08X\r\nEDI:%08X\r\n",
         ctx->Eax, ctx->Ebx, ctx->Ecx, ctx->Edx, ctx->Esi, ctx->Edi);
     s.AppendFmt("CS:EIP:%04X:%08X\r\n", ctx->SegCs, ctx->Eip);
     s.AppendFmt("SS:ESP:%04X:%08X  EBP:%08X\r\n", ctx->SegSs, ctx->Esp, ctx->Ebp);
@@ -853,12 +835,12 @@ static char *BuildCrashInfoText()
     GetOsVersion(s);
     GetSystemInfo(s);
     s.Append("\r\n");
+    GetModules(s);
+    s.Append("\r\n");
     GetExceptionInfo(s, gMei.ExceptionPointers);
     GetAllThreadsCallstacks(s);
     s.Append("\r\n");
     GetCurrentThreadCallstack(s);
-    s.Append("\r\n");
-    GetModules(s);
     return s.StealData();
 }
 
@@ -996,9 +978,13 @@ static bool DownloadSymbols(const TCHAR *symDir)
 #endif
 }
 
-// If we can't resolve the symbols, we assume it's because we don't have symbols
-// so we'll try to download them and retry. If we can resolve symbols, we'll
-// get the callstacks etc. and submit to our server for analysis.
+// We're (potentially) doing it twice for reliability reason. First with whatever symbols we already
+// have. Then, if we don't have symbols for our binaries, download the symbols from a website and
+// redo the callstacks. But if our state is so corrupted that we can't download symbols, we'll
+// at least have non-symbolized version of callstacks
+// TODO: if it turns out that that downloading symbols is reliable, we will
+// just do it once
+
 void SubmitCrashInfo()
 {
     char *s = NULL;
@@ -1045,7 +1031,7 @@ static void WriteMiniDump()
     if (NULL == _MiniDumpWrite)
         return;
 
-    HANDLE dumpFile = CreateFile(gCrashDumpPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
+    HANDLE dumpFile = CreateFile(gCrashDumpPath.Get(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
     if (INVALID_HANDLE_VALUE == dumpFile)
         return;
 

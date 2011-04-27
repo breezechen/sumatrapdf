@@ -342,17 +342,11 @@ Found text at page %d
 Found text at page %d (again)
 Пронађи текст на страни %d (поново)
 
-Frequently Read
-Често читано
-
 GB
 GB
 
 Go to page
 Иди на страну
-
-Hide frequently read
-Сакриј често читано
 
 Hint: Use the F3 key for finding again
 Савет: Користите тастер F3 за наставак претраге
@@ -404,9 +398,6 @@ OK
 
 Open
 Отвори
-
-Open a document...
-Отвори документ...
 
 Open in &Adobe Reader
 Отвори у програму Adobe Reader
@@ -504,9 +495,6 @@ Show &Toolbar
 Show &pages continuously
 Непрекидни приказ страна
 
-Show frequently read
-Прикажи често читано
-
 Show the &bookmarks sidebar when available
 Прикажи траку са белешкама када је доступна
 
@@ -584,9 +572,4 @@ copying text
 
 printing document
 штампање документа
-
-# Untranslated:
-#DjVu documents
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 

@@ -22,6 +22,8 @@ O = $(O)64
 !endif
 
 OZ  = $(O)\zlib
+OBZ = $(O)\bzip2
+OR =  $(O)\unrar
 OFT = $(O)\freetype
 OJ  = $(O)\jpeg
 OT  = $(O)\jpegturbo
@@ -30,7 +32,6 @@ OJB = $(O)\jbig2
 OFZ = $(O)\fitz
 OP  = $(O)\mupdf
 OX  = $(O)\muxps
-OA  = $(O)\muapps
 
 # To over-ride location of fitz/mupdf sources, define MUPDF_DIR
 # e.g.:
@@ -45,6 +46,8 @@ EXTLIBSDIR=..\ext
 !endif
 
 ZLIB_DIR=$(EXTLIBSDIR)\zlib-1.2.5
+BZIP2_DIR=$(EXTLIBSDIR)\bzip2
+UNRAR_DIR=$(EXTLIBSDIR)\unrar
 FREETYPE_DIR=$(EXTLIBSDIR)\freetype2
 
 # if JPEG_TURBO_DIR is defined, we use libjpeg-turbo, otherwise we use libpjeg
@@ -119,6 +122,15 @@ CFLAGSOPT    = $(CFLAGSB) /Os /Ox /D "NDEBUG"
 !endif
 
 ZLIB_CFLAGS = $(CFLAGSOPT)
+BZIP2_CFLAGS = $(CFLAGSOPT) /D "BZ_NO_STDIO" /D "BZ_DEBUG=0"
+MINIZIP_CFLAGS = $(ZLIB_CFLAGS) /D "HAVE_BZIP2" /I$(ZLIB_DIR) /I$(BZIP2_DIR)
+
+UNRAR_CFLAGS = $(CFLAGSOPT) /D "UNRAR" /D "RARDLL"
+# a hack to enable C++ exception handling for UnRAR (without triggering a warning)
+UNRAR_CFLAGS = $(UNRAR_CFLAGS:/EHs-c-=/EHsc)
+# a hack to undo /D "UNICODE" since unrar defines it unconditionally, causing
+# compilation warnings
+UNRAR_CFLAGS = $(UNRAR_CFLAGS:UNICODE=IGNORE_THIS)
 
 FREETYPE_CFLAGS = $(CFLAGSOPT) /TC /I$(FREETYPE_DIR)/config /I$(FREETYPE_DIR)/include \
 	/D "FT2_BUILD_LIBRARY" /D "FT_OPTION_AUTOFIT2"
@@ -181,6 +193,27 @@ ZLIB_OBJS = \
 	$(OZ)\zutil.obj \
 	$(OZ)\gzlib.obj $(OZ)\gzread.obj $(OZ)\gzwrite.obj $(OZ)\gzclose.obj
 	# MuPDF also compiles $(OZ)\uncompr.obj
+
+BZIP2_OBJS = \
+	$(OBZ)\blocksort.obj $(OBZ)\bzlib.obj $(OBZ)\compress.obj $(OBZ)\crctable.obj \
+	$(OBZ)\decompress.obj $(OBZ)\huffman.obj $(OBZ)\randtable.obj
+
+MINIZIP_OBJS = \
+	$(OZ)\unzip.obj $(OZ)\ioapi.obj $(OZ)\iowin32.obj
+
+UNRAR_OBJS = \
+	$(OR)\archive.obj $(OR)\arcread.obj $(OR)\cmddata.obj \
+	$(OR)\consio.obj $(OR)\crc.obj $(OR)\crypt.obj $(OR)\encname.obj \
+	$(OR)\errhnd.obj $(OR)\extinfo.obj $(OR)\extract.obj $(OR)\filcreat.obj \
+	$(OR)\file.obj $(OR)\filefn.obj $(OR)\filestr.obj $(OR)\find.obj $(OR)\getbits.obj \
+	$(OR)\global.obj $(OR)\isnt.obj  $(OR)\list.obj $(OR)\match.obj \
+	$(OR)\pathfn.obj $(OR)\options.obj $(OR)\rar.obj $(OR)\rarvm.obj \
+	$(OR)\rawread.obj $(OR)\rdwrfn.obj $(OR)\recvol.obj \
+	$(OR)\resource.obj $(OR)\rijndael.obj $(OR)\rs.obj $(OR)\savepos.obj \
+	$(OR)\scantree.obj $(OR)\sha1.obj $(OR)\smallfn.obj $(OR)\strfn.obj \
+	$(OR)\strlist.obj $(OR)\system.obj $(OR)\timefn.obj \
+	$(OR)\ulinks.obj $(OR)\unicode.obj $(OR)\unpack.obj \
+	$(OR)\volume.obj $(OR)\dll.obj
 
 !if "$(JPEG_TURBO_DIR)"==""
 
@@ -270,11 +303,11 @@ MUXPS_OBJS = \
 	$(OX)\xps_common.obj $(OX)\xps_doc.obj $(OX)\xps_glyphs.obj $(OX)\xps_gradient.obj \
 	$(OX)\xps_image.obj $(OX)\xps_jpeg.obj $(OX)\xps_path.obj \
 	$(OX)\xps_png.obj $(OX)\xps_resource.obj $(OX)\xps_tiff.obj $(OX)\xps_tile.obj \
-	$(OX)\xps_util.obj $(OX)\xps_xml.obj $(OX)\xps_zip.obj $(OX)\xps_outline.obj
+	$(OX)\xps_util.obj $(OX)\xps_xml.obj $(OX)\xps_zip.obj
 
 # Make it easy to compile a CJK font in
 !if "$(WITHCJKFONT)"==""
-MUPDF_CFLAGS = $(MUPDF_CFLAGS) /D "NOCJKFONT" /D "NODROIDFONT"
+MUPDF_CFLAGS = $(MUPDF_CFLAGS) /D "NOCJKFONT"
 !endif
 
 LIBS_OBJS = \
@@ -293,32 +326,32 @@ LIBS_OBJS = $(LIBS_OBJS) $(JPEG_OBJS)
 LIBS_OBJS = $(LIBS_OBJS) $(JPEG_TURBO_OBJS)
 !endif
 
-PDFAPP_RES = $(OA)\pdfview.res
-PDFAPP_OBJS = $(LIBS_OBJS) $(OA)\win_main.obj $(OA)\pdfapp.obj $(PDFAPP_RES)
+PDFAPP_RES = $(O)\pdfview.res
+PDFAPP_OBJS = $(LIBS_OBJS) $(O)\win_main.obj $(O)\pdfapp.obj $(PDFAPP_RES)
 PDFAPP_APP = $(O)\pdfview.exe
 
-PDFBENCH_OBJS = $(LIBS_OBJS) $(OA)\pdfbench.obj
+PDFBENCH_OBJS = $(LIBS_OBJS) $(O)\pdfbench.obj
 PDFBENCH_APP = $(O)\pdfbench.exe
 
-PDFDRAW_OBJS = $(LIBS_OBJS) $(OA)\pdfdraw.obj
+PDFDRAW_OBJS = $(LIBS_OBJS) $(O)\pdfdraw.obj
 PDFDRAW_APP = $(O)\pdfdraw.exe
 
-PDFSHOW_OBJS = $(LIBS_OBJS) $(OA)\pdfshow.obj
+PDFSHOW_OBJS = $(LIBS_OBJS) $(O)\pdfshow.obj
 PDFSHOW_APP = $(O)\pdfshow.exe
 
-PDFCLEAN_OBJS = $(LIBS_OBJS) $(OA)\pdfclean.obj
+PDFCLEAN_OBJS = $(LIBS_OBJS) $(O)\pdfclean.obj
 PDFCLEAN_APP = $(O)\pdfclean.exe
 
-PDFINFO_OBJS = $(LIBS_OBJS) $(OA)\pdfinfo.obj
+PDFINFO_OBJS = $(LIBS_OBJS) $(O)\pdfinfo.obj
 PDFINFO_APP = $(O)\pdfinfo.exe
 
-PDFEXTRACT_OBJS = $(LIBS_OBJS) $(OA)\pdfextract.obj
+PDFEXTRACT_OBJS = $(LIBS_OBJS) $(O)\pdfextract.obj
 PDFEXTRACT_APP = $(O)\pdfextract.exe
 
 FONTDUMP_OBJS = $(OP)\fontdump.obj
 FONTDUMP_APP = $(O)\fontdump.exe
 
-XPSDRAW_OBJS = $(LIBS_OBJS) $(OA)\xpsdraw.obj
+XPSDRAW_OBJS = $(LIBS_OBJS) $(O)\xpsdraw.obj
 XPSDRAW_APP = $(O)\xpsdraw.exe
 
 LIBMUPDF_LIB = $(O)\libmupdf.lib
@@ -337,6 +370,8 @@ cleanall: force
 
 $(O): force
 	@if not exist $(O) mkdir $(O)
+	@if not exist $(OBZ) mkdir $(OBZ)
+	@if not exist $(OR) mkdir $(OR)
 	@if not exist $(OZ) mkdir $(OZ)
 	@if not exist $(OFT) mkdir $(OFT)
 	@if not exist $(OJ) mkdir $(OJ)
@@ -346,7 +381,6 @@ $(O): force
 	@if not exist $(OFZ) mkdir $(OFZ)
 	@if not exist $(OP) mkdir $(OP)
 	@if not exist $(OX) mkdir $(OX)
-	@if not exist $(OA) mkdir $(OA)
 
 $(PDFAPP_RES): $(MUPDF_DIR)\apps\win_res.rc
 	rc /r /fo$@ $(MUPDF_DIR)\apps\win_res.rc
@@ -457,6 +491,15 @@ $(LIBMUPDF_DLL): $(LIBMUPDF_OBJS) $(LIBMUPDF_DEF) $(LIBMUPDF_RES)
 {$(ZLIB_DIR)}.c{$(OZ)}.obj::
 	$(CC) $(ZLIB_CFLAGS) /Fo$(OZ)\ /Fd$(O)\vc80.pdb $<
 
+{$(BZIP2_DIR)}.c{$(OBZ)}.obj::
+	$(CC) $(BZIP2_CFLAGS) /Fo$(OBZ)\ /Fd$(O)\vc80.pdb $<
+
+{$(UNRAR_DIR)}.cpp{$(OR)}.obj::
+	$(CC) $(UNRAR_CFLAGS) /Fo$(OR)\ /Fd$(O)\vc80.pdb $<
+
+{$(ZLIB_DIR)\minizip}.c{$(OZ)}.obj::
+	$(CC) $(MINIZIP_CFLAGS) /Fo$(OZ)\ /Fd$(O)\vc80.pdb $<
+
 !if "$(JPEG_TURBO_OBJS)"==""
 {$(JPEG_DIR)}.c{$(OJ)}.obj::
 	$(CC) $(JPEG_CFLAGS) /Fo$(OJ)\ /Fd$(O)\vc80.pdb $<
@@ -477,8 +520,8 @@ $(LIBMUPDF_DLL): $(LIBMUPDF_OBJS) $(LIBMUPDF_DEF) $(LIBMUPDF_RES)
 {$(JBIG2_DIR)}.c{$(OJB)}.obj::
 	$(CC) $(JBIG2_CFLAGS) /Fo$(OJB)\ /Fd$(O)\vc80.pdb $<
 
-{$(MUPDF_DIR)\apps}.c{$(OA)}.obj::
-	$(CC) /TC $(MUPDF_CFLAGS) /Fo$(OA)\ /Fd$(O)\vc80.pdb $<
+{$(MUPDF_DIR)\apps}.c{$(O)}.obj::
+	$(CC) /TC $(MUPDF_CFLAGS) /Fo$(O)\ /Fd$(O)\vc80.pdb $<
 
 {$(MUPDF_DIR)\pdf}.c{$(OP)}.obj::
 	$(CC) /TC $(MUPDF_CFLAGS) /Fo$(OP)\ /Fd$(O)\vc80.pdb $<
@@ -498,15 +541,10 @@ $(LIBMUPDF_DLL): $(LIBMUPDF_OBJS) $(LIBMUPDF_DEF) $(LIBMUPDF_RES)
 # files that might have to be generated first:
 
 MUPDF_GEN_DIR = $(MUPDF_DIR)\generated
-
 $(MUPDF_GEN_DIR):
 	cd $(MUPDF_DIR) && win32\generate.bat
-
-$(MUPDF_GEN_DIR)\font_droid.h:
-	cd $(MUPDF_DIR) && win32\generate.bat
-
 $(OP)\pdf_fontfile.obj: $(MUPDF_GEN_DIR) \
-	$(MUPDF_GEN_DIR)\font_base14.h $(MUPDF_GEN_DIR)\font_droid.h $(MUPDF_GEN_DIR)\font_cjk.h
+	$(MUPDF_GEN_DIR)\font_base14.h $(MUPDF_GEN_DIR)\font_cjk.h
 $(OP)\pdf_cmap_tables.obj: $(MUPDF_GEN_DIR) \
 	$(MUPDF_GEN_DIR)\cmap_cns.h $(MUPDF_GEN_DIR)\cmap_gbs.h \
 	$(MUPDF_GEN_DIR)\cmap_japan.h $(MUPDF_GEN_DIR)\cmap_korea.h

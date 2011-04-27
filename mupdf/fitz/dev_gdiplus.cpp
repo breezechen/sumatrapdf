@@ -88,35 +88,6 @@ struct userDataStackItem
 		xstep(0), ystep(0), layerAlpha(1.0) { }
 };
 
-class TempFile
-{
-public:
-	WCHAR path[MAX_PATH];
-	TempFile *next;
-
-	TempFile(UCHAR *data, UINT size, TempFile *next=NULL) : next(next)
-	{
-		path[0] = L'\0';
-
-		WCHAR tempPath[MAX_PATH - 14];
-		DWORD res = GetTempPathW(MAX_PATH - 14, tempPath);
-		if (!res || res >= MAX_PATH - 14 || !GetTempFileNameW(tempPath, L"DG+", 0, path))
-			return;
-
-		HANDLE hFile = CreateFileW(path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile != INVALID_HANDLE_VALUE)
-			WriteFile(hFile, data, size, &res, NULL);
-		CloseHandle(hFile);
-	}
-
-	~TempFile()
-	{
-		if (path[0])
-			DeleteFileW(path);
-		delete next;
-	}
-};
-
 static PointF
 gdiplus_transform_point(fz_matrix ctm, float x, float y)
 {
@@ -132,11 +103,9 @@ public:
 	Graphics *graphics;
 	fz_device *dev;
 	fz_hash_table *outlines, *fontCollections;
-	TempFile *tempFiles;
 	float *t3color;
 
-	userData(HDC hDC, fz_bbox clip) : stack(new userDataStackItem()), dev(NULL),
-		outlines(NULL), fontCollections(NULL), tempFiles(NULL), t3color(NULL)
+	userData(HDC hDC, fz_bbox clip) : stack(new userDataStackItem()), dev(NULL), outlines(NULL), fontCollections(NULL), t3color(NULL)
 	{
 		assert(GetMapMode(hDC) == MM_TEXT);
 		graphics = _setup(new Graphics(hDC));
@@ -164,7 +133,6 @@ public:
 				delete (PrivateFontCollection *)fz_hash_get_val(fontCollections, i);
 			fz_free_hash(fontCollections);
 		}
-		delete tempFiles;
 	}
 
 	void pushClip(Region *clipRegion, float alpha=1.0)
@@ -752,14 +720,10 @@ gdiplus_get_font(userData *user, fz_font *font, float height, float *out_ascent)
 		collection = new PrivateFontCollection();
 		assert(collection->GetFamilyCount() == 0);
 		
-		/* TODO: this seems to make print-outs larger rather than smaller * /
+		/* TODO: memory fonts seem to get substituted in release builds * /
 		if (font->ft_data)
 		{
-			user->tempFiles = new TempFile(font->ft_data, font->ft_size, user->tempFiles);
-			if (*user->tempFiles->path)
-				collection->AddFontFile(user->tempFiles->path);
-			// TODO: memory fonts seem to get substituted in release builds
-			// collection->AddMemoryFont(font->ft_data, font->ft_size);
+			collection->AddMemoryFont(font->ft_data, font->ft_size);
 		}
 		else */ if (font->ft_file)
 		{

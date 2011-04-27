@@ -112,15 +112,11 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DisplayState.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DisplayState.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\DjVuEngine.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\DjVuEngine.h"
 				>
 			</File>
 			<File
@@ -141,10 +137,6 @@
 			</File>
 			<File
 				RelativePath=".\src\ImagesEngine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Notifications.h"
 				>
 			</File>
 			<File
@@ -766,10 +758,6 @@
 				</File>
 				<File
 					RelativePath=".\mupdf\xps\xps_jpeg.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_outline.c"
 					>
 				</File>
 				<File

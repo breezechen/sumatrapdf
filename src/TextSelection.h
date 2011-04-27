@@ -10,11 +10,11 @@ class StrVec;
 
 #define iswordchar(c) IsCharAlphaNumeric(c)
 
-struct TextSel {
+typedef struct {
     int len;
     int *pages;
     RectI *rects;
-};
+} TextSel;
 
 class TextSelection
 {

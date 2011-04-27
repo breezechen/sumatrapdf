@@ -256,7 +256,6 @@ Duputsa
 #Default &Zoom:
 #Default PDF reader can't be changed in portable mode
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Download
 #Enter the command-line to invoke when you double-click on the PDF document:
@@ -271,8 +270,6 @@ Duputsa
 #Fit a Single Page
 #Found text at page %d
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Hint: Use the F3 key for finding again
 #Image files (*.%s)
 #Make SumatraPDF default application for PDF files?
@@ -283,7 +280,6 @@ Duputsa
 #No synchronization info at this position
 #Number of Pages:
 #OK
-#Open a document...
 #Open in &Adobe Reader
 #Open in &Foxit Reader
 #Open in PDF-XChange
@@ -300,8 +296,6 @@ Duputsa
 #Please wait - rendering...
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Remember &opened files
 #Save S&hortcut...\tCtrl-Shift-S
 #Searching %d of %d...
@@ -311,7 +305,6 @@ Duputsa
 #Send by &E-mail...
 #Set inverse search command-line
 #Show &pages continuously
-#Show frequently read
 #Show the &bookmarks sidebar when available
 #Source file %s has no synchronization point
 #Subject:

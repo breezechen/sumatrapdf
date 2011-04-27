@@ -282,16 +282,6 @@ static void StrVecTest()
     free(s);
 
     {
-        StrVec v2(v);
-        assert(Str::Eq(v2[1], _T("foo")));
-        v2.Append(Str::Dup(_T("nobar")));
-        assert(Str::Eq(v2[3], _T("nobar")));
-        v2 = v;
-        assert(v2.Count() == 3 && v2[0] != v[0]);
-        assert(Str::Eq(v2[1], _T("foo")));
-    }
-
-    {
         StrVec v2;
         size_t count = v2.Split(_T("a,b,,c,"), _T(","));
         assert(count == 5 && v2.Find(_T("c")) == 3);
@@ -334,16 +324,6 @@ static void VecTest()
     assert(ints.Count() == 1000 && ints[500] == 500);
     ints.Remove(500);
     assert(ints.Count() == 999 && ints[500] == 501);
-
-    {
-        Vec<int> ints2(ints);
-        assert(ints2.Count() == 999);
-        assert(ints.LendData() != ints2.LendData());
-        ints.Remove(600);
-        assert(ints.Count() < ints2.Count());
-        ints2 = ints;
-        assert(ints2.Count() == 998);
-    }
 
     {
         char buf[2] = {'a', '\0'};
@@ -422,15 +402,6 @@ static void VecTest()
         }
         DeleteVecMembers(v);
     }
-
-    {
-        Vec<int> v;
-        v.Append(2);
-        v.Append(4);
-        Vec<int> *v2 = v.Clone();
-        assert(v2->Count() == 2 && v2->At(0) == 2 && v2->At(1) == 4);
-        delete v2;
-    }
 }
 
 static void LogTest()
@@ -485,18 +456,6 @@ static void BencTestSerialization(BencObj *obj, const char *dataOrig)
     ScopedMem<char> data(obj->Encode());
     assert(data);
     assert(Str::Eq(data, dataOrig));
-}
-
-static void BencTestRoundtrip(BencObj *obj)
-{
-    ScopedMem<char> encoded(obj->Encode());
-    assert(encoded);
-    size_t len;
-    BencObj *obj2 = BencObj::Decode(encoded, &len);
-    assert(obj2 && len == Str::Len(encoded));
-    ScopedMem<char> roundtrip(obj2->Encode());
-    assert(Str::Eq(encoded, roundtrip));
-    delete obj2;
 }
 
 static void BencTestParseInt()
@@ -594,29 +553,10 @@ static void BencTestParseString()
             assert(!obj);
         }
     }
-}
 
-static void BencTestParseRawStrings()
-{
-    BencArray array;
-    array.AddRaw("a\x82");
-    array.AddRaw("a\x82", 1);
-    BencString *raw = array.GetString(0);
-    assert(raw && Str::Eq(raw->RawValue(), "a\x82"));
-    BencTestSerialization(raw, "2:a\x82");
-    raw = array.GetString(1);
-    assert(raw && Str::Eq(raw->RawValue(), "a"));
-    BencTestSerialization(raw, "1:a");
-
-    BencDict dict;
-    dict.AddRaw("1", "a\x82");
-    dict.AddRaw("2", "a\x82", 1);
-    raw = dict.GetString("1");
-    assert(raw && Str::Eq(raw->RawValue(), "a\x82"));
-    BencTestSerialization(raw, "2:a\x82");
-    raw = dict.GetString("2");
-    assert(raw && Str::Eq(raw->RawValue(), "a"));
-    BencTestSerialization(raw, "1:a");
+    BencRawString raw("a\x82");
+    BencTestSerialization(&raw, "2:a\x82");
+    assert(Str::Eq(raw.RawValue(), "a\x82"));
 }
 
 static void BencTestParseArray(const char *benc, size_t expectedLen)
@@ -698,7 +638,6 @@ static void BencTestArrayAppend()
     }
     assert(!array->GetInt(ITERATION_COUNT));
     assert(array->GetDict(ITERATION_COUNT));
-    BencTestRoundtrip(array);
     delete array;
 }
 
@@ -718,7 +657,6 @@ static void BencTestDictAppend()
     }
     BencInt *intObj = dict->GetInt("0123");
     assert(intObj && intObj->Value() == 123);
-    BencTestRoundtrip(dict);
     delete dict;
 
     /* test insertion in descending order */
@@ -733,7 +671,6 @@ static void BencTestDictAppend()
     }
     intObj = dict->GetInt("0123");
     assert(intObj && intObj->Value() == 123);
-    BencTestRoundtrip(dict);
     delete dict;
 
     dict = new BencDict();
@@ -757,7 +694,6 @@ void BaseUtils_UnitTests()
     LogTest();
     BencTestParseInt();
     BencTestParseString();
-    BencTestParseRawStrings();
     BencTestParseArrays();
     BencTestParseDicts();
     BencTestArrayAppend();

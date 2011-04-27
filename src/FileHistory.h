@@ -31,27 +31,8 @@ etc...
     quits.
 */
 
-// number of most recently used files that will be shown in the menu
-// (and remembered in the preferences file, if just filenames are
-//  to be remembered and not individual view settings per document)
-#define FILE_HISTORY_MAX_RECENT     10
-
-// maximum number of most frequently used files that will be shown on the
-// Frequent Read list (space permitting)
-#define FILE_HISTORY_MAX_FREQUENT   10
-
 class FileHistory {
     Vec<DisplayState *> states;
-
-    // sorts the most often used files first
-    static int cmpOpenCount(const void *a, const void *b) {
-        DisplayState *dsA = *(DisplayState **)a;
-        DisplayState *dsB = *(DisplayState **)b;
-        if (dsA->openCount != dsB->openCount)
-            return dsB->openCount - dsA->openCount;
-        // use recency as the criterion in case of equal open counts
-        return dsA->_index - dsB->_index;
-    }
 
 public:
     FileHistory() { }
@@ -89,7 +70,6 @@ public:
         else
             Remove(state);
         Prepend(state);
-        state->openCount++;
     }
 
     bool MarkFileInexistent(const TCHAR *filePath) {
@@ -103,11 +83,6 @@ public:
             return false;
         Remove(state);
         Append(state);
-        // also delete the thumbnail and move the link towards the
-        // back in the Frequently Read list
-        delete state->thumbnail;
-        state->thumbnail = NULL;
-        state->openCount >>= 2;
         return true;
     }
 
@@ -118,17 +93,6 @@ public:
             Append(state);
             other.Remove(state);
         }
-    }
-
-    // returns a shallow copy of the file history list, sorted
-    // by open count (which has a pre-multiplied recency factor)
-    // caller needs to delete the result (but not the contained states)
-    Vec<DisplayState *> *GetFrequencyOrder() {
-        Vec<DisplayState *> *list = states.Clone();
-        for (size_t i = 0; i < list->Count(); i++)
-            list->At(i)->_index = i;
-        list->Sort(cmpOpenCount);
-        return list;
     }
 };
 

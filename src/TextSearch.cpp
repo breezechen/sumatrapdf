@@ -12,8 +12,8 @@ enum { SEARCH_PAGE, SKIP_PAGE };
 // cf. http://code.google.com/p/sumatrapdf/issues/detail?id=959
 #define isnoncjkwordchar(c) (iswordchar(c) && (unsigned short)(c) < 0x2E80)
 
-TextSearch::TextSearch(BaseEngine *engine) : TextSelection(engine),
-    findText(NULL), anchor(NULL), pageText(NULL),
+TextSearch::TextSearch(BaseEngine *engine, TextSearchTracker *tracker) : TextSelection(engine),
+    tracker(tracker), findText(NULL), anchor(NULL), pageText(NULL),
     caseSensitive(false), wholeWords(false), forward(true),
     findPage(0), findIndex(0), lastText(NULL)
 {
@@ -149,14 +149,13 @@ bool TextSearch::FindTextInPage(int pageNo)
     return true;
 }
 
-bool TextSearch::FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker)
+bool TextSearch::FindStartingAtPage(int pageNo)
 {
     if (Str::IsEmpty(anchor))
         return false;
 
     int total = engine->PageCount();
-    while (1 <= pageNo && pageNo <= total &&
-           (!tracker || tracker->ProgressUpdate(pageNo, total))) {
+    while (1 <= pageNo && pageNo <= total && CheckTracker(pageNo, total)) {
         if (SKIP_PAGE == findCache[pageNo - 1]) {
             pageNo += forward ? 1 : -1;
             continue;
@@ -186,26 +185,24 @@ bool TextSearch::FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker)
     return false;
 }
 
-TextSel *TextSearch::FindFirst(int page, TCHAR *text, ProgressUpdateUI *tracker)
+TextSel *TextSearch::FindFirst(int page, TCHAR *text)
 {
     SetText(text);
 
-    if (FindStartingAtPage(page, tracker))
+    if (FindStartingAtPage(page))
         return &result;
     return NULL;
 }
 
-TextSel *TextSearch::FindNext(ProgressUpdateUI *tracker)
+TextSel *TextSearch::FindNext()
 {
     assert(findText);
     if (!findText)
         return NULL;
-    if (tracker && !tracker->ProgressUpdate(findPage, engine->PageCount()))
-        return NULL;
 
     if (FindTextInPage())
         return &result;
-    if (FindStartingAtPage(findPage + (forward ? 1 : -1), tracker))
+    if (FindStartingAtPage(findPage + (forward ? 1 : -1)))
         return &result;
     return NULL;
 }

@@ -12,7 +12,7 @@
    Note: As an exception to the above specifications, this implementation
          only handles zero-terminated strings (i.e. \0 may not appear within
          strings) and considers all encoded strings to be UTF-8 encoded
-         (unless added with AddRaw and retrieved with RawValue()).
+         (unless handled as BencRawString and retrieved with RawValue()).
 */
 
 #include <inttypes.h>
@@ -32,27 +32,26 @@ public:
     static BencObj *Decode(const char *bytes, size_t *lenOut=NULL);
 };
 
-class BencArray;
-class BencDict;
-
 class BencString : public BencObj {
-    friend BencArray;
-    friend BencDict;
-
     char *value;
 
 protected:
-    BencString(const TCHAR *value);
     BencString(const char *rawValue, size_t len);
 
 public:
-    virtual ~BencString() { free(value); }
+    BencString(const TCHAR *value);
+    ~BencString() { free(value); }
 
     TCHAR *Value() const;
     const char *RawValue() const { return value; }
 
     virtual char *Encode() const;
     static BencString *Decode(const char *bytes, size_t *lenOut);
+};
+
+class BencRawString : public BencString {
+public:
+    BencRawString(const char *value, size_t len=-1);
 };
 
 class BencInt : public BencObj {
@@ -66,28 +65,22 @@ public:
     static BencInt *Decode(const char *bytes, size_t *lenOut);
 };
 
+class BencDict;
+
 class BencArray : public BencObj {
     Vec<BencObj *> value;
 
 public:
     BencArray() : BencObj(BT_ARRAY) { }
-    virtual ~BencArray() { DeleteVecMembers(value); }
+    ~BencArray() { DeleteVecMembers(value); }
     size_t Length() const { return value.Count(); }
 
     void Add(BencObj *obj) {
         assert(obj && value.Find(obj) == -1);
-        if (!obj || value.Find(obj) != -1) return;
         value.Append(obj);
     }
     void Add(const TCHAR *string) {
-        assert(string);
-        if (string)
-            Add(new BencString(string));
-    }
-    void AddRaw(const char *string, size_t len=-1) {
-        assert(string);
-        if (string)
-            Add(new BencString(string, len));
+        Add(new BencString(string));
     }
     void Add(int64_t val) {
         Add(new BencInt(val));
@@ -122,7 +115,7 @@ class BencDict : public BencObj {
 
 public:
     BencDict() : BencObj(BT_DICT) { }
-    virtual ~BencDict() {
+    ~BencDict() {
         FreeVecMembers(keys);
         DeleteVecMembers(values);
     }
@@ -130,14 +123,7 @@ public:
 
     void Add(const char *key, BencObj *obj);
     void Add(const char *key, const TCHAR *string) {
-        assert(string);
-        if (string)
-            Add(key, new BencString(string));
-    }
-    void AddRaw(const char *key, const char *string, size_t len=-1) {
-        assert(string);
-        if (string)
-            Add(key, new BencString(string, len));
+        Add(key, new BencString(string));
     }
     void Add(const char *key, int64_t val) {
         Add(key, new BencInt(val));

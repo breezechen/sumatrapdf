@@ -503,28 +503,21 @@ printing document
 #Comic books
 #Copy &Link Address
 #Copy Co&mment
-#DjVu documents
 #Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
 #Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Image files (*.%s)
-#Open a document...
 #P&roperties
 #Page number %u inexistant
 #Page scaling
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Save S&hortcut...\tCtrl-Shift-S
 #Select &All
-#Show frequently read
 #SumatraPDF crashed
 #XPS documents
 

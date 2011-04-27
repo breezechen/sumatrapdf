@@ -15,6 +15,7 @@ C_FILES_TO_PROCESS = ["SumatraPDF.cpp", "SumatraAbout.cpp", "SumatraProperties.c
 C_FILES_TO_PROCESS = [os.path.join("..", "src", f) for f in C_FILES_TO_PROCESS]
 STRINGS_PATH = os.path.join("..", "src", "strings")
 TRANSLATION_PATTERN = r'\b_TRN?\("(.*?)"\)'
+TB_TRANSLATION_PATTERN = r'_TB_TRN?\("(.*?)"\)'
 
 LANG_TXT = "Lang:"
 CONTRIBUTOR_TXT = "Contributor:"
@@ -90,8 +91,6 @@ def load_one_strings_file(file_path, lang_code, strings_dict, langs_dict, contri
             curr_orig = l
             #print l
         else:
-            if curr_trans is not None:
-                print("curr_trans: '%s', line: %d in '%s'" % (curr_trans, line_no, os.path.basename(file_path)))
             assert curr_trans is None, "curr_trans: '%s', line: %d in '%s'" % (curr_trans, line_no, os.path.basename(file_path))
             curr_trans = l
             #print l
@@ -135,11 +134,12 @@ def get_lang_list(strings_dict):
     return langs
 
 def extract_strings_from_c_files():
-    strings = []
+    strings, tb_strings = [], []
     for f in C_FILES_TO_PROCESS:
         file_content = open(f, "r").read()
         strings += re.findall(TRANSLATION_PATTERN, file_content)
-    return uniquify(strings)
+        tb_strings += re.findall(TB_TRANSLATION_PATTERN, file_content)
+    return (uniquify(strings), uniquify(tb_strings))
 
 (SS_ONLY_IN_C, SS_ONLY_IN_TXT, SS_IN_BOTH) = range(3)
 
@@ -247,12 +247,12 @@ def dump_missing_for_language(strings_dict, lang):
         if not is_translated:
             print k
 
-def untranslated_count_for_lang(strings_dict, lang):
+def untranslated_count_for_lang(strings_dict, lang, tb_strings):
     if 'en' == lang: return 0 # special case since the test below thinks all english are untranslated
     count = 0
     for k in strings_dict:
         is_translated = len([item[1] for item in strings_dict[k] if item[0] == lang]) == 1
-        if not is_translated:
+        if not is_translated and k not in tb_strings:
             #print("%s: %s" % (lang, k))
             count += 1
     return count

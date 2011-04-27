@@ -1,13 +1,9 @@
-The idea is to record here changes that deserve mentioning in
+﻿The idea is to record here changes that deserve mentioning in
 the release notes, as we make them, to make the release process easier.
 
 Next version:
 
-* display Frequently Read list when no document is open
-* support clickable links and a Table of Content for XPS documents
-* display printing progress and allow to cancel it
-
-1.5 (2011-04-23)
+1.5 (2011-04-??)
 
 * add support for displaying XPS documents
 * add support for displaying CBZ and CBR comic books

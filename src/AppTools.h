@@ -9,7 +9,7 @@
 class WindowInfo;
 
 // Base class for code that has to be executed on UI thread. Derive your class
-// from UIThreadWorkItem and call QueueWorkItem to schedule execution
+// from UIThreadWorkItem and call gUIThreadMarshaller.Queue() to schedule execution
 // of its Execute() method on UI thread.
 class UIThreadWorkItem
 {
@@ -20,8 +20,6 @@ public:
     virtual ~UIThreadWorkItem() {}
     virtual void Execute() = 0;
 };
-
-void QueueWorkItem(UIThreadWorkItem *wi);
 
 class UIThreadWorkItemQueue
 {
@@ -57,10 +55,10 @@ public:
 
 bool IsValidProgramVersion(char *txt);
 int CompareVersion(TCHAR *txt1, TCHAR *txt2);
-int FileTimeDiffInSecs(FILETIME& ft1, FILETIME& ft2);
 
 TCHAR *GetExePath();
 bool IsRunningInPortableMode();
+TCHAR *AppGenDataDir();
 TCHAR *AppGenDataFilename(TCHAR *pFilename);
 void AdjustRemovableDriveLetter(TCHAR *path);
 
