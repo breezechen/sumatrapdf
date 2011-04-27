@@ -1,0 +1,526 @@
+﻿# Translations for Hebrew (עברית) (he) language
+
+# * Lines starting with # are comments (such as this).
+# * This file must be in UTF-8 encoding. Make sure you use a proper
+#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
+# * For lines containing several variables (such as %s, %d or %u), the
+#   variables must remain in that exact order in the translation.
+
+Lang: he Hebrew (עברית)
+
+Contributor: Eyal Berman
+Contributor: Amos Kotter http://sites.google.com/site/hillasystem/
+
+&About
+אודות
+
+&Actual Size\tCtrl-1
+גודל מקור\tCtrl-1
+
+&All selected pages
+כל העמודים הנבחרים
+
+&Back\tAlt+Left Arrow
+חזור\tAlt+<-
+
+&Close\tCtrl-W
+&סגור\tCtrl-W
+
+&Copy Selection\tCtrl-C
+העתק בחירה\tCtrl-C
+
+&Don't ask me again
+אל תשאל שנית
+
+&Even pages only
+עמודים זוגיים בלבד
+
+&File
+&קובץ
+
+&Find what:
+מה למצוא:
+
+&First Page\tHome
+דף ראשון\tHome
+
+&Fit pages to printable area
+הגדל עמודים עד גודל אזור ההדפסה
+
+&Go To
+לך ל
+
+&Go to page:
+עבור לעמוד
+
+&Help
+עזרה
+
+&Last Page\tEnd
+דף אחרון\tEnd
+
+&Magnification:
+הגדלה
+
+&Manual
+מדריך
+
+&Match case
+התאם אות גדולה/קטנה
+
+&Next Page\tRight Arrow
+דף הבא\t->
+
+&No
+לא
+
+&No, thanks
+לא, תודה
+
+&Odd pages only
+עמודים אי-זוגיים בלבד
+
+&Open\tCtrl-O
+&פתח\tCtrl-O
+
+&Options...
+אפשרויות...
+
+&Password:
+סיסמה:
+
+&Previous Page\tLeft Arrow
+דף קודם\t<-
+
+&Print...\tCtrl-P
+הדפס\tCtrl-P
+
+&Print... (denied)
+הדפס... (התקבל סירוב)
+
+&Remember the password for this document
+אנא זכור את הסיסמא למסמך זה
+
+&Remember these settings for each document
+זכור הגדרות אלו לכל מסמך
+
+&Save As...\tCtrl-S
+שמירה בשם\tCtrl-S
+
+&Settings
+הגדרות
+
+&Shrink pages to printable area (if necessary)
+כווץ עמודים עד גודל אזור ההדפסה
+
+&Skip this version
+דלג מהדורה זו
+
+&Use original page sizes
+השתמש במידות דף מקוריות
+
+&View
+&תצוגה
+
+&Yes
+כן
+
+&Zoom
+זום
+
+(of %d)
+(%d מ)
+
+About SumatraPDF
+PDF אודות סומטרה
+
+Advanced
+מתקדם
+
+All files
+כל הקבצים
+
+Application:
+יישום:
+
+Associate with PDF files?
+?PDF לשייך לקבצי
+
+Author:
+עורך:
+
+Automatic
+אוטומטי
+
+Automatically check for &updates
+בדוק אוטומטית לעדכונים
+
+Book View
+תצוגת ספר
+
+Book&marks\tF12
+סימניה\tF12
+
+Bookmarks
+מועדפים
+
+Bytes
+ביטים
+
+Can't connect to the Internet (error %#x).
+לא יכול להתקשר לאינטרנט (error %#x).
+
+Cancel
+בטל
+
+Cannot print this file
+לא ניתן להדפיס הקובץ
+
+Cannot start inverse search command. Please check the command line in the settings.
+לא ניתן להריץ פקודת חיפוש הפוך. אנא בדוק הפקודה בהגדרות
+
+Change Language
+שנה שפה
+
+Check for &Updates
+בדוק לגרסה חדשה
+
+Continuous
+רציף
+
+Continuous Book View
+תצוגת ספר רציפה
+
+Continuous Facing
+המשך תצוגה רציפה
+
+Contribute Translation
+עזור לתרגם
+
+Copying text was denied (copying as image only)
+העתקת טקסט נדחית (מועתק רק כתמונה)
+
+Could not open Printer
+לא ניתן לפתוח מדפסת
+
+Couldn't initialize printer
+לא ניתן לאתחל מדפסת
+
+Couldn't render the page
+לא ניתן להציג הדף
+
+Created:
+נוצר:
+
+Custom &Zoom...\tCtrl-Y
+זום משתמש...\tCtrl-Y
+
+Default &Layout:
+סידור ברירת מחדל:
+
+Default &Zoom:
+זום ברירת ברירת מחדל:
+
+Default PDF reader can't be changed in portable mode
+PDF לא ניתן לשנות במצב נייד את קורא ה
+
+Denied Permissions:
+הרשאות חסרות:
+
+Document Properties
+תכונות מסמך
+
+Download
+הורדה
+
+E&xit\tCtrl-Q
+יציאה\tCtrl-Q
+
+Enter password
+הכנס סיסמה
+
+Enter password for %s
+%s הכנס סיסמה עבור
+
+F&orward\tAlt+Right Arrow
+קדימה\tAlt+ ?
+
+F&ullscreen\tCtrl-Shift-L
+מסך מלא\tCtrl-Shift-L
+
+Facing
+דף כפול
+
+Failed to save a file
+כישלון בשמירת הקובץ
+
+File Size:
+גודל הקובץ:
+
+File:
+קובץ:
+
+Fin&d...\tCtrl-F
+חפש...\tCtrl-F
+
+Find
+חפש
+
+Find Next
+חפש הבא
+
+Find Previous
+חפש קודם
+
+Find:
+חפש:
+
+Fit &Content\tCtrl-3
+התאם לתוכן\tCtrl-3
+
+Fit &Page\tCtrl-0
+התאם דף\tCtrl-0
+
+Fit &Width\tCtrl-2
+התאם רוחב\tCtrl-2
+
+Fit Content
+התאם לתוכן
+
+Fit Page
+התאם דף
+
+Fit Width
+התאם רוחב
+
+Found text at page %d
+%d חפש מלל בעמוד
+
+GB
+GB
+
+Go to page
+עבור לעמוד
+
+Hint: Use the F3 key for finding again
+F3 רמז: לחיפוש הבא, השתמש במקש
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+?SumatraPDF האם לקבוע כברירת מחדל את
+
+Make SumatraPDF my default PDF reader
+PDF הפוך את סומטרה לברירת מחדל עבור קבצי
+
+Match Case
+התאם לאותיות קטנות/גדולות
+
+Modified:
+שונה:
+
+New version %s is available. Download new version?
+?%s מהדורה חדשה זמינה. להוריד מהדורה
+
+Next Page
+דף הבא
+
+No matches were found
+לא נמצאו התאמות
+
+No synchronization file found
+לא נמצא קובץ סנכרון
+
+No synchronization info at this position
+לא נמצא מידע סנכרון במקום זה
+
+Number of Pages:
+מספר עמודים:
+
+OK
+אשר
+
+Open
+פתח
+
+Open in &Adobe Reader
+Adobe פתח בקורא
+
+Open in &Foxit Reader
+Foxit פתח בקורא
+
+Open in PDF-XChange
+PDF-XChange פתח בקורא
+
+P&roperties\tCtrl-D
+תכונות...\tCtrl-D
+
+PDF Document
+PDF מסמך
+
+PDF Producer:
+PDF מפיק:
+
+PDF Version:
+PDF מהדורת:
+
+PDF documents
+PDF מסמך
+
+Pa&ge...\tCtrl-G
+דף...\tCtrl-G
+
+Page Size:
+גודל עמוד:
+
+Page number %u inexistant
+לא קיים %u עמוד מספר
+
+Page scaling
+מתיחת עמודים
+
+Page:
+עמוד:
+
+Please wait - rendering...
+אנא המתן – מבצע...
+
+Previous Page
+דף קודם
+
+Print range
+הדפס טווח
+
+Printing problem.
+בעיית הדפסה
+
+Remember &opened files
+זכור קבצים פתוחים
+
+Rotate &Left\tCtrl-Shift--
+סובב שמאלה\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+סובב ימינה\tCtrl-Shift-+
+
+Searching %d of %d...
+%d מ %d מחפש...
+
+Select content with Ctrl+left mouse button
+וכפתור עכבר שמאל Ctrl בחר תוכן עם
+
+Send by &E-mail...
+שלח אימייל
+
+Set inverse search command-line
+קבע פקודת חיפוש הפוך
+
+Show &Toolbar
+הצג שורת תפריט
+
+Show &pages continuously
+הצג דפים ברציפות
+
+Show the &bookmarks sidebar when available
+הצג סרגל-צד סימניות כשזמין
+
+Single Page
+דף יחיד
+
+Source file %s has no synchronization point
+%s אין נקודת סנכרון לקובץ מקור
+
+Subject:
+נושא:
+
+SumatraPDF Options
+SumatraPDF אפשרויות
+
+SumatraPDF Update
+SumatraPDF עדכון
+
+SumatraPDF is your default PDF reader
+SumatraPDF ראשי הינו PDF קורא
+
+SumatraPDF should now be your default PDF reader
+SumatraPDF ראשי אמור להיות עכשיו PDF קורא
+
+Synchronization file cannot be opened
+לא ניתן לפתוח קובץ סנכרון
+
+Text documents
+(מסמך מלל (טקסט
+
+Title:
+כותרת:
+
+Unknown source file (%s)
+קובץ מקור לא ידוע (%s)
+
+View
+תצוגה
+
+Visit &Website
+בקר באתר
+
+Warning
+אזהרה
+
+You have the latest version.
+ברשותך המדורה האחרונה
+
+You have version %s
+%s המהדורה שברשותך היא
+
+Zoom
+זום
+
+Zoom In
+זום פנימה
+
+Zoom Out
+זום החוצה
+
+Zoom factor
+מקדם זום
+
+[Changes detected; refreshing] %s
+[מרענן ; נתגלו שינויים] %s
+
+copying text
+מעתיק טקסט
+
+printing document
+מדפיס מסמך
+
+# Untranslated:
+#&Copy Selection
+#&Print...
+#&Save As...
+#All supported documents
+#Attachment: %s
+#Bookmark Shortcuts
+#Bookmark shortcut to page %d of %s
+#Comic books
+#Copy &Link Address
+#Copy Co&mment
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Error loading %s
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d (again)
+#Image files (*.%s)
+#No result found around line %u in file %s
+#P&roperties
+#Please include the following file in your crash report:
+#Pr&esentation\tCtrl-L
+#Save S&hortcut...\tCtrl-Shift-S
+#Select &All
+#Select &All\tCtrl-A
+#SumatraPDF crashed
+#XPS documents
+
