@@ -11,9 +11,12 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2_refinement.c 465 2008-05-16 23:48:20Z giles $
 */
 
 /**
@@ -34,6 +37,7 @@
 #include "jbig2_priv.h"
 #include "jbig2_arith.h"
 #include "jbig2_generic.h"
+#include "jbig2_mmr.h"
 #include "jbig2_image.h"
 
 static int
@@ -87,7 +91,7 @@ jbig2_decode_refinement_template0_unopt(Jbig2Ctx *ctx,
       jbig2_image_set_pixel(image, x, y, bit);
     }
   }
-#ifdef JBIG2_DEBUG_DUMP
+#ifdef JBIG2_DEBUG
   {
     static count = 0;
     char name[32];
@@ -138,7 +142,7 @@ jbig2_decode_refinement_template1_unopt(Jbig2Ctx *ctx,
     }
   }
 
-#ifdef JBIG2_DEBUG_DUMP
+#ifdef JBIG2_DEBUG
   {
     static count = 0;
     char name[32];
@@ -377,8 +381,8 @@ jbig2_refinement_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
        rules say to use the first one available, and not to
        reuse any intermediate result, so we simply clone it
        and free the original to keep track of this. */
-    params.reference = jbig2_image_clone(ctx, (Jbig2Image*)ref->result);
-    jbig2_image_release(ctx, (Jbig2Image*)ref->result);
+    params.reference = jbig2_image_clone(ctx, ref->result);
+    jbig2_image_release(ctx, ref->result);
     ref->result = NULL;
     jbig2_error(ctx, JBIG2_SEVERITY_DEBUG, segment->number,
       "found reference bitmap in segment %d", ref->number);
@@ -403,13 +407,13 @@ jbig2_refinement_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
     image = jbig2_image_new(ctx, rsi.width, rsi.height);
     if (image == NULL)
       return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-               "unable to allocate refinement image");
+               "unable to allocate image storage");
     jbig2_error(ctx, JBIG2_SEVERITY_DEBUG, segment->number,
       "allocated %d x %d image buffer for region decode results",
           rsi.width, rsi.height);
 
     stats_size = params.GRTEMPLATE ? 1 << 10 : 1 << 13;
-    GR_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+    GR_stats = jbig2_alloc(ctx->allocator, stats_size);
     memset(GR_stats, 0, stats_size);
 
     ws = jbig2_word_stream_buf_new(ctx, segment_data + offset,

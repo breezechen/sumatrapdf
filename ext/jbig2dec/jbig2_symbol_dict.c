@@ -8,12 +8,15 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
-*/
 
-/* symbol dictionary segment decode and support */
+    $Id: jbig2_symbol_dict.c 465 2008-05-16 23:48:20Z giles $
+
+    symbol dictionary segment decode and support
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -91,9 +94,11 @@ jbig2_sd_new(Jbig2Ctx *ctx, int n_symbols)
 {
    Jbig2SymbolDict *new = NULL;
 
-   new = jbig2_new(ctx, Jbig2SymbolDict, 1);
+   new = (Jbig2SymbolDict *)jbig2_alloc(ctx->allocator,
+   				sizeof(Jbig2SymbolDict));
    if (new != NULL) {
-     new->glyphs = jbig2_new(ctx, Jbig2Image*, n_symbols);
+     new->glyphs = (Jbig2Image **)jbig2_alloc(ctx->allocator,
+     				n_symbols*sizeof(Jbig2Image*));
      new->n_symbols = n_symbols;
    } else {
      return NULL;
@@ -156,7 +161,7 @@ jbig2_sd_list_referred(Jbig2Ctx *ctx, Jbig2Segment *segment)
     int n_dicts = jbig2_sd_count_referred(ctx, segment);
     int dindex = 0;
 
-    dicts = jbig2_new(ctx, Jbig2SymbolDict*, n_dicts);
+    dicts = jbig2_alloc(ctx->allocator, sizeof(Jbig2SymbolDict *) * n_dicts);
     for (index = 0; index < segment->referred_to_segment_count; index++) {
         rsegment = jbig2_find_segment(ctx, segment->referred_to_segments[index]);
         if (rsegment && ((rsegment->flags & 63) == 0)) {
@@ -263,7 +268,8 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
       SDHUFFRDX = jbig2_build_huffman_table(ctx,
 				&jbig2_huffman_params_O);
       if (!params->SDREFAGG) {
-	  SDNEWSYMWIDTHS = jbig2_new(ctx, uint32_t, params->SDNUMNEWSYMS);
+	  SDNEWSYMWIDTHS = jbig2_alloc(ctx->allocator,
+		sizeof(*SDNEWSYMWIDTHS)*params->SDNUMNEWSYMS);
 	  if (SDNEWSYMWIDTHS == NULL) {
 	    jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 		"could not allocate storage for symbol widths");
@@ -398,7 +404,7 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
 			  /* First time through, we need to initialise the */
 			  /* various tables for Huffman or adaptive encoding */
 			  /* as well as the text region parameters structure */
-			  refagg_dicts = jbig2_new(ctx, Jbig2SymbolDict*, n_refagg_dicts);
+			  refagg_dicts = jbig2_alloc(ctx->allocator, sizeof(Jbig2SymbolDict *) * n_refagg_dicts);
 		          if (refagg_dicts == NULL) {
 			      code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 			       "Out of memory allocating dictionary array");
@@ -417,7 +423,7 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
 			      refagg_dicts[0]->glyphs[i] = jbig2_image_clone(ctx, params->SDINSYMS->glyphs[i]);
 		          }
 
-			  tparams = jbig2_new(ctx, Jbig2TextRegionParams, 1);
+			  tparams = jbig2_alloc(ctx->allocator, sizeof(Jbig2TextRegionParams));
 			  if (tparams == NULL) {
 			      code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
 			      "Out of memory creating text region params");
@@ -479,7 +485,7 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
 		      }
 
 		      /* multiple symbols are handled as a text region */
-		      jbig2_decode_text_region(ctx, segment, tparams, (const Jbig2SymbolDict * const *)refagg_dicts,
+		      jbig2_decode_text_region(ctx, segment, tparams, (const Jbig2SymbolDict * const *)refagg_dicts, 
 			  n_refagg_dicts, image, data, size, GR_stats, as, (Jbig2WordStream *)NULL);
 
 		      SDNEWSYMS->glyphs[NSYMSDECODED] = image;
@@ -690,24 +696,14 @@ jbig2_decode_symbol_dict(Jbig2Ctx *ctx,
     while (j < params->SDNUMEXSYMS) {
       if (params->SDHUFF)
       	/* FIXME: implement reading from huff table B.1 */
-        exrunlength = exflag ? params->SDNUMEXSYMS : 0;
+        exrunlength = params->SDNUMEXSYMS;
       else
         code = jbig2_arith_int_decode(IAEX, as, &exrunlength);
-      if (exflag && exrunlength > params->SDNUMEXSYMS - j) {
-        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-          "runlength too large in export symbol table (%d > %d - %d)\n",
-          exrunlength, params->SDNUMEXSYMS, j);
-        jbig2_sd_release(ctx, SDEXSYMS);
-        /* skip to the cleanup code and return SDEXSYMS = NULL */
-        SDEXSYMS = NULL;
-        break;
-      }
-      for(k = 0; k < exrunlength; k++) {
+      for(k = 0; k < exrunlength; k++)
         if (exflag) {
-          SDEXSYMS->glyphs[j++] = (i < m) ?
+          SDEXSYMS->glyphs[j++] = (i < m) ? 
             jbig2_image_clone(ctx, params->SDINSYMS->glyphs[i]) :
             jbig2_image_clone(ctx, SDNEWSYMS->glyphs[i-m]);
-        }
           i++;
         }
         exflag = !exflag;
@@ -751,8 +747,6 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
   int offset;
   Jbig2ArithCx *GB_stats = NULL;
   Jbig2ArithCx *GR_stats = NULL;
-  int table_index = 0;
-  const Jbig2HuffmanParams *huffman_params;
 
   if (segment->data_length < 10)
     goto too_short;
@@ -780,16 +774,9 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
 		                       &jbig2_huffman_params_E);
 	break;
       case 3: /* Custom table from referred segment */
-        huffman_params = jbig2_find_table(ctx, segment, table_index);
-        if (huffman_params == NULL) {
+	/* We handle this case later by leaving the table as NULL */
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                "Custom DH huffman table not found (%d)", table_index);
-        }
-        params.SDHUFFDH = jbig2_build_huffman_table(ctx, huffman_params);
-        ++table_index;
-        break;
-        /* FIXME: this function leaks memory when error happens.
-           i.e. not calling jbig2_release_huffman_table() */
+	    "symbol dictionary uses custom DH huffman table (NYI)");
       case 2:
       default:
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
@@ -806,14 +793,9 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
 		                       &jbig2_huffman_params_C);
 	break;
       case 3: /* Custom table from referred segment */
-        huffman_params = jbig2_find_table(ctx, segment, table_index);
-        if (huffman_params == NULL) {
+	/* We handle this case later by leaving the table as NULL */
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                "Custom DW huffman table not found (%d)", table_index);
-        }
-        params.SDHUFFDW = jbig2_build_huffman_table(ctx, huffman_params);
-        ++table_index;
-        break;
+	    "symbol dictionary uses custom DW huffman table (NYI)");
       case 2:
       default:
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
@@ -822,13 +804,8 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
     }
     if (flags & 0x0040) {
         /* Custom table from referred segment */
-        huffman_params = jbig2_find_table(ctx, segment, table_index);
-        if (huffman_params == NULL) {
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                "Custom BMSIZE huffman table not found (%d)", table_index);
-        }
-        params.SDHUFFBMSIZE = jbig2_build_huffman_table(ctx, huffman_params);
-        ++table_index;
+	    "symbol dictionary uses custom BMSIZE huffman table (NYI)");
     } else {
 	/* Table B.1 */
 	params.SDHUFFBMSIZE = jbig2_build_huffman_table(ctx,
@@ -836,13 +813,8 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
     }
     if (flags & 0x0080) {
         /* Custom table from referred segment */
-        huffman_params = jbig2_find_table(ctx, segment, table_index);
-        if (huffman_params == NULL) {
 	return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-                "Custom REFAGG huffman table not found (%d)", table_index);
-        }
-        params.SDHUFFAGGINST = jbig2_build_huffman_table(ctx, huffman_params);
-        ++table_index;
+	    "symbol dictionary uses custom REFAGG huffman table (NYI)");
     } else {
 	/* Table B.1 */
 	params.SDHUFFAGGINST = jbig2_build_huffman_table(ctx,
@@ -919,11 +891,11 @@ jbig2_symbol_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
   if (!params.SDHUFF) {
       int stats_size = params.SDTEMPLATE == 0 ? 65536 :
 	params.SDTEMPLATE == 1 ? 8192 : 1024;
-      GB_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+      GB_stats = jbig2_alloc(ctx->allocator, stats_size);
       memset(GB_stats, 0, stats_size);
       if (params.SDREFAGG) {
 	stats_size = params.SDRTEMPLATE ? 1 << 10 : 1 << 13;
-	GR_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+	GR_stats = jbig2_alloc(ctx->allocator, stats_size);
 	memset(GR_stats, 0, stats_size);
       }
   }

@@ -21,16 +21,15 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="0"
-			BuildLogFile="obj-dbg\BuildLog.htm"
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="nmake -f makefile.msvc CFG=dbg NASM=$(ProjectDir)bin\nasm.exe"
-				ReBuildCommandLine="nmake -f makefile.msvc CFG=dbg NASM=$(ProjectDir)bin\nasm.exe rebuild"
-				CleanCommandLine="nmake -f makefile.msvc CFG=dbg NASM=$(ProjectDir)bin\nasm.exe clean"
+				BuildCommandLine="nmake -f makefile.msvc CFG=dbg"
+				ReBuildCommandLine="nmake -f makefile.msvc CFG=dbg rebuild"
+				CleanCommandLine="nmake -f makefile.msvc CFG=dbg clean"
 				Output="obj-dbg\sumatrapdf.exe"
-				PreprocessorDefinitions="WIN32;UNICODE;_UNICODE;_DEBUG;DEBUG;SYNCTEX_FEATURE"
-				IncludeSearchPath="baseutils;mupdf\fitz;mupdf\draw;mupdf\pdf;mupdf\xps"
+				PreprocessorDefinitions="WIN32;_DEBUG"
+				IncludeSearchPath=""
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -42,16 +41,15 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="0"
-			BuildLogFile="obj-rel\BuildLog.htm"
 			>
 			<Tool
 				Name="VCNMakeTool"
-				BuildCommandLine="nmake -f makefile.msvc CFG=rel NASM=$(ProjectDir)bin\nasm.exe"
-				ReBuildCommandLine="nmake -f makefile.msvc CFG=rel NASM=$(ProjectDir)bin\nasm.exe rebuild"
-				CleanCommandLine="nmake -f makefile.msvc CFG=rel NASM=$(ProjectDir)bin\nasm.exe clean"
+				BuildCommandLine="nmake -f makefile.msvc CFG=rel"
+				ReBuildCommandLine="nmake -f makefile.msvc CFG=dbg rebuild"
+				CleanCommandLine="nmake -f makefile.msvc CFG=rel clean"
 				Output="obj-rel\sumatrapdf.exe"
-				PreprocessorDefinitions="WIN32;UNICODE;_UNICODE;NDEBUG;SYNCTEX_FEATURE"
-				IncludeSearchPath="baseutils;mupdf\fitz;mupdf\draw;mupdf\pdf;mupdf\xps"
+				PreprocessorDefinitions="WIN32;NDEBUG"
+				IncludeSearchPath=""
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -68,7 +66,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\AppPrefs.cpp"
+				RelativePath=".\src\AppPrefs.cc"
 				>
 			</File>
 			<File
@@ -76,35 +74,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\AppTools.cpp"
+				RelativePath=".\src\config.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\AppTools.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\BaseEngine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Benchmark.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Benchmark.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\CrashHandler.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\CrashHandler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\DisplayModel.cpp"
+				RelativePath=".\src\DisplayModel.cc"
 				>
 			</File>
 			<File
@@ -112,15 +86,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DisplayState.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DisplayState.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\DjVuEngine.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\DjVuEngine.h"
+				RelativePath=".\src\FileHistory.cc"
 				>
 			</File>
 			<File
@@ -128,7 +102,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\FileWatch.cpp"
+				RelativePath=".\src\FileWatch.cc"
 				>
 			</File>
 			<File
@@ -136,31 +110,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\ImagesEngine.cpp"
+				RelativePath=".\src\LangMenuDef.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ImagesEngine.h"
+				RelativePath=".\src\LangMenuDef.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\Notifications.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ParseCommandLine.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ParseCommandLine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\PdfEngine.cpp"
+				RelativePath=".\src\PdfEngine.cc"
 				>
 			</File>
 			<File
 				RelativePath=".\src\PdfEngine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSearch.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSearch.h"
 				>
 			</File>
 			<File
@@ -172,11 +142,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\RenderCache.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\RenderCache.h"
+				RelativePath=".\src\PdftestWinPreview.cc"
 				>
 			</File>
 			<File
@@ -184,15 +150,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\SumatraAbout.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraAbout.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraDialogs.cpp"
+				RelativePath=".\src\SumatraDialogs.cc"
 				>
 			</File>
 			<File
@@ -208,27 +166,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\SumatraProperties.cpp"
+				RelativePath=".\src\synctex_parser.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\SumatraProperties.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\TextSearch.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\TextSearch.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\TextSelection.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\TextSelection.h"
+				RelativePath=".\src\synctex_parser.h"
 				>
 			</File>
 			<File
@@ -240,23 +182,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\translations_txt.cpp"
+				RelativePath=".\src\translations_txt.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\UnitTests.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\Version.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\WindowInfo.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\WindowInfo.h"
+				RelativePath=".\src\translations_txt.h"
 				>
 			</File>
 		</Filter>
@@ -266,594 +196,774 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\src\dragcursor.cur"
-				>
-			</File>
-			<File
-				RelativePath=".\src\PdfDoc.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\src\reloading.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraPDF.exe.manifest"
-				>
-			</File>
-			<File
-				RelativePath=".\src\SumatraPDF.ico"
-				>
-			</File>
-			<File
 				RelativePath=".\src\SumatraPDF.rc"
 				>
 			</File>
-			<File
-				RelativePath=".\src\toolbar_10.bmp"
-				>
-			</File>
 		</Filter>
 		<Filter
-			Name="baseutils"
+			Name="fitz"
 			>
-			<File
-				RelativePath=".\baseutils\BaseUtil.h"
+			<Filter
+				Name="base"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\BencUtil.cpp"
+				<File
+					RelativePath=".\fitz\base\base_cleanname.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_cpudep.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_cpudep.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_error.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_geom.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_hash.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_hash.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_math.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_matrix.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_memory.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_pixmap.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_rect.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\base_rune.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_runtime.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\base_sysdep.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\draw_misc.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\draw_path.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\stm_buffer.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\stm_crypt.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\stm_filter.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\stm_object.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\stm_stream.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\util_getopt.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\util_gettimeofday.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\util_strlcat.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\util_strlcpy.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\base\util_strsep.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_color.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_font.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_image.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_path.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_shade.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_text.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz\wld_tree.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="include"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\BencUtil.h"
+				<File
+					RelativePath=".\fitz\include\mupdf\annot.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\base14.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\content.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz-base.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz-draw.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz-stream.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz-world.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\fitz.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\page.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\pdfapp.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\rsrc.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\syntax.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\include\mupdf\xref.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="mupdf"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\CmdLineParser.h"
+				<File
+					RelativePath=".\fitz\mupdf\pdf_annot.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_build.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_cmap.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_colorspace1.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_colorspace2.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_crypt.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_debug.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_doctor.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_font.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_fontagl.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_fontenc.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_fontfile.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_fontfilefc.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_fontfilems.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_function.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_image.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_interpret.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_lex.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_nametree.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_open.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_outline.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_page.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_pagetree.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_parse.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_pattern.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_repair.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_resources.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_save.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_shade.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_shade1.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_shade4.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_store.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_stream.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_type3.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_unicode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_xobject.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\mupdf\pdf_xref.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="raster"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\DialogSizer.cpp"
+				<File
+					RelativePath=".\fitz\raster\archppc.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\archsparc.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\archx86.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\blendmodes.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\glyphcache.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\imagedraw.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\imagescale.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\imageunpack.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\meshdraw.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\pathfill.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\pathscan.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\pathstroke.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\pixmap.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\porterduff.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\raster\render.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="stream"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\DialogSizer.h"
+				<File
+					RelativePath=".\fitz\stream\crypt_arc4.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\crypt_crc32.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\crypt_md5.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_a85d.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_a85e.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_ahxd.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_ahxe.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_arc4.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_dctc.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_dctd.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_dcte.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxc.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxd.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxd.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxdtab.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxe.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxe.h"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_faxetab.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_flate.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_jbig2d.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_jpxd.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_lzwd.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_lzwe.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_null.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_pipeline.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_predict.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_rld.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\filt_rle.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\obj_array.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\obj_dict.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\obj_parse.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\obj_print.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\obj_simple.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_buffer.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_filter.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_misc.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_open.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_read.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\stream\stm_write.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="world"
 				>
-			</File>
-			<File
-				RelativePath=".\baseutils\FileUtil.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\FileUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\GeomUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Http.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Http.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\SimpleLog.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\SimpleLog.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\StrUtil.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\StrUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\UtilTests.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Vec.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\WinUtil.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\WinUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\ZipUtil.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\ZipUtil.h"
-				>
-			</File>
+				<File
+					RelativePath=".\fitz\world\node_misc1.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_misc2.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_optimize.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_path.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_text.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_tolisp.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_toxml.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\node_tree.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\res_colorspace.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\res_font.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\res_image.c"
+					>
+				</File>
+				<File
+					RelativePath=".\fitz\world\res_shade.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
-			Name="mupdf"
-			>
-			<Filter
-				Name="fitz"
-				>
-				<File
-					RelativePath=".\mupdf\fitz\base_error.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_geometry.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_getopt.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_hash.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_memory.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_object.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_string.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\base_time.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\crypt_aes.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\crypt_arc4.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\crypt_md5.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\crypt_sha2.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_bbox.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_gdiplus.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_list.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_null.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_text.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\dev_trace.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_basic.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_dctd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_faxd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_flate.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_jbig2d.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_jpxd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_lzwd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_pipeline.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\filt_predict.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\fitz.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\obj_print.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_bitmap.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_colorspace.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_font.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_halftone.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_path.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_pixmap.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_shade.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_text.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\stm_buffer.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\stm_filter.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\stm_open.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\stm_read.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="draw"
-				>
-				<File
-					RelativePath=".\mupdf\draw\arch_port.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_affine.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_blend.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_device.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_edge.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_glyph.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_mesh.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_paint.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_path.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_scale.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\draw\draw_unpack.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="pdf"
-				>
-				<File
-					RelativePath=".\mupdf\pdf\data_encodings.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\data_glyphlist.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\mupdf.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_annot.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_load.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_parse.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_table.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_colorspace.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_crypt.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_debug.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_encoding.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_font.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_fontfile.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_ft_tools.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_function.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_image.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_interpret.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_lex.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_metrics.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_nametree.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_outline.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_page.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_parse.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_pattern.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_repair.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_shade.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_store.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_stream.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_type3.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_unicode.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_xobject.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\pdf\pdf_xref.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="xps"
-				>
-				<File
-					RelativePath=".\mupdf\xps\muxps.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_common.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_doc.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_glyphs.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_gradient.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_image.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_jpeg.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_outline.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_path.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_png.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_resource.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_tiff.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_tile.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_util.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_xml.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_zip.c"
-					>
-				</File>
-			</Filter>
-		</Filter>
-		<Filter
-			Name="IFilter DLL"
+			Name="jbig2dec"
 			>
 			<File
-				RelativePath=".\src\ifilter\CPdfFilter.cpp"
+				RelativePath=".\ext\jbig2dec\config_win32.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CPdfFilter.h"
+				RelativePath=".\ext\jbig2dec\jbig2.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CTeXFilter.cpp"
+				RelativePath=".\ext\jbig2dec\jbig2.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CTeXFilter.h"
+				RelativePath=".\ext\jbig2dec\jbig2_arith.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CXpsFilter.cpp"
+				RelativePath=".\ext\jbig2dec\jbig2_arith.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CXpsFilter.h"
+				RelativePath=".\ext\jbig2dec\jbig2_arith_iaid.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\FilterBase.h"
+				RelativePath=".\ext\jbig2dec\jbig2_arith_iaid.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\PdfFilter.h"
+				RelativePath=".\ext\jbig2dec\jbig2_arith_int.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\PdfFilter.rc"
+				RelativePath=".\ext\jbig2dec\jbig2_arith_int.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\PdfFilterDll.cpp"
+				RelativePath=".\ext\jbig2dec\jbig2_generic.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_generic.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_halftone.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_huffman.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_huffman.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_hufftab.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_image.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_image.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_image_pbm.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_image_png.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_metadata.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_metadata.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_mmr.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_mmr.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_page.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_priv.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_refinement.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_segment.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_symbol_dict.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_symbol_dict.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_text.c"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\jbig2_text.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ext\jbig2dec\os_types.h"
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\docs\releasenotes.txt"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

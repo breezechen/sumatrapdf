@@ -8,9 +8,12 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2_metadata.c 467 2008-05-17 00:08:26Z giles $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -28,14 +31,14 @@
 /* metadata key,value list object */
 Jbig2Metadata *jbig2_metadata_new(Jbig2Ctx *ctx, Jbig2Encoding encoding)
 {
-    Jbig2Metadata *md = jbig2_new(ctx, Jbig2Metadata, 1);
+    Jbig2Metadata *md = jbig2_alloc(ctx->allocator, sizeof(Jbig2Metadata));
 
     if (md != NULL) {
         md->encoding = encoding;
         md->entries = 0;
         md->max_entries = 4;
-        md->keys = jbig2_new(ctx, char*, md->max_entries);
-        md->values = jbig2_new(ctx, char*, md->max_entries);
+        md->keys = jbig2_alloc(ctx->allocator, md->max_entries*sizeof(char*));
+        md->values = jbig2_alloc(ctx->allocator, md->max_entries*sizeof(char*));
         if (md->keys == NULL || md->values == NULL) {
             jbig2_metadata_free(ctx, md);
             md = NULL;
@@ -64,7 +67,7 @@ void jbig2_metadata_free(Jbig2Ctx *ctx, Jbig2Metadata *md)
 
 static char *jbig2_strndup(Jbig2Ctx *ctx, const char *c, const int len)
 {
-    char *s = jbig2_new(ctx, char, len);
+    char *s = jbig2_alloc(ctx->allocator, len*sizeof(char));
     if (s == NULL) {
         jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
             "unable to duplicate comment string");
@@ -83,8 +86,8 @@ int jbig2_metadata_add(Jbig2Ctx *ctx, Jbig2Metadata *md,
     /* grow the array if necessary */
     if (md->entries == md->max_entries) {
         md->max_entries >>= 2;
-        keys = jbig2_renew(ctx, md->keys, char*, md->max_entries);
-        values = jbig2_renew(ctx, md->values, char*, md->max_entries);
+        keys = jbig2_realloc(ctx->allocator, md->keys, md->max_entries);
+        values = jbig2_realloc(ctx->allocator, md->values, md->max_entries);
         if (keys == NULL || values == NULL) {
             jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
                 "unable to resize metadata structure");
@@ -104,7 +107,7 @@ int jbig2_metadata_add(Jbig2Ctx *ctx, Jbig2Metadata *md,
 
 
 /* decode an ascii comment segment 7.4.15.1 */
-int jbig2_comment_ascii(Jbig2Ctx *ctx, Jbig2Segment *segment,
+int jbig2_parse_comment_ascii(Jbig2Ctx *ctx, Jbig2Segment *segment,
                                const uint8_t *segment_data)
 {
     char *s = (char *)(segment_data + 4);
@@ -147,7 +150,7 @@ too_short:
 }
 
 /* decode a UCS-16 comment segement 7.4.15.2 */
-int jbig2_comment_unicode(Jbig2Ctx *ctx, Jbig2Segment *segment,
+int jbig2_parse_comment_unicode(Jbig2Ctx *ctx, Jbig2Segment *segment,
                                const uint8_t *segment_data)
 {
     return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, segment->number,

@@ -1,16 +1,19 @@
 /*
     jbig2dec
-
+    
     Copyright (C) 2001-2005 Artifex Software, Inc.
-
+    
     This software is distributed under license and may not
     be copied, modified or distributed except as expressly
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
-
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+                                                                                
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2_huffman.h 461 2008-05-07 21:37:02Z giles $
 */
 
 #ifndef JBIG2_HUFFMAN_H
@@ -63,7 +66,7 @@ jbig2_huffman_skip(Jbig2HuffmanState *hs);
 
 void jbig2_huffman_advance(Jbig2HuffmanState *hs, int offset);
 
-int
+int 
 jbig2_huffman_offset(Jbig2HuffmanState *hs);
 
 int32_t
@@ -101,18 +104,5 @@ extern const Jbig2HuffmanParams jbig2_huffman_params_M; /* Table B.13 */
 extern const Jbig2HuffmanParams jbig2_huffman_params_N; /* Table B.14 */
 extern const Jbig2HuffmanParams jbig2_huffman_params_O; /* Table B.15 */
 
-/* Routines to handle "code table segment (53)" */
-
-/* Parse a code table segment, store Jbig2HuffmanParams in segment->result */
-int
-jbig2_table(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
-
-/* free Jbig2HuffmanParams allocated by jbig2_huffman_table() */
-void
-jbig2_table_free(Jbig2Ctx *ctx, Jbig2HuffmanParams *params);
-
-/* find a user supplied table used by 'segment' and by 'index' */
-const Jbig2HuffmanParams *
-jbig2_find_table(Jbig2Ctx *ctx, Jbig2Segment *segment, int index);
 
 #endif /* JBIG2_HUFFMAN_H */

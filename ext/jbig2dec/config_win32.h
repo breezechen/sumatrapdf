@@ -8,16 +8,19 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: config_win32.h 467 2008-05-17 00:08:26Z giles $
 */
 
 /* configuration header file for compiling under Microsoft Windows */
 
 /* update package version here */
 #define PACKAGE "jbig2dec"
-#define VERSION "0.11"
+#define VERSION "0.3"
 
 #if defined(_MSC_VER) || (defined(__BORLANDC__) && defined(__WIN32__))
   /* Microsoft Visual C++ or Borland C++ */
@@ -31,11 +34,10 @@
   typedef unsigned int              uint32_t;
   /* no uint64_t */
 
-#  if defined(_MSC_VER)
-#   if _MSC_VER < 1500	/* VS 2008 has vsnprintf */
-#    define vsnprintf _vsnprintf
-#   endif
-#  endif
+/* this doesn't work on vc2008 */
+#if _MSC_VER < 1500
+#  define vsnprintf _vsnprintf
 #  define snprintf _snprintf
+#endif
 
 #endif /* _MSC_VER */
