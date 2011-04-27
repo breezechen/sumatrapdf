@@ -23,13 +23,14 @@ These notices must be retained in any copies of any part of this
 documentation and/or software.
 */
 
-#include "fitz.h"
+#include "fitz_base.h"
+#include "fitz_stream.h"
 
 /* Constants for MD5Transform routine */
 enum
 {
 	S11 = 7, S12 = 12, S13 = 17, S14 = 22,
-	S21 = 5, S22 = 9, S23 = 14, S24 = 20,
+	S21 = 5, S22 = 9,  S23 = 14, S24 = 20,
 	S31 = 4, S32 = 11, S33 = 16, S34 = 23,
 	S41 = 6, S42 = 10, S43 = 15, S44 = 21
 };
@@ -98,9 +99,9 @@ static void decode(unsigned int *output, const unsigned char *input, const unsig
 	for (i = 0, j = 0; j < len; i++, j += 4)
 	{
 		output[i] = ((unsigned int)input[j]) |
-		(((unsigned int)input[j+1]) << 8) |
-		(((unsigned int)input[j+2]) << 16) |
-		(((unsigned int)input[j+3]) << 24);
+			(((unsigned int)input[j+1]) << 8) |
+			(((unsigned int)input[j+2]) << 16) |
+			(((unsigned int)input[j+3]) << 24);
 	}
 }
 
@@ -138,7 +139,7 @@ static void transform(unsigned int state[4], const unsigned char block[64])
 	GG (c, d, a, b, x[11], S23, 0x265e5a51); /* 19 */
 	GG (b, c, d, a, x[ 0], S24, 0xe9b6c7aa); /* 20 */
 	GG (a, b, c, d, x[ 5], S21, 0xd62f105d); /* 21 */
-	GG (d, a, b, c, x[10], S22, 0x02441453); /* 22 */
+	GG (d, a, b, c, x[10], S22,  0x2441453); /* 22 */
 	GG (c, d, a, b, x[15], S23, 0xd8a1e681); /* 23 */
 	GG (b, c, d, a, x[ 4], S24, 0xe7d3fbc8); /* 24 */
 	GG (a, b, c, d, x[ 9], S21, 0x21e1cde6); /* 25 */
@@ -162,7 +163,7 @@ static void transform(unsigned int state[4], const unsigned char block[64])
 	HH (a, b, c, d, x[13], S31, 0x289b7ec6); /* 41 */
 	HH (d, a, b, c, x[ 0], S32, 0xeaa127fa); /* 42 */
 	HH (c, d, a, b, x[ 3], S33, 0xd4ef3085); /* 43 */
-	HH (b, c, d, a, x[ 6], S34, 0x04881d05); /* 44 */
+	HH (b, c, d, a, x[ 6], S34,  0x4881d05); /* 44 */
 	HH (a, b, c, d, x[ 9], S31, 0xd9d4d039); /* 45 */
 	HH (d, a, b, c, x[12], S32, 0xe6db99e5); /* 46 */
 	HH (c, d, a, b, x[15], S33, 0x1fa27cf8); /* 47 */
@@ -196,7 +197,7 @@ static void transform(unsigned int state[4], const unsigned char block[64])
 }
 
 /* MD5 initialization. Begins an MD5 operation, writing a new context. */
-void fz_md5_init(fz_md5 *context)
+void fz_md5init(fz_md5 *context)
 {
 	context->count[0] = context->count[1] = 0;
 
@@ -210,7 +211,7 @@ void fz_md5_init(fz_md5 *context)
 /* MD5 block update operation. Continues an MD5 message-digest operation,
  * processing another message block, and updating the context.
  */
-void fz_md5_update(fz_md5 *context, const unsigned char *input, const unsigned inlen)
+void fz_md5update(fz_md5 *context, const unsigned char *input, const unsigned inlen)
 {
 	unsigned i, index, partlen;
 
@@ -225,7 +226,7 @@ void fz_md5_update(fz_md5 *context, const unsigned char *input, const unsigned i
 
 	partlen = 64 - index;
 
-	/* Transform as many times as possible. */
+	/* Transform as many times as possible.  */
 	if (inlen >= partlen)
 	{
 		memcpy(context->buffer + index, input, partlen);
@@ -248,7 +249,7 @@ void fz_md5_update(fz_md5 *context, const unsigned char *input, const unsigned i
 /* MD5 finalization. Ends an MD5 message-digest operation, writing the
  * the message digest and zeroizing the context.
  */
-void fz_md5_final(fz_md5 *context, unsigned char digest[16])
+void fz_md5final(fz_md5 *context, unsigned char digest[16])
 {
 	unsigned char bits[8];
 	unsigned index, padlen;
@@ -259,10 +260,10 @@ void fz_md5_final(fz_md5 *context, unsigned char digest[16])
 	/* Pad out to 56 mod 64 */
 	index = (unsigned)((context->count[0] >> 3) & 0x3f);
 	padlen = index < 56 ? 56 - index : 120 - index;
-	fz_md5_update(context, padding, padlen);
+	fz_md5update(context, padding, padlen);
 
 	/* Append length (before padding) */
-	fz_md5_update(context, bits, 8);
+	fz_md5update(context, bits, 8);
 
 	/* Store state in digest */
 	encode(digest, context->state, 16);
@@ -270,3 +271,4 @@ void fz_md5_final(fz_md5 *context, unsigned char digest[16])
 	/* Zeroize sensitive information */
 	memset(context, 0, sizeof(fz_md5));
 }
+

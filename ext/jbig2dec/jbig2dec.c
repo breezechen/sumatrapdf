@@ -39,7 +39,6 @@
 #include "sha1.h"
 
 #include "jbig2.h"
-#include "jbig2_priv.h"
 #include "jbig2_image.h"
 
 typedef enum {
@@ -68,7 +67,7 @@ static int print_usage(void);
 static void
 hash_init(jbig2dec_params_t *params)
 {
-    params->hash_ctx = (SHA1_CTX*)malloc(sizeof(SHA1_CTX));
+    params->hash_ctx = malloc(sizeof(SHA1_CTX));
     if (params->hash_ctx == NULL) {
         fprintf(stderr, "unable to allocate hash state\n");
         params->hash = 0;
@@ -142,7 +141,7 @@ parse_options(int argc, char *argv[], jbig2dec_params_t *params)
 
 	while (1) {
 		option = getopt_long(argc, argv,
-			"Vh?qv:do:t:", long_options, &option_idx);
+			"Vh?qvdo:t:", long_options, &option_idx);
 		if (option == -1) break;
 
 		switch (option) {
@@ -156,15 +155,15 @@ parse_options(int argc, char *argv[], jbig2dec_params_t *params)
 				break;
                         case 'v':
                                 if (optarg) params->verbose = atoi(optarg);
-                                else params->verbose = 2;
+                                else params->verbose = 9;
                                 break;
 			case 'h':
 			case '?':
 				params->mode = usage;
                                 break;
                         case 'V':
-                                /* the GNU Coding Standards suggest --version
-                                   should override all other options */
+                                /* the GNU Coding Standards suggest --version should
+                                   override all other options */
                                 print_version();
                                 exit(0);
                                 break;
@@ -210,13 +209,13 @@ print_usage (void)
     "  embedded streams.\n"
     "\n"
     "  available options:\n"
-    "    -h --help      this usage summary\n"
+    "    -h --help	this usage summary\n"
     "    -q --quiet     suppress diagnostic output\n"
     "    -v --verbose   set the verbosity level\n"
     "    -d --dump      print the structure of the jbig2 file\n"
     "                   rather than explicitly decoding\n"
     "       --version   program name and version information\n"
-    "       --hash      print a hash of the decoded document\n"
+    "       --hash      print a hash of the decode document\n"
     "    -o <file>      send decoded output to <file>\n"
     "                   Defaults to the the input with a different\n"
     "                   extension. Pass '-' for stdout.\n"
@@ -236,7 +235,7 @@ static int
 error_callback(void *error_callback_data, const char *buf, Jbig2Severity severity,
 	       int32_t seg_idx)
 {
-    const jbig2dec_params_t *params = (jbig2dec_params_t *)error_callback_data;
+    const jbig2dec_params_t *params = error_callback_data;
     char *type;
     char segment[22];
 
@@ -297,7 +296,7 @@ make_output_filename(const char *input_filename, const char *extension)
       len -= strlen(e);
 
     /* allocate enough space for the base + ext */
-    output_filename = (char*)malloc(len + strlen(extension) + 1);
+    output_filename = malloc(len + strlen(extension) + 1);
     if (output_filename == NULL) {
         fprintf(stderr, "couldn't allocate memory for output_filename\n");
         exit (1);
@@ -436,7 +435,7 @@ main (int argc, char **argv)
   /* any other number of arguments */
     return print_usage();
 
-  ctx = jbig2_ctx_new(NULL, (Jbig2Options)(f_page != NULL ? JBIG2_OPTIONS_EMBEDDED : 0),
+  ctx = jbig2_ctx_new(NULL, f_page != NULL ? JBIG2_OPTIONS_EMBEDDED : 0,
 		      NULL,
 		      error_callback, &params);
 
@@ -446,8 +445,7 @@ main (int argc, char **argv)
       int n_bytes = fread(buf, 1, sizeof(buf), f);
       if (n_bytes <= 0)
 	break;
-      if (jbig2_data_in(ctx, buf, n_bytes))
-	break;
+      jbig2_data_in(ctx, buf, n_bytes);
     }
   fclose(f);
 
@@ -462,8 +460,7 @@ main (int argc, char **argv)
 	  int n_bytes = fread(buf, 1, sizeof(buf), f_page);
 	  if (n_bytes <= 0)
 	    break;
-	  if (jbig2_data_in(ctx, buf, n_bytes))
-	    break;
+	  jbig2_data_in(ctx, buf, n_bytes);
 	}
       fclose(f_page);
       jbig2_global_ctx_free(global_ctx);

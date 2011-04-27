@@ -75,9 +75,11 @@ jbig2_hd_new(Jbig2Ctx *ctx,
   int i;
 
   /* allocate a new struct */
-  new = jbig2_new(ctx, Jbig2PatternDict, 1);
+  new = (Jbig2PatternDict *)jbig2_alloc(ctx->allocator,
+				sizeof(Jbig2PatternDict));
   if (new != NULL) {
-    new->patterns = jbig2_new(ctx, Jbig2Image*, N);
+    new->patterns = (Jbig2Image **)jbig2_alloc(ctx->allocator,
+				N*sizeof(Jbig2Image*));
     if (new->patterns == NULL) {
       jbig2_free(ctx->allocator, new);
       return NULL;
@@ -89,15 +91,6 @@ jbig2_hd_new(Jbig2Ctx *ctx,
     /* 6.7.5(4) - copy out the individual pattern images */
     for (i = 0; i < N; i++) {
       new->patterns[i] = jbig2_image_new(ctx, HPW, HPH);
-      if (new->patterns[i] == NULL) {
-        int j;
-        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
-            "failed to allocate pattern element image");
-        for (j = 0; j < i; j++)
-          jbig2_free(ctx->allocator, new->patterns[j]);
-        jbig2_free(ctx->allocator, new);
-        return NULL;
-      }
       /* compose with the REPLACE operator; the source
          will be clipped to the destintion, selecting the
          proper sub image */
@@ -147,6 +140,7 @@ jbig2_decode_pattern_dict(Jbig2Ctx *ctx, Jbig2Segment *segment,
 			     Jbig2ArithCx *GB_stats)
 {
   Jbig2PatternDict *hd = NULL;
+  uint32_t GRAY;
   Jbig2Image *image;
   Jbig2GenericRegionParams rparams;
   int code;
@@ -156,7 +150,7 @@ jbig2_decode_pattern_dict(Jbig2Ctx *ctx, Jbig2Segment *segment,
 	params->HDPW * (params->GRAYMAX + 1), params->HDPH);
   if (image == NULL) {
     jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-	"failed to allocate collective bitmap for halftone dict!");
+	"failed to allocate collective bitmap for halftone dict!\n");
     return NULL;
   }
 
@@ -239,7 +233,7 @@ jbig2_pattern_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment,
   if (!params.HDMMR) {
     /* allocate and zero arithmetic coding stats */
     int stats_size = jbig2_generic_stats_size(ctx, params.HDTEMPLATE);
-    GB_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+    GB_stats = jbig2_alloc(ctx->allocator, stats_size);
     memset(GB_stats, 0, stats_size);
   }
 
@@ -298,7 +292,7 @@ jbig2_halftone_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_
   params.HMMR = params.flags & 1;
   params.HTEMPLATE = (params.flags & 6) >> 1;
   params.HENABLESKIP = (params.flags & 8) >> 3;
-  params.op = (Jbig2ComposeOp)((params.flags & 0x70) >> 4);
+  params.op = (params.flags & 0x70) >> 4;
   params.HDEFPIXEL = (params.flags &0x80) >> 7;
   offset += 1;
 
@@ -344,14 +338,11 @@ jbig2_halftone_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_
   if (!params.HMMR) {
     /* allocate and zero arithmetic coding stats */
     int stats_size = jbig2_generic_stats_size(ctx, params.HTEMPLATE);
-    GB_stats = jbig2_new(ctx, Jbig2ArithCx, stats_size);
+    GB_stats = jbig2_alloc(ctx->allocator, stats_size);
     memset(GB_stats, 0, stats_size);
   }
 
   image = jbig2_image_new(ctx, region_info.width, region_info.height);
-  if (image == NULL)
-    return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
-             "unable to allocate halftone image");
 
   code = jbig2_decode_halftone_region(ctx, segment, &params,
 		segment_data + offset, segment->data_length - offset,

@@ -33,7 +33,7 @@ Jbig2Image* jbig2_image_new(Jbig2Ctx *ctx, int width, int height)
 	Jbig2Image	*image;
 	int		stride;
 
-	image = jbig2_new(ctx, Jbig2Image, 1);
+	image = (Jbig2Image *)jbig2_alloc(ctx->allocator, sizeof(*image));
 	if (image == NULL) {
 		jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
 			       "could not allocate image structure");
@@ -41,7 +41,7 @@ Jbig2Image* jbig2_image_new(Jbig2Ctx *ctx, int width, int height)
 	}
 
 	stride = ((width - 1) >> 3) + 1; /* generate a byte-aligned stride */
-	image->data = jbig2_new(ctx, uint8_t, stride*height);
+	image->data = (uint8_t *)jbig2_alloc(ctx->allocator, stride*height);
 	if (image->data == NULL) {
                 jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
                     "could not allocate image data buffer! [%d bytes]\n", stride*height);
@@ -84,7 +84,8 @@ Jbig2Image *jbig2_image_resize(Jbig2Ctx *ctx, Jbig2Image *image,
 {
 	if (width == image->width) {
 	    /* use the same stride, just change the length */
-	    image->data = jbig2_renew(ctx, image->data, uint8_t, image->stride*height);
+	    image->data = jbig2_realloc(ctx->allocator,
+                image->data, image->stride*height);
             if (image->data == NULL) {
                 jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1,
                     "could not resize image buffer!");
@@ -201,7 +202,7 @@ int jbig2_image_compose(Jbig2Ctx *ctx, Jbig2Image *dst, Jbig2Image *src,
     h = (y + h < dst->height) ? h : dst->height - y;
 #ifdef JBIG2_DEBUG
     jbig2_error(ctx, JBIG2_SEVERITY_DEBUG, -1,
-      "compositing %dx%d at (%d, %d) after clipping\n",
+      "composting %dx%d at (%d, %d) after clipping\n",
         w, h, x, y);
 #endif
 

@@ -180,7 +180,8 @@ jbig2_arith_new (Jbig2Ctx *ctx, Jbig2WordStream *ws)
 {
   Jbig2ArithState *result;
 
-  result = jbig2_new(ctx, Jbig2ArithState, 1);
+  result = (Jbig2ArithState *)jbig2_alloc(ctx->allocator,
+	sizeof(Jbig2ArithState));
 
   result->ws = ws;
 
