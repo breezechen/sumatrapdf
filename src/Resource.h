@@ -3,45 +3,31 @@
 // Used by SumatraPDF.rc
 //
 #define IDI_SUMATRAPDF                  1
-#define IDI_PDFDOC                      2
+#define IDS_APP_TITLE                   100
 #define IDD_DIALOG_GOTO_PAGE            129
 #define IDD_DIALOG_GET_PASSWORD         130
 #define IDD_DIALOG_PDF_ASSOCIATE        131
 #define IDC_CURSORDRAG                  132
+#define IDD_DIALOG_INVERSESEARCH        133
 #define IDD_DIALOG_CHANGE_LANGUAGE      134
 #define IDD_DIALOG_NEW_VERSION          135
-#define IDD_DIALOG_SETTINGS             136
-#define IDD_DIALOG_FIND                 137
-#define IDD_DIALOG_CUSTOM_ZOOM          138
-#define IDD_PROPSHEET_PRINT_ADVANCED    139
 
 #define IDM_OPEN                        400
 #define IDM_CLOSE                       401
 #define IDM_SAVEAS                      402
 #define IDM_PRINT                       403
+#define IDM_MAKE_DEFAULT_READER         404
 #define IDM_EXIT                        405
-#define IDM_REFRESH                     406
-#define IDM_SAVEAS_BOOKMARK             407
-#define IDM_SEND_BY_EMAIL               408
-#define IDM_PROPERTIES                  409
-
-/* IDM_VIEW_SINGLE_PAGE - IDM_VIEW_CONTINUOUS must be in a continous range */
 #define IDM_VIEW_SINGLE_PAGE            410
 #define IDM_VIEW_FACING                 411
-#define IDM_VIEW_BOOK                   412
-#define IDM_VIEW_CONTINUOUS             413
-
-#define IDM_VIEW_ROTATE_LEFT            415
-#define IDM_VIEW_ROTATE_RIGHT           416
+#define IDM_VIEW_CONTINUOUS             412
+#define IDM_VIEW_CONTINUOUS_FACING      413
+#define IDM_VIEW_ROTATE_LEFT            414
+#define IDM_VIEW_ROTATE_RIGHT           415
 #define IDM_VIEW_BOOKMARKS              417
-#define IDM_VIEW_PRESENTATION_MODE      418
+#define IDM_VIEW_FULLSCREEN             418
 #define IDM_VIEW_SHOW_HIDE_TOOLBAR      419
-#define IDM_COPY_SELECTION              420
-#define IDM_VIEW_FULLSCREEN             421
-#define IDM_SELECT_ALL                  422
-#define IDM_COPY_LINK_TARGET            428
-#define IDM_COPY_COMMENT                429
-
+#define IDM_VIEW_USE_FITZ               420
 #define IDM_GOTO_NEXT_PAGE              430
 #define IDM_GOTO_PREV_PAGE              431
 #define IDM_GOTO_FIRST_PAGE             432
@@ -51,8 +37,6 @@
 #define IDM_FIND_NEXT                   436
 #define IDM_FIND_PREV                   437
 #define IDM_FIND_MATCH                  438
-
-/* IDM_ZOOM_FIT_PAGE - IDM_ZOOM_CUSTOM must be in a continous range */
 #define IDM_ZOOM_FIT_PAGE               440
 #define IDM_ZOOM_ACTUAL_SIZE            441
 #define IDM_ZOOM_FIT_WIDTH              442
@@ -69,32 +53,62 @@
 #define IDM_ZOOM_25                     453
 #define IDM_ZOOM_12_5                   454
 #define IDM_ZOOM_8_33                   455
-#define IDM_ZOOM_FIT_CONTENT            456
-#define IDM_ZOOM_CUSTOM                 457
-
 #define IDM_CONTRIBUTE_TRANSLATION      460
-
-#define IDM_VIEW_WITH_ACROBAT           470
-#define IDM_VIEW_WITH_FOXIT             471
-#define IDM_VIEW_WITH_PDF_XCHANGE       472
-
-#define IDM_FILE_HISTORY_FIRST          510
-#define IDM_FILE_HISTORY_LAST           519
-
+#define IDM_LANG_EN                     461
+#define IDM_LANG_FR                     462
+#define IDM_LANG_PL                     463
+#define IDM_LANG_DE                     464
+#define IDM_LANG_TR                     465
+#define IDM_LANG_BY                     466
+#define IDM_LANG_JA                     467
+#define IDM_LANG_HU                     468
+#define IDM_LANG_FA                     469
+#define IDM_LANG_DK                     470
+#define IDM_LANG_IT                     471
+#define IDM_LANG_NL                     472
+#define IDM_LANG_TA                     473
+#define IDM_LANG_ES                     474
+#define IDM_LANG_HR                     475
+#define IDM_LANG_RU                     476
+#define IDM_LANG_AR                     477
+#define IDM_LANG_CN                     478
+#define IDM_LANG_SV                     479
+#define IDM_LANG_CZ                     480
+#define IDM_LANG_GR                     481
+#define IDM_LANG_TH                     482
+#define IDM_LANG_PT                     483
+#define IDM_LANG_BR                     484
+#define IDM_LANG_NO                     485
+#define IDM_LANG_SK                     486
+#define IDM_LANG_VN                     487
+#define IDM_LANG_LT                     488
+#define IDM_LANG_MY                     489
+#define IDM_LANG_FI                     490
+#define IDM_LANG_CA                     491
+#define IDM_LANG_SI                     492
+#define IDM_LANG_TW                     493
+#define IDM_LANG_ML                     494
+#define IDM_LANG_HE                     495
+#define IDM_LANG_SP_RS                  496
+#define IDM_LANG_ID                     497
+#define IDM_LANG_MK                     498
+#define IDM_LANG_RO                     499
+#define IDM_LANG_SR_RS                  500
+#define IDM_LANG_KR                     501
+#define IDM_LANG_BN                     502
+#define IDM_LANG_GL                     503
+#define IDM_LANG_BG                     504
+#define IDM_LANG_UK                     505
+#define IDM_LANG_EU                     506
 #define IDM_VISIT_WEBSITE               550
 #define IDM_ABOUT                       551
-#define IDM_SETTINGS                    552
+#define IDM_SET_INVERSESEARCH           552
 #define IDM_CHANGE_LANGUAGE             553
 #define IDM_CHECK_UPDATE                554
-#define IDM_MANUAL                      555
-#define IDM_MOVE_FRAME_FOCUS            557
-#define IDM_GOTO_NAV_BACK               558
-#define IDM_GOTO_NAV_FORWARD            559
-#define IDM_CRASH_ME                    560
-#define IDM_THREAD_STRESS               561
 
 #define IDC_SUMATRAPDF                  600
 #define IDI_SMALL                       601
+
 #define IDC_GOTO_PAGE_EDIT              1000
 #define IDC_GOTO_PAGE_GO                1001
 #define IDC_BUTTON2                     1002
@@ -104,8 +118,8 @@
 #define IDC_DIALOG_GET_PASSWORD_EDIT    1004
 #define IDC_GET_PASSWORD_EDIT           1004
 #define IDC_GET_PASSWORD_LABEL          1005
-#define IDC_REMEMBER_PASSWORD           1006
 #define IDC_TOOLBAR                     1006
+#define IDC_CMDLINE                     1006
 #define IDC_REBAR                       1007
 #define IDC_DONT_ASK_ME_AGAIN           1008
 #define IDC_PDF_TOC_TREE                1009
@@ -113,34 +127,18 @@
 #define IDC_YOU_HAVE                    1011
 #define IDC_NEW_AVAILABLE               1012
 #define IDC_SKIP_THIS_VERSION           1013
-#define IDC_SECTION_VIEW                1014
-#define IDC_DEFAULT_LAYOUT_LABEL        1015
-#define IDC_DEFAULT_LAYOUT              1016
-#define IDC_DEFAULT_ZOOM_LABEL          1017
-#define IDC_DEFAULT_ZOOM                1018
-#define IDC_DEFAULT_SHOW_TOC            1019
-#define IDC_GLOBAL_PREFS_ONLY           1020
-#define IDC_SECTION_ADVANCED            1021
-#define IDC_AUTO_UPDATE_CHECKS          1022
-#define IDC_SET_DEFAULT_READER          1023
-#define IDC_REMEMBER_OPENED_FILES       1025
-#define IDC_FIND_EDIT                   1030
-#define IDC_MATCH_CASE                  1031
-#define IDC_FIND_NEXT_HINT              1032
-#define IDC_SECTION_INVERSESEARCH       1040
-#define IDC_CMDLINE_LABEL               1041
-#define IDC_CMDLINE                     1042
-#define IDC_PDF_TOC_TREE_TITLE          1043
-#define IDC_SECTION_PRINT_RANGE         1050
-#define IDC_PRINT_RANGE_ALL             1051
-#define IDC_PRINT_RANGE_EVEN            1052
-#define IDC_PRINT_RANGE_ODD             1053
-#define IDC_SECTION_PRINT_SCALE         1060
-#define IDC_PRINT_SCALE_SHRINK          1061
-#define IDC_PRINT_SCALE_FIT             1062
-#define IDC_PRINT_SCALE_NONE            1063
+
 #define IDB_TOOLBAR                     2000
-#define IDB_RELOADING_CUE               2010
+#define IDB_TOOLBAR_DISABLED            2001
+#define IDB_SILK_OPEN                   2002
+#define IDB_SILK_NEXT                   2003
+#define IDB_SILK_PREV                   2004
+#define IDB_SILK_ZOOM_IN                2005
+#define IDB_SILK_ZOOM_OUT               2006
+#define IDB_CLOSE_TOC                   2007
+#define IDB_FIND_NEXT                   2008
+#define IDB_FIND_PREV                   2009
+#define IDB_FIND_MATCH                  2010
 #define IDT_FILE_NEW                    3000
 #define IDT_FILE_OPEN                   3001
 #define IDT_FILE_METAPATH               3002
@@ -167,8 +165,6 @@
 #define IDT_FILE_PRINT                  3023
 #define IDT_FILE_OPENFAV                3024
 #define IDT_FILE_ADDTOFAV               3025
-#define IDT_VIEW_FIT_WIDTH              3026
-#define IDT_VIEW_FIT_PAGE               3027
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
