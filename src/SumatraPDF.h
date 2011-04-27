@@ -1,30 +1,251 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+/* Copyright Krzysztof Kowalczyk 2006-2009
+   License: GPLv2 */
+#ifndef SUMATRAPDF_H_
+#define SUMATRAPDF_H_
 
-#ifndef SumatraPDF_h
-#define SumatraPDF_h
+/* TODO: those should be set from the makefile */
+// Modify the following defines if you have to target a platform prior to the ones specified below.
+// Refer to MSDN for the latest info on corresponding values for different platforms.
+#ifndef WINVER
+#define WINVER 0x0500
+#endif
 
-#include "BaseUtil.h"
-#include "AppPrefs.h"
+#ifndef _WIN32_WINNT 
+#define _WIN32_WINNT 0x0400
+#endif
 
-#define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
+#ifndef _WIN32_WINDOWS        // Allow use of features specific to Windows 98 or later.
+#define _WIN32_WINDOWS 0x0410 // Change this to the appropriate value to target Windows Me or later.
+#endif
 
-/* styling for About/Properties windows */
+#ifndef _WIN32_IE             // Allow use of features specific to IE 6.0 or later.
+#define _WIN32_IE 0x0600      // Change this to the appropriate value to target other versions of IE.
+#endif
 
-#define LEFT_TXT_FONT           _T("Arial")
-#define LEFT_TXT_FONT_SIZE      12
-#define RIGHT_TXT_FONT          _T("Arial Black")
-#define RIGHT_TXT_FONT_SIZE     12
+#define THREAD_BASED_FILEWATCH
 
-// all defined in SumatraPDF.cpp
-extern HINSTANCE                ghinst;
-extern SerializableGlobalPrefs  gGlobalPrefs;
-extern HCURSOR                  gCursorHand;
-extern HBRUSH                   gBrushNoDocBg;
-extern bool                     gRestrictedUse;
-extern bool                     gPluginMode;
+#ifdef _DEBUG
+#define _CRTDBG_MAP_ALLOC
+#endif
+#include <stdlib.h>
+#ifdef _DEBUG
+#include <crtdbg.h>
+#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+#define new DEBUG_NEW
+#endif
 
-void LaunchBrowser(const TCHAR *url);
+#include <windows.h>
+#include <tchar.h>
+#include "resource.h"
+
+#include "win_util.h"
+#include "DisplayModel.h"
+#include "FileWatch.h"
+#include "PdfSync.h"
+
+/* Current state of a window:
+  - WS_ERROR_LOADING_PDF - showing an error message after failing to open a PDF
+  - WS_SHOWING_PDF - showing a PDF file
+  - WS_ABOUT - showing "about" screen */
+enum WinState {
+    WS_ERROR_LOADING_PDF = 1,
+    WS_SHOWING_PDF,
+    WS_ABOUT
+};
+
+/* When doing "about" animation, remembers the current animation state */
+typedef struct {
+    HWND        hwnd;
+    int         frame;
+    UINT_PTR    timerId;
+} AnimState;
+
+/* Describes actions which can be performed by mouse */
+enum MouseAction {
+    MA_IDLE = 0,
+    MA_MAYBEDRAGGING,
+    MA_DRAGGING,
+    MA_SELECTING,
+    MA_SCROLLING
+};
+
+/* Represents selected area on given page */
+typedef struct SelectionOnPage {
+    int              pageNo;
+    RectD            selectionPage;     /* position of selection rectangle on page */
+    RectI            selectionCanvas;   /* position of selection rectangle on canvas */
+    SelectionOnPage* next;              /* pointer to next page with selected area
+                                         * or NULL if such page not exists */
+} SelectionOnPage;
+
+/* Describes information related to one window with (optional) pdf document
+   on the screen */
+class WindowInfo : public PdfSearchTracker
+{
+public:
+    WindowInfo() {
+        dm = NULL;
+        dibInfo = NULL;
+        next = NULL;
+        linkOnLastButtonDown = NULL;
+        url = NULL;
+        selectionOnPage = NULL;
+        tocLoaded = false;
+        fullScreen = false;
+        hwndFrame = NULL;
+        hwndCanvas = NULL;
+        hwndToolbar = NULL;
+        hwndReBar = NULL;
+        hwndFindText = NULL;
+        hwndFindBox = NULL;
+        hwndFindBg = NULL;
+        hwndPageText = NULL;
+        hwndPageBox = NULL;
+        hwndPageBg = NULL;
+        hwndPageTotal = NULL;
+        hwndTocBox = NULL;
+        hwndSpliter = NULL;
+        hwndTracker = NULL;
+        hMenu = NULL;
+        hdc = NULL;
+        dpi = 96;
+        findPercent = 0;
+        findStatusVisible = false;
+        showSelection = false;
+        showForwardSearchMark = false;
+        mouseAction = MA_IDLE;
+        memzero(&animState, sizeof(animState));
+        memzero(&selectionRect, sizeof(selectionRect));
+        fwdsearchmarkRects.clear();
+        needrefresh = false;
+        pdfsync = NULL;
+        findStatusThread = NULL;
+        stopFindStatusThreadEvent = NULL;
+        hdcToDraw = NULL;
+        hdcDoubleBuffer = NULL;
+        bmpDoubleBuffer = NULL;
+        title = NULL;
+    }
+    
+    void GetCanvasSize() { 
+        GetClientRect(hwndCanvas, &canvasRc);
+    }
+
+    int winDx() { return rect_dx(&canvasRc); }
+
+    int winDy() { return rect_dy(&canvasRc); }
+
+    SizeI winSize() { return SizeI(rect_dx(&canvasRc), rect_dy(&canvasRc)); }
+
+    /* points to the next element in the list or the first element if
+       this is the first element */
+    WindowInfo *    next;
+    WinState        state;
+    bool            needrefresh; // true if the view of the PDF is not synchronized with the content of the file on disk
+
+    DisplayModel *  dm;
+    HWND            hwndFrame;
+    HWND            hwndCanvas;
+    HWND            hwndToolbar;
+    HWND            hwndReBar;
+    HWND            hwndFindText;
+    HWND            hwndFindBox;
+    HWND            hwndFindBg;
+    HWND            hwndFindStatus;
+    HWND            hwndPageText;
+    HWND            hwndPageBox;
+    HWND            hwndPageBg;
+    HWND            hwndPageTotal;
+    HWND            hwndTocBox;
+    HWND            hwndSpliter;
+    HWND            hwndTracker;
+    HMENU           hMenu;
+
+    HDC             hdc;
+    BITMAPINFO *    dibInfo;
+    int             dpi;
+
+    int             findPercent;
+    bool            findStatusVisible;    
+    HANDLE          findStatusThread; // handle of the thread showing the status of the search result
+    HANDLE          stopFindStatusThreadEvent; // event raised to tell the findstatus thread to stop
+
+    /* bitmap and hdc for (optional) double-buffering */
+    HDC             hdcToDraw;
+    HDC             hdcDoubleBuffer;
+    HBITMAP         bmpDoubleBuffer;
+
+    PdfLink *       linkOnLastButtonDown;
+    const TCHAR *   url;
+
+    MouseAction     mouseAction;
+
+    /* when dragging the document around, this is previous position of the
+       cursor. A delta between previous and current is by how much we
+       moved */
+    int             dragPrevPosX, dragPrevPosY;
+
+    /* when dragging, mouse x/y position when dragging was started */
+    int             dragStartX, dragStartY;
+
+    /* when moving the document by smooth scrolling, this keeps track of
+       the speed at which we should scroll, which depends on the distance
+       of the mouse from the point where the user middle clicked. */
+    int             xScrollSpeed, yScrollSpeed;
+
+    AnimState       animState;
+
+    /* when doing a forward search, the result location is highlighted with
+     * a rectangular mark in the document. These variables indicate the position of the mark
+     * and whether it is visible or not. */
+    bool            showForwardSearchMark; // is the mark visible?
+    vector<RectI>   fwdsearchmarkRects;    // location of the markers in user coordinates
+    int             fwdsearchmarkPage;     // page 
+
+    bool            showSelection;
+
+    /* selection rectangle in screen coordinates
+     * while selecting, it represents area which is being selected */
+    RectI           selectionRect;
+
+    /* after selection is done, the selected area is converted
+     * to user coordinates for each page which has not empty intersection with it */
+    SelectionOnPage *selectionOnPage;
+
+    // file change watcher
+    FileWatcher     watcher;
+    
+    // synchronizer based on .pdfsync file
+    Synchronizer    *pdfsync;
+
+    bool            tocLoaded;
+    bool            fullScreen;
+
+    long            prevStyle;
+    RECT            frameRc;
+    RECT            canvasRc;
+
+    TCHAR *         title;
+
+    void ShowTocBox();
+    void HideTocBox();
+    void ClearTocBox();
+    void LoadTocTree();
+    void ToggleTocBox();
+
+    void TrackMouse(HWND hwnd=NULL);
+    void FindStart();
+    virtual void FindUpdateStatus(int count, int total);
+    void FocusPageNoEdit();
+
+};
+
+WindowInfo* WindowInfoList_Find(LPTSTR file);
+WindowInfo* LoadPdf(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, TCHAR *windowTitle=NULL);
+void WindowInfo_ShowForwardSearchResult(WindowInfo *win, LPCTSTR srcfilename, UINT line, UINT col, UINT ret, UINT page, vector<RectI> &rects);
+
+bool IsRunningInPortableMode(void);
+bool IsExeAssociatedWithPdfExtension(void);
 void AssociateExeWithPdfExtension();
 
 #endif
