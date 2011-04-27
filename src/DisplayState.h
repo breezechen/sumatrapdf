@@ -1,80 +1,86 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
+#ifndef DISPLAY_STATE_H_
+#define DISPLAY_STATE_H_
 
-#ifndef DisplayState_h
-#define DisplayState_h
-
-#include "BaseUtil.h"
-#include "GeomUtil.h"
-#include "BaseEngine.h"
+#include "base_util.h"
+#include "dstring.h"
 
 enum DisplayMode {
-    DM_FIRST = 0,
-    // automatic means: the continuous form of single page, facing or
-    // book view - depending on the document's desired PageLayout
-    DM_AUTOMATIC = DM_FIRST,
-    DM_SINGLE_PAGE,
+    DM_FIRST = 1,
+    DM_SINGLE_PAGE = DM_FIRST,
     DM_FACING,
-    DM_BOOK_VIEW,
     DM_CONTINUOUS,
     DM_CONTINUOUS_FACING,
-    DM_CONTINUOUS_BOOK_VIEW
+    DM_LAST = DM_CONTINUOUS_FACING
 };
 
-#define ZOOM_FIT_PAGE       -1.f
-#define ZOOM_FIT_WIDTH      -2.f
-#define ZOOM_FIT_CONTENT    -3.f
-#define ZOOM_ACTUAL_SIZE    100.0f
-#define ZOOM_MAX            6400.1f /* max zoom in % */
-#define ZOOM_MIN            8.0f    /* min zoom in % */
-#define INVALID_ZOOM        -99.0f
+#define ZOOM_FIT_PAGE       -1
+#define ZOOM_FIT_WIDTH      -2
+#define ZOOM_MAX            6401.0  /* max zoom in % */
+#define ZOOM_MIN            8.0    /* min zoom in % */
 
-class DisplayState {
-public:
-    DisplayState() :
-        filePath(NULL), useGlobalValues(false), openCount(0),
-        displayMode(DM_AUTOMATIC), pageNo(1), zoomVirtual(100.0),
-        rotation(0), windowState(0), thumbnail(NULL),
-        decryptionKey(NULL), showToc(true), tocDx(0), tocState(NULL) { }
+#define DM_SINGLE_PAGE_STR          "single page"
+#define DM_FACING_STR               "facing"
+#define DM_CONTINUOUS_STR           "continuous"
+#define DM_CONTINUOUS_FACING_STR    "continuous facing"
 
-    ~DisplayState() {
-        free(filePath);
-        free(decryptionKey);
-        free(tocState);
-        delete thumbnail;
-    }
+#define FILE_HISTORY_STR            "File History"
 
-    TCHAR *             filePath;
+#define FILE_STR                    "File"
+#define DISPLAY_MODE_STR            "Display Mode"
+#define VISIBLE_STR                 "Visible"
+#define PAGE_NO_STR                 "Page"
+#define ZOOM_VIRTUAL_STR            "ZoomVirtual"
+#define ROTATION_STR                "Rotation"
+#define FULLSCREEN_STR              "Fullscreen"
+#define SCROLL_X_STR                "Scroll X"
+#define SCROLL_Y_STR                "Scroll Y"
+#define WINDOW_STATE_STR            "Window State"
+#define WINDOW_X_STR                "Window X"
+#define WINDOW_Y_STR                "Window Y"
+#define WINDOW_DX_STR               "Window DX"
+#define WINDOW_DY_STR               "Window DY"
+#define SHOW_TOOLBAR_STR            "ShowToolbar"
+#define PDF_ASSOCIATE_DONT_ASK_STR  "PdfAssociateDontAskAgain"
+#define PDF_ASSOCIATE_ASSOCIATE_STR "PdfAssociateShouldAssociate"
+#define UI_LANGUAGE_STR             "UILanguage"
+#define SHOW_TOC_STR                "ShowToc"
+#define BG_COLOR_STR                "BgColor"
+#define ESC_TO_EXIT_STR             "EscToExit"
+#define INVERSE_SEARCH_COMMANDLINE  "InverseSearchCommandLine"
+#define VERSION_TO_SKIP_STR         "VersionToSkip"
+#define GUID_STR                    "Guid"
+#define PDFS_OPENED_STR             "PdfsOpened"
+#define LAST_UPDATE_STR             "LastUpdate"
 
-    // in order to prevent documents that haven't been opened
-    // for a while but used to be opened very frequently
-    // constantly remain in top positions, the openCount
-    // will be cut in half after every week, so that the
-    // Frequently Read list hopefully better reflects the
-    // currently relevant documents
-    int                 openCount;
-    size_t              _index;    // temporary value needed for FileHistory::cmpOpenCount
-    RenderedBitmap *    thumbnail; // persisted separately
-
-    bool                useGlobalValues;
-
+typedef struct DisplayState {
+    const char *        filePath;
     enum DisplayMode    displayMode;
-    PointI              scrollPos;
+    BOOL                visible;     /* if TRUE, currently shown on the screen */
+    int                 scrollX;
+    int                 scrollY;
     int                 pageNo;
-    float               zoomVirtual;
+    double              zoomVirtual;
     int                 rotation;
-    int                 windowState;
-    RectI               windowPos;
+    BOOL                fullScreen;
+    int                 windowX;
+    int                 windowY;
+    int                 windowDx;
+    int                 windowDy;
+    BOOL                showToc;
+} DisplayState;
 
-    // values below only apply to PDF files
+void    normalizeRotation(int *rotation);
+BOOL    validRotation(int rotation);
+BOOL    ValidZoomVirtual(double zoomVirtual);
 
-    // hex encoded MD5 fingerprint of file content (32 chars) 
-    // followed by crypt key (64 chars)
-    char *              decryptionKey;
+const char *      DisplayModeNameFromEnum(DisplayMode var);
+bool              DisplayModeEnumFromName(const char *txt, DisplayMode *resOut);
 
-    bool                showToc;
-    int                 tocDx;
-    int *               tocState;
-};
+void    DisplayState_Init(DisplayState *ds);
+void    DisplayState_Free(DisplayState *ds);
+bool    DisplayState_Serialize(DisplayState *ds, DString *strOut);
 
 #endif
+

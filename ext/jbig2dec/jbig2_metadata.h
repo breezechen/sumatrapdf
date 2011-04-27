@@ -1,16 +1,19 @@
 /*
     jbig2dec
-
+    
     Copyright (C) 2003 Artifex Software, Inc.
-
+    
     This software is distributed under license and may not
     be copied, modified or distributed except as expressly
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
-
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+                                                                                
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2_metadata.h 461 2008-05-07 21:37:02Z giles $
 */
 
 
@@ -40,9 +43,9 @@ struct _Jbig2Metadata {
 };
 
 /* these bits can go to jbig2_priv.h */
-int jbig2_comment_ascii(Jbig2Ctx *ctx, Jbig2Segment *segment,
+int jbig2_parse_comment_ascii(Jbig2Ctx *ctx, Jbig2Segment *segment,
                                 const uint8_t *segment_data);
-int jbig2_comment_unicode(Jbig2Ctx *ctx, Jbig2Segment *segment,
+int jbig2_parse_comment_unicode(Jbig2Ctx *ctx, Jbig2Segment *segment,
                                const uint8_t *segment_data);
 
 #endif /* _JBIG2_METADATA_H */

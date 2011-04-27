@@ -11,9 +11,12 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: jbig2.c 465 2008-05-16 23:48:20Z giles $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -28,6 +31,9 @@
 
 #include "jbig2.h"
 #include "jbig2_priv.h"
+#include "jbig2_arith.h"
+#include "jbig2_generic.h"
+#include "jbig2_symbol_dict.h"
 
 static void *
 jbig2_default_alloc (Jbig2Allocator *allocator, size_t size)
@@ -121,7 +127,7 @@ jbig2_ctx_new (Jbig2Allocator *allocator,
   if (error_callback == NULL)
       error_callback = &jbig2_default_error;
 
-  result = (Jbig2Ctx*)jbig2_alloc(allocator, sizeof(Jbig2Ctx));
+  result = (Jbig2Ctx *)jbig2_alloc(allocator, sizeof(Jbig2Ctx));
   if (result == NULL) {
     error_callback(error_callback_data, "initial context allocation failed!",
                     JBIG2_SEVERITY_FATAL, -1);
@@ -142,12 +148,12 @@ jbig2_ctx_new (Jbig2Allocator *allocator,
 
   result->n_segments = 0;
   result->n_segments_max = 16;
-  result->segments = jbig2_new(result, Jbig2Segment*, result->n_segments_max);
+  result->segments = (Jbig2Segment **)jbig2_alloc(allocator, result->n_segments_max * sizeof(Jbig2Segment *));
   result->segment_index = 0;
 
   result->current_page = 0;
   result->max_page_index = 4;
-  result->pages = jbig2_new(result, Jbig2Page, result->max_page_index);
+  result->pages = (Jbig2Page *)jbig2_alloc(allocator, result->max_page_index * sizeof(Jbig2Page));
   {
     int index;
     for (index = 0; index < result->max_page_index; index++) {
@@ -183,8 +189,6 @@ jbig2_get_int16 (const byte *buf)
  * to (continue to) parse it as part of a jbig2 data stream.
  *
  * Return code: 0 on success
- *             -1 if there is a parsing error, or whatever
- *                the error handling callback returns
  **/
 int
 jbig2_data_in (Jbig2Ctx *ctx, const unsigned char *data, size_t size)
@@ -198,7 +202,7 @@ jbig2_data_in (Jbig2Ctx *ctx, const unsigned char *data, size_t size)
       do
 	buf_size <<= 1;
       while (buf_size < size);
-      ctx->buf = jbig2_new(ctx, byte, buf_size);
+      ctx->buf = (byte *)jbig2_alloc(ctx->allocator, buf_size);
       ctx->buf_size = buf_size;
       ctx->buf_rd_ix = 0;
       ctx->buf_wr_ix = 0;
@@ -219,7 +223,7 @@ jbig2_data_in (Jbig2Ctx *ctx, const unsigned char *data, size_t size)
 	  do
 	    buf_size <<= 1;
 	  while (buf_size < ctx->buf_wr_ix - ctx->buf_rd_ix + size);
-	  buf = jbig2_new(ctx, byte, buf_size);
+	  buf = (byte *)jbig2_alloc(ctx->allocator, buf_size);
 	  memcpy(buf, ctx->buf + ctx->buf_rd_ix,
 		  ctx->buf_wr_ix - ctx->buf_rd_ix);
 	  jbig2_free(ctx->allocator, ctx->buf);
@@ -412,7 +416,7 @@ jbig2_word_stream_buf_get_next_word(Jbig2WordStream *self, int offset)
 Jbig2WordStream *
 jbig2_word_stream_buf_new(Jbig2Ctx *ctx, const byte *data, size_t size)
 {
-  Jbig2WordStreamBuf *result = jbig2_new(ctx, Jbig2WordStreamBuf, 1);
+  Jbig2WordStreamBuf *result = (Jbig2WordStreamBuf *)jbig2_alloc(ctx->allocator, sizeof(Jbig2WordStreamBuf));
 
   result->super.get_next_word = jbig2_word_stream_buf_get_next_word;
   result->data = data;
@@ -426,3 +430,4 @@ jbig2_word_stream_buf_free(Jbig2Ctx *ctx, Jbig2WordStream *ws)
 {
   jbig2_free(ctx->allocator, ws);
 }
+

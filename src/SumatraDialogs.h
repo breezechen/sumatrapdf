@@ -1,28 +1,31 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+/* Copyright Krzysztof Kowalczyk 2006-2007
+   License: GPLv2 */
+#ifndef SUMATRA_PDF_DIALOGS_H_
+#define SUMATRA_PDF_DIALOGS_H_
 
-#ifndef SumatraDialogs_h
-#define SumatraDialogs_h
+#define DIALOG_OK_PRESSED 1
+#define DIALOG_YES_PRESSED 1
+#define DIALOG_CANCEL_PRESSED 2
+#define DIALOG_NO_PRESSED 3
 
-#include "AppPrefs.h"
+class WindowInfo;
 
-int     Dialog_GoToPage(HWND hwnd, int currentPageNo, int pageCount);
-TCHAR * Dialog_Find(HWND hwnd, const TCHAR *previousSearch, bool *matchCase);
-TCHAR * Dialog_GetPassword(HWND hwnd, const TCHAR *fileName, bool *rememberPassword);
-INT_PTR Dialog_PdfAssociate(HWND hwnd, bool *dontAskAgainOut);
+/* For passing data to/from SetInverseSearch dialog */
+int     Dialog_GoToPage(WindowInfo *win);
+#ifdef _PDFSYNC_GUI_ENHANCEMENT
+char *  Dialog_SetInverseSearchCmdline(WindowInfo *win, const char *cmdline);
+#endif
+char *  Dialog_GetPassword(WindowInfo *win, const char *fileName);
+int     Dialog_PdfAssociate(HWND hwnd, BOOL *dontAskAgainOut);
 int     Dialog_ChangeLanguge(HWND hwnd, int currLangId);
-INT_PTR Dialog_NewVersionAvailable(HWND hwnd, const TCHAR *currentVersion, const TCHAR *newVersion, bool *skipThisVersion);
-INT_PTR Dialog_CustomZoom(HWND hwnd, float *currZoom);
-INT_PTR Dialog_Settings(HWND hwnd, SerializableGlobalPrefs *prefs);
 
-enum PrintRangeAdv { PrintRangeAll = 0, PrintRangeEven, PrintRangeOdd };
-enum PrintScaleAdv { PrintScaleNone = 0, PrintScaleShrink, PrintScaleFit };
+/* For passing data to/from 'new version available' dialog */
+typedef struct {
+    const WCHAR *currVersion;
+    const WCHAR *newVersion;
+    BOOL skipThisVersion;
+} Dialog_NewVersion_Data;
 
-struct Print_Advanced_Data {
-    PrintRangeAdv range;
-    PrintScaleAdv scale;
-};
-
-HPROPSHEETPAGE CreatePrintAdvancedPropSheet(HINSTANCE hInst, Print_Advanced_Data *data);
+int     Dialog_NewVersionAvailable(HWND hwnd, Dialog_NewVersion_Data *data);
 
 #endif

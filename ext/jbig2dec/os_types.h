@@ -8,9 +8,12 @@
     authorized under the terms of the license contained in
     the file LICENSE in this distribution.
 
-    For further licensing information refer to http://artifex.com/ or
-    contact Artifex Software, Inc., 7 Mt. Lassen Drive - Suite A-134,
+    For information on commercial licensing, go to
+    http://www.artifex.com/licensing/ or contact
+    Artifex Software, Inc.,  101 Lucas Valley Road #110,
     San Rafael, CA  94903, U.S.A., +1(415)492-9861.
+
+    $Id: os_types.h 467 2008-05-17 00:08:26Z giles $
 */
 
 /*
@@ -40,23 +43,12 @@
 # include "config_types.h"
 #elif defined(_WIN32) || defined(__WIN32__)
 # include "config_win32.h"
-#else
-   typedef unsigned char  uint8_t;
-   typedef unsigned short uint16_t;
-   typedef unsigned int   uint32_t;
-   typedef signed char    int8_t;
-   typedef signed short   int16_t;
-   typedef signed int     int32_t;
 #endif
 
 #if defined(HAVE_STDINT_H) || defined(__MACOS__)
 # include <stdint.h>
 #elif defined(__VMS)
 # include <inttypes.h>
-#endif
-
-#ifdef __hpux
-#include <sys/_inttypes.h>
 #endif
 
 #endif /* _JBIG2_OS_TYPES_H */

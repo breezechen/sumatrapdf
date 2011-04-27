@@ -1,6 +1,8 @@
 #!/bin/sh
 # Run this to set up the build system: configure, makefiles, etc.
 
+# $Id: autogen.sh 456 2007-10-25 22:13:23Z giles $
+
 package="jbig2dec"
 AUTOMAKE_FLAGS="$AUTOMAKE_FLAGS"
 
@@ -78,35 +80,13 @@ if test -r Makefile.am; then
         echo "or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
 	exit 1
   }
-fi
+fi  
 
-# do we need libtool?
-if ! test -z `grep -l -s -e PROG_LIBTOOL configure.ac configure.in`; then
-  echo -n "Checking for libtoolize... "
-  LIBTOOLIZE=
-  for lt in glibtoolize libtoolize; do
-    if ($lt --version < /dev/null > /dev/null 2>&1); then
-      LIBTOOLIZE=$lt
-      echo $lt
-      break;
-    fi
-  done
-  if test -z $LIBTOOLIZE; then
-        echo
-        echo "You must have GNU libtool installed to compile $package."
-        echo "Download the appropriate package for your distribution,"
-        echo "or get the source tarball at ftp://ftp.gnu.org/pub/gnu/"
-	exit 1
-  fi
-fi
 
 echo "Generating configuration files for $package, please wait...."
 
 echo "  $ACLOCAL $ACLOCAL_FLAGS"
 $ACLOCAL $ACLOCAL_FLAGS
-
-echo "  $LIBTOOLIZE"
-$LIBTOOLIZE
 
 echo "  autoheader"
 autoheader
@@ -133,9 +113,9 @@ cat >config_types.h.in <<EOF
 #  endif /* JBIG2_REPLACE_STDINT */
 #endif /* HAVE_STDINT_H */
 EOF
-
+    
 echo "  $AUTOMAKE --add-missing $AUTOMAKE_FLAGS"
-$AUTOMAKE --add-missing $AUTOMAKE_FLAGS
+$AUTOMAKE --add-missing $AUTOMAKE_FLAGS 
 
 echo "  autoconf"
 autoconf
