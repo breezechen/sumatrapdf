@@ -1,10 +1,8 @@
 ﻿# Translations for Lithuanian (Lietuvių) (lt) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: lt Lithuanian (Lietuvių)
 
@@ -191,10 +189,10 @@ Tikrinti, ar yra na&ujinimų
 Continuous
 Nenutrūkstama
 
-Continuous Book View
+Continuous book view
 Nenutrūkstama knygos peržiūra
 
-Continuous Facing
+Continuous facing
 Nenutrūkstama dviejų puslapių
 
 Contribute Translation
@@ -224,9 +222,6 @@ Numatytasis &išdėstymas:
 Default &Zoom:
 Numatytasis &mastelis
 
-Default PDF reader can't be changed in portable mode
-Naudojant portatyvią programą negalima pakeisti numatytosios PDF skaityklės
-
 Denied Permissions:
 Neprieinami leidimai:
 
@@ -247,6 +242,9 @@ Enter password for %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Įveskite komandinę eilutę, vykdomą atverčiant PDF dokumentą:
+
+Error loading PDF file.
+PDF failo įkelties klaida
 
 F&orward\tAlt+Right Arrow
 &Pirmyn\tAlt+Right Arrow
@@ -314,10 +312,13 @@ KB
 MB
 MB
 
+Main PDF reader can't be changed in portable mode
+Naudojant portatyvią programą negalima pakeisti numatytosios PDF skaityklės
+
 Make SumatraPDF default application for PDF files?
 Nustatyti SumatraPDF kaip numatytąją PDF skaityklę?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Nustatyti SumatraPDF kaip numatytąją PDF skaityklę
 
 Match Case
@@ -334,6 +335,9 @@ Kitas puslapis
 
 No matches were found
 Nerasta atitikmenų
+
+No result found around line %u in file %s
+Nieko nerasta failo %s %u eilutėje
 
 No synchronization file found
 Sinchronizacijos failas nerastas
@@ -352,12 +356,6 @@ Atverti
 
 Open in &Adobe Reader
 Atverti su &Adobe Reader
-
-Open in &Foxit Reader
-Atverti su &Foxit Reader
-
-Open in PDF-XChange
-Atverti su PDF-XChange
 
 P&roperties\tCtrl-D
 &Savybės
@@ -443,10 +441,10 @@ Tema:
 SumatraPDF Options
 SumatraPDF nuostatos
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF yra numatytoji PDF skaityklė
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 Dabar SumatraPDF bus numatytoji PDF skaityklė
 
 Synchronization file cannot be opened
@@ -498,36 +496,11 @@ printing document
 spausdinamas dokumentas
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
 #Fin&d...\tCtrl-F
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
-#XPS documents
 

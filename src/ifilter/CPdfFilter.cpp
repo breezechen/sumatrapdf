@@ -1,12 +1,17 @@
 /* Copyright 2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "StrUtil.h"
+#include "base_util.h"
+#include "wstr_util.h"
 #include "CPdfFilter.h"
 #include "PdfEngine.h"
 
 extern HINSTANCE g_hInstance;
+
+TCHAR *GetPasswordForFile(WindowInfo *win, const TCHAR *fileName, pdf_xref *xref, unsigned char *decryptionKey, bool *saveKey)
+{
+    return NULL;
+}
 
 VOID CPdfFilter::CleanUp()
 {
@@ -21,8 +26,32 @@ HRESULT CPdfFilter::OnInit()
 {
     CleanUp();
 
-    m_pdfEngine = PdfEngine::CreateFromStream(m_pStream);
-    if (!m_pdfEngine)
+    STATSTG stat;
+    HRESULT res = m_pStream->Stat(&stat, STATFLAG_NONAME);
+    if (FAILED(res))
+        return res;
+
+    DWORD size = stat.cbSize.LowPart;
+    fz_buffer *filedata = fz_newbuffer(size);
+    filedata->len = size;
+
+    LARGE_INTEGER zero;
+    zero.QuadPart = 0;
+    m_pStream->Seek(zero, STREAM_SEEK_SET, NULL);
+    res = m_pStream->Read(filedata->data, filedata->len, NULL);
+    if (FAILED(res)) {
+        fz_dropbuffer(filedata);
+        return res;
+    }
+
+    fz_stream *stm = fz_openbuffer(filedata);
+    fz_dropbuffer(filedata);
+
+    m_pdfEngine = new PdfEngine();
+    bool success = m_pdfEngine->load(stm);
+    fz_close(stm);
+
+    if (!success)
         return E_FAIL;
 
     m_state = STATE_PDF_START;
@@ -31,11 +60,10 @@ HRESULT CPdfFilter::OnInit()
 }
 
 // adapted from SumatraProperties.cpp
-static bool PdfDateParse(const WCHAR *pdfDate, SYSTEMTIME *timeOut)
-{
+static bool PdfDateParse(WCHAR *pdfDate, SYSTEMTIME *timeOut) {
     ZeroMemory(timeOut, sizeof(SYSTEMTIME));
     // "D:" at the beginning is optional
-    if (Str::StartsWith(pdfDate, L"D:"))
+    if (wstr_startswith(pdfDate, L"D:"))
         pdfDate += 2;
     return 6 == swscanf(pdfDate, L"%4d%2d%2d" L"%2d%2d%2d",
         &timeOut->wYear, &timeOut->wMonth, &timeOut->wDay,
@@ -45,6 +73,7 @@ static bool PdfDateParse(const WCHAR *pdfDate, SYSTEMTIME *timeOut)
 
 HRESULT CPdfFilter::GetNextChunkValue(CChunkValue &chunkValue)
 {
+    fz_obj *info;
     WCHAR *str;
 
     switch (m_state) {
@@ -55,47 +84,54 @@ HRESULT CPdfFilter::GetNextChunkValue(CChunkValue &chunkValue)
 
     case STATE_PDF_AUTHOR:
         m_state = STATE_PDF_TITLE;
-        str = Str::Conv::ToWStrQ(m_pdfEngine->GetProperty("Author"));
-        if (!Str::IsEmpty(str)) {
+        info = m_pdfEngine->getPdfInfo();
+        str = (WCHAR *)pdf_toucs2(fz_dictgets(info, "Author"));
+        if (!wstr_empty(str)) {
             chunkValue.SetTextValue(PKEY_Author, str);
-            free(str);
+            fz_free(str);
             return S_OK;
         }
-        free(str);
+        fz_free(str);
         // fall through
 
     case STATE_PDF_TITLE:
         m_state = STATE_PDF_DATE;
-        str = Str::Conv::ToWStrQ(m_pdfEngine->GetProperty("Title"));
-        if (!str) str = Str::Conv::ToWStrQ(m_pdfEngine->GetProperty("Subject"));
-        if (!Str::IsEmpty(str)) {
+        info = m_pdfEngine->getPdfInfo();
+        str = (WCHAR *)pdf_toucs2(fz_dictgetsa(info, "Title", "Subject"));
+        if (!wstr_empty(str)) {
             chunkValue.SetTextValue(PKEY_Title, str);
-            free(str);
+            fz_free(str);
             return S_OK;
         }
-        free(str);
+        fz_free(str);
         // fall through
 
     case STATE_PDF_DATE:
         m_state = STATE_PDF_CONTENT;
-        str = Str::Conv::ToWStrQ(m_pdfEngine->GetProperty("ModDate"));
-        if (!str) str = Str::Conv::ToWStrQ(m_pdfEngine->GetProperty("CreationDate"));
-        if (!Str::IsEmpty(str)) {
+        info = m_pdfEngine->getPdfInfo();
+        str = (WCHAR *)pdf_toucs2(fz_dictgetsa(info, "ModDate", "CreationDate"));
+        if (!wstr_empty(str)) {
             SYSTEMTIME systime;
             if (PdfDateParse(str, &systime)) {
                 FILETIME filetime;
                 SystemTimeToFileTime(&systime, &filetime);
                 chunkValue.SetFileTimeValue(PKEY_ItemDate, filetime);
-                free(str);
+                fz_free(str);
                 return S_OK;
             }
         }
-        free(str);
+        fz_free(str);
         // fall through
 
     case STATE_PDF_CONTENT:
-        if (++m_iPageNo <= m_pdfEngine->PageCount()) {
-            str = Str::Conv::ToWStrQ(m_pdfEngine->ExtractPageText(m_iPageNo, _T("\r\n")));
+        if (++m_iPageNo <= m_pdfEngine->pageCount()) {
+#ifdef UNICODE
+            str = m_pdfEngine->ExtractPageText(m_iPageNo);
+#else
+            TCHAR *tstr = m_pdfEngine->ExtractPageText(m_iPageNo);
+            str = tstr_to_wstr(tstr);
+            free(tstr);
+#endif
             chunkValue.SetTextValue(PKEY_Search_Contents, str, CHUNK_TEXT);
             free(str);
             return S_OK;

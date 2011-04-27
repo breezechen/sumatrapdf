@@ -1,10 +1,8 @@
 ﻿# Translations for Japanese (日本語) (ja) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: ja Japanese (日本語)
 
@@ -190,10 +188,10 @@ Check for &Updates
 Continuous
 連続
 
-Continuous Book View
+Continuous book view
 連続ブック ビュー
 
-Continuous Facing
+Continuous facing
 連続見返し
 
 Contribute Translation
@@ -223,9 +221,6 @@ Default &Layout:
 Default &Zoom:
 既定の拡大率(&Z):
 
-Default PDF reader can't be changed in portable mode
-メイン PDF リーダーはポータブル モードでは変更できません
-
 Denied Permissions:
 拒否された権限:
 
@@ -246,6 +241,9 @@ Enter password for %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 PDF ドキュメント上でダブルクリックしたときに呼び出すコマンドラインを入力します:
+
+Error loading PDF file.
+PDF ファイルの読み込みエラーです。
 
 F&orward\tAlt+Right Arrow
 次に進む(&O)\tAlt+→
@@ -322,10 +320,13 @@ KB
 MB
 MB
 
+Main PDF reader can't be changed in portable mode
+メイン PDF リーダーはポータブル モードでは変更できません
+
 Make SumatraPDF default application for PDF files?
 SumatraPDF を PDF ファイルの既定のアプリケーションにしますか?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 SumatraPDF をメイン PDF リーダーにする
 
 Match Case
@@ -342,6 +343,9 @@ Next Page
 
 No matches were found
 一致が見つかりませんでした
+
+No result found around line %u in file %s
+結果がファイル %s の行 %u に見つかりません
 
 No synchronization file found
 同期化ファイルが見つかりません
@@ -360,12 +364,6 @@ Open
 
 Open in &Adobe Reader
 Adobe Reader で開く(&A)
-
-Open in &Foxit Reader
-Foxit Reader で開く(&A)
-
-Open in PDF-XChange
-PDF-XChange で開く(&A)
 
 P&roperties\tCtrl-D
 プロパティ(&R)\tCtrl-D
@@ -463,10 +461,10 @@ SumatraPDF の更新
 SumatraPDF crashed
 SumatraPDF がクラッシュしました
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF はメイン PDF リーダーです
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF はメイン PDF リーダーになりました
 
 Synchronization file cannot be opened
@@ -516,31 +514,4 @@ copying text
 
 printing document
 印刷するドキュメント
-
-# Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
-#XPS documents
 

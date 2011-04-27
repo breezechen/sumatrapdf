@@ -1,7 +1,8 @@
 #include "fitz.h"
 #include "mupdf.h"
-#include "muxps.h"
 #include "pdfapp.h"
+
+#include "x11_icon.xbm"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -12,20 +13,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#define mupdf_icon_bitmap_16_width 16
-#define mupdf_icon_bitmap_16_height 16
-static unsigned char mupdf_icon_bitmap_16_bits[] = {
-	0x00, 0x00, 0x00, 0x1e, 0x00, 0x2b, 0x80, 0x55, 0x8c, 0x62, 0x8c, 0x51,
-	0x9c, 0x61, 0x1c, 0x35, 0x3c, 0x1f, 0x3c, 0x0f, 0xfc, 0x0f, 0xec, 0x0d,
-	0xec, 0x0d, 0xcc, 0x0c, 0xcc, 0x0c, 0x00, 0x00 };
-
-#define mupdf_icon_bitmap_16_mask_width 16
-#define mupdf_icon_bitmap_16_mask_height 16
-static unsigned char mupdf_icon_bitmap_16_mask_bits[] = {
-	0x00, 0x1e, 0x00, 0x3f, 0x80, 0x7f, 0xce, 0xff, 0xde, 0xff, 0xde, 0xff,
-	0xfe, 0xff, 0xfe, 0x7f, 0xfe, 0x3f, 0xfe, 0x1f, 0xfe, 0x1f, 0xfe, 0x1f,
-	0xfe, 0x1f, 0xfe, 0x1f, 0xfe, 0x1f, 0xce, 0x1c };
 
 #ifndef timeradd
 #define timeradd(a, b, result) \
@@ -64,11 +51,10 @@ static Display *xdpy;
 static Atom XA_TARGETS;
 static Atom XA_TIMESTAMP;
 static Atom XA_UTF8_STRING;
-static Atom WM_DELETE_WINDOW;
 static int x11fd;
 static int xscr;
 static Window xwin;
-static Pixmap xicon, xmask;
+static Pixmap xicon;
 static GC xgc;
 static XEvent xevt;
 static int mapped = 0;
@@ -107,7 +93,7 @@ void winerror(pdfapp_t *app, fz_error error)
 char *winpassword(pdfapp_t *app, char *filename)
 {
 	char *r = password;
-	password = NULL;
+	password = nil;
 	return r;
 }
 
@@ -120,14 +106,13 @@ static void winopen(void)
 	XWMHints *wmhints;
 	XClassHint *classhint;
 
-	xdpy = XOpenDisplay(NULL);
+	xdpy = XOpenDisplay(nil);
 	if (!xdpy)
 		winerror(&gapp, fz_throw("cannot open display"));
 
 	XA_TARGETS = XInternAtom(xdpy, "TARGETS", False);
 	XA_TIMESTAMP = XInternAtom(xdpy, "TIMESTAMP", False);
 	XA_UTF8_STRING = XInternAtom(xdpy, "UTF8_STRING", False);
-	WM_DELETE_WINDOW = XInternAtom(xdpy, "WM_DELETE_WINDOW", False);
 
 	xscr = DefaultScreen(xdpy);
 
@@ -154,7 +139,7 @@ static void winopen(void)
 		InputOutput,
 		ximage_get_visual(),
 		0,
-		NULL);
+		nil);
 	if (xwin == None)
 		winerror(&gapp, fz_throw("cannot create window"));
 
@@ -165,26 +150,19 @@ static void winopen(void)
 
 	mapped = 0;
 
-	xgc = XCreateGC(xdpy, xwin, 0, NULL);
+	xgc = XCreateGC(xdpy, xwin, 0, nil);
 
 	XDefineCursor(xdpy, xwin, xcarrow);
 
 	wmhints = XAllocWMHints();
 	if (wmhints)
 	{
-		wmhints->flags = IconPixmapHint | IconMaskHint;
+		wmhints->flags = IconPixmapHint;
 		xicon = XCreateBitmapFromData(xdpy, xwin,
-			(char*)mupdf_icon_bitmap_16_bits,
-			mupdf_icon_bitmap_16_width,
-			mupdf_icon_bitmap_16_height);
-		xmask = XCreateBitmapFromData(xdpy, xwin,
-			(char*)mupdf_icon_bitmap_16_mask_bits,
-			mupdf_icon_bitmap_16_mask_width,
-			mupdf_icon_bitmap_16_mask_height);
-		if (xicon && xmask)
+			(char *) gs_l_xbm_bits, gs_l_xbm_width, gs_l_xbm_height);
+		if (xicon)
 		{
 			wmhints->icon_pixmap = xicon;
-			wmhints->icon_mask = xmask;
 			XSetWMHints(xdpy, xwin, wmhints);
 		}
 		XFree(wmhints);
@@ -198,8 +176,6 @@ static void winopen(void)
 		XSetClassHint(xdpy, xwin, classhint);
 		XFree(classhint);
 	}
-
-	XSetWMProtocols(xdpy, xwin, &WM_DELETE_WINDOW, 1);
 
 	x11fd = ConnectionNumber(xdpy);
 }
@@ -222,17 +198,16 @@ void wincursor(pdfapp_t *app, int curs)
 
 void wintitle(pdfapp_t *app, char *s)
 {
-	XStoreName(xdpy, xwin, s);
 #ifdef X_HAVE_UTF8_STRING
-	Xutf8SetWMProperties(xdpy, xwin, s, s, NULL, 0, NULL, NULL, NULL);
+	Xutf8SetWMProperties(xdpy, xwin, s, s, nil, 0, nil, nil, nil);
 #else
-	XmbSetWMProperties(xdpy, xwin, s, s, NULL, 0, NULL, NULL, NULL);
+	XmbSetWMProperties(xdpy, xwin, s, s, nil, 0, nil, nil, nil);
 #endif
 }
 
 void winhelp(pdfapp_t *app)
 {
-	fprintf(stderr, "%s\n%s", pdfapp_version(app), pdfapp_usage(app));
+	fprintf(stderr, "%s", pdfapp_usage(app));
 }
 
 void winresize(pdfapp_t *app, int w, int h)
@@ -314,7 +289,7 @@ static void winblit(pdfapp_t *app)
 	{
 		int i = gapp.image->w*gapp.image->h;
 		unsigned char *color = malloc(i*4);
-		if (color != NULL)
+		if (color != nil)
 		{
 			unsigned char *s = gapp.image->samples;
 			unsigned char *d = color;
@@ -514,10 +489,10 @@ static void onmouse(int x, int y, int btn, int modifiers, int state)
 static void usage(void)
 {
 	fprintf(stderr, "usage: mupdf [options] file.pdf [page]\n");
-	fprintf(stderr, "\t-b -\tset anti-aliasing quality in bits (0=off, 8=best)\n");
 	fprintf(stderr, "\t-p -\tpassword\n");
 	fprintf(stderr, "\t-r -\tresolution\n");
 	fprintf(stderr, "\t-A\tdisable accelerated functions\n");
+	fprintf(stderr, "usage: mupdf [options] file.pdf [page]\n");
 	exit(1);
 }
 
@@ -534,9 +509,9 @@ static void winawaitevent(struct timeval *tmo, struct timeval *tmo_at)
 		FD_ZERO(&fds);
 		FD_SET(x11fd, &fds);
 
-		if (select(x11fd + 1, &fds, NULL, NULL, tmo))
+		if (select(x11fd + 1, &fds, nil, nil, tmo))
 		{
-			gettimeofday(&now, NULL);
+			gettimeofday(&now, nil);
 			timersub(tmo_at, &now, tmo);
 			XNextEvent(xdpy, &xevt);
 		}
@@ -550,7 +525,7 @@ static void winsettmo(struct timeval *tmo, struct timeval *tmo_at)
 	tmo->tv_sec = 2;
 	tmo->tv_usec = 0;
 
-	gettimeofday(&now, NULL);
+	gettimeofday(&now, nil);
 	timeradd(&now, tmo, tmo_at);
 }
 
@@ -578,14 +553,13 @@ int main(int argc, char **argv)
 	int accelerate = 1;
 	int fd;
 
-	while ((c = fz_getopt(argc, argv, "p:r:b:A")) != -1)
+	while ((c = fz_getopt(argc, argv, "p:r:A")) != -1)
 	{
 		switch (c)
 		{
 		case 'p': password = fz_optarg; break;
 		case 'r': resolution = atoi(fz_optarg); break;
 		case 'A': accelerate = 0; break;
-		case 'b': fz_set_aa_level(atoi(fz_optarg)); break;
 		default: usage();
 		}
 	}
@@ -660,7 +634,7 @@ int main(int argc, char **argv)
 			case KeyPress:
 				wasshowingpage = isshowingpage;
 
-				len = XLookupString(&xevt.xkey, buf, sizeof buf, &keysym, NULL);
+				len = XLookupString(&xevt.xkey, buf, sizeof buf, &keysym, nil);
 
 				switch (keysym)
 				{
@@ -740,11 +714,6 @@ int main(int argc, char **argv)
 					xevt.xselectionrequest.target,
 					xevt.xselectionrequest.property,
 					xevt.xselectionrequest.time);
-				break;
-
-			case ClientMessage:
-				if (xevt.xclient.format == 32 && xevt.xclient.data.l[0] == WM_DELETE_WINDOW)
-					closing = 1;
 				break;
 			}
 		}

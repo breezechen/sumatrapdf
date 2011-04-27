@@ -1,12 +1,12 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2010 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef SumatraPDF_h
-#define SumatraPDF_h
+#ifndef SUMATRAPDF_H_
+#define SUMATRAPDF_H_
 
-#include "BaseUtil.h"
-#include "AppPrefs.h"
+#include "base_util.h"
 
+#define APP_NAME_STR            _T("SumatraPDF")
 #define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
 
 /* styling for About/Properties windows */
@@ -16,15 +16,6 @@
 #define RIGHT_TXT_FONT          _T("Arial Black")
 #define RIGHT_TXT_FONT_SIZE     12
 
-// all defined in SumatraPDF.cpp
-extern HINSTANCE                ghinst;
-extern SerializableGlobalPrefs  gGlobalPrefs;
-extern HCURSOR                  gCursorHand;
-extern HBRUSH                   gBrushNoDocBg;
-extern bool                     gRestrictedUse;
-extern bool                     gPluginMode;
-
-void LaunchBrowser(const TCHAR *url);
-void AssociateExeWithPdfExtension();
+#define COL_BLUE_LINK           RGB(0,0x20,0xa0)
 
 #endif

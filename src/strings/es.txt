@@ -1,10 +1,8 @@
 ﻿# Translations for Spanish (Español) (es) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: es Spanish (Español)
 
@@ -28,9 +26,6 @@ Atrás\tAlt+<-
 
 &Close\tCtrl-W
 &Cerrar\tCtrl-W
-
-&Copy Selection
-&Copiar selección
 
 &Copy Selection\tCtrl-C
 Copiar Selección\tCtrl-C
@@ -98,9 +93,6 @@ Página siguiente\t->
 &Previous Page\tLeft Arrow
 Página anterior\t<-
 
-&Print...
-&Imprimir...
-
 &Print...\tCtrl-P
 &Imprimir\tCtrl-P
 
@@ -112,9 +104,6 @@ Página anterior\t<-
 
 &Remember these settings for each document
 &Recordar estas configuraciones para cada documento
-
-&Save As...
-&Guardar como...
 
 &Save As...\tCtrl-S
 &Guardar como...\tCtrl-S
@@ -203,20 +192,14 @@ Check for &Updates
 Continuous
 Continua
 
-Continuous Book View
+Continuous book view
 Vista continua de libro
 
-Continuous Facing
+Continuous facing
 Página doble continua
 
 Contribute Translation
 Contribuir en la traducción
-
-Copy &Link Address
-Copiar dirección de enlace
-
-Copy Co&mment
-Copiar co&mentario
 
 Copying text was denied (copying as image only)
 Ha sido denegada la copia de texto (copiar solamente como imagen)
@@ -242,9 +225,6 @@ Default &Layout:
 Default &Zoom:
 &Zoom Predeterminado:
 
-Default PDF reader can't be changed in portable mode
-No se puede cambiar el lector PDF por defecto en modo portátil
-
 Denied Permissions:
 Permisos Denegados
 
@@ -265,6 +245,9 @@ Introduzca contraseña para %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Introduzca el comando para ejecutar al hacer doble-clic en el documento PDF:
+
+Error loading PDF file.
+Error al Cargar el Archivo PDF.
 
 F&orward\tAlt+Right Arrow
 Adelante\tAlt+->
@@ -341,10 +324,13 @@ KB
 MB
 MB
 
+Main PDF reader can't be changed in portable mode
+No se puede cambiar el lector PDF por defecto en modo portátil
+
 Make SumatraPDF default application for PDF files?
 ¿Convertir SumatraPDF en la aplicación por defecto para archivos PDF?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Hacer SumatraPDF el lector PDF por defecto
 
 Match Case
@@ -383,15 +369,6 @@ Abrir
 Open in &Adobe Reader
 Abrir en &Adobe Reader
 
-Open in &Foxit Reader
-Abrir en &Foxit Reader
-
-Open in PDF-XChange
-Abrir en PDF-XChange
-
-P&roperties
-P&ropiedades
-
 P&roperties\tCtrl-D
 P&ropriedades...\tCtrl-D
 
@@ -414,7 +391,7 @@ Page Size:
 Tamaño de Página:
 
 Page number %u inexistant
-Número de página %u inexistente
+La página &u no existe
 
 Page scaling
 Escalado de página
@@ -452,12 +429,6 @@ Girar a la derecha\tCtrl-Shift-+
 Searching %d of %d...
 Buscando %d de %d…
 
-Select &All
-Seleccionar &todo
-
-Select &All\tCtrl-A
-Seleccionar &todo\tCtrl-A
-
 Select content with Ctrl+left mouse button
 Seleccionar con Ctrl+Click
 
@@ -494,10 +465,10 @@ Actualizar SumatraPDF
 SumatraPDF crashed
 SumatraPDF falló
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF es el lector PDF predeterminado
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF debería ser ahora tu lector PDF por defecto
 
 Synchronization file cannot be opened
@@ -547,22 +518,4 @@ copiado de texto
 
 printing document
 impresión de documento
-
-# Untranslated:
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Show frequently read
-#XPS documents
 

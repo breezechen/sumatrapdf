@@ -1,65 +1,14 @@
 /* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef AppTools_h
-#define AppTools_h
+#ifndef APP_TOOLS_H_
+#define APP_TOOLS_H_
 
-#include "Vec.h"
-
-class WindowInfo;
-
-// Base class for code that has to be executed on UI thread. Derive your class
-// from UIThreadWorkItem and call QueueWorkItem to schedule execution
-// of its Execute() method on UI thread.
-class UIThreadWorkItem
-{
-public:
-    WindowInfo *win;
-
-    UIThreadWorkItem(WindowInfo *win) : win(win) {}
-    virtual ~UIThreadWorkItem() {}
-    virtual void Execute() = 0;
-};
-
-void QueueWorkItem(UIThreadWorkItem *wi);
-
-class UIThreadWorkItemQueue
-{
-    CRITICAL_SECTION        cs;
-    Vec<UIThreadWorkItem *> items;
-
-public:
-    UIThreadWorkItemQueue() {
-        InitializeCriticalSection(&cs);
-    }
-
-    ~UIThreadWorkItemQueue() {
-        DeleteCriticalSection(&cs);
-        DeleteVecMembers(items);
-    }
-
-    void Queue(UIThreadWorkItem *item);
-
-    void Execute() {
-        // no need to acquire a lock for this check
-        if (items.Count() == 0)
-            return;
-
-        ScopedCritSec scope(&cs);
-        while (items.Count() > 0) {
-            UIThreadWorkItem *wi = items.At(0);
-            items.RemoveAt(0);
-            wi->Execute();
-            delete wi;
-        }
-    }
-};
-
-bool IsValidProgramVersion(char *txt);
+bool ValidProgramVersion(char *txt);
 int CompareVersion(TCHAR *txt1, TCHAR *txt2);
-int FileTimeDiffInSecs(FILETIME& ft1, FILETIME& ft2);
+const char *GuessLanguage();
 
-TCHAR *GetExePath();
+TCHAR *ExePathGet();
 bool IsRunningInPortableMode();
 TCHAR *AppGenDataFilename(TCHAR *pFilename);
 void AdjustRemovableDriveLetter(TCHAR *path);
@@ -67,11 +16,11 @@ void AdjustRemovableDriveLetter(TCHAR *path);
 void DoAssociateExeWithPdfExtension(HKEY hkey);
 bool IsExeAssociatedWithPdfExtension();
 
-TCHAR* GetAcrobatPath();
-TCHAR* GetFoxitPath();
-TCHAR* GetPDFXChangePath();
-
+bool GetAcrobatPath(TCHAR *buffer=NULL, int bufSize=0);
 LPTSTR AutoDetectInverseSearchCommands(HWND hwndCombo=NULL);
-void   DDEExecute(LPCTSTR server, LPCTSTR topic, LPCTSTR command);
+void DDEExecute(LPCTSTR server, LPCTSTR topic, LPCTSTR command);
+
+HFONT Win32_Font_GetSimple(HDC hdc, TCHAR *fontName, int fontSize);
+void Win32_Font_Delete(HFONT font);
 
 #endif

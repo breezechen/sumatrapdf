@@ -1,44 +1,38 @@
 ﻿# Translations for Greek (Ελληνικά) (gr) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: gr Greek (Ελληνικά)
 
 Contributor: Giorgos Dimopoulos (geodimo1985@gmail.com)
 Contributor: George Georgiou (geonetor@yahoo.gr)
 Contributor: Dimitris Mytilinaios
-Contributor: XhmikosR
 
 &About
 &Σχετικά...
 
 &Actual Size\tCtrl-1
-Πραγματικό &Μέγεθος\tCtrl-1
+Πραγματικό μέγεθος\tCtrl-1
 
 &All selected pages
-Ό&λες οι επιλεγμένες
+'Ο&λες οι επιλεγμένες
 
 &Back\tAlt+Left Arrow
-&Πίσω\tAlt+<-
+Πίσω\tAlt+<-
 
 &Close\tCtrl-W
 &Κλείσιμο\tCtrl-W
 
-&Copy Selection
-&Αντιγραφή Επιλογής
-
 &Copy Selection\tCtrl-C
-Αντιγραφή Επι&λεγμένων\tCtrl-C
+Αντιγραφή επιλεγμένων\tCtrl-C
 
 &Don't ask me again
 &Να μην ερωτηθώ ξανά
 
 &Even pages only
-&Μόνο οι μονές σελίδες
+&Μόνο οι μονές
 
 &File
 &Αρχείο
@@ -47,7 +41,7 @@ Contributor: XhmikosR
 &Εύρεση του:
 
 &First Page\tHome
-Πρώτ&η Σελίδα\tHome
+Πρώτη σελίδα\tHome
 
 &Fit pages to printable area
 Προσαρμογή σελίδων σε &εκτυπώσιμη περιοχή
@@ -62,19 +56,19 @@ Contributor: XhmikosR
 &Βοήθεια
 
 &Last Page\tEnd
-&Τελευταία Σελίδα\tEnd
+Τελευταία σελίδα\tEnd
 
 &Magnification:
 &Μεγέθυνση:
 
 &Manual
-&Οδηγίες Χρήσης
+&Οδηγίες χρήσης
 
 &Match case
 Ταίριασμα πεζών/κεφαλαίων
 
 &Next Page\tRight Arrow
-&Επόμενη Σελίδα\t->
+Επόμενη σελίδα\t->
 
 &No
 Ό&χι
@@ -95,25 +89,19 @@ Contributor: XhmikosR
 &Κωδικός:
 
 &Previous Page\tLeft Arrow
-&Προηγούμενη Σελίδα\t<-
-
-&Print...
-&Εκτύπωση
+Προηγούμενη σελίδα\t<-
 
 &Print...\tCtrl-P
 &Εκτύπωση\tCtrl-P
 
 &Print... (denied)
-&Εκτύπωση... (απαγορεύεται)
+&Εκτύπωση...(απαγορεύεται)
 
 &Remember the password for this document
 &Απομνημόνευση κωδικού για αυτό το έγγραφο
 
 &Remember these settings for each document
 &Απομνημόνευση ρυθμίσεων για κάθε έγγραφο
-
-&Save As...
-&Αποθήκευση ως...
 
 &Save As...\tCtrl-S
 &Αποθήκευση ως\tCtrl-S
@@ -122,7 +110,7 @@ Contributor: XhmikosR
 &Ρυθμίσεις
 
 &Shrink pages to printable area (if necessary)
-Σμίκρυνση σελίδων σε &εκτυπώσιμη περιοχή (αν χρειάζεται)
+Σμίκρυνση σελίδων σε &εκτυπώσιμη περιοχή (εάν χρειάζεται)
 
 &Skip this version
 &Παράβλεψη αυτής της έκδοσης
@@ -151,9 +139,6 @@ Advanced
 All files
 Όλα τα αρχεία
 
-All supported documents
-Όλα τα υποστηριζόμενα έγγραφα
-
 Application:
 Εφαρμογή:
 
@@ -170,19 +155,13 @@ Automatic
 Αυτόματα
 
 Automatically check for &updates
-Αυτόματος έλεγχος για &ενημερώσεις
+Αυτόματος έλεγχος για ενημερώσεις
 
 Book View
-Προβολή Βιβλίου
+Προβολή βιβλίου
 
 Book&marks\tF12
-&Σελιδοδείκτες\tF12
-
-Bookmark Shortcuts
-Συντομεύσεις Σελιδοδεικτών
-
-Bookmark shortcut to page %d of %s
-Συντόμευση σελιδοδείκτη στη σελίδα %d του %s
+Σελιδοδείκτες\tF12
 
 Bookmarks
 Σελιδοδείκτες
@@ -197,37 +176,28 @@ Cancel
 Άκυρο
 
 Cannot print this file
-Δεν είναι δυνατή η εκτύπωση αυτού του αρχείου
+Δε μπορούσε να εκτυπωθεί το αρχείο
 
 Cannot start inverse search command. Please check the command line in the settings.
-Δεν είναι δυνατή η εκκίνηση αντίστροφης αναζήτησης. Παρακαλώ ελέγξτε τη γραμμή εντολών στις ρυθμίσεις.
+Δεν είναι δυνατή η εκκίνηση αντίστροφης αναζήτησης. Παρακαλώ επιλέξτε τη γραμμή εντολών στις ρυθμίσεις.
 
 Change Language
-Αλλαγή Γλώσσας (Change Language)
+Αλλαγή γλώσσας (Change Language)
 
 Check for &Updates
-Έ&λεγχος για νέα έκδοση
-
-Comic books
-Βιβλία κόμικ
+&Έλεγχος για νέα έκδοση
 
 Continuous
 Μια σελίδα, συνεχόμενα
 
-Continuous Book View
-Συνεχόμενη Προβολή Βιβλίου
+Continuous book view
+Συνεχόμενη προβολή βιβλίου
 
-Continuous Facing
+Continuous facing
 Δύο σελίδες, συνεχόμενα
 
 Contribute Translation
-Βοηθήστε στη Μετάφραση
-
-Copy &Link Address
-Αντιγραφή &Διεύθυνσης
-
-Copy Co&mment
-Αντιγραφή Σ&χολίου
+Βοηθήστε στη μετάφραση
 
 Copying text was denied (copying as image only)
 Η αντιγραφή κειμένου δεν επετράπη (μόνο ως εικόνα)
@@ -245,22 +215,19 @@ Created:
 Δημιουργήθηκε:
 
 Custom &Zoom...\tCtrl-Y
-&Προσαρμοσμένο Ζουμ...\tCtrl-Y
+&Ορισμός ζουμ...\tCtrl-Y
 
 Default &Layout:
-Προκαθορισμένη &Διαμόρφωση:
+Προκαθορισμένη &διαμόρφωση:
 
 Default &Zoom:
-Προκαθορισμένο &Ζουμ:
-
-Default PDF reader can't be changed in portable mode
-Δε μπορεί να γίνει συσχετισμός σε portable mode
+Προκαθορισμένο &ζουμ:
 
 Denied Permissions:
-Απαγόρευση Δικαιωμάτων:
+Απαγόρευση δικαιωμάτων:
 
 Document Properties
-Ιδιότητες Εγγράφου
+Ιδιότητες εγγράφου
 
 Download
 Λήψη
@@ -277,14 +244,14 @@ Enter password for %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Εισάγετε την εντολή προς εκτέλεση με διπλό κλικ σε έγγραφο PDF:
 
-Error loading %s
-Σφάλμα φόρτωσης του %s
+Error loading PDF file.
+Σφάλμα κατά τη φόρτωση του αρχείου PDF.
 
 F&orward\tAlt+Right Arrow
-Εμπ&ρός\tAlt+->
+Εμπρός\tAlt+->
 
 F&ullscreen\tCtrl-Shift-L
-&Πλήρης Οθόνη\tCtrl-Shift-L
+Πλήρης οθόνη\tCtrl-Shift-L
 
 Facing
 Δύο σελίδες
@@ -293,43 +260,43 @@ Failed to save a file
 Αποτυχία αποθήκευσης αρχείου
 
 File Size:
-Μέγεθος Αρχείου:
+Μέγεθος αρχείου:
 
 File:
 Αρχείο:
 
 Fin&d...\tCtrl-F
-Εύ&ρεση...\tCtrl-F
+Εύρεση...\tCtrl-F
 
 Find
 Εύρεση
 
 Find Next
-Εύρεση Επόμενου
+Εύρεση επόμενου
 
 Find Previous
-Εύρεση Προηγούμενου
+Εύρεση προηγούμενου
 
 Find:
 Εύρεση:
 
 Fit &Content\tCtrl-3
-&Προσαρμογή στα περιεχόμενα\tCtrl-3
+Προσαρμογή &Περιεχόμενα\tCtrl-3
 
 Fit &Page\tCtrl-0
-&Προσαρμογή στη σελίδα\tCtrl-0
+Ολόκληρη σελίδα\tCtrl-0
 
 Fit &Width\tCtrl-2
-&Προσαρμογή στο πλάτος παραθύρου\tCtrl-2
+Στο πλάτος παραθύρου\tCtrl-2
 
 Fit Content
-Προσαρμογή στα περιεχόμενα
+Προσαρμογή Περιεχομένων
 
 Fit Page
-Ολόκληρη Σελίδα
+Ολόκληρη σελίδα
 
 Fit Width
-Πλάτος Παραθύρου
+Πλάτος παραθύρου
 
 Fit Width and Show Pages Continuously
 Προσαρμογή Πλάτους και Εμφάνιση Σελίδων Συνεχόμενα
@@ -340,9 +307,6 @@ Fit a Single Page
 Found text at page %d
 Το κείμενο βρέθηκε στη σελίδα %d
 
-Found text at page %d (again)
-Το κείμενο βρέθηκε στη σελίδα %d (πάλι)
-
 GB
 GB
 
@@ -352,20 +316,20 @@ Go to page
 Hint: Use the F3 key for finding again
 Συμβουλή: Χρησιμοποιήστε το F3 για εύρεση του επόμενου
 
-Image files (*.%s)
-Αρχεία εικόνων (*.%s)
-
 KB
 KB
 
 MB
 MB
+
+Main PDF reader can't be changed in portable mode
+Δε μπορεί να γίνει συσχετισμός σε portable mode
 
 Make SumatraPDF default application for PDF files?
-Να γίνει το SumatraPDF το προεπιλεγμένο πρόγραμμα αρχείων PDF;
+Να γίνει το SumatraPDF το προεπιλεγμένο πρόγραμμα  αρχείων PDF;
 
-Make SumatraPDF my default PDF reader
-Συσχετισμός του SumatraPDF με τα αρχεία PDF
+Make SumatraPDF my main PDF reader
+Συσχετισμός του SumatraPDF με αρχεία PDF
 
 Match Case
 Αντιστοίχιση πεζών-κεφαλαίων
@@ -374,7 +338,7 @@ Modified:
 Τροποποιήθηκε:
 
 New version %s is available. Download new version?
-Η νέα έκδοση %s είναι διαθέσιμη. Να γίνει λήψη;
+Νέα έκδοση %s είναι διαθέσιμη. Να γίνει λήψη;
 
 Next Page
 Επόμενη σελίδα
@@ -392,7 +356,7 @@ No synchronization info at this position
 Δε βρέθηκαν πληροφορίες συγχρονισμού στη θέση αυτή
 
 Number of Pages:
-Αριθμός Σελίδων:
+Αριθμός σελίδων:
 
 OK
 ΟΚ
@@ -403,17 +367,8 @@ Open
 Open in &Adobe Reader
 Άνοιγμα με &Adobe Reader
 
-Open in &Foxit Reader
-Άνοιγμα με &Foxit Reader
-
-Open in PDF-XChange
-Άνοιγμα με PDF-XChange
-
-P&roperties
-&Ιδιότητες
-
 P&roperties\tCtrl-D
-&Ιδιότητες\tCtrl-D
+&Ιδιότητες...\tCtrl-D
 
 PDF Document
 Αρχείο PDF
@@ -428,10 +383,10 @@ PDF documents
 Αρχεία PDF
 
 Pa&ge...\tCtrl-G
-&Σελίδα...\tCtrl-G
+Σελίδα...\tCtrl-G
 
 Page Size:
-Μέγεθος Σελίδας:
+Μέγεθος σελίδας:
 
 Page number %u inexistant
 Δεν υπάρχει σελίδα με αριθμό %u
@@ -443,64 +398,55 @@ Page:
 Σελίδα:
 
 Please include the following file in your crash report:
-Παρακαλώ να συμπεριληφθεί το ακόλουθο αρχείο στην αναφορά κατάρρευσης:
+Παρακαλώ να συμπεριληφθεί το ακόλουθο αρχείο στην αναφορά κατάρευσης
 
 Please wait - rendering...
-Παρακαλώ περιμένετε - φόρτωση...
+Φόρτωση, παρακαλώ περιμένετε...
 
 Pr&esentation\tCtrl-L
-&Παρουσίαση\tCtrl-L
+Πλ&ήρης Οθόνη\tCtrl-L
 
 Previous Page
-Προηγούμενη Σελίδα
+Προηγούμενη σελίδα
 
 Print range
 Εύρος εκτύπωσης
 
 Printing problem.
-Πρόβλημα εκτύπωσης.
+Πρόβλημα εκτύπωσης
 
 Remember &opened files
-Απο&μνημόνευση προσφάτων αρχείων
+Απομνημόνευη πρόσφατων αρχείων
 
 Rotate &Left\tCtrl-Shift--
-Περιστροφή Αριστερά\tCtrl-Shift--
+Περιστροφή αριστερά\tCtrl-Shift--
 
 Rotate &Right\tCtrl-Shift-+
-Περιστροφή Δεξιά\tCtrl-Shift-+
-
-Save S&hortcut...\tCtrl-Shift-S
-Αποθήκευση &Συντόμευσης...\tCtrl-Shift-S
+Περιστροφή δεξιά\tCtrl-Shift-+
 
 Searching %d of %d...
 Αναζήτηση %d από %d...
-
-Select &All
-Επιλογή Ό&λων
-
-Select &All\tCtrl-A
-Επιλογή Όλων\tCtrl-A
 
 Select content with Ctrl+left mouse button
 Επιλέξτε περιεχόμενο με Ctrl+αριστερό πλήκτρο ποντικιού
 
 Send by &E-mail...
-Α&ποστολή με E-mail...
+Αποστολή με &email...
 
 Set inverse search command-line
 Εμφάνιση γραμμής αντίστροφης αναζήτησης
 
 Show &Toolbar
-&Εμφάνιση Γραμμής Εργαλείων
+Εμφάνιση γραμμής εργαλείων
 
 Show &pages continuously
-&Συνεχής εμφάνιση σελίδων
+Συνεχής εμφάνιση σελίδων
 
 Show the &bookmarks sidebar when available
-Εμφάνιση &πλευρικής στήλης σελιδοδεικτών όπου είναι δυνατόν
+Εμφάνιση πλευρικής στήλης σελιδοδεικτών όπου είναι δυνατόν
 
 Single Page
-Μονή Σελίδα
+Μονή σελίδα
 
 Source file %s has no synchronization point
 Το αρχείο προέλευσης %s δεν έχει σημείο συγχρονισμού
@@ -515,12 +461,12 @@ SumatraPDF Update
 Ενημέρωση SumatraPDF
 
 SumatraPDF crashed
-Το SumatraPDF σταμάτησε να λειτουργεί
+Κατάρευση SumatraPDF
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 Το SumatraPDF είναι το προεπιλεγμένο πρόγραμμα PDF
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 Το SumatraPDF πρέπει να είναι τώρα συσχετισμένο με τα αρχεία PDF
 
 Synchronization file cannot be opened
@@ -539,13 +485,10 @@ View
 Προβολή
 
 Visit &Website
-&Ιστοσελίδα Προγράμματος
+&Ιστοσελίδα προγράμματος
 
 Warning
 Προειδοποίηση
-
-XPS documents
-Έγγραφα XPS
 
 You have the latest version.
 Έχετε την πιο πρόσφατη έκδοση.
@@ -566,20 +509,11 @@ Zoom factor
 Ποσοστό μεγέθυνσης
 
 [Changes detected; refreshing] %s
-[Ανιχνεύτηκαν αλλαγές, ανανέωση…] %s
+[Ανιχνέυτηκαν αλλαγές, ανανέωση…] %s
 
 copying text
 αντιγραφή κειμένου
 
 printing document
 εκτύπωση εγγράφου
-
-# Untranslated:
-#DjVu documents
-#Frequently Read
-#Hide frequently read
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Show frequently read
 

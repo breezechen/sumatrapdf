@@ -42,7 +42,7 @@
     <NMakeCleanCommandLine Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">nmake -f makefile.msvc CFG=dbg  NASM=$(ProjectDir)bin\nasm.exe clean</NMakeCleanCommandLine>
     <NMakeOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">obj-dbg\sumatrapdf.exe</NMakeOutput>
     <NMakePreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32;_DEBUG;SYNCTEX_FEATURE;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeIncludeSearchPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(NMakeIncludeSearchPath);$(ProjectDir)\baseutils;$(ProjectDir)\baseutils\msvc;$(ProjectDir)\mupdf\fitz;$(ProjectDir)\mupdf\xps;$(ProjectDir)\mupdf\pdf;$(ProjectDir)\ext\libjpeg-turbo;$(ProjectDir)\ext\zlib-1.2.5;$(ProjectDir)\ext\zlib-1.2.5\minizip</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(NMakeIncludeSearchPath);$(ProjectDir)\baseutils;$(ProjectDir)\mupdf\fitz;$(ProjectDir)\mupdf\mupdf;$(ProjectDir)\ext\libjpeg-turbo</NMakeIncludeSearchPath>
     <NMakeForcedIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(NMakeForcedIncludes)</NMakeForcedIncludes>
     <NMakeAssemblySearchPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(NMakeAssemblySearchPath)</NMakeAssemblySearchPath>
     <NMakeForcedUsingAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(NMakeForcedUsingAssemblies)</NMakeForcedUsingAssemblies>
@@ -53,7 +53,7 @@
     <NMakeCleanCommandLine Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nmake -f makefile.msvc CFG=rel  NASM=$(ProjectDir)\bin\nasm.exe clean</NMakeCleanCommandLine>
     <NMakeOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">obj-rel\sumatrapdf.exe</NMakeOutput>
     <NMakePreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32;NDEBUG;SYNCTEX_FEATURE;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
-    <NMakeIncludeSearchPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(NMakeIncludeSearchPath);$(ProjectDir)\baseutils;$(ProjectDir)\baseutils\msvc;$(ProjectDir)\mupdf\fitz;$(ProjectDir)\mupdf\xps;$(ProjectDir)\mupdf\pdf;$(ProjectDir)\ext\libjpeg-turbo;$(ProjectDir)\ext\zlib-1.2.5;$(ProjectDir)\ext\zlib-1.2.5\minizip</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(NMakeIncludeSearchPath);$(ProjectDir)\baseutils;$(ProjectDir)\mupdf\fitz;$(ProjectDir)\mupdf\mupdf;$(ProjectDir)\ext\libjpeg-turbo</NMakeIncludeSearchPath>
     <NMakeForcedIncludes Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(NMakeForcedIncludes)</NMakeForcedIncludes>
     <NMakeAssemblySearchPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(NMakeAssemblySearchPath)</NMakeAssemblySearchPath>
     <NMakeForcedUsingAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(NMakeForcedUsingAssemblies)</NMakeForcedUsingAssemblies>
@@ -61,15 +61,6 @@
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="baseutils\BencUtil.cpp" />
-    <ClCompile Include="baseutils\DialogSizer.cpp" />
-    <ClCompile Include="baseutils\FileUtil.cpp" />
-    <ClCompile Include="baseutils\Http.cpp" />
-    <ClCompile Include="baseutils\SimpleLog.cpp" />
-    <ClCompile Include="baseutils\StrUtil.cpp" />
-    <ClCompile Include="baseutils\UtilTests.cpp" />
-    <ClCompile Include="baseutils\WinUtil.cpp" />
-    <ClCompile Include="baseutils\ZipUtil.cpp" />
     <ClCompile Include="ext\libjpeg-turbo\jaricom.c" />
     <ClCompile Include="ext\libjpeg-turbo\jcapimin.c" />
     <ClCompile Include="ext\libjpeg-turbo\jcapistd.c" />
@@ -134,28 +125,35 @@
     <ClCompile Include="mupdf\fitz\res_path.c" />
     <ClCompile Include="mupdf\fitz\res_pixmap.c" />
     <ClCompile Include="mupdf\fitz\res_text.c" />
-    <ClCompile Include="src\AppPrefs.cpp" />
-    <ClCompile Include="src\AppTools.cpp" />
-    <ClCompile Include="src\Benchmark.cpp" />
+    <ClCompile Include="src\AppPrefs.cc" />
     <ClCompile Include="src\CrashHandler.cpp" />
-    <ClCompile Include="src\DisplayModel.cpp" />
-    <ClCompile Include="src\DisplayState.cpp" />
-    <ClCompile Include="src\FileWatch.cpp" />
+    <ClCompile Include="src\DisplayModel.cc" />
+    <ClCompile Include="src\DisplayState.cc" />
+    <ClCompile Include="src\FileHistory.cc" />
+    <ClCompile Include="src\FileWatch.cc" />
     <ClCompile Include="src\Http.cpp" />
-    <ClCompile Include="src\ImagesEngine.cpp" />
+    <ClCompile Include="src\installer\Installer.cpp" />
     <ClCompile Include="src\LangMenuDef.cpp" />
-    <ClCompile Include="src\PdfEngine.cpp" />
+    <ClCompile Include="src\PdfEngine.cc" />
+    <ClCompile Include="src\PdfSearch.cc" />
     <ClCompile Include="src\PdfSync.cpp" />
-    <ClCompile Include="src\RenderCache.cpp" />
     <ClCompile Include="src\SumatraAbout.cpp" />
-    <ClCompile Include="src\SumatraDialogs.cpp" />
+    <ClCompile Include="src\SumatraDialogs.cc" />
     <ClCompile Include="src\SumatraPDF.cpp" />
     <ClCompile Include="src\SumatraProperties.cpp" />
-    <ClCompile Include="src\TextSearch.cpp" />
-    <ClCompile Include="src\TextSelection.cpp" />
+    <ClCompile Include="src\synctex_parser.c" />
+    <ClCompile Include="src\synctex_parser_utils.c" />
     <ClCompile Include="src\translations.cpp" />
-    <ClCompile Include="src\translations_txt.cpp" />
-    <ClCompile Include="baseutils\strlist_util.cpp" />
+    <ClCompile Include="src\translations_txt.c" />
+    <ClCompile Include="baseutils\base_util.c" />
+    <ClCompile Include="baseutils\benc_util.c" />
+    <ClCompile Include="baseutils\file_util.c" />
+    <ClCompile Include="baseutils\geom_util.c" />
+    <ClCompile Include="baseutils\str_util.c" />
+    <ClCompile Include="baseutils\strlist_util.c" />
+    <ClCompile Include="baseutils\win_util.c" />
+    <ClCompile Include="baseutils\WinUtil.cpp" />
+    <ClCompile Include="baseutils\wstr_util.c" />
     <ClCompile Include="mupdf\fitz\base_error.c" />
     <ClCompile Include="mupdf\fitz\base_hash.c" />
     <ClCompile Include="mupdf\fitz\base_memory.c" />
@@ -229,22 +227,8 @@
     <ClCompile Include="ext\jbig2dec\jbig2_segment.c" />
     <ClCompile Include="ext\jbig2dec\jbig2_symbol_dict.c" />
     <ClCompile Include="ext\jbig2dec\jbig2_text.c" />
-    <ClCompile Include="src\UnitTests.cpp" />
-    <ClCompile Include="src\WindowInfo.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="baseutils\BaseUtil.h" />
-    <ClInclude Include="baseutils\BencUtil.h" />
-    <ClInclude Include="baseutils\CmdLineParser.h" />
-    <ClInclude Include="baseutils\DialogSizer.h" />
-    <ClInclude Include="baseutils\FileUtil.h" />
-    <ClInclude Include="baseutils\GeomUtil.h" />
-    <ClInclude Include="baseutils\Http.h" />
-    <ClInclude Include="baseutils\SimpleLog.h" />
-    <ClInclude Include="baseutils\StrUtil.h" />
-    <ClInclude Include="baseutils\Vec.h" />
-    <ClInclude Include="baseutils\WinUtil.h" />
-    <ClInclude Include="baseutils\ZipUtil.h" />
     <ClInclude Include="ext\libjpeg-turbo\jchuff.h" />
     <ClInclude Include="ext\libjpeg-turbo\jconfig.h" />
     <ClInclude Include="ext\libjpeg-turbo\jdct.h" />
@@ -261,29 +245,36 @@
     <ClInclude Include="ext\libjpeg-turbo\jversion.h" />
     <ClInclude Include="ext\libjpeg-turbo\simd\jsimd.h" />
     <ClInclude Include="src\AppPrefs.h" />
-    <ClInclude Include="src\AppTools.h" />
-    <ClInclude Include="src\BaseEngine.h" />
-    <ClInclude Include="src\Benchmark.h" />
     <ClInclude Include="src\CrashHandler.h" />
     <ClInclude Include="src\DisplayModel.h" />
     <ClInclude Include="src\DisplayState.h" />
     <ClInclude Include="src\FileHistory.h" />
     <ClInclude Include="src\FileWatch.h" />
     <ClInclude Include="src\Http.h" />
-    <ClInclude Include="src\ImagesEngine.h" />
     <ClInclude Include="src\installer\Resource.h" />
     <ClInclude Include="src\LangMenuDef.h" />
     <ClInclude Include="src\PdfEngine.h" />
+    <ClInclude Include="src\PdfSearch.h" />
     <ClInclude Include="src\PdfSync.h" />
-    <ClInclude Include="src\RenderCache.h" />
     <ClInclude Include="src\Resource.h" />
     <ClInclude Include="src\SumatraDialogs.h" />
     <ClInclude Include="src\SumatraPDF.h" />
-    <ClInclude Include="src\TextSearch.h" />
-    <ClInclude Include="src\TextSelection.h" />
+    <ClInclude Include="src\synctex_parser.h" />
+    <ClInclude Include="src\synctex_parser_utils.h" />
     <ClInclude Include="src\translations.h" />
     <ClInclude Include="src\translations_txt.h" />
     <ClInclude Include="src\Version.h" />
+    <ClInclude Include="baseutils\base_util.h" />
+    <ClInclude Include="baseutils\benc_util.h" />
+    <ClInclude Include="baseutils\file_util.h" />
+    <ClInclude Include="baseutils\geom_util.h" />
+    <ClInclude Include="baseutils\str_strsafe.h" />
+    <ClInclude Include="baseutils\str_util.h" />
+    <ClInclude Include="baseutils\strlist_util.h" />
+    <ClInclude Include="baseutils\tstr_util.h" />
+    <ClInclude Include="baseutils\win_util.h" />
+    <ClInclude Include="baseutils\WinUtil.hpp" />
+    <ClInclude Include="baseutils\wstr_util.h" />
     <ClInclude Include="mupdf\fitz\fitz.h" />
     <ClInclude Include="mupdf\mupdf\mupdf.h" />
     <ClInclude Include="ext\jbig2dec\config_win32.h" />
@@ -301,7 +292,6 @@
     <ClInclude Include="ext\jbig2dec\jbig2_symbol_dict.h" />
     <ClInclude Include="ext\jbig2dec\jbig2_text.h" />
     <ClInclude Include="ext\jbig2dec\os_types.h" />
-    <ClInclude Include="src\WindowInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ext\libjpeg-turbo\simd\jcclrmmx.asm" />
@@ -365,8 +355,10 @@
     <None Include="src\PdfDoc.ico" />
     <None Include="src\SumatraPDF.ico" />
     <None Include="src\toolbar_8.bmp" />
+    <None Include="src\todo.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Manifest Include="src\installer\Installer.exe.manifest" />
     <Manifest Include="src\SumatraPDF.exe.manifest" />
   </ItemGroup>
   <ItemGroup>

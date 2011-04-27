@@ -1,15 +1,13 @@
 ﻿# Translations for Vietnamese (Việt Nam) (vn) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: vn Vietnamese (Việt Nam)
 
 Contributor: Nguyễn Lương Đống (http://sites.google.com/site/nguyenluongdong)
-Contributor: Tào Trần Vương Thắng
+Contributor: Tào Trần Vương Thắng (https://sites.google.com/site/moihoctinhoc)
 
 &About
 Giới thiệu
@@ -25,9 +23,6 @@ Trở về\tAlt+<-
 
 &Close\tCtrl-W
 Đóng tập tin\tCtrl-W
-
-&Copy Selection
-&Chép phần chọn
 
 &Copy Selection\tCtrl-C
 Chép phần đánh dấu
@@ -95,9 +90,6 @@ Mật mã:
 &Previous Page\tLeft Arrow
 Trang trước\t<-
 
-&Print...
-In...
-
 &Print...\tCtrl-P
 In\tCtrl-P
 
@@ -109,9 +101,6 @@ Nhớ mật khẩu cho tập tin này
 
 &Remember these settings for each document
 Nhớ cài đặt này cho mọi tập tin
-
-&Save As...
-Lưu thành...
 
 &Save As...\tCtrl-S
 Lưu thành\tCtrl-S
@@ -149,9 +138,6 @@ Nâng cao
 All files
 Mọi tập tin
 
-All supported documents
-Tất cả các tài liệu được hỗ trợ
-
 Application:
 Ứng dụng:
 
@@ -175,12 +161,6 @@ Xem dạng sách
 
 Book&marks\tF12
 Chỉ dấu sách\tF12
-
-Bookmark Shortcuts
-Lối tắt chỉ dấu sách
-
-Bookmark shortcut to page %d of %s
-Lối tắt chỉ dấu sách đến trang %d của %s
 
 Bookmarks
 Chỉ dấu sách
@@ -206,26 +186,17 @@ Change Language
 Check for &Updates
 Kiểm tra có phiên bản mới
 
-Comic books
-Sách truyện tranh
-
 Continuous
 Liên tiếp
 
-Continuous Book View
+Continuous book view
 Xem sách liên tiếp
 
-Continuous Facing
+Continuous facing
 Trang kép liên tiếp
 
 Contribute Translation
 Đóng góp dịch thuật
-
-Copy &Link Address
-Chép địa chỉ liên kết
-
-Copy Co&mment
-Chép chú thích
 
 Copying text was denied (copying as image only)
 Chép văn bản bị từ chối (chỉ được chép như hình ảnh)
@@ -251,14 +222,8 @@ Khung nhìn mặc định
 Default &Zoom:
 Kích thước mặc định
 
-Default PDF reader can't be changed in portable mode
-Không thay đổi được trình đọc PDF chính ở chế độ di động
-
 Denied Permissions:
 Các quyền bị từ chối
-
-DjVu documents
-Tập tin Djvu
 
 Document Properties
 Thuộc tính tập tin
@@ -278,8 +243,8 @@ Nhập mật khẩu cho %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Nhập dòng lệnh gọi khi bạn nhấp đúp vào tập tin PDF:
 
-Error loading %s
-Lỗi tải %s
+Error loading PDF file.
+Không mở được tập tin PDF.
 
 F&orward\tAlt+Right Arrow
 Tiếp tục\tAlt+->
@@ -341,37 +306,28 @@ Vừa một trang đơn
 Found text at page %d
 Tìm thấy từ ở trang %d
 
-Found text at page %d (again)
-Tìm thấy đoạn văn bản tại trang %d (lần nữa)
-
-Frequently Read
-Tần suất đọc
-
 GB
 GB
 
 Go to page
 Nhảy đến trang
 
-Hide frequently read
-Ẩn tần suất đọc
-
 Hint: Use the F3 key for finding again
 Gợi ý: Nhấn phím F3 để tìm lại
 
-Image files (*.%s)
-Tập tin ảnh (*.%s)
-
 KB
 KB
 
 MB
 MB
+
+Main PDF reader can't be changed in portable mode
+Không thay đổi được trình đọc PDF chính ở chế độ di động
 
 Make SumatraPDF default application for PDF files?
 Đặt SumatraPDF làm trình đọc PDF mặc định?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Đặt SumatraPDF làm trình đọc PDF chính
 
 Match Case
@@ -407,20 +363,8 @@ OK
 Open
 Mở tập tin
 
-Open a document...
-Mở một tài liệu...
-
 Open in &Adobe Reader
 Mở bằng Adobe Reader
-
-Open in &Foxit Reader
-Mở bằng Foxit Reader
-
-Open in PDF-XChange
-Mở bằng PDF-XChange
-
-P&roperties
-Thuộc tính
 
 P&roperties\tCtrl-D
 Thuộc tính
@@ -467,12 +411,6 @@ Trang trước
 Print range
 Giới hạn vùng in
 
-Printing is still in progress. Abort and start over?
-Vẫn còn đang in. Thoát và bắt đầu lại?
-
-Printing page %d of %d...
-Đang in trang %d trên %d...
-
 Printing problem.
 Lỗi in.
 
@@ -485,17 +423,8 @@ Quay trái\tCtrl-Shift--
 Rotate &Right\tCtrl-Shift-+
 Quay phải\tCtrl-Shift-+
 
-Save S&hortcut...\tCtrl-Shift-S
-Lưu lối tắt...\tCtrl-Shift-S
-
 Searching %d of %d...
 Đang tìm %d trên %d
-
-Select &All
-Chọn hết
-
-Select &All\tCtrl-A
-Chọn hết\tCtrl-A
 
 Select content with Ctrl+left mouse button
 Đánh dấu nội dung bằng Ctrl+phím chuột trái
@@ -511,9 +440,6 @@ Hiện thanh công cụ
 
 Show &pages continuously
 Xem trang liên tiếp
-
-Show frequently read
-Hiện tần suất đọc
 
 Show the &bookmarks sidebar when available
 Hiện chỉ dấu sách nếu có
@@ -536,10 +462,10 @@ Cập nhật SumatraPDF
 SumatraPDF crashed
 SumatraPDF đã ngưng hoạt đọng
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF là trình đọc PDF chính của bạn
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF giờ là trình đọc PDF chính của bạn
 
 Synchronization file cannot be opened
@@ -562,9 +488,6 @@ Thăm &website
 
 Warning
 Cảnh báo
-
-XPS documents
-Tài liệu XPS
 
 You have the latest version.
 Bạn đang dùng phiên bản mới nhất.

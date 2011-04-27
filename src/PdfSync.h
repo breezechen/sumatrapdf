@@ -1,16 +1,18 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
+// Copyright William Blum 2008 http://william.famille-blum.org/
 // PDF-source synchronizer based on .pdfsync file
+// License: GPLv2
 
-#ifndef PdfSync_h
-#define PdfSync_h
+#ifndef _PDF_SYNC_H__
+#define _PDF_SYNC_H__
 
-#include "BaseUtil.h"
-#include "StrUtil.h"
-#include "FileUtil.h"
-#include "GeomUtil.h"
-#include "Vec.h"
+#include <windows.h>
+#include <assert.h>
 #include <time.h>
+
+#include "base_util.h"
+#include "tstr_util.h"
+#include "file_util.h"
+#include "vstrlist.h"
 
 // size of the mark highlighting the location calculated by forward-search
 #define MARK_SIZE                            10 
@@ -82,33 +84,36 @@ typedef enum { TopLeft,    // origin at the top-left corner
 class Synchronizer
 {
 public:
-    Synchronizer(const TCHAR* _syncfilepath) {
+    Synchronizer(LPCTSTR _syncfilepath) {
         this->index_discarded = true;
         this->coordsys = BottomLeft; // by default set the internal coordinate system to bottom-left
-        this->dir = Path::GetDir(_syncfilepath);
-        Str::BufSet(this->syncfilepath, dimof(this->syncfilepath), _syncfilepath);
-        _tstat(_syncfilepath, &syncfileTimestamp);
+        this->dir = FilePath_GetDir(_syncfilepath);
+        tstr_copy(this->syncfilepath, dimof(this->syncfilepath), _syncfilepath);
+		_tstat(_syncfilepath, &syncfileTimestamp);
     }
     virtual ~Synchronizer() {
         free(dir);
     }
 
     // conversion from one coordinate system to another
-    void convert_coord_to_internal(int *x, int *y, int pageHeight, CoordSystem src)
+    void convert_coord_to_internal(UINT *x, UINT *y, UINT pageHeight, CoordSystem src)
     {
-        if (src != this->coordsys)
-            *y = pageHeight - *y;
+        if (src==this->coordsys)
+            return;    
+        *y = pageHeight - *y;
     }
-    void convert_coord_from_internal(int *x, int *y, int pageHeight, CoordSystem dst)
+    void convert_coord_from_internal(UINT *x, UINT *y, UINT pageHeight, CoordSystem dst)
     {
-        if (dst != this->coordsys)
-            *y = pageHeight - *y;
+        if (dst==this->coordsys)
+            return;    
+        *y = pageHeight - *y;
     }
 
-    void convert_coord_from_internal(RectI *rc, int pageHeight, CoordSystem dst)
+    void convert_coord_from_internal(RectI *rc, UINT pageHeight, CoordSystem dst)
     {
-        if (dst != this->coordsys)
-            rc->y = pageHeight - (rc->y + rc->dy);
+        if (dst==this->coordsys)
+            return;    
+        rc->y = pageHeight - (rc->y + rc->dy);
     }
     
     // Inverse-search:
@@ -126,7 +131,7 @@ public:
     // Forward-search:
     // The result is returned in (page,x,y). The coordinates x,y are specified in the internal 
     // coordinate system.
-    virtual UINT source_to_pdf(const TCHAR* srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects) = 0;
+    virtual UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects) = 0;
 
     void discard_index() { this->index_discarded = true; }
     bool is_index_discarded() const
@@ -137,15 +142,19 @@ public:
 
         // has the synchronization file been changed on disk?
         struct _stat newstamp;
-        if (_tstat(syncfilepath, &newstamp) == 0 &&
-            difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0) {
-            DBG_OUT("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
-            // update time stamp
-            memcpy((void *)&syncfileTimestamp, &newstamp, sizeof(syncfileTimestamp));
-            return true; // the file has changed!
-        }
+        if (_tstat(syncfilepath, &newstamp) == 0
+            && difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0
+            ) {
+                DBG_OUT_T("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
 
-        return false;
+                // update time stamp
+                memcpy((void *)&syncfileTimestamp, &newstamp, sizeof(syncfileTimestamp));
+
+                return true; // the file has changed!
+        }
+        else {
+            return false;
+        }
     }
 
     int rebuild_index()
@@ -156,8 +165,7 @@ public:
         return 0;
     }
 
-    // the caller must free() the command line
-    TCHAR * prepare_commandline(const TCHAR* pattern, const TCHAR* filename, UINT line, UINT col);
+    UINT prepare_commandline(LPCTSTR pattern, LPCTSTR filename, UINT line, UINT col, PTSTR cmdline, UINT cchCmdline);
 
 private:
     bool index_discarded; // true if the index needs to be recomputed (needs to be set to true when a change to the pdfsync file is detected)
@@ -166,12 +174,42 @@ private:
 protected:
     TCHAR syncfilepath[MAX_PATH]; // path  to the synchronization file
     CoordSystem coordsys; // system used internally by the syncfile for the PDF coordinates
-    TCHAR * dir;          // directory where the syncfile lies
-
-public:
-    static int Create(const TCHAR *pdffilename, Synchronizer **sync);
+    PTSTR dir;            // directory where the syncfile lies
 };
 
+
+
+
+// Synchronizer based on .sync file generated with the pdfsync tex package
+class Pdfsync : public Synchronizer
+{
+public:
+    Pdfsync(LPCTSTR _syncfilename) : Synchronizer(_syncfilename)
+    {
+        assert(tstr_endswithi(_syncfilename, PDFSYNC_EXTENSION));
+        this->coordsys = BottomLeft;
+    }
+
+    int rebuild_index();
+    UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR srcfilepath, UINT cchFilepath, UINT *line, UINT *col);
+    UINT source_to_pdf(LPCTSTR srcfilename, UINT line, UINT col, UINT *page, vector<RectI> &rects);
+
+private:
+    int get_record_section(int record_index);
+    int scan_and_build_index(FILE *fp);
+    UINT source_to_record(FILE *fp, LPCTSTR srcfilename, UINT line, UINT col, vector<size_t> &records);
+    FILE *opensyncfile();
+
+private:
+    vector<size_t> pdfsheet_index; // pdfsheet_index[i] contains the index in pline_sections of the first pline section for that sheet
+    vector<plines_section> pline_sections;
+    vector<record_section> record_sections;
+    vector<src_file> srcfiles;
+};
+
+
+// Create a synchronizer object for a PDF file
+UINT CreateSynchronizer(LPCTSTR pdffilename, Synchronizer **sync);
 
 #define PDFSYNC_DDE_SERVICE   _T("SUMATRA")
 #define PDFSYNC_DDE_TOPIC     _T("control")
@@ -187,7 +225,7 @@ public:
 //  format: [Open("<pdffilepath>"[,<newwindow>,<setfocus>,<forcerefresh>])]
 //    if newwindow = 1 then a new window is created even if the file is already open
 //    if focus = 1 then the focus is set to the window
-//  eg: [Open("c:\file.pdf", 1, 1, 0)]
+//  eg: [Open("c:\file.pdf", 1, 1)]
 #define DDECOMMAND_OPEN       _T("Open")
 
 // jump to named destination command
@@ -199,12 +237,6 @@ public:
 //  format: [GoToPage("<pdffilepath>",<page number>)]
 //  eg: [GoToPage("c:\file.pdf", 37)]. pdf file must be already opened
 #define DDECOMMAND_PAGE       _T("GotoPage")
-
-// set view mode and zoom level
-//  format: [SetView("<pdffilepath>", "<view mode>", <zoom level>[, <scrollX>, <scrollY>])]
-//  eg: [SetView("c:\file.pdf", "book view", -2)]
-//  note: use -1 for ZOOM_FIT_PAGE, -2 for ZOOM_FIT_WIDTH and -3 for ZOOM_FIT_CONTENT
-#define DDECOMMAND_SETVIEW    _T("SetView")
 
 LRESULT OnDDEInitiate(HWND hwnd, WPARAM wparam, LPARAM lparam);
 LRESULT OnDDExecute(HWND hwnd, WPARAM wparam, LPARAM lparam);

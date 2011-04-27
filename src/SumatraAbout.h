@@ -1,39 +1,29 @@
-/* Copyright 2006-2011 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2010 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef SumatraAbout_h
-#define SumatraAbout_h
-
-// define the following to display a list of recently used files
-// instead of the About screen, when no document is loaded
-#define NEW_START_PAGE
+#ifndef SUMATRA_PDF_ABOUT_H_
+#define SUMATRA_PDF_ABOUT_H_
 
 #define ABOUT_CLASS_NAME        _T("SUMATRA_PDF_ABOUT")
 
+typedef struct AboutLayoutInfoEl {
+    /* static data, must be provided */
+    const TCHAR *   leftTxt;
+    const TCHAR *   rightTxt;
+    const TCHAR *   url;
+
+    /* data calculated by the layout */
+    RectI           leftPos;
+    RectI           rightPos;
+} AboutLayoutInfoEl;
+
+void DrawAbout(HWND hwnd, HDC hdc, RECT *rect);
 void OnMenuAbout();
 LRESULT CALLBACK WndProcAbout(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+const TCHAR *AboutGetLink(WindowInfo *win, int x, int y, AboutLayoutInfoEl **el_out=NULL);
+void UpdateAboutLayoutInfo(HWND hwnd, HDC hdc, RECT * rect);
 
-void  DrawAboutPage(WindowInfo& win, HDC hdc);
-
-const TCHAR *GetStaticLink(Vec<StaticLinkInfo>& linkInfo, int x, int y, StaticLinkInfo *info=NULL);
-
-#ifdef NEW_START_PAGE
-
-#define SLINK_OPEN_FILE _T("<File,Open>")
-#define SLINK_LIST_SHOW _T("<View,ShowList>")
-#define SLINK_LIST_HIDE _T("<View,HideList>")
-
-#define THUMBNAILS_DIR_NAME _T("sumatrapdfcache")
-// thumbnails are 150px high and have a ratio of sqrt(2) : 1
-#define THUMBNAIL_DX        212
-#define THUMBNAIL_DY        150
-
-void    DrawStartPage(WindowInfo& win, HDC hdc, FileHistory& fileHistory);
-void    CleanUpThumbnailCache(FileHistory& fileHistory);
-void    LoadThumbnails(FileHistory& fileHistory);
-bool    HasThumbnail(DisplayState& state);
-void    SaveThumbnail(DisplayState& state);
-
-#endif
+// in SumatraPDF.cpp
+void LaunchBrowser(const TCHAR *url);
 
 #endif

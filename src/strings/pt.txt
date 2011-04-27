@@ -1,16 +1,14 @@
 ﻿# Translations for Portuguese - Portugal (Português) (pt) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: pt Portuguese - Portugal (Português)
 
 Contributor: Ricardo Santos[bogas] (http://www.meta-morf.pt.vu)
 Contributor: Bruno Rodrigues
-Contributor: Sérgio Marques <smarquespt@gmail.com>, 2010-2011
+Contributor: Sérgio Marques <smarquespt@gmail.com>, 2010
 
 &About
 &Sobre
@@ -26,9 +24,6 @@ V&oltar\tAlt + <-
 
 &Close\tCtrl-W
 &Fechar\tCtrl-W
-
-&Copy Selection
-&Copiar seleção
 
 &Copy Selection\tCtrl-C
 &Copiar seleção\tCtrl-C
@@ -96,23 +91,17 @@ Apenas páginas í&mpares
 &Previous Page\tLeft Arrow
 Página &anterior\t<-
 
-&Print...
-&Imprimir...
-
 &Print...\tCtrl-P
 &Imprimir\tCtrl-P
 
 &Print... (denied)
-&Imprimir...(recusado)
+&Imprimir...(rejeitado)
 
 &Remember the password for this document
-&Lembrar a palavra passe deste documento
+Lembrar a palavra passe deste documento
 
 &Remember these settings for each document
 &Lembrar estas definições para todos os documentos
-
-&Save As...
-&Gravar como...
 
 &Save As...\tCtrl-S
 &Gravar como\tCtrl-S
@@ -127,7 +116,7 @@ Página &anterior\t<-
 Ignorar &esta versão
 
 &Use original page sizes
-&Utilizar tamanho original
+&Utilizar o tamanho original
 
 &View
 &Ver
@@ -149,9 +138,6 @@ Avançadas
 
 All files
 Todos os ficheiros
-
-All supported documents
-Todos os documentos
 
 Application:
 Aplicação:
@@ -177,17 +163,11 @@ Como livro
 Book&marks\tF12
 M&arcadores\tF12
 
-Bookmark Shortcuts
-Atalhos de marcadores
-
-Bookmark shortcut to page %d of %s
-Atalho para a página %d de %s
-
 Bookmarks
 Marcadores
 
 Bytes
-Bytes
+"Bytes"
 
 Can't connect to the Internet (error %#x).
 Não foi possível ligar à internet (erro %#x).
@@ -207,29 +187,20 @@ Change Language
 Check for &Updates
 Verificar at&ualizações
 
-Comic books
-Livros Comic
-
 Continuous
 Página única contínua
 
-Continuous Book View
+Continuous book view
 Livro contínuo
 
-Continuous Facing
+Continuous facing
 Página dupla contínua
 
 Contribute Translation
 Ajudar na tradução
 
-Copy &Link Address
-Copiar endereço da &ligação
-
-Copy Co&mment
-Copiar co&mentário
-
 Copying text was denied (copying as image only)
-A cópia do texto foi recusada (copie como imagem)
+A cópia do texto foi rejeitada (copie como imagem)
 
 Could not open Printer
 Não foi possível abrir a impressora
@@ -252,11 +223,8 @@ Default &Layout:
 Default &Zoom:
 &Ampliação por omissão:
 
-Default PDF reader can't be changed in portable mode
-No modo portátil, não é possível alterar o leitor de PDFs
-
 Denied Permissions:
-Permissões recusadas:
+Permissões rejeitadas:
 
 Document Properties
 Propriedades do documento
@@ -271,13 +239,13 @@ Enter password
 Indique a palavra passe
 
 Enter password for %s
-Indique a palavra passe de %s
+Indique a palavra passe para %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 Insira a linha de comandos a invocar ao fazer duplo clique no documento PDF:
 
-Error loading %s
-Erro ao carregar %s
+Error loading PDF file.
+Erro ao carregar o PDF.
 
 F&orward\tAlt+Right Arrow
 A&vançar\tAlt + ->
@@ -339,38 +307,29 @@ Ajustar a uma página
 Found text at page %d
 Texto encontrado na página %d
 
-Found text at page %d (again)
-Texto encontrado na página %d
-
-Frequently Read
-Lidos frequentemente
-
 GB
 GB
 
 Go to page
 Ir para a página
 
-Hide frequently read
-Ocultar frequentes
-
 Hint: Use the F3 key for finding again
 Dica: utilize F3 para procurar a seguinte
 
-Image files (*.%s)
-Imagens (*.%s)
-
 KB
 KB
 
 MB
 MB
+
+Main PDF reader can't be changed in portable mode
+No modo portátil, não é possível alterar o leitor de PDFs
 
 Make SumatraPDF default application for PDF files?
-Tornar SumatraPDF a aplicação principal para PDFs?
+Tornar SumatraPDF a aplicação omissa para PDFs?
 
-Make SumatraPDF my default PDF reader
-Tornar SumatraPDF o leitor principal dos PDF
+Make SumatraPDF my main PDF reader
+Tornar SumatraPDF o leitor de PDFs omisso
 
 Match Case
 Sensível a maiúsculas
@@ -405,20 +364,8 @@ OK
 Open
 Abrir
 
-Open a document...
-Abrir documento...
-
 Open in &Adobe Reader
-Abrir no Adobe &Reader
-
-Open in &Foxit Reader
-Abrir &no Foxit Reader
-
-Open in PDF-XChange
-Abrir no PDF-XChange
-
-P&roperties
-&Propriedades
+Abrir no &Adobe Reader
 
 P&roperties\tCtrl-D
 &Propriedades...\tCtrl-D
@@ -465,14 +412,8 @@ Página anterior
 Print range
 Intervalo de impressão
 
-Printing is still in progress. Abort and start over?
-A impressão está a decorrer. Cancelar e reiniciar?
-
-Printing page %d of %d...
-A imprimir página %d de %d...
-
 Printing problem.
-Erro de	impressão.
+Problema de impressão.
 
 Remember &opened files
 Lembrar ficheiros abert&os
@@ -483,17 +424,8 @@ Rodar à &esquerda\tCtrl-Shift--
 Rotate &Right\tCtrl-Shift-+
 Rodar à &direita\tCtrl-Shift-+
 
-Save S&hortcut...\tCtrl-Shift-S
-Criar atal&ho...\tCtrl-Shift-S
-
 Searching %d of %d...
 Pesquisando %d de %d...
-
-Select &All
-Selecionar t&udo
-
-Select &All\tCtrl-A
-Selecionar t&udo\tCtrl-A
 
 Select content with Ctrl+left mouse button
 Selecione o conteúdo com Ctrl+botão esquerdo do rato
@@ -509,9 +441,6 @@ Mostrar barra de ferramen&tas
 
 Show &pages continuously
 Mostrar &páginas contínuas
-
-Show frequently read
-Mostrar frequentes
 
 Show the &bookmarks sidebar when available
 &Mostrar barra de marcadores quando disponível
@@ -534,11 +463,11 @@ Atualização do SumatraPDF
 SumatraPDF crashed
 O SumatraPDF terminou
 
-SumatraPDF is your default PDF reader
-SumatraPDF é o leitor principal dos PDF
+SumatraPDF is your main PDF reader
+SumatraPDF é o leitor de PDFs omisso
 
-SumatraPDF should now be your default PDF reader
-SumatraPDF deve agora ser o leitor principal dos PDF
+SumatraPDF should now be your main PDF reader
+SumatraPDF deve agora ser o leitor de PDFs omisso
 
 Synchronization file cannot be opened
 Não foi possível abrir o ficheiro de sincronização
@@ -560,9 +489,6 @@ Visit &Website
 
 Warning
 Aviso
-
-XPS documents
-Documentos XPS
 
 You have the latest version.
 Já tem a versão mais recente.
@@ -590,7 +516,4 @@ copiando texto
 
 printing document
 imprimindo documento
-
-# Untranslated:
-#DjVu documents
 

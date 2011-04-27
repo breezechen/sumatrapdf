@@ -21,7 +21,6 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="0"
-			BuildLogFile="obj-dbg\BuildLog.htm"
 			>
 			<Tool
 				Name="VCNMakeTool"
@@ -30,7 +29,7 @@
 				CleanCommandLine="nmake -f makefile.msvc CFG=dbg NASM=$(ProjectDir)bin\nasm.exe clean"
 				Output="obj-dbg\sumatrapdf.exe"
 				PreprocessorDefinitions="WIN32;UNICODE;_UNICODE;_DEBUG;DEBUG;SYNCTEX_FEATURE"
-				IncludeSearchPath="baseutils;mupdf\fitz;mupdf\draw;mupdf\pdf;mupdf\xps"
+				IncludeSearchPath="baseutils;mupdf\mupdf;mupdf\fitz"
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -42,7 +41,6 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="0"
-			BuildLogFile="obj-rel\BuildLog.htm"
 			>
 			<Tool
 				Name="VCNMakeTool"
@@ -51,7 +49,7 @@
 				CleanCommandLine="nmake -f makefile.msvc CFG=rel NASM=$(ProjectDir)bin\nasm.exe clean"
 				Output="obj-rel\sumatrapdf.exe"
 				PreprocessorDefinitions="WIN32;UNICODE;_UNICODE;NDEBUG;SYNCTEX_FEATURE"
-				IncludeSearchPath="baseutils;mupdf\fitz;mupdf\draw;mupdf\pdf;mupdf\xps"
+				IncludeSearchPath=""
 				ForcedIncludes=""
 				AssemblySearchPath=""
 				ForcedUsingAssemblies=""
@@ -68,7 +66,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\AppPrefs.cpp"
+				RelativePath=".\src\AppPrefs.cc"
 				>
 			</File>
 			<File
@@ -76,15 +74,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\AppTools.cpp"
+				RelativePath=".\src\AppTools.cc"
 				>
 			</File>
 			<File
 				RelativePath=".\src\AppTools.h"
-				>
-			</File>
-			<File
-				RelativePath=".\src\BaseEngine.h"
 				>
 			</File>
 			<File
@@ -104,7 +98,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\DisplayModel.cpp"
+				RelativePath=".\src\DisplayModel.cc"
 				>
 			</File>
 			<File
@@ -112,15 +106,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\DisplayState.cc"
+				>
+			</File>
+			<File
 				RelativePath=".\src\DisplayState.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\DjVuEngine.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\DjVuEngine.h"
+				RelativePath=".\src\FileHistory.cc"
 				>
 			</File>
 			<File
@@ -128,7 +122,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\FileWatch.cpp"
+				RelativePath=".\src\FileWatch.cc"
 				>
 			</File>
 			<File
@@ -136,15 +130,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\ImagesEngine.cpp"
+				RelativePath=".\src\Http.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\src\ImagesEngine.h"
+				RelativePath=".\src\Http.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\Notifications.h"
+				RelativePath=".\src\LangMenuDef.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\LangMenuDef.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\MemSegment.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\MemSegment.h"
 				>
 			</File>
 			<File
@@ -156,11 +162,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\PdfEngine.cpp"
+				RelativePath=".\src\PdfEngine.cc"
 				>
 			</File>
 			<File
 				RelativePath=".\src\PdfEngine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSearch.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSearch.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSelection.cc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\PdfSelection.h"
 				>
 			</File>
 			<File
@@ -172,7 +194,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\RenderCache.cpp"
+				RelativePath=".\src\RenderCache.cc"
 				>
 			</File>
 			<File
@@ -192,7 +214,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\SumatraDialogs.cpp"
+				RelativePath=".\src\SumatraDialogs.cc"
 				>
 			</File>
 			<File
@@ -216,19 +238,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\TextSearch.cpp"
+				RelativePath=".\src\synctex_parser.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\TextSearch.h"
+				RelativePath=".\src\synctex_parser.h"
 				>
 			</File>
 			<File
-				RelativePath=".\src\TextSelection.cpp"
+				RelativePath=".\src\synctex_parser_utils.c"
 				>
 			</File>
 			<File
-				RelativePath=".\src\TextSelection.h"
+				RelativePath=".\src\synctex_parser_utils.h"
 				>
 			</File>
 			<File
@@ -240,7 +262,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\translations_txt.cpp"
+				RelativePath=".\src\translations_txt.c"
+				>
+			</File>
+			<File
+				RelativePath=".\src\translations_txt.h"
 				>
 			</File>
 			<File
@@ -298,71 +324,63 @@
 			Name="baseutils"
 			>
 			<File
-				RelativePath=".\baseutils\BaseUtil.h"
+				RelativePath=".\baseutils\base_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.cpp"
+				RelativePath=".\baseutils\base_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\BencUtil.h"
+				RelativePath=".\baseutils\benc_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\CmdLineParser.h"
+				RelativePath=".\baseutils\benc_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.cpp"
+				RelativePath=".\baseutils\file_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\DialogSizer.h"
+				RelativePath=".\baseutils\file_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.cpp"
+				RelativePath=".\baseutils\geom_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\FileUtil.h"
+				RelativePath=".\baseutils\geom_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\GeomUtil.h"
+				RelativePath=".\baseutils\str_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\Http.cpp"
+				RelativePath=".\baseutils\str_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\Http.h"
+				RelativePath=".\baseutils\tstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\SimpleLog.cpp"
+				RelativePath=".\baseutils\tstr_util.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\SimpleLog.h"
+				RelativePath=".\baseutils\vstrlist.h"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.cpp"
+				RelativePath=".\baseutils\win_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\StrUtil.h"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\UtilTests.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\baseutils\Vec.h"
+				RelativePath=".\baseutils\win_util.h"
 				>
 			</File>
 			<File
@@ -370,15 +388,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\WinUtil.h"
+				RelativePath=".\baseutils\WinUtil.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\ZipUtil.cpp"
+				RelativePath=".\baseutils\wstr_util.c"
 				>
 			</File>
 			<File
-				RelativePath=".\baseutils\ZipUtil.h"
+				RelativePath=".\baseutils\wstr_util.h"
 				>
 			</File>
 		</Filter>
@@ -409,10 +427,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\fitz\base_object.c"
-					>
-				</File>
-				<File
 					RelativePath=".\mupdf\fitz\base_string.c"
 					>
 				</File>
@@ -433,11 +447,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\fitz\crypt_sha2.c"
+					RelativePath=".\mupdf\fitz\dev_bbox.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\fitz\dev_bbox.c"
+					RelativePath=".\mupdf\fitz\dev_draw.c"
 					>
 				</File>
 				<File
@@ -501,11 +515,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\mupdf\fitz\obj_array.c"
+					>
+				</File>
+				<File
+					RelativePath=".\mupdf\fitz\obj_dict.c"
+					>
+				</File>
+				<File
 					RelativePath=".\mupdf\fitz\obj_print.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\fitz\res_bitmap.c"
+					RelativePath=".\mupdf\fitz\obj_simple.c"
 					>
 				</File>
 				<File
@@ -514,10 +536,6 @@
 				</File>
 				<File
 					RelativePath=".\mupdf\fitz\res_font.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\fitz\res_halftone.c"
 					>
 				</File>
 				<File
@@ -557,254 +575,222 @@
 				Name="draw"
 				>
 				<File
-					RelativePath=".\mupdf\draw\arch_port.c"
+					RelativePath=".\mupdf\draw\archport.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_affine.c"
+					RelativePath=".\mupdf\draw\blendmodes.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_blend.c"
+					RelativePath=".\mupdf\draw\glyphcache.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_device.c"
+					RelativePath=".\mupdf\draw\imagedraw.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_edge.c"
+					RelativePath=".\mupdf\draw\imagescale.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_glyph.c"
+					RelativePath=".\mupdf\draw\imagesmooth.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_mesh.c"
+					RelativePath=".\mupdf\draw\imageunpack.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_paint.c"
+					RelativePath=".\mupdf\draw\meshdraw.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_path.c"
+					RelativePath=".\mupdf\draw\pathfill.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_scale.c"
+					RelativePath=".\mupdf\draw\pathscan.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\draw\draw_unpack.c"
+					RelativePath=".\mupdf\draw\pathstroke.c"
+					>
+				</File>
+				<File
+					RelativePath=".\mupdf\draw\porterduff.c"
 					>
 				</File>
 			</Filter>
 			<Filter
-				Name="pdf"
+				Name="mupdf"
 				>
 				<File
-					RelativePath=".\mupdf\pdf\data_encodings.h"
+					RelativePath=".\mupdf\mupdf\cmapdump.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\data_glyphlist.h"
+					RelativePath=".\mupdf\mupdf\fontdump.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\mupdf.h"
+					RelativePath=".\mupdf\mupdf\mupdf.h"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_annot.c"
+					RelativePath=".\mupdf\mupdf\pdf_annot.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap.c"
+					RelativePath=".\mupdf\mupdf\pdf_build.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_load.c"
+					RelativePath=".\mupdf\mupdf\pdf_cmap.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_parse.c"
+					RelativePath=".\mupdf\mupdf\pdf_cmap_load.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_cmap_table.c"
+					RelativePath=".\mupdf\mupdf\pdf_cmap_parse.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_colorspace.c"
+					RelativePath=".\mupdf\mupdf\pdf_cmap_table.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_crypt.c"
+					RelativePath=".\mupdf\mupdf\pdf_colorspace.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_debug.c"
+					RelativePath=".\mupdf\mupdf\pdf_crypt.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_encoding.c"
+					RelativePath=".\mupdf\mupdf\pdf_debug.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_font.c"
+					RelativePath=".\mupdf\mupdf\pdf_font.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_fontfile.c"
+					RelativePath=".\mupdf\mupdf\pdf_fontagl.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_ft_tools.c"
+					RelativePath=".\mupdf\mupdf\pdf_fontenc.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_function.c"
+					RelativePath=".\mupdf\mupdf\pdf_fontfile.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_image.c"
+					RelativePath=".\mupdf\mupdf\pdf_fontmtx.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_interpret.c"
+					RelativePath=".\mupdf\mupdf\pdf_ft_tools.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_lex.c"
+					RelativePath=".\mupdf\mupdf\pdf_function.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_metrics.c"
+					RelativePath=".\mupdf\mupdf\pdf_image.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_nametree.c"
+					RelativePath=".\mupdf\mupdf\pdf_interpret.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_outline.c"
+					RelativePath=".\mupdf\mupdf\pdf_lex.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_page.c"
+					RelativePath=".\mupdf\mupdf\pdf_nametree.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_parse.c"
+					RelativePath=".\mupdf\mupdf\pdf_outline.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_pattern.c"
+					RelativePath=".\mupdf\mupdf\pdf_page.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_repair.c"
+					RelativePath=".\mupdf\mupdf\pdf_pagetree.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_shade.c"
+					RelativePath=".\mupdf\mupdf\pdf_parse.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_store.c"
+					RelativePath=".\mupdf\mupdf\pdf_pattern.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_stream.c"
+					RelativePath=".\mupdf\mupdf\pdf_repair.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_type3.c"
+					RelativePath=".\mupdf\mupdf\pdf_shade.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_unicode.c"
+					RelativePath=".\mupdf\mupdf\pdf_store.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_xobject.c"
+					RelativePath=".\mupdf\mupdf\pdf_stream.c"
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\pdf\pdf_xref.c"
+					RelativePath=".\mupdf\mupdf\pdf_type3.c"
+					>
+				</File>
+				<File
+					RelativePath=".\mupdf\mupdf\pdf_unicode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\mupdf\mupdf\pdf_xobject.c"
+					>
+				</File>
+				<File
+					RelativePath=".\mupdf\mupdf\pdf_xref.c"
 					>
 				</File>
 			</Filter>
-			<Filter
-				Name="xps"
+		</Filter>
+		<Filter
+			Name="installer"
+			>
+			<File
+				RelativePath=".\src\installer\Installer.cpp"
 				>
-				<File
-					RelativePath=".\mupdf\xps\muxps.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_common.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_doc.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_glyphs.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_gradient.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_image.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_jpeg.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_outline.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_path.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_png.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_resource.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_tiff.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_tile.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_util.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_xml.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mupdf\xps\xps_zip.c"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath=".\src\installer\Installer.exe.manifest"
+				>
+			</File>
+			<File
+				RelativePath=".\src\installer\Installer.rc"
+				>
+			</File>
+			<File
+				RelativePath=".\src\installer\Resource.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="IFilter DLL"
@@ -826,14 +812,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\ifilter\CXpsFilter.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\src\ifilter\CXpsFilter.h"
-				>
-			</File>
-			<File
 				RelativePath=".\src\ifilter\FilterBase.h"
 				>
 			</File>
@@ -851,7 +829,7 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\docs\releasenotes.txt"
+			RelativePath=".\src\todo.txt"
 			>
 		</File>
 	</Files>

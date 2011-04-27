@@ -1,10 +1,8 @@
 ﻿# Translations for Chinese Simplified (简体中文) (cn) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: cn Chinese Simplified (简体中文)
 
@@ -190,10 +188,10 @@ Check for &Updates
 Continuous
 连续页面
 
-Continuous Book View
+Continuous book view
 连续书籍视图
 
-Continuous Facing
+Continuous facing
 连续平铺页面
 
 Contribute Translation
@@ -223,9 +221,6 @@ Default &Layout:
 Default &Zoom:
 默认缩放(&Z)
 
-Default PDF reader can't be changed in portable mode
-便携模式不能改变默认 PDF 阅读器
-
 Denied Permissions:
 权限不足:
 
@@ -246,6 +241,9 @@ Enter password for %s
 
 Enter the command-line to invoke when you double-click on the PDF document:
 双击PDF文档时输入命令行调用
+
+Error loading PDF file.
+载入 PDF 文件时发生错误。
 
 F&orward\tAlt+Right Arrow
 下一视图(&O)\tAlt+Right Arrow
@@ -316,10 +314,13 @@ KB
 MB
 MB
 
+Main PDF reader can't be changed in portable mode
+便携模式不能改变默认 PDF 阅读器
+
 Make SumatraPDF default application for PDF files?
 将 SumatraPDF 设置为默认的 PDF 阅读器？
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 将 SumatraPDF 设置为默认的 PDF 阅读器
 
 Match Case
@@ -357,12 +358,6 @@ Open
 
 Open in &Adobe Reader
 在&Adobe Reader中打开
-
-Open in &Foxit Reader
-在&Foxit Reader中打开
-
-Open in PDF-XChange
-在PDF-XChange中打开
 
 P&roperties\tCtrl-D
 属性(&R)\tCtrl-D
@@ -448,10 +443,10 @@ Subject:
 SumatraPDF Options
 SumatraPDF 选项
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF 是默认 PDF 阅读器
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 现在 SumatraPDF 应该是你的默认 PDF 阅读器了
 
 Synchronization file cannot be opened
@@ -503,34 +498,10 @@ printing document
 正在打印文档
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
 #Fit Width and Show Pages Continuously
 #Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
 #Please include the following file in your crash report:
 #Pr&esentation\tCtrl-L
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
 #SumatraPDF Update
 #SumatraPDF crashed
-#XPS documents
 

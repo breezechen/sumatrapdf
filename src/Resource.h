@@ -21,7 +21,7 @@
 #define IDM_PRINT                       403
 #define IDM_EXIT                        405
 #define IDM_REFRESH                     406
-#define IDM_SAVEAS_BOOKMARK             407
+#define IDM_VIEW_WITH_ACROBAT           407
 #define IDM_SEND_BY_EMAIL               408
 #define IDM_PROPERTIES                  409
 
@@ -39,8 +39,6 @@
 #define IDM_COPY_SELECTION              420
 #define IDM_VIEW_FULLSCREEN             421
 #define IDM_SELECT_ALL                  422
-#define IDM_COPY_LINK_TARGET            428
-#define IDM_COPY_COMMENT                429
 
 #define IDM_GOTO_NEXT_PAGE              430
 #define IDM_GOTO_PREV_PAGE              431
@@ -74,13 +72,6 @@
 
 #define IDM_CONTRIBUTE_TRANSLATION      460
 
-#define IDM_VIEW_WITH_ACROBAT           470
-#define IDM_VIEW_WITH_FOXIT             471
-#define IDM_VIEW_WITH_PDF_XCHANGE       472
-
-#define IDM_FILE_HISTORY_FIRST          510
-#define IDM_FILE_HISTORY_LAST           519
-
 #define IDM_VISIT_WEBSITE               550
 #define IDM_ABOUT                       551
 #define IDM_SETTINGS                    552
@@ -91,8 +82,6 @@
 #define IDM_GOTO_NAV_BACK               558
 #define IDM_GOTO_NAV_FORWARD            559
 #define IDM_CRASH_ME                    560
-#define IDM_THREAD_STRESS               561
-
 #define IDC_SUMATRAPDF                  600
 #define IDI_SMALL                       601
 #define IDC_GOTO_PAGE_EDIT              1000

@@ -1,191 +1,355 @@
-"""
-Builds a (pre)release build of SumatraPDF, including the installer,
-and optionally uploads it to s3.
-"""
+# What: build release version of sumatra and (optionally) upload it to s3
 
-import os
-import os.path
-import shutil
-import sys
-import time
-import re
-
-from util import log, run_cmd_throw, test_for_flag, s3UploadFilePublic, s3UploadDataPublic, ensure_s3_doesnt_exist, ensure_path_exists, zip_file, extract_sumatra_version, verify_started_in_right_directory, build_installer_native, parse_svninfo_out
-
-args = sys.argv
-upload               = test_for_flag(args, "-upload")
-upload_tmp           = test_for_flag(args, "-uploadtmp")
-testing              = test_for_flag(args, "-test") or test_for_flag(args, "-testing")
-build_test_installer = test_for_flag(args, "-test-installer") or test_for_flag(args, "-testinst") or test_for_flag(args, "-testinstaller")
-build_prerelease     = test_for_flag(args, "-prerelease")
-
-def usage():
-  print("build-release.py [-upload][-uploadtmp][-test][-test-installer][-prerelease]")
-  sys.exit(1)
-
-# Terms:
-#  static build  - SumatraPDF.exe single executable with mupdf code staticall
-#                  linked in
-#  library build - SumatraPDF.exe executable that uses libmupdf.dll
-
-# Building release version:
+# How:
 #   * extract version from Version.h
-#   * build with nmake, sending version as argument
-#   * compress with mpress
-#   * build an installer
-#   * upload to s3 kjkpub bucket. Uploaded files:
-#       sumatrapdf/rel/SumatraPDF-<ver>.exe
-#          uncompressed portable executable, for archival
-#       sumatrapdf/rel/SumatraPDF-<ver>.zip
-#          mpress-compressed portable executable inside zip
-#       sumatrapdf/rel/SumatraPDF-<ver>.pdb.zip
-#          pdb symbols for libmupdf.dll, and Sumatra's static and library builds
-#       sumatrapdf/rel/SumatraPDF-<ver>-install.exe
-#          installer for library build
-#
-#   * file sumatrapdf/sumpdf-latest.txt must be manually updated
-
-# Building pre-release version:
-#   * get svn version
 #   * build with nmake, sending svn version as argument
 #   * compress with mpress
 #   * build an installer
 #   * upload to s3 kjkpub bucket. Uploaded files:
-#       sumatrapdf/prerel/SumatraPDF-prerelease-<svnrev>.exe
-#          static, portable executable
-#       sumatrapdf/prerel/SumatraPDF-prerelease-<svnrev>.pdb.zip
-#          pdb symbols for libmupdf.dll and Sumatra's static and library builds
-#       sumatrapdf/prerel/SumatraPDF-prerelease-<svnrev>-install.exe
-#          installer for library build
-#       sumatrapdf/sumatralatest.js
-#       sumatrapdf/sumpdf-prerelease-latest.txt
+#       sumatrapdf/rel/SumatraPDF-<ver>.exe
+#       sumatrapdf/rel/SumatraPDF-<ver>.zip
+#       sumatrapdf/rel/SumatraPDF-<ver>.pdb
+#       sumatrapdf/rel/SumatraPDF-<ver>-install.exe
+#
+#   * file sumatrapdf/sumpdf-latest.txt must be manually updated
 
-def copy_from_obj_rel(name_in_obj_rel, dst_path):
-  src_path = os.path.join("obj-rel", name_in_obj_rel)
-  shutil.copy(src_path, dst_path)
+import bz2
+import os
+import os.path
+import re
+import shutil
+import subprocess
+import sys
+import struct
+import time
+import zlib
+
+def test_for_flag(args, arg):
+  try:
+    pos = args.index(arg)
+  except:
+    return False
+  del args[pos]
+  return True
+
+args = sys.argv
+upload = test_for_flag(args, "-upload")
+upload_tmp = test_for_flag(args, "-uploadtmp")
+testing = test_for_flag(args, "-test") or test_for_flag(args, "-testing")
+build_test_installer = test_for_flag(args, "-testinst") or test_for_flag(args, "-testinstaller")
+
+if upload or upload_tmp:
+  try:
+    import boto.s3
+    from boto.s3.key import Key
+  except:
+    print("You need boto library (http://code.google.com/p/boto/)")
+    print("svn checkout http://boto.googlecode.com/svn/trunk/ boto")
+    print("cd boto; python setup.py install")
+    raise
+
+  try:
+    import awscreds
+  except:
+    print "awscreds.py file needed with access and secret globals for aws access"
+    sys.exit(1)
+
+SCRIPT_DIR = os.path.dirname(__file__)
+if SCRIPT_DIR:
+  SCRIPT_DIR = os.path.split(SCRIPT_DIR)[0]
+else:
+  SCRIPT_DIR = os.getcwd()
+
+S3_BUCKET = "kjkpub"
+g_s3conn = None
+
+def log(s):
+  print(s)
+  sys.stdout.flush()
+
+def s3connection():
+  global g_s3conn
+  if g_s3conn is None:
+    g_s3conn = boto.s3.connection.S3Connection(awscreds.access, awscreds.secret, True)
+  return g_s3conn
+
+def s3PubBucket(): return s3connection().get_bucket(S3_BUCKET)
+
+def ul_cb(sofar, total):
+  log("So far: %d, total: %d" % (sofar , total))
+
+def s3UploadFilePublic(local_file_name, remote_file_name):
+  log("Uploading %s as %s" % (local_file_name, remote_file_name))
+  bucket = s3PubBucket()
+  k = Key(bucket)
+  k.key = remote_file_name
+  k.set_contents_from_filename(local_file_name, cb=ul_cb)
+  k.make_public()
+
+def ensure_s3_doesnt_exist(remote_file_path):
+  bucket = s3PubBucket()
+  if not bucket.get_key(remote_file_path):
+    return
+  print("'%s' already exists on s3" % remote_file_path)
+  sys.exit(1)
+
+def ensure_path_exists(path):
+  if not os.path.exists(path):
+    print("path '%s' doesn't exist" % path)
+    sys.exit(1)
+
+# version line is in the format:
+# #define CURR_VERSION 1.1
+def extract_sumatra_version(file_path):
+  fo = open(file_path, "r")
+  d = fo.read()
+  fo.close()
+  m = re.search('CURR_VERSION (\\d+(?:\\.\\d+)*)', d)
+  ver = m.group(1)
+  return ver
+
+# like cmdrun() but throws an exception on failure
+def run_cmd_throw(*args):
+  cmd = " ".join(args)
+  log("\nrun_cmd_throw: '%s'" % cmd)
+  cmdproc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  res = cmdproc.communicate()
+  errcode = cmdproc.returncode
+  if 0 != errcode:
+    print("Failed with error code %d" % errcode)
+    print("Stdout:")
+    print(res[0])
+    print("Stderr:")
+    print(res[1])
+    raise Exception("'%s' failed with error code %d" % (cmd, errcode))
+  return (res[0], res[1])
+
+def usage():
+  print("sumatra-build-release.py [-upload] [sumatra-source-dir]")
+  sys.exit(1)
+
+def direxists(path):
+  if not os.path.exists(path):
+    #print("%s path doesn't exist" % path)
+    return False
+  if os.path.isdir(path):
+    #print("%s path exists and is a dir" % path)
+    return True
+  else:
+    #print("%s path exists but is not a dir" % path)
+    return False
+
+def build_installer_nsis(builds_dir, ver):
+  os.chdir(SCRIPT_DIR)
+  run_cmd_throw("makensis", "/DSUMVER=%s" % ver, "scripts/installer")
+  local_installer_exe = os.path.join(builds_dir, "SumatraPDF-%s-install-nsis.exe" % ver)
+  shutil.move("SumatraPDF-%s-install.exe" % ver, local_installer_exe)
+  ensure_path_exists(local_installer_exe)
+  return local_installer_exe
+
+def write_no_size(fo, data):
+  log("Writing %d bytes at %d '%s'" % (len(data), fo.tell(), data))
+  fo.write(data)
+  
+def write_with_size(fo, data, name=None):
+  if name:
+    log("Writing %d bytes at %d (data of name %s)" % (len(data), fo.tell(), name))
+  else:
+    log("Writing %d bytes at %d (data)" % (len(data), fo.tell()))
+  fo.write(data)
+  tmp = struct.pack("<I", len(data))
+  log("Writing %d bytes at %d (data size)" % (len(tmp), fo.tell()))
+  fo.write(tmp)
+
+INSTALLER_HEADER_FILE      = "kifi"
+INSTALLER_HEADER_FILE_ZLIB = "kifz"
+INSTALLER_HEADER_END       = "kien"
+
+def append_installer_file(fo, path, name_in_installer):
+  fi = open(path, "rb")
+  data = fi.read()
+  fi.close()
+  assert len(data) == os.path.getsize(path)
+  write_with_size(fo, data, name_in_installer)
+  write_with_size(fo, name_in_installer)
+  write_no_size(fo, INSTALLER_HEADER_FILE)
+
+def append_installer_file_zlib(fo, path, name_in_installer):
+  fi = open(path, "rb")
+  data = fi.read()
+  fi.close()
+  assert len(data) == os.path.getsize(path)
+  data2 = zlib.compress(data, 9)
+  assert len(data2) < os.path.getsize(path)
+  write_with_size(fo, data2, name_in_installer)
+  write_with_size(fo, name_in_installer)
+  write_no_size(fo, INSTALLER_HEADER_FILE_ZLIB)
+  
+  """
+  data3 = bz2.compress(data, 9)  
+  print("")
+  print("uncompressed: %d" % len(data))
+  print("zlib        : %d" % len(data2))
+  print("bz2         : %d" % len(data3))
+  print("")
+  """
+
+def mark_installer_end(fo):
+  write_no_size(fo, INSTALLER_HEADER_END)
+
+# construct a full installer by appending data at the end of installer executable.
+# appended data is in the format:
+#  $data - data as binary. In our case it's Sumatra's binary
+#  $data_size - as 32-bit integer
+#  $data-name - name of the data. In our case it's name of the file to be written out
+#  $data-name-len - length of $data-name, as 32-bit integer
+#  $header - 4 byte, unique header of this section ('kifi' - kjk installer file info)
+# this format is designed to be read backwards (because it's easier for the installer to
+# seek to the end of itself than parse pe header to figure out where the executable ends
+# and data starts)
+def build_installer_native(builds_dir, ver):
+  installer_template_exe = os.path.join(builds_dir, "Installer.exe")
+  installer_exe = os.path.join(builds_dir, "SumatraPDF-%s-install.exe" % ver)
+  exe = os.path.join(builds_dir, "SumatraPDF-%s.exe" % ver)
+
+  shutil.copy(installer_template_exe, installer_exe)
+
+  fo = open(installer_exe, "ab")
+  # append installer data to installer exe
+  mark_installer_end(fo) # this are read backwards so end marker is written first
+  append_installer_file(fo, exe, "SumatraPDF.exe")
+  font_name =  "DroidSansFallback.ttf"
+  font_path = os.path.join(SCRIPT_DIR, "mupdf", "fonts", "droid", font_name)
+  append_installer_file_zlib(fo, font_path, font_name)
+  fo.close()
+  return installer_exe
+
+def build_installer_for_testing():
+  (out, err) = run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=dbg")
+  #print(out); print(err)
+  objdir = os.path.join(os.getcwd(), "obj-dbg")
+  installer_template_exe = os.path.join(objdir, "Installer.exe")
+  installer_exe = os.path.join(objdir, "SumatraPDF-installer.exe")
+  shutil.copy(installer_template_exe, installer_exe)
+
+  exe = os.path.join(objdir, "SumatraPDF.exe")
+  fo = open(installer_exe, "ab")
+  # append installer data to installer exe
+  mark_installer_end(fo) # this are read backwards so end marker is written first
+  append_installer_file(fo, exe, "SumatraPDF.exe")
+  font_name =  "DroidSansFallback.ttf"
+  font_path = os.path.join(os.getcwd(), "mupdf", "fonts", "droid", font_name)
+  append_installer_file_zlib(fo, font_path, font_name)
+  fo.close()
+  return installer_exe
+
+def verify_started_in_right_directory():
+  p1 = os.path.join("scripts", "build-release.py")
+  srcdir = os.getcwd()
+  p2 = os.path.join(srcdir, "scripts", "build-release.py")
+  if not (os.path.exists(p1) and os.path.exists(p2)):
+    print("This script must be run from top of the source tree")
+    sys.exit(1)
 
 def main():
+  log("Starting build-release.py")
+
+  s3dir = "rel"
+  if upload:
+    log("Will upload to s3")
+  if upload_tmp:
+    s3dir = "tmp"
+    log("Will upload to tmp s3")
+
   if len(args) != 1:
     usage()
+
+  srcdir = os.getcwd()
   verify_started_in_right_directory()
 
   if build_test_installer:
-    run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=dbg")
-    build_installer_native("obj-dbg", None)
+    build_installer_for_testing()
     sys.exit(0)
 
-  if build_prerelease:
-    run_cmd_throw("svn", "update")
-    (out, err) = run_cmd_throw("svn", "info")
-    ver = str(parse_svninfo_out(out))
-  else:
-    ver = extract_sumatra_version(os.path.join("src", "Version.h"))
+  ver = extract_sumatra_version(os.path.join("src", "Version.h"))
   log("Version: '%s'" % ver)
 
-  filename_base = "SumatraPDF-%s" % ver
-  if build_prerelease:
-    filename_base = "SumatraPDF-prerelease-%s" % ver
-
-  s3_dir = "sumatrapdf/rel"
-  if build_prerelease:
-    s3_dir = "sumatrapdf/prerel"
-  if upload_tmp:
-    s3_dir += "tmp"
-
-  if upload or upload_tmp:
-    log("Will upload to s3 at %s" % s3_dir)
-
-  s3_prefix = "%s/%s" % (s3_dir, filename_base)
-  s3_exe           = s3_prefix + ".exe"
-  s3_installer     = s3_prefix + "-install.exe"
-  s3_pdb_zip       = s3_prefix + ".pdb.zip"
-  s3_exe_zip       = s3_prefix + ".zip"
-
-  s3_files = [s3_exe, s3_installer, s3_pdb_zip]
-  if not build_prerelease:
-    s3_files.append(s3_exe_zip)
+  remote_exe           = "sumatrapdf/%s/SumatraPDF-%s.exe" % (s3dir, ver)
+  remote_pdb           = "sumatrapdf/%s/SumatraPDF-%s.pdb" % (s3dir, ver)
+  remote_zip           = "sumatrapdf/%s/SumatraPDF-%s.zip" % (s3dir, ver)
+  remote_installer_exe = "sumatrapdf/%s/SumatraPDF-%s-install.exe" % (s3dir, ver)
 
   if upload:
-    map(ensure_s3_doesnt_exist, s3_files)
+    ensure_s3_doesnt_exist(remote_exe)
+    ensure_s3_doesnt_exist(remote_pdb)
+    ensure_s3_doesnt_exist(remote_zip)
+    ensure_s3_doesnt_exist(remote_installer_exe)
 
-  if not testing:
-    shutil.rmtree("obj-rel", ignore_errors=True)
+  objdir = "obj-rel"
+  if not testing and os.path.exists(objdir):
+    shutil.rmtree(objdir, ignore_errors=True)
 
-  builds_dir = os.path.join("builds", ver)
-  if os.path.exists(builds_dir):
+  #run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=rel", "cleanall")
+  run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=rel")
+
+  tmp_exe = os.path.join(srcdir, objdir, "SumatraPDF.exe")
+  tmp_pdb = os.path.join(srcdir, objdir, "SumatraPDF.pdb")
+  tmp_installer = os.path.join(srcdir, objdir, "Installer.exe")
+  tmp_installer_pdb = os.path.join(srcdir, objdir, "Installer.pdb")
+
+  ensure_path_exists(tmp_exe)
+  ensure_path_exists(tmp_pdb)
+  ensure_path_exists(tmp_installer)
+  ensure_path_exists(tmp_installer_pdb)
+
+  builds_dir = os.path.join(SCRIPT_DIR, "builds", ver)
+
+  if testing and os.path.exists(builds_dir):
     shutil.rmtree(builds_dir)
+
   if not os.path.exists(builds_dir):
+    log("Creating dir '%s'" % builds_dir)
     os.makedirs(builds_dir)
-
-  if build_prerelease:
-    extcflags = "EXTCFLAGS=-DSVN_PRE_RELEASE_VER=%s" % ver
-    run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=rel", extcflags)
   else:
-    run_cmd_throw("nmake", "-f", "makefile.msvc", "CFG=rel")
+    log("Dir '%s' already exists" % builds_dir)
+  ensure_path_exists(builds_dir)
 
-  exe_uncompressed = os.path.join(builds_dir, "%s-uncompr.exe" % filename_base)
-  copy_from_obj_rel("SumatraPDF.exe", exe_uncompressed)
+  local_exe = os.path.join(builds_dir, "SumatraPDF-%s.exe" % ver)
+  local_exe_uncompr = os.path.join(builds_dir, "SumatraPDF-uncompr.exe")
+  local_pdb = os.path.join(builds_dir, "SumatraPDF-%s.pdb" % ver)
+  local_installer = os.path.join(builds_dir, "Installer.exe")
+  local_installer_pdb = os.path.join(builds_dir, "Installer.pdb")
 
-  exe_no_mupdf = os.path.join(builds_dir, "SumatraPDF-no-MuPDF.exe")
-  copy_from_obj_rel("SumatraPDF-no-MuPDF.exe", exe_no_mupdf)
+  stripreloc = os.path.join(SCRIPT_DIR, "bin", "StripReloc")
+  builds_dir_rel = os.path.join("src", "builds", ver)
+  run_cmd_throw(stripreloc, os.path.join(builds_dir_rel, "Installer.exe"))
 
-  libmupdf = os.path.join(builds_dir, "libmupdf.dll")
-  copy_from_obj_rel("libmupdf.dll", libmupdf)
+  shutil.copy(tmp_exe, local_exe)
+  shutil.copy(tmp_exe, local_exe_uncompr)
+  shutil.copy(tmp_pdb, local_pdb)
+  shutil.copy(tmp_installer, local_installer)
+  shutil.copy(tmp_installer_pdb, local_installer_pdb)
 
-  plugin = os.path.join(builds_dir, "npPdfViewer.dll")
-  copy_from_obj_rel("npPdfViewer.dll", plugin)
+  os.chdir(builds_dir)
 
-  pdffilter = os.path.join(builds_dir, "PdfFilter.dll")
-  copy_from_obj_rel("PdfFilter.dll", pdffilter)
+  mpress = os.path.join(SCRIPT_DIR, "bin", "mpress")
+  run_cmd_throw(mpress, "-s", "-r", "SumatraPDF-%s.exe" % ver)
+  #run_cmd_throw("upx", compression_type, "--compress-icons=0", "SumatraPDF-%s.exe" % ver)
 
-  pdb_zip = os.path.join(builds_dir, "%s.pdb.zip" % filename_base)
-  zip_file(pdb_zip, os.path.join("obj-rel", "libmupdf.pdb"))
-  zip_file(pdb_zip, os.path.join("obj-rel", "SumatraPDF-no-MuPDF.pdb"), append=True)
-  zip_file(pdb_zip, os.path.join("obj-rel", "SumatraPDF.pdb"), "%s.pdb" % filename_base, append=True)
+  shutil.copy("SumatraPDF-%s.exe" % ver, "SumatraPDF.exe")
+  zip = os.path.join(SCRIPT_DIR, "bin", "zip")
+  run_cmd_throw(zip, "-0", "SumatraPDF-%s.zip" % ver, "SumatraPDF.exe")
 
-  installer_stub = os.path.join(builds_dir, "Installer.exe")
-  copy_from_obj_rel("Installer.exe", installer_stub)
-
-  # run mpress and StripReloc from inside builds_dir for better
-  # compat across python version
-  prevdir = os.getcwd(); os.chdir(builds_dir)
-  run_cmd_throw("StripReloc", "Installer.exe")
-  os.chdir(prevdir)
-
-  installer = build_installer_native(builds_dir, filename_base)
-
-  if not build_prerelease:
-    exe_zip = os.path.join(builds_dir, "%s.zip" % filename_base)
-    zip_file(exe_zip, exe_uncompressed, "SumatraPDF.exe", compress=True)
-    ensure_path_exists(exe_zip)
+  local_zip = os.path.join(builds_dir, "SumatraPDF-%s.zip" % ver)
+  ensure_path_exists(local_zip)
+  #local_installer_exe = build_installer_nsis(builds_dir, ver)
+  local_installer_native_exe = build_installer_native(builds_dir, ver)
 
   if upload or upload_tmp:
-    if build_prerelease:
-      jstxt  = 'var sumLatestVer = %s;\n' % ver
-      jstxt  = 'var sumBuiltOn = "%s";\n' % time.strftime("%Y-%m-%d")
-      jstxt += 'var sumLatestName = "%s";\n' % s3_exe.split("/")[-1]
-      jstxt += 'var sumLatestExe = "http://kjkpub.s3.amazonaws.com/%s";\n' % s3_exe
-      jstxt += 'var sumLatestPdb = "http://kjkpub.s3.amazonaws.com/%s";\n' % s3_pdb_zip
-      jstxt += 'var sumLatestInstaller = "http://kjkpub.s3.amazonaws.com/%s";\n' % s3_installer
-
-    s3UploadFilePublic(installer, s3_installer)
-    s3UploadFilePublic(pdb_zip, s3_pdb_zip)
-    s3UploadFilePublic(exe_uncompressed, s3_exe)
-
-    if build_prerelease:
-      s3UploadDataPublic(jstxt, "sumatrapdf/sumatralatest.js")
-      txt = "%s\n" % ver
-      s3UploadDataPublic(txt, "sumatrapdf/sumpdf-prerelease-latest.txt")
-    else:
-      s3UploadFilePublic(exe_zip, s3_exe_zip)
-
-    # Note: for release builds, must update sumatrapdf/sumpdf-latest.txt in s3
-    # manually to: "%s\n" % ver
-
-  # temporary files that were in builds_dir to make creating other files possible
-  temp = [installer_stub, installer_stub + ".bak", exe_no_mupdf, libmupdf, plugin, pdffilter]
-  map(os.remove, temp)
-
+    s3UploadFilePublic(local_exe_uncompr, remote_exe)
+    s3UploadFilePublic(local_pdb, remote_pdb)
+    s3UploadFilePublic(local_zip, remote_zip)
+    s3UploadFilePublic(local_installer_native_exe, remote_installer_exe)
 
 if __name__ == "__main__":
   main()

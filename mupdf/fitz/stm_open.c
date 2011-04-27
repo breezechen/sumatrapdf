@@ -1,7 +1,7 @@
 #include "fitz.h"
 
 fz_stream *
-fz_new_stream(void *state,
+fz_newstream(void *state,
 	int(*read)(fz_stream *stm, unsigned char *buf, int len),
 	void(*close)(fz_stream *stm))
 {
@@ -10,12 +10,8 @@ fz_new_stream(void *state,
 	stm = fz_malloc(sizeof(fz_stream));
 
 	stm->refs = 1;
-	stm->error = 0;
-	stm->eof = 0;
+	stm->dead = 0;
 	stm->pos = 0;
-
-	stm->bits = 0;
-	stm->avail = 0;
 
 	stm->bp = stm->buf;
 	stm->rp = stm->bp;
@@ -25,13 +21,13 @@ fz_new_stream(void *state,
 	stm->state = state;
 	stm->read = read;
 	stm->close = close;
-	stm->seek = NULL;
+	stm->seek = nil;
 
 	return stm;
 }
 
 fz_stream *
-fz_keep_stream(fz_stream *stm)
+fz_keepstream(fz_stream *stm)
 {
 	stm->refs ++;
 	return stm;
@@ -51,7 +47,7 @@ fz_close(fz_stream *stm)
 
 /* File stream */
 
-static int read_file(fz_stream *stm, unsigned char *buf, int len)
+static int readfile(fz_stream *stm, unsigned char *buf, int len)
 {
 	int n = read(*(int*)stm->state, buf, len);
 	if (n < 0)
@@ -59,7 +55,7 @@ static int read_file(fz_stream *stm, unsigned char *buf, int len)
 	return n;
 }
 
-static void seek_file(fz_stream *stm, int offset, int whence)
+static void seekfile(fz_stream *stm, int offset, int whence)
 {
 	int n = lseek(*(int*)stm->state, offset, whence);
 	if (n < 0)
@@ -69,7 +65,7 @@ static void seek_file(fz_stream *stm, int offset, int whence)
 	stm->wp = stm->bp;
 }
 
-static void close_file(fz_stream *stm)
+static void closefile(fz_stream *stm)
 {
 	int n = close(*(int*)stm->state);
 	if (n < 0)
@@ -78,7 +74,7 @@ static void close_file(fz_stream *stm)
 }
 
 fz_stream *
-fz_open_fd(int fd)
+fz_openfile(int fd)
 {
 	fz_stream *stm;
 	int *state;
@@ -86,64 +82,42 @@ fz_open_fd(int fd)
 	state = fz_malloc(sizeof(int));
 	*state = fd;
 
-	stm = fz_new_stream(state, read_file, close_file);
-	stm->seek = seek_file;
+	stm = fz_newstream(state, readfile, closefile);
+	stm->seek = seekfile;
 
 	return stm;
 }
 
-fz_stream *
-fz_open_file(const char *name)
-{
-	int fd = open(name, O_BINARY | O_RDONLY, 0);
-	if (fd == -1)
-		return NULL;
-	return fz_open_fd(fd);
-}
-
-#ifdef _WIN32
-fz_stream *
-fz_open_file_w(const wchar_t *name)
-{
-	int fd = _wopen(name, O_BINARY | O_RDONLY, 0);
-	if (fd == -1)
-		return NULL;
-	return fz_open_fd(fd);
-}
-#endif
-
 /* Memory stream */
 
-static int read_buffer(fz_stream *stm, unsigned char *buf, int len)
+static int readbuffer(fz_stream *stm, unsigned char *buf, int len)
 {
 	return 0;
 }
 
-static void seek_buffer(fz_stream *stm, int offset, int whence)
+static void seekbuffer(fz_stream *stm, int offset, int whence)
 {
 	if (whence == 0)
 		stm->rp = stm->bp + offset;
 	if (whence == 1)
 		stm->rp += offset;
 	if (whence == 2)
-		stm->rp = stm->ep - offset;
-	stm->rp = CLAMP(stm->rp, stm->bp, stm->ep);
-	stm->wp = stm->ep;
+		stm->rp = stm->wp - offset;
+	stm->rp = CLAMP(stm->rp, stm->bp, stm->wp);
 }
 
-static void close_buffer(fz_stream *stm)
+static void closebuffer(fz_stream *stm)
 {
-	if (stm->state)
-		fz_drop_buffer(stm->state);
+	fz_dropbuffer(stm->state);
 }
 
 fz_stream *
-fz_open_buffer(fz_buffer *buf)
+fz_openbuffer(fz_buffer *buf)
 {
 	fz_stream *stm;
 
-	stm = fz_new_stream(fz_keep_buffer(buf), read_buffer, close_buffer);
-	stm->seek = seek_buffer;
+	stm = fz_newstream(fz_keepbuffer(buf), readbuffer, closebuffer);
+	stm->seek = seekbuffer;
 
 	stm->bp = buf->data;
 	stm->rp = buf->data;
@@ -151,24 +125,6 @@ fz_open_buffer(fz_buffer *buf)
 	stm->ep = buf->data + buf->len;
 
 	stm->pos = buf->len;
-
-	return stm;
-}
-
-fz_stream *
-fz_open_memory(unsigned char *data, int len)
-{
-	fz_stream *stm;
-
-	stm = fz_new_stream(NULL, read_buffer, close_buffer);
-	stm->seek = seek_buffer;
-
-	stm->bp = data;
-	stm->rp = data;
-	stm->wp = data + len;
-	stm->ep = data + len;
-
-	stm->pos = len;
 
 	return stm;
 }
