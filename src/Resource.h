@@ -4,6 +4,7 @@
 //
 #define IDI_SUMATRAPDF                  1
 #define IDI_PDFDOC                      2
+#define IDS_APP_TITLE                   100
 #define IDD_DIALOG_GOTO_PAGE            129
 #define IDD_DIALOG_GET_PASSWORD         130
 #define IDD_DIALOG_PDF_ASSOCIATE        131
@@ -21,7 +22,7 @@
 #define IDM_PRINT                       403
 #define IDM_EXIT                        405
 #define IDM_REFRESH                     406
-#define IDM_SAVEAS_BOOKMARK             407
+#define IDM_VIEW_WITH_ACROBAT           407
 #define IDM_SEND_BY_EMAIL               408
 #define IDM_PROPERTIES                  409
 
@@ -39,8 +40,6 @@
 #define IDM_COPY_SELECTION              420
 #define IDM_VIEW_FULLSCREEN             421
 #define IDM_SELECT_ALL                  422
-#define IDM_COPY_LINK_TARGET            428
-#define IDM_COPY_COMMENT                429
 
 #define IDM_GOTO_NEXT_PAGE              430
 #define IDM_GOTO_PREV_PAGE              431
@@ -73,13 +72,65 @@
 #define IDM_ZOOM_CUSTOM                 457
 
 #define IDM_CONTRIBUTE_TRANSLATION      460
-
-#define IDM_VIEW_WITH_ACROBAT           470
-#define IDM_VIEW_WITH_FOXIT             471
-#define IDM_VIEW_WITH_PDF_XCHANGE       472
-
-#define IDM_FILE_HISTORY_FIRST          510
-#define IDM_FILE_HISTORY_LAST           519
+#define IDM_LANG_EN                     461
+#define IDM_LANG_FR                     462
+#define IDM_LANG_PL                     463
+#define IDM_LANG_DE                     464
+#define IDM_LANG_TR                     465
+#define IDM_LANG_BY                     466
+#define IDM_LANG_JA                     467
+#define IDM_LANG_HU                     468
+#define IDM_LANG_FA                     469
+#define IDM_LANG_DK                     470
+#define IDM_LANG_IT                     471
+#define IDM_LANG_NL                     472
+#define IDM_LANG_TA                     473
+#define IDM_LANG_ES                     474
+#define IDM_LANG_HR                     475
+#define IDM_LANG_RU                     476
+#define IDM_LANG_AR                     477
+#define IDM_LANG_CN                     478
+#define IDM_LANG_SV                     479
+#define IDM_LANG_CZ                     480
+#define IDM_LANG_GR                     481
+#define IDM_LANG_TH                     482
+#define IDM_LANG_PT                     483
+#define IDM_LANG_BR                     484
+#define IDM_LANG_NO                     485
+#define IDM_LANG_SK                     486
+#define IDM_LANG_VN                     487
+#define IDM_LANG_LT                     488
+#define IDM_LANG_MY                     489
+#define IDM_LANG_FI                     490
+#define IDM_LANG_CA                     491
+#define IDM_LANG_SL                     492
+#define IDM_LANG_TW                     493
+#define IDM_LANG_ML                     494
+#define IDM_LANG_HE                     495
+#define IDM_LANG_SP_RS                  496
+#define IDM_LANG_ID                     497
+#define IDM_LANG_MK                     498
+#define IDM_LANG_RO                     499
+#define IDM_LANG_SR_RS                  500
+#define IDM_LANG_KR                     501
+#define IDM_LANG_BN                     502
+#define IDM_LANG_GL                     503
+#define IDM_LANG_BG                     504
+#define IDM_LANG_UK                     505
+#define IDM_LANG_EU                     506
+#define IDM_LANG_TL                     507
+#define IDM_LANG_VA                     508
+#define IDM_LANG_SN                     509
+#define IDM_LANG_CY                     510
+#define IDM_LANG_GA                     511
+#define IDM_LANG_MM                     512
+#define IDM_LANG_AF                     513
+#define IDM_LANG_PA                     514
+#define IDM_LANG_HI                     515
+#define IDM_LANG_NN                     516
+#define IDM_LANG_AM                     517
+#define IDM_LANG_KW                     518
+#define IDM_LANG_FY_NL                  519
 
 #define IDM_VISIT_WEBSITE               550
 #define IDM_ABOUT                       551
@@ -90,9 +141,6 @@
 #define IDM_MOVE_FRAME_FOCUS            557
 #define IDM_GOTO_NAV_BACK               558
 #define IDM_GOTO_NAV_FORWARD            559
-#define IDM_CRASH_ME                    560
-#define IDM_THREAD_STRESS               561
-
 #define IDC_SUMATRAPDF                  600
 #define IDI_SMALL                       601
 #define IDC_GOTO_PAGE_EDIT              1000
@@ -167,8 +215,6 @@
 #define IDT_FILE_PRINT                  3023
 #define IDT_FILE_OPENFAV                3024
 #define IDT_FILE_ADDTOFAV               3025
-#define IDT_VIEW_FIT_WIDTH              3026
-#define IDT_VIEW_FIT_PAGE               3027
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

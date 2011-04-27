@@ -1,10 +1,8 @@
 ﻿# Translations for Turkish (Türkçe) (tr) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: tr Turkish (Türkçe)
 
@@ -14,244 +12,73 @@ Contributor: Hakan ATAÇ
 &Hakkında
 
 &Actual Size\tCtrl-1
-Gerçek &Boyut\tCtrl-1
-
-&All selected pages
-Tüm seçilen &sayfalar
-
-&Back\tAlt+Left Arrow
-&Geri\tAlt+Sol Ok
+Gerçek Boyut\tCtrl-1
 
 &Close\tCtrl-W
-&Kapat\tCtrl-W
-
-&Copy Selection\tCtrl-C
-Seçileni &kopyala\tCtrl-C
-
-&Don't ask me again
-Tekrar &sorma
-
-&Even pages only
-Sadece &çift sayfalar
+Kapa&t\tCtrl-W
 
 &File
 &Dosya
 
-&Find what:
-&Bulunacak olan:
-
 &First Page\tHome
-&İlk Sayfa\tHome
-
-&Fit pages to printable area
-Sayfaları &yazdırılabilecek alana ölçekle
+İlk Sayfa\tHome
 
 &Go To
 &Git
-
-&Go to page:
-Sayfaya &git:
 
 &Help
 &Yardım
 
 &Last Page\tEnd
-So&n Sayfa\tEnd
-
-&Magnification:
-&Büyüteç:
-
-&Manual
-&El kitabı
-
-&Match case
-B&üyük/Küçük harf eşleştir
+Son Sayfa\tEnd
 
 &Next Page\tRight Arrow
-S&onraki Sayfa\t->
-
-&No
-&Hayır
-
-&No, thanks
-&Hayır, teşekkürler
-
-&Odd pages only
-Sadece &tek sayfalar
+Sonraki Sayfa\t->
 
 &Open\tCtrl-O
 &Aç\tCtrl-O
 
-&Options...
-&Seçenekler...
-
-&Password:
-&Şifre:
-
 &Previous Page\tLeft Arrow
-&Önceki Sayfa\t<-
+Önceki Sayfa\t<-
 
 &Print...\tCtrl-P
-&Yazdır...\tCtrl-P
-
-&Print... (denied)
-&Baskı... (reddedildi)
-
-&Remember the password for this document
-Bu belge için şifreyi &hatırla
-
-&Remember these settings for each document
-Bu ayarları her belge için &hatırla
+&Yazdır\tCtrl-P
 
 &Save As...\tCtrl-S
-&Farklı kaydet...\tCtrl-S
-
-&Settings
-&Ayarlar
-
-&Shrink pages to printable area (if necessary)
-Sayfaları baskı alanına &indirgele (gerekirse)
-
-&Skip this version
-Bu s&ürümü atla
-
-&Use original page sizes
-Orijinal sayfa boyutlarını &kullan
+&Farklı kaydet\tCtrl-S
 
 &View
-Gös&ter
-
-&Yes
-&Evet
+&Göster
 
 &Zoom
 &Yakınlaştırma
 
-(of %d)
-(toplam %d)
-
 About SumatraPDF
 SumatraPDF hakkında
 
-Advanced
-Gelişmiş
-
-All files
-Tüm dosyalar
-
-Application:
-Uygulama:
-
-Associate with PDF files?
-PDF dosyaları ile bağdaştırmak ister misiniz?
-
-Attachment: %s
-Ek: %s
-
-Author:
-Yazar:
-
-Automatic
-Otomatik
-
-Automatically check for &updates
-&Güncellemeleri otomatik olarak kontrol et
-
-Book View
-Kitap Gibi Görünüm
-
 Book&marks\tF12
-&Yer imleri\tF12
-
-Bookmarks
-Yer imleri
-
-Bytes
-Bayt
-
-Can't connect to the Internet (error %#x).
-İnternete erişilemiyor (hata %#x)
-
-Cancel
-Vazgeç
-
-Cannot print this file
-Bu dosyanın yazıcıdan dökümü yapılamaz
-
-Cannot start inverse search command. Please check the command line in the settings.
-Sondan başa arama komutu başlatılamadı. Ayarlarda komut satırını kontrol ediniz.
-
-Change Language
-Dil değiştir (Change Language)
-
-Check for &Updates
-&Güncellemeleri kontrol et
+Yer imleri\tF12
 
 Continuous
 Devamlı
 
-Continuous Book View
-Devamlı Kitap Gibi Görünüm
-
-Continuous Facing
+Continuous facing
 Devamlı çift sayfa
 
 Contribute Translation
 Çeviriye katkıda bulunun.
 
-Copying text was denied (copying as image only)
-Metnin kopyalanması reddedildi (görüntü olarak kopyalandı)
-
 Could not open Printer
 Yazıcıya erişilemiyor.
 
-Couldn't initialize printer
-Yazıcı başlatılamadı
-
-Couldn't render the page
-Sayfa oluşturulamadı
-
-Created:
-Yaratılış tarihi:
-
-Custom &Zoom...\tCtrl-Y
-Kişiselleştirilmiş &Yakınlaştırma... \tCtrl-Y
-
-Default &Layout:
-Varsayılan &Düzen:
-
-Default &Zoom:
-Varsayılan &Yakınlaştırma:
-
-Default PDF reader can't be changed in portable mode
-Varsayılan PDF okuyucu taşınabilir modunda değiştirilemez
-
-Denied Permissions:
-Reddedilen İzinler:
-
-Document Properties
-Belge Özellikleri
-
-Download
-İndir
-
 E&xit\tCtrl-Q
-Ç&ık\tCtrl-O
+Çı&kış\tCtrl-O
 
-Enter password
-Şifrenizi giriniz
+Error loading PDF file.
+Dosya yüklenirken hata çıktı.
 
-Enter password for %s
-%s için şifrenizi giriniz
-
-Enter the command-line to invoke when you double-click on the PDF document:
-PDF belgesine çift tıklanınca yürütülecek komutu giriniz:
-
-F&orward\tAlt+Right Arrow
-İ&leri\tAlt+Sağ Ok
-
-F&ullscreen\tCtrl-Shift-L
-&Tam Ekran\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Tam Ekran\tCtrl-L
 
 Facing
 Çift sayfa
@@ -259,17 +86,8 @@ Facing
 Failed to save a file
 Dosya kaydedilirken hata çıktı.
 
-File Size:
-Dosya boyutu:
-
-File:
-Dosya:
-
 Fin&d...\tCtrl-F
-&Bul...\tCtrl-F
-
-Find
-Bul
+Bul...\tCtrl-F
 
 Find Next
 Sonrakini Bul
@@ -280,17 +98,11 @@ Find Previous
 Find:
 Bul:
 
-Fit &Content\tCtrl-3
-&İçeriğe ölçekle\tCtrl-3
-
 Fit &Page\tCtrl-0
 &Sayfaya sığdır\tCtrl-0
 
 Fit &Width\tCtrl-2
-&Genişliğe sığdır\tCtrl-2
-
-Fit Content
-İçeriğe ölçekle
+Genişliğe &sığdır\tCtrl-2
 
 Fit Page
 Sayfaya sığdır
@@ -298,209 +110,47 @@ Sayfaya sığdır
 Fit Width
 Genişliğe sığdır
 
-Fit Width and Show Pages Continuously
-Genişliğe ölçekle ve sayfaları devamlı göster
-
-Fit a Single Page
-Tek bir sayfaya ölçekle
-
-Found text at page %d
-Metin %d numaralı sayfada bulundu
-
-GB
-GB
-
-Go to page
-Sayfaya git
-
-Hint: Use the F3 key for finding again
-İpucu: yeniden bulmak için F3 tuşunu kullanın
-
-KB
-KB
-
-MB
-MB
-
-Make SumatraPDF default application for PDF files?
-SumatraPDF'i PDF dosyaları için varsayılan uygulama yapmak ister misiniz?
-
-Make SumatraPDF my default PDF reader
-Varsayılan PDF okuyucusu yap
+Make SumatraPDF my main PDF reader
+&Varsayılan PDF okuyucusu yap
 
 Match Case
 Büyük/Küçük harf eşleştir
 
-Modified:
-Değiştirilme tarihi:
-
-New version %s is available. Download new version?
-Yeni sürüm %s dağıtıma sunulmuştur. İndirmek ister misiniz?
-
 Next Page
 Sonraki Sayfa
-
-No matches were found
-Sonuç bulunamadı
-
-No synchronization file found
-Herhangi bir senkronizasyon dosyası bulunamadı
-
-No synchronization info at this position
-Bu konumda senkronizasyon bilgisi mevcut değildir
-
-Number of Pages:
-Sayfa sayısı:
-
-OK
-Tamam
 
 Open
 &Aç
 
-Open in &Adobe Reader
-&Adobe Reader ile aç
-
-Open in &Foxit Reader
-&Adobe Foxit ile aç
-
-Open in PDF-XChange
-PDF-XChange ile aç
-
-P&roperties\tCtrl-D
-&Özellikleri\tCtrl-D
-
-PDF Document
-PDF Belge
-
-PDF Producer:
-PDF Üretici:
-
-PDF Version:
-PDF Sürümü:
-
-PDF documents
-PDF belgeleri
-
 Pa&ge...\tCtrl-G
-&Sayfa...\tCtrl-G
-
-Page Size:
-Sayfa Boyutu:
-
-Page number %u inexistant
-%u numaralı sayfa mevcut değildir
-
-Page scaling
-Sayfa ölçeklendirme
+Sayfa...\tCtrl-G
 
 Page:
 Sayfa:
 
-Please include the following file in your crash report:
-Hata raporunuza lütfen şu dosyayı ekleyiniz:
-
-Please wait - rendering...
-Bekleyiniz - oluşturulmakta...
-
-Pr&esentation\tCtrl-L
-Tan&ıtım\tCtrl-L
-
 Previous Page
 Önceki Sayfa
-
-Print range
-Baskı aralığı
 
 Printing problem.
 Yazdırma problemi.
 
-Remember &opened files
-&Açılan dosyaları hatırla
-
 Rotate &Left\tCtrl-Shift--
-S&ola çevir\tCtrl-Shift--
+Sola çevir\tCtrl-Shift--
 
 Rotate &Right\tCtrl-Shift-+
-&Sağa çevir\tCtrl-Shift-+
-
-Searching %d of %d...
-%d sayfa (toplam %d sayfa) taranıyor...
-
-Select &All\tCtrl-A
-T&ümünü Seç\tCtrl-A
-
-Select content with Ctrl+left mouse button
-İçeriği Ctrl+sol fare butonu ile seç
-
-Send by &E-mail...
-&E-mail ile yolla...
-
-Set inverse search command-line
-Sondan başa arama komut satırı
+Sağa çevir\tCtrl-Shift-+
 
 Show &Toolbar
-&Araç çubuğunu göster
-
-Show &pages continuously
-&Sayfaları devamlı göster
-
-Show the &bookmarks sidebar when available
-Yer &imleri yan çubuğunu bulunduğunda göster
+Araç kutusunu göster
 
 Single Page
 Tek sayfa
 
-Source file %s has no synchronization point
-%s kaynak dosyasında senkronizasyon noktası yoktur
-
-Subject:
-Mevzu:
-
-SumatraPDF Options
-SumatraPDF Seçenekleri
-
-SumatraPDF Update
-SumatraPDF Güncelleme 
-
-SumatraPDF crashed
-SumatraPDF çöktü
-
-SumatraPDF is your default PDF reader
-Varsayılan PDF okuyucunuz SumatraPDF'dir
-
-SumatraPDF should now be your default PDF reader
-SumatraPDF artık varsayılan PDF okuyucunuzdur
-
-Synchronization file cannot be opened
-Senkronizasyon dosyası açılamadı
-
-Text documents
-Metin belgeler
-
-Title:
-Başlık:
-
-Unknown source file (%s)
-Bilinmeyen kaynak dosyası (%s)
-
 View
-Görünüm
+Göster
 
 Visit &Website
 &Web sayfası
-
-Warning
-Uyarı
-
-You have the latest version.
-En güncel sürümü kullanmaktasınız.
-
-You have version %s
-Kullandığınız sürüm: %s
-
-Zoom
-Yakınlaştırma
 
 Zoom In
 Yakınlaştır
@@ -508,41 +158,117 @@ Yakınlaştır
 Zoom Out
 Uzaklaştır
 
-Zoom factor
-Yakınlaştırma faktörü
-
-[Changes detected; refreshing] %s
-[Değişiklik tespit edildi; güncelleniyor] %s
-
-copying text
-metin kopyalanıyor
-
-printing document
-belge baskılanyor
-
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Copy Selection\tCtrl-C
+#&Don't ask me again
+#&Even pages only
+#&Find what:
+#&Fit pages to printable area
+#&Go to page:
+#&Magnification:
+#&Manual
+#&Match case
+#&No
+#&No, thanks
+#&Odd pages only
+#&Options...
+#&Password:
+#&Print... (denied)
+#&Remember the password for this document
+#&Remember these settings for each document
+#&Settings
+#&Shrink pages to printable area (if necessary)
+#&Skip this version
+#&Use original page sizes
+#&Yes
+#(of %d)
+#Advanced
+#All files
+#Application:
+#Associate with PDF files?
+#Attachment: %s
+#Author:
+#Automatic
+#Automatically check for &updates
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Cancel
+#Cannot print this file
+#Cannot start inverse search command. Please check the command line in the settings.
+#Change Language
+#Check for &Updates
+#Check for Updates
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Couldn't initialize printer
+#Couldn't render the page
+#Created:
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Download
+#Enter password
+#Enter password for %s
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Find
+#Fit &Content\tCtrl-3
+#Fit Content
+#Found text at page %d
+#Go to page
+#Hint: Use the F3 key for finding again
+#Main PDF reader can't be changed in portable mode
+#Make SumatraPDF default application for PDF files?
+#Modified:
+#New version %s is available. Download new version?
+#New version available.
+#No matches were found
 #No result found around line %u in file %s
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#XPS documents
+#No synchronization file found
+#No synchronization info at this position
+#Number of Pages:
+#OK
+#Open in &Adobe Reader
+#P&roperties\tCtrl-D
+#PDF Document
+#PDF Producer:
+#PDF Version:
+#PDF documents
+#Page Size:
+#Page number %u inexistant
+#Page scaling
+#Please wait - rendering...
+#Print range
+#Remember &opened files
+#Searching %d of %d...
+#Select content with Ctrl+left mouse button
+#Send by &E-mail...
+#Set inverse search command-line
+#Show &pages continuously
+#Show the &bookmarks sidebar when available
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Options
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
+#Synchronization file cannot be opened
+#Text documents
+#Title:
+#Unknown source file (%s)
+#Warning
+#You have the latest version.
+#You have version %s
+#Zoom
+#Zoom factor
+#[Changes detected; refreshing] %s
+#copying text
+#printing document
 

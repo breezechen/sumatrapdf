@@ -1,10 +1,8 @@
 ﻿# Translations for Slovak (Slovenčina) (sk) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sk Slovak (Slovenčina)
 
@@ -148,7 +146,7 @@ Cannot print this file
 Tento súbor nie je možné vytlačiť
 
 Change Language
-Zmeniť jazyk (Change Language)
+Zmeniť jazyk
 
 Check for &Updates
 &Skontrolovať novú verziu
@@ -156,10 +154,10 @@ Check for &Updates
 Continuous
 Priebežne
 
-Continuous Book View
+Continuous book view
 Prebiežný knižný pohľad
 
-Continuous Facing
+Continuous facing
 Dve strany priebežne
 
 Contribute Translation
@@ -183,9 +181,6 @@ Predvolené umiestnenie:
 Default &Zoom:
 Predvolená veľkosť
 
-Default PDF reader can't be changed in portable mode
-Hlavný prehliadač PDF dokumentov nemôže byť zmenený, pokiaľ nie je nainštalovaný
-
 Denied Permissions:
 Odmietnuté povolenia:
 
@@ -204,11 +199,14 @@ Zadať heslo
 Enter password for %s
 Zadať heslo pre %s
 
+Error loading PDF file.
+Chyba pri pokuse načítať PDF súbor.
+
 F&orward\tAlt+Right Arrow
 Dopredu\tAlt+Right Arrow
 
-F&ullscreen\tCtrl-Shift-L
-Na celú obrazovku\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Na celú obrazovku\tCtrl-L
 
 Facing
 Dve strany
@@ -252,25 +250,19 @@ Na šírku obrazovky
 Found text at page %d
 Text bol nájdený na strane %d
 
-GB
-GB
-
 Go to page
 Ísť na stranu
 
 Hint: Use the F3 key for finding again
 Rada: Použite klávesu F3 pre ďalšie hľadanie
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Hlavný prehliadač PDF dokumentov nemôže byť zmenený, pokiaľ nie je nainštalovaný
 
 Make SumatraPDF default application for PDF files?
 Nastaviť SumatraPDF ako predvolený prehliadač PDF súborov?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Nastaviť SumatraPDF ako predvolený PDF prehliadač
 
 Match Case
@@ -281,6 +273,9 @@ Upravené:
 
 New version %s is available. Download new version?
 Nová verzia %s je dispozícii. Stiahnuť novú verziu?
+
+New version available.
+Je k dispozícia nová verzia.
 
 Next Page
 Ďaľšia strana
@@ -302,12 +297,6 @@ Otvoriť
 
 Open in &Adobe Reader
 Otvoriť v programe Adobe Reader
-
-Open in &Foxit Reader
-Otvoriť v programe Foxit Reader
-
-Open in PDF-XChange
-Otvoriť v programe PDF-XChange
 
 P&roperties\tCtrl-D
 Vlastnosti...\tCtrl-D
@@ -384,10 +373,10 @@ Predmet:
 SumatraPDF Options
 Nastavenia SumatraPDF
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF je váš predvolený prehliadač PDF súborov
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF by teraz mala byť vaším predvolený prehliadačom PDF súborov
 
 Text documents
@@ -437,56 +426,27 @@ prebieha tlač dokumentu
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Go to page:
 #&Odd pages only
-#&Print...
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
 #Copying text was denied (copying as image only)
 #Couldn't initialize printer
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
 #No synchronization file found
 #No synchronization info at this position
-#Open a document...
-#P&roperties
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
 #Source file %s has no synchronization point
-#SumatraPDF Update
-#SumatraPDF crashed
 #Synchronization file cannot be opened
-#XPS documents
 

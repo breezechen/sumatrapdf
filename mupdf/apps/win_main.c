@@ -1,6 +1,5 @@
-#include "fitz.h"
-#include "mupdf.h"
-#include "muxps.h"
+#include <fitz.h>
+#include <mupdf.h>
 #include "pdfapp.h"
 
 #ifndef UNICODE
@@ -10,11 +9,6 @@
 #define _UNICODE
 #endif
 #define WIN32_LEAN_AND_MEAN
-/* SumatraPDF: RegDeleteTree is only available under Windows Vista and later */
-#ifdef _WIN32_WINNT
-#undef _WIN32_WINNT
-#endif
-#define _WIN32_WINNT 0x0600
 #include <windows.h>
 #include <commdlg.h>
 #include <shellapi.h>
@@ -44,66 +38,6 @@ static wchar_t wbuf[1024];
 static char filename[1024];
 
 /*
- * Create registry keys to associate MuPDF with PDF and XPS files.
- */
-
-#define OPEN_KEY(parent, name, ptr) \
-	RegCreateKeyExA(parent, name, 0, 0, 0, KEY_WRITE, 0, &ptr, 0)
-
-#define SET_KEY(parent, name, value) \
-	RegSetValueExA(parent, name, 0, REG_SZ, value, strlen(value) + 1)
-
-void install_app(char *argv0)
-{
-	char buf[512];
-	HKEY software, classes, mupdf, dotpdf, dotxps;
-	HKEY shell, open, command, supported_types;
-	HKEY pdf_progids, xps_progids;
-
-	OPEN_KEY(HKEY_CURRENT_USER, "Software", software);
-	OPEN_KEY(software, "Classes", classes);
-	OPEN_KEY(classes, ".pdf", dotpdf);
-	OPEN_KEY(dotpdf, "OpenWithProgids", pdf_progids);
-	OPEN_KEY(classes, ".xps", dotxps);
-	OPEN_KEY(dotxps, "OpenWithProgids", xps_progids);
-	OPEN_KEY(classes, "MuPDF", mupdf);
-	OPEN_KEY(mupdf, "SupportedTypes", supported_types);
-	OPEN_KEY(mupdf, "shell", shell);
-	OPEN_KEY(shell, "open", open);
-	OPEN_KEY(open, "command", command);
-
-	sprintf(buf, "\"%s\" \"%%1\"", argv0);
-
-	SET_KEY(open, "FriendlyAppName", "MuPDF");
-	SET_KEY(command, "", buf);
-	SET_KEY(supported_types, ".pdf", "");
-	SET_KEY(supported_types, ".xps", "");
-	SET_KEY(pdf_progids, "MuPDF", "");
-	SET_KEY(xps_progids, "MuPDF", "");
-
-	RegCloseKey(dotxps);
-	RegCloseKey(dotpdf);
-	RegCloseKey(mupdf);
-	RegCloseKey(classes);
-	RegCloseKey(software);
-}
-
-void uninstall_app(void)
-{
-	HKEY software, classes;
-
-	RegOpenKeyExA(HKEY_CURRENT_USER, "Software", 0, KEY_ALL_ACCESS, &software);
-	RegOpenKeyExA(software, "Classes", 0, KEY_ALL_ACCESS, &classes);
-
-	RegDeleteTreeA(classes, "MuPDF");
-
-	RegCloseKey(classes);
-	RegCloseKey(software);
-
-	MessageBoxA(hwndframe, "MuPDF has been uninstalled.", "MuPDF", MB_ICONWARNING);
-}
-
-/*
  * Dialog boxes
  */
 
@@ -114,20 +48,9 @@ void winwarn(pdfapp_t *app, char *msg)
 
 void winerror(pdfapp_t *app, fz_error error)
 {
-	char msgbuf[160 * 30];
-	int i;
-
 	/* TODO: redirect stderr to a log file and display here */
 	fz_catch(error, "displaying error message to user");
-
-	fz_strlcpy(msgbuf, "An error has occurred.\n\n", sizeof msgbuf);
-	for (i = 0; i < fz_get_error_count(); i++)
-	{
-		fz_strlcat(msgbuf, fz_get_error_line(i), sizeof msgbuf);
-		fz_strlcat(msgbuf, "\n", sizeof msgbuf);
-	}
-
-	MessageBoxA(hwndframe, msgbuf, "MuPDF: Error", MB_ICONERROR);
+	MessageBoxA(hwndframe, "An error has occurred.", "MuPDF: Error", MB_ICONERROR);
 	exit(1);
 }
 
@@ -156,7 +79,7 @@ int winfilename(wchar_t *buf, int len)
 	ofn.nMaxFile = len;
 	ofn.lpstrInitialDir = NULL;
 	ofn.lpstrTitle = L"MuPDF: Open PDF file";
-	ofn.lpstrFilter = L"Documents (*.pdf;*.xps)\0*.xps;*.pdf\0PDF Files (*.pdf)\0*.pdf\0XPS Files (*.xps)\0*.xps\0All Files\0*\0\0";
+	ofn.lpstrFilter = L"PDF Files (*.pdf)\0*.pdf\0All Files\0*\0\0";
 	ofn.Flags = OFN_FILEMUSTEXIST|OFN_HIDEREADONLY;
 	return GetOpenFileNameW(&ofn);
 }
@@ -223,30 +146,22 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		SetDlgItemTextW(hwnd, 0x10, wbuf);
 
-		if (!xref)
-		{
-			SetDlgItemTextA(hwnd, 0x11, "XPS");
-			SetDlgItemTextA(hwnd, 0x12, "None");
-			SetDlgItemTextA(hwnd, 0x13, "n/a");
-			return TRUE;
-		}
-
 		sprintf(buf, "PDF %d.%d", xref->version / 10, xref->version % 10);
 		SetDlgItemTextA(hwnd, 0x11, buf);
 
 		if (xref->crypt)
 		{
-			sprintf(buf, "Standard V%d %d-bit %s", pdf_get_crypt_revision(xref),
-				pdf_get_crypt_length(xref), pdf_get_crypt_method(xref));
+			sprintf(buf, "Standard %d bit %s", xref->crypt->length,
+				xref->crypt->strf.method == PDF_CRYPT_AESV2 ? "AES" : "RC4");
 			SetDlgItemTextA(hwnd, 0x12, buf);
 			strcpy(buf, "");
-			if (pdf_has_permission(xref, PDF_PERM_PRINT))
+			if (xref->crypt->p & (1 << 2))
 				strcat(buf, "print, ");
-			if (pdf_has_permission(xref, PDF_PERM_CHANGE))
+			if (xref->crypt->p & (1 << 3))
 				strcat(buf, "modify, ");
-			if (pdf_has_permission(xref, PDF_PERM_COPY))
+			if (xref->crypt->p & (1 << 4))
 				strcat(buf, "copy, ");
-			if (pdf_has_permission(xref, PDF_PERM_NOTES))
+			if (xref->crypt->p & (1 << 5))
 				strcat(buf, "annotate, ");
 			if (strlen(buf) > 2)
 				buf[strlen(buf)-2] = 0;
@@ -260,33 +175,33 @@ dloginfoproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 			SetDlgItemTextA(hwnd, 0x13, "n/a");
 		}
 
-		info = fz_dict_gets(xref->trailer, "Info");
+		info = fz_dictgets(xref->trailer, "Info");
 		if (!info)
 			return TRUE;
 
 #define SETUCS(ID) \
 		{ \
 			unsigned short *ucs; \
-			ucs = pdf_to_ucs2(obj); \
+			ucs = pdf_toucs2(obj); \
 			SetDlgItemTextW(hwnd, ID, ucs); \
 			fz_free(ucs); \
 		}
 
-		if ((obj = fz_dict_gets(info, "Title")))
+		if ((obj = fz_dictgets(info, "Title")))
 			SETUCS(0x20);
-		if ((obj = fz_dict_gets(info, "Author")))
+		if ((obj = fz_dictgets(info, "Author")))
 			SETUCS(0x21);
-		if ((obj = fz_dict_gets(info, "Subject")))
+		if ((obj = fz_dictgets(info, "Subject")))
 			SETUCS(0x22);
-		if ((obj = fz_dict_gets(info, "Keywords")))
+		if ((obj = fz_dictgets(info, "Keywords")))
 			SETUCS(0x23);
-		if ((obj = fz_dict_gets(info, "Creator")))
+		if ((obj = fz_dictgets(info, "Creator")))
 			SETUCS(0x24);
-		if ((obj = fz_dict_gets(info, "Producer")))
+		if ((obj = fz_dictgets(info, "Producer")))
 			SETUCS(0x25);
-		if ((obj = fz_dict_gets(info, "CreationDate")))
+		if ((obj = fz_dictgets(info, "CreationDate")))
 			SETUCS(0x26);
-		if ((obj = fz_dict_gets(info, "ModDate")))
+		if ((obj = fz_dictgets(info, "ModDate")))
 			SETUCS(0x27);
 		return TRUE;
 
@@ -310,7 +225,7 @@ dlogaboutproc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch(message)
 	{
 	case WM_INITDIALOG:
-		SetDlgItemTextA(hwnd, 2, pdfapp_version(&gapp));
+		SetDlgItemTextA(hwnd, 2, "MuPDF is Copyright (C) 2006-2010 Artifex Software Inc.");
 		SetDlgItemTextA(hwnd, 3, pdfapp_usage(&gapp));
 		return TRUE;
 	case WM_COMMAND:
@@ -855,7 +770,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 {
 	int argc;
 	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-	char argv0[256];
 	MSG msg;
 	int fd;
 	int code;
@@ -864,18 +778,11 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShow
 
 	pdfapp_init(&gapp);
 
-	GetModuleFileNameA(NULL, argv0, sizeof argv0);
-	install_app(argv0);
-
+	/* associate(argv[0]); */
 	winopen();
 
 	if (argc == 2)
 	{
-		if (argv[1][0] == '-' && argv[1][1] == 'u' && argv[1][2] == 0)
-		{
-			uninstall_app();
-			exit(0);
-		}
 		wcscpy(wbuf, argv[1]);
 	}
 	else

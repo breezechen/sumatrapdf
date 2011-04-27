@@ -1,10 +1,8 @@
 ﻿# Translations for Tamil (தமிழ்) (ta) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: ta Tamil (தமிழ்)
 
@@ -150,7 +148,7 @@ Cannot print this file
 கோப்பை அச்சிட முடியவில்லை
 
 Change Language
-மொழியை மாற்று (Change Language)
+மொழியை மாற்று
 
 Check for &Updates
 புதிய பதிப்பை தேடு
@@ -158,10 +156,10 @@ Check for &Updates
 Continuous
 தொடர்
 
-Continuous Book View
+Continuous book view
 தொடர் ஏடு வடிவ நோக்கு
 
-Continuous Facing
+Continuous facing
 தொடர் முகப்பு
 
 Contribute Translation
@@ -188,9 +186,6 @@ Default &Layout:
 Default &Zoom:
 கோட நிலை உரு அளவு
 
-Default PDF reader can't be changed in portable mode
-முதன்மை PDF படிப்பியை மாற்ற முடியவில்லை
-
 Denied Permissions:
 அனுமதி மருக்கப்பட்டது
 
@@ -209,10 +204,13 @@ Enter password
 Enter password for %s
 %s  காண கடவுச்சொல்லை வழங்கு
 
+Error loading PDF file.
+PDF கோப்பு ஏற்று பிழை
+
 F&orward\tAlt+Right Arrow
 முன்னோகி\tAlt+Right Arrow
 
-F&ullscreen\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
 முழுத்திரை
 
 Facing
@@ -257,25 +255,19 @@ Fit Width
 Found text at page %d
 வாசகத்தை %d பக்கத்தில் கண்டுபிடிக்கப்பட்டுள்ளது
 
-GB
-GB
-
 Go to page
 பக்கததிர்க்கு செல்
 
 Hint: Use the F3 key for finding again
 சிறுகுரிப்பு: F3 தட்டை¨Â மருமுறை தேட பயண் படுத்து
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+முதன்மை PDF படிப்பியை மாற்ற முடியவில்லை
 
 Make SumatraPDF default application for PDF files?
 SumatraPDFயை கோட நிலை PDF படிப்பியாக மாற்றவா?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 SumatraPDFயை முன்னிருப்பு PDF படிப்பியாக பதிவு செய்
 
 Match Case
@@ -287,11 +279,17 @@ Modified:
 New version %s is available. Download new version?
 புதிய பதிப்பு %s பதிவிறக்க இருக்கிறது. பதிவிரக்கம் செய்யவா?
 
+New version available.
+புதிய பதிப்பு இருக்கிறது
+
 Next Page
 அடுத்த பக்கம்
 
 No matches were found
 ஒரு பொருத்தமும் இல்லை
+
+No result found around line %u in file %s
+முடிவுகள் எதுவும் கோப்பு %s இல் உள்ள வரி %u கண்டுபிடிக்க முடியவில்லை
 
 No synchronization file found
 ஒத்தியங்கு கோப்பு எதுவும் கண்டுபிடிக்கவில்லை
@@ -310,12 +308,6 @@ Open
 
 Open in &Adobe Reader
 &Adobe Reader இல் திற
-
-Open in &Foxit Reader
-&Foxit Reader இல் திற
-
-Open in PDF-XChange
-PDF-XChange இல் திற
 
 P&roperties\tCtrl-D
 பண்புகள்...\tCtrl-D
@@ -392,10 +384,10 @@ Subject:
 SumatraPDF Options
 SumatraPDFஇன் விருப்பப பேரம்
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF உங்களின் முதன்மை PDF படிப்பி
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF இப்பொழுது உங்களின் முதன்மை PDF படிப்பி
 
 Synchronization file cannot be opened
@@ -406,6 +398,9 @@ Text documents
 
 Title:
 தலைப்பு:
+
+Unknown source file (%s)
+தெரியாத மூல கோப்பு
 
 View
 நோக்கு
@@ -445,53 +440,22 @@ printing document
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Odd pages only
-#&Print...
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
 #Copying text was denied (copying as image only)
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
 #Set inverse search command-line
-#Show frequently read
-#SumatraPDF Update
-#SumatraPDF crashed
-#Unknown source file (%s)
-#XPS documents
 

@@ -1,26 +1,20 @@
 ﻿# Translations for Norwegian (Norsk) (no) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: no Norwegian (Norsk)
 
 Contributor: Jon Ivar F. Omland
 Contributor: Kjell A. A. Holm
 Contributor: BJ Hill
-Contributor: Tommy M. Stephansen
 
 &About
 &Om
 
 &Actual Size\tCtrl-1
 Fak&tisk størrelse\tCtrl+1
-
-&All selected pages
-&Alle valgte sider
 
 &Back\tAlt+Left Arrow
 Tilbake\tAlt+Pil venstre
@@ -34,9 +28,6 @@ Kopier merket tekst\tCtrl+C
 &Don't ask me again
 &Ikke spør meg igjen.
 
-&Even pages only
-Bare &partallssider
-
 &File
 &Fil
 
@@ -45,9 +36,6 @@ Bare &partallssider
 
 &First Page\tHome
 Første side\tHome
-
-&Fit pages to printable area
-&Tilpass sider til utskriftsområde
 
 &Go To
 &Gå til
@@ -79,9 +67,6 @@ Neste side\tPil høyre
 &No, thanks
 &Nei, takk
 
-&Odd pages only
-Bare &oddetallssider
-
 &Open\tCtrl-O
 &Åpne...\tCtrl+O
 
@@ -97,12 +82,6 @@ Forrige side\tPil venstre
 &Print...\tCtrl-P
 &Skriv ut...\tCtrl+P
 
-&Print... (denied)
-&Skriv ut... (ikke tillatt)
-
-&Remember the password for this document
-&Husk passordet for dette dokumentet
-
 &Remember these settings for each document
 &Husk disse innstillingene for hvert dokument
 
@@ -112,14 +91,8 @@ Lagre &som...\tCtrl+S
 &Settings
 &Alternativer
 
-&Shrink pages to printable area (if necessary)
-&Krymp sider til utskriftsområde (om nødvendig)
-
 &Skip this version
 &Ignorer denne versjonen
-
-&Use original page sizes
-&Benytt opprinnelige sidestørrelser
 
 &View
 &Vis
@@ -146,10 +119,7 @@ Application:
 Program:
 
 Associate with PDF files?
-Tilknytt til PDF-filer?
-
-Attachment: %s
-Vedlegg: %s
+Tilknytt til PDF filer?
 
 Author:
 Forfatter:
@@ -166,14 +136,8 @@ Bokvisning
 Book&marks\tF12
 Bokmerker\tF12
 
-Bookmarks
-Bokmerker
-
 Bytes
 bytes
-
-Can't connect to the Internet (error %#x).
-Kan ikke koble til Internett (feilmelding %#x). 
 
 Cancel
 Avbryt
@@ -185,7 +149,7 @@ Cannot start inverse search command. Please check the command line in the settin
 Kan ikke starte inversert søke kommando. Vennligst sjekk kommandolinjen i innstillingene.
 
 Change Language
-Endre språk (Change Language)
+Endre språk
 
 Check for &Updates
 &Se etter ny versjon...
@@ -193,17 +157,14 @@ Check for &Updates
 Continuous
 Kontinuerlig
 
-Continuous Book View
+Continuous book view
 Kontinuerlig bokvisning
 
-Continuous Facing
+Continuous facing
 Kontinuerlig - motst&ående
 
 Contribute Translation
 Bidra med oversetting
-
-Copying text was denied (copying as image only)
-Mangler tillatelse til kopiering av tekst (kopierer kun som bilde)
 
 Could not open Printer
 Kunne ikke åpne skriveren.
@@ -226,12 +187,6 @@ Standard sideoppsett:
 Default &Zoom:
 Standard&zoom:
 
-Default PDF reader can't be changed in portable mode
-Standard PDF-leser kan ikke endres i flyttbar modus
-
-Denied Permissions:
-Manglende tillatelser:
-
 Document Properties
 Dokumentegenskaper
 
@@ -247,14 +202,14 @@ Skriv inn passord
 Enter password for %s
 Skriv inn passord for %s
 
-Enter the command-line to invoke when you double-click on the PDF document:
-Skriv inn kommandolinjen som skal kjøres når du dobbeltklikker på PDF-dokumentet:
+Error loading PDF file.
+Feil ved åpning av PDF fil.
 
 F&orward\tAlt+Right Arrow
 Fremover\tAlt+Pil høyre
 
-F&ullscreen\tCtrl-Shift-L
-Fullskjerm\tCtrl+Shift+L
+F&ullscreen\tCtrl-L
+Fullskjerm\tCtrl+L
 
 Facing
 Motstående
@@ -283,17 +238,11 @@ Forrige
 Find:
 Søk etter:
 
-Fit &Content\tCtrl-3
-Tilpass &innhold\tCtrl-3
-
 Fit &Page\tCtrl-0
 Tilpass &side\tCtrl+0
 
 Fit &Width\tCtrl-2
 Tilpass til bredd&e\tCtrl+2
-
-Fit Content
-Tilpass innhold
 
 Fit Page
 Tilpass side
@@ -301,14 +250,8 @@ Tilpass side
 Fit Width
 Tilpass til bredde
 
-Fit Width and Show Pages Continuously
-Tilpass bredde og vis sider kontinuerlig
-
-Fit a Single Page
-Tilpass til enkeltside
-
-GB
-GB
+Found text at page %d
+Fant tekst på side &d
 
 Go to page
 Gå til side
@@ -316,16 +259,13 @@ Gå til side
 Hint: Use the F3 key for finding again
 Tips: Bruk F3 tasten for søk etter neste
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Standard pdf-leser kan ikke endres i flyttbar modus
 
 Make SumatraPDF default application for PDF files?
-Gjøre SumatraPDF til standard åpningsprogram for PDF-filer?
+Gjør SumatraPDF standard åpningsprogram for PDF filer?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Bruk SumatraPDF som standard PDF-leser
 
 Match Case
@@ -335,7 +275,10 @@ Modified:
 Endret:
 
 New version %s is available. Download new version?
-En ny versjon %s er tilgjenglig. Vil du laste den ned nå?
+Ny versjon %s er tilgjenglig. Vil du laste ned ny versjon?
+
+New version available.
+Ny versjon tilgjenglig.
 
 Next Page
 Neste side
@@ -364,17 +307,11 @@ Open
 Open in &Adobe Reader
 Åpne i &Adobe Reader
 
-Open in &Foxit Reader
-Åpne i &Foxit Reader
-
-Open in PDF-XChange
-Åpne i PDF-XChange
-
 P&roperties\tCtrl-D
 E&genskaper...\tCtrl-D
 
 PDF Document
-PDF-dokument
+PDF Dokument
 
 PDF Producer:
 PDF-produsent:
@@ -383,7 +320,7 @@ PDF Version:
 PDF-versjon:
 
 PDF documents
-PDF-dokumenter (*.pdf)
+PDF dokumenter (*.pdf)
 
 Pa&ge...\tCtrl-G
 Side...\tCtrl+G
@@ -394,26 +331,14 @@ Sidestørrelse:
 Page number %u inexistant
 Sidetallet '%u' finnes ikke i dokumentet.
 
-Page scaling
-Sideskalering
-
 Page:
 Side:
-
-Please include the following file in your crash report:
-Vennligst legg ved følgende fil i krasjrapporten:
 
 Please wait - rendering...
 Vennligst vent - arbeider...
 
-Pr&esentation\tCtrl-L
-Pr&esentasjon\tCtrl-L
-
 Previous Page
 Forrige side
-
-Print range
-Utskriftsområde
 
 Printing problem.
 Problem med utskrift.
@@ -428,10 +353,7 @@ Rotate &Right\tCtrl-Shift-+
 Roter med klokken\tCtrl+Shift+Pluss
 
 Searching %d of %d...
-Søker %d av %d...
-
-Select &All\tCtrl-A
-Merk &alle\tCtrl-A
+Søker &d av &d...
 
 Select content with Ctrl+left mouse button
 Velg innhold med Ctrl+Venstre museknapp
@@ -440,7 +362,7 @@ Send by &E-mail...
 Send med e-post...
 
 Set inverse search command-line
-Sett invers kommandolinje for søk 
+Sett invertert søke kommandolinje
 
 Show &Toolbar
 Vis verktøylinje
@@ -449,31 +371,22 @@ Show &pages continuously
 Vis sider kontinuerlig
 
 Show the &bookmarks sidebar when available
-Vis &bokmerker-fanen når tilgjengelig
+Vis &bookmerker-fanen når tilgjengelig
 
 Single Page
 Enkeltside
 
 Source file %s has no synchronization point
-Kildefilen %s har ingen synkroniseringspunkt
-
-Subject:
-Emne:
+Kildefilen %s har ingen synkroniserings punkt
 
 SumatraPDF Options
 Innstillinger
 
-SumatraPDF Update
-SumatraPDF Oppdatering
-
-SumatraPDF crashed
-SumatraPDF krasjet
-
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF er din standard PDF-leser
 
-SumatraPDF should now be your default PDF reader
-SumatraPDF burde nå være din standard PDF-leser
+SumatraPDF should now be your main PDF reader
+SumatraPDF burde være din standard pdf-leser
 
 Synchronization file cannot be opened
 Synkroniserende fil kan ikke åpnes
@@ -483,6 +396,9 @@ Tekstdokumenter
 
 Title:
 Tittel:
+
+Unknown source file (%s)
+Ukjent kildefil (&s)
 
 View
 Vis
@@ -514,36 +430,27 @@ Zoom til
 [Changes detected; refreshing] %s
 [Endringer oppdaget; oppdaterer] %s
 
-copying text
-kopierer tekst
-
-printing document
-skriver ut dokument
-
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#Unknown source file (%s)
-#XPS documents
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Print... (denied)
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Attachment: %s
+#Bookmarks
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Copying text was denied (copying as image only)
+#Denied Permissions:
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Page scaling
+#Print range
+#Subject:
+#copying text
+#printing document
 

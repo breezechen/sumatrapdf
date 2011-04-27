@@ -1,8 +1,3 @@
-﻿// GDI+ rendering device for MuPDF
-// Copyright (C) 2010 - 2011  Simon Bünzli <zeniko@gmail.com>
-
-// This file is licensed under GPLv3 (see ../COPYING)
-
 #include <windows.h>
 #include <gdiplus.h>
 extern "C" {
@@ -24,36 +19,24 @@ class PixmapBitmap : public Bitmap
 public:
 	PixmapBitmap(fz_pixmap *pixmap) : Bitmap(pixmap->w, pixmap->h, PixelFormat32bppARGB)
 	{
-		fz_pixmap *pix;
-		if (pixmap->colorspace != fz_device_bgr)
-		{
-			pix = fz_new_pixmap_with_limit(fz_device_bgr, pixmap->w, pixmap->h);
-			if (!pix)
-			{
-				fz_warn("OOM in PixmapBitmap constructor: painting blank image");
-				return;
-			}
-			pix->x = pixmap->x; pix->y = pixmap->y;
-			
-			if (!pixmap->colorspace)
-				for (int i = 0; i < pix->w * pix->h; i++)
-					pix->samples[i * 4 + 3] = pixmap->samples[i];
-			else
-				fz_convert_pixmap(pixmap, pix);
-		}
+		fz_pixmap *pix = fz_newpixmap(fz_devicebgr, pixmap->x, pixmap->y, pixmap->w, pixmap->h);
+		
+		if (!pixmap->colorspace)
+			for (int i = 0; i < pix->w * pix->h; i++)
+				pix->samples[i * 4 + 3] = pixmap->samples[i];
 		else
-			pix = fz_keep_pixmap(pixmap);
+			fz_convertpixmap(pixmap, pix);
 		
 		BitmapData data;
 		LockBits(&Rect(0, 0, pix->w, pix->h), ImageLockModeWrite, PixelFormat32bppARGB, &data);
 		memcpy(data.Scan0, pix->samples, pix->w * pix->h * pix->n);
 		UnlockBits(&data);
 		
-		fz_drop_pixmap(pix);
+		fz_droppixmap(pix);
 	}
 };
 
-typedef BYTE (* separableBlend)(BYTE s, BYTE bg);
+typedef BYTE (* seperableBlend)(BYTE s, BYTE bg);
 static BYTE BlendNormal(BYTE s, BYTE bg)     { return s; }
 static BYTE BlendMultiply(BYTE s, BYTE bg)   { return s / 255.0 * bg; }
 static BYTE BlendScreen(BYTE s, BYTE bg)     { return 255 - (255 - s) / 255.0 * (255 - bg); }
@@ -66,62 +49,27 @@ static BYTE BlendColorBurn(BYTE s, BYTE bg)  { return bg == 255 ? 255 : 255 - bg
 static BYTE BlendDifference(BYTE s, BYTE bg) { return ABS(s - bg); }
 static BYTE BlendExclusion(BYTE s, BYTE bg)  { return s + bg - s * bg * 2.0 / 255; }
 
-struct userDataStackItem
+class userDataStackItem
 {
+public:
 	Region clip;
-	float alpha, layerAlpha;
+	float alpha;
 	Graphics *saveG;
 	Bitmap *layer, *mask;
 	Rect bounds;
 	bool luminosity;
-	int blendmode;
-	bool isolated;
-	bool knockout;
-	float xstep, ystep;
-	fz_rect tileArea;
-	fz_matrix tileCtm;
+	fz_blendmode blendmode;
 	userDataStackItem *prev;
 
-	userDataStackItem(float _alpha=1.0, userDataStackItem *_prev=NULL) :
-		alpha(_alpha), prev(_prev), saveG(NULL), layer(NULL), mask(NULL),
-		luminosity(false), blendmode(0), isolated(false), knockout(false),
-		xstep(0), ystep(0), layerAlpha(1.0) { }
-};
-
-class TempFile
-{
-public:
-	WCHAR path[MAX_PATH];
-	TempFile *next;
-
-	TempFile(UCHAR *data, UINT size, TempFile *next=NULL) : next(next)
-	{
-		path[0] = L'\0';
-
-		WCHAR tempPath[MAX_PATH - 14];
-		DWORD res = GetTempPathW(MAX_PATH - 14, tempPath);
-		if (!res || res >= MAX_PATH - 14 || !GetTempFileNameW(tempPath, L"DG+", 0, path))
-			return;
-
-		HANDLE hFile = CreateFileW(path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile != INVALID_HANDLE_VALUE)
-			WriteFile(hFile, data, size, &res, NULL);
-		CloseHandle(hFile);
-	}
-
-	~TempFile()
-	{
-		if (path[0])
-			DeleteFileW(path);
-		delete next;
-	}
+	userDataStackItem(float _alpha=1.0, userDataStackItem *_prev=NULL) : alpha(_alpha), prev(_prev), 
+		saveG(NULL), layer(NULL), mask(NULL), luminosity(false), blendmode(FZ_BNORMAL) { }
 };
 
 static PointF
-gdiplus_transform_point(fz_matrix ctm, float x, float y)
+gdiplustransformpoint(fz_matrix ctm, float x, float y)
 {
 	fz_point point = { x, y };
-	point = fz_transform_point(ctm, point);
+	point = fz_transformpoint(ctm, point);
 	return PointF(point.x, point.y);
 }
 
@@ -131,17 +79,14 @@ class userData
 public:
 	Graphics *graphics;
 	fz_device *dev;
-	fz_hash_table *outlines, *fontCollections;
-	TempFile *tempFiles;
-	float *t3color;
+	fz_hashtable *outlines;
 
-	userData(HDC hDC, fz_bbox clip) : stack(new userDataStackItem()), dev(NULL),
-		outlines(NULL), fontCollections(NULL), tempFiles(NULL), t3color(NULL)
+	userData(HDC hDC, fz_bbox clip) : stack(new userDataStackItem()), dev(NULL), outlines(NULL)
 	{
 		assert(GetMapMode(hDC) == MM_TEXT);
 		graphics = _setup(new Graphics(hDC));
 		graphics->GetClip(&stack->clip);
-		graphics->SetClip(Rect(clip.x0, clip.y0, clip.x1 - clip.x0, clip.y1 - clip.y0));
+		graphics->SetClip(Rect(clip.x0, clip.y0, clip.x0 + clip.x1, clip.y0 + clip.y1));
 	}
 
 	~userData()
@@ -154,34 +99,28 @@ public:
 		
 		if (outlines)
 		{
-			for (int i = 0; i < fz_hash_len(outlines); i++)
-				delete (GraphicsPath *)fz_hash_get_val(outlines, i);
-			fz_free_hash(outlines);
+			for (int i = 0; i < fz_hashlen(outlines); i++)
+			{
+				GraphicsPath *glyph = (GraphicsPath *)fz_hashgetval(outlines, i);
+				if (glyph)
+					delete glyph;
+			}
+			fz_freehash(outlines);
 		}
-		if (fontCollections)
-		{
-			for (int i = 0; i < fz_hash_len(fontCollections); i++)
-				delete (PrivateFontCollection *)fz_hash_get_val(fontCollections, i);
-			fz_free_hash(fontCollections);
-		}
-		delete tempFiles;
 	}
 
-	void pushClip(Region *clipRegion, float alpha=1.0)
+	void pushClip(Region *clipRegion=NULL, float alpha=1.0, bool accumulate=false)
 	{
-		assert(clipRegion);
-		
 		stack = new userDataStackItem(stack->alpha * alpha, stack);
 		graphics->GetClip(&stack->clip);
-		graphics->SetClip(clipRegion, CombineModeIntersect);
+		
+		if (clipRegion)
+			graphics->SetClip(clipRegion, !accumulate ? CombineModeIntersect : CombineModeUnion);
 	}
 
 	void pushClip(GraphicsPath *gpath, float alpha=1.0, bool accumulate=false)
 	{
-		if (accumulate)
-			graphics->SetClip(&Region(gpath), CombineModeUnion);
-		else
-			pushClip(&Region(gpath), alpha);
+		pushClip(&Region(gpath), alpha, accumulate);
 	}
 
 	void pushClipMask(fz_pixmap *mask, fz_matrix ctm)
@@ -190,8 +129,6 @@ public:
 		clipRegion.Transform(&Matrix(ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f));
 		pushClip(&clipRegion);
 		graphics->GetClip(&clipRegion);
-		stack->layerAlpha = stack->alpha;
-		stack->alpha = 1.0;
 		
 		RectF bounds;
 		clipRegion.GetBounds(&bounds, graphics);
@@ -225,13 +162,11 @@ public:
 		stack->luminosity = luminosity;
 	}
 
-	void pushClipBlend(fz_rect rect, int blendmode, float alpha, bool isolated, bool knockout)
+	void pushClipBlend(fz_rect rect, fz_blendmode blendmode, float alpha)
 	{
 		recordClipMask(rect, false, NULL);
-		stack->layerAlpha *= alpha;
+		stack->alpha *= alpha;
 		stack->blendmode = blendmode;
-		stack->isolated = isolated;
-		stack->knockout = knockout;
 	}
 
 	void applyClipMask()
@@ -243,55 +178,6 @@ public:
 		graphics = _setup(new Graphics(stack->layer));
 		graphics->TranslateTransform(-stack->bounds.X, -stack->bounds.Y);
 		graphics->SetClip(&Region(stack->bounds));
-	}
-
-	void recordTile(fz_rect rect, fz_rect area, fz_matrix ctm, float xstep, float ystep)
-	{
-		pushClip(&Region());
-		
-		fz_bbox bbox = fz_round_rect(fz_transform_rect(ctm, rect));
-		stack->bounds.X = bbox.x0; stack->bounds.Width = bbox.x1 - bbox.x0;
-		stack->bounds.Y = bbox.y0; stack->bounds.Height = bbox.y1 - bbox.y0;
-		
-		stack->saveG = graphics;
-		stack->layer = new Bitmap(stack->bounds.Width, stack->bounds.Height, PixelFormat32bppARGB);
-		graphics = _setup(new Graphics(stack->layer));
-		graphics->TranslateTransform(-stack->bounds.X, -stack->bounds.Y);
-		graphics->SetClip(&Region(stack->bounds));
-		
-		area.x0 /= xstep; area.x1 /= xstep;
-		area.y0 /= ystep; area.y1 /= ystep;
-		ctm.e = bbox.x0; ctm.f = bbox.y0;
-		
-		stack->xstep = xstep;
-		stack->ystep = ystep;
-		stack->tileArea = area;
-		stack->tileCtm = ctm;
-	}
-
-	void applyTiling()
-	{
-		assert(stack->layer && stack->saveG && stack->xstep && stack->ystep);
-		
-		for (int y = floorf(stack->tileArea.y0); y <= ceilf(stack->tileArea.y1); y++)
-		{
-			for (int x = floorf(stack->tileArea.x0); x <= ceilf(stack->tileArea.x1); x++)
-			{
-				fz_matrix ttm = fz_concat(fz_translate(x * stack->xstep, y * stack->ystep), stack->tileCtm);
-				Rect bounds = stack->bounds;
-				bounds.X = ttm.e;
-				bounds.Y = ttm.f;
-				stack->saveG->DrawImage(stack->layer, bounds, 0, 0, stack->layer->GetWidth(), stack->layer->GetHeight(), UnitPixel);
-			}
-		}
-		
-		delete graphics;
-		graphics = stack->saveG;
-		stack->saveG = NULL;
-		delete stack->layer;
-		stack->layer = NULL;
-		
-		popClip();
 	}
 
 	void popClip()
@@ -310,12 +196,9 @@ public:
 				_applyMask(stack->layer, stack->mask, stack->luminosity);
 				delete stack->mask;
 			}
-			if (stack->blendmode != 0 && !stack->isolated)
+			if (stack->blendmode != FZ_BNORMAL)
 				_applyBlend(stack->layer, stack->bounds, stack->blendmode);
-			
-			ImageAttributes imgAttrs;
-			_setDrawAttributes(imgAttrs, stack->layerAlpha);
-			graphics->DrawImage(stack->layer, stack->bounds, 0, 0, stack->layer->GetWidth(), stack->layer->GetHeight(), UnitPixel, &imgAttrs);
+			graphics->DrawImage(stack->layer, stack->bounds);
 			delete stack->layer;
 		}
 		
@@ -333,65 +216,38 @@ public:
 			alpha = getAlpha(alpha);
 		}
 		
-		if (_hasSingleColor(image))
-		{
-			PointF corners[4] = {
-				gdiplus_transform_point(ctm, 0, 0),
-				gdiplus_transform_point(ctm, 0, 1),
-				gdiplus_transform_point(ctm, 1, 1),
-				gdiplus_transform_point(ctm, 1, 0)
-			};
-			
-			float srcv[FZ_MAX_COLORS], rgb[3];
-			for (int k = 0; k < image->colorspace->n; k++)
-				srcv[k] = image->samples[k] / 255.0f;
-			fz_convert_color(image->colorspace, srcv, fz_device_rgb, rgb);
-			SolidBrush brush(Color(alpha * image->samples[image->colorspace->n],
-				rgb[0] * 255, rgb[1] * 255, rgb[2] * 255));
-			
-			graphics->FillPolygon(&brush, corners, 4);
-			
-			return;
-		}
-		
 		PointF corners[3] = {
-			gdiplus_transform_point(ctm, 0, 1),
-			gdiplus_transform_point(ctm, 1, 1),
-			gdiplus_transform_point(ctm, 0, 0)
+			gdiplustransformpoint(ctm, 0, 1),
+			gdiplustransformpoint(ctm, 1, 1),
+			gdiplustransformpoint(ctm, 0, 0)
 		};
 		
 		ImageAttributes imgAttrs;
-		_setDrawAttributes(imgAttrs, alpha);
+		ColorMatrix matrix = { 
+			1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, alpha, 0.0f,
+			0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+		};
+		imgAttrs.SetColorMatrix(&matrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
 		
-		float scale = _hypotf(_hypotf(ctm.a, ctm.b), _hypotf(ctm.c, ctm.d)) / _hypotf(image->w, image->h);
-		/* cf. fz_paint_image_imp in draw/imagedraw.c for when (not) to interpolate */
-		bool downscale = _hypotf(ctm.a, ctm.b) < image->w && _hypotf(ctm.c, ctm.d) < image->h;
-		bool alwaysInterpolate = downscale ||
-			_hypotf(ctm.a, ctm.b) > image->w && _hypotf(ctm.c, ctm.d) > image->h &&
-			_hypotf(ctm.a, ctm.b) < 2 * image->w && _hypotf(ctm.c, ctm.d) < 2 * image->h;
-		
-		if (!image->interpolate && !alwaysInterpolate && graphics == this->graphics)
+		float scale = 2.0 * fz_matrixexpansion(ctm) / sqrtf(image->w * image->w + image->h * image->h);
+		if (scale < 1.0 && MIN(image->w, image->h) > 10)
 		{
-			GraphicsState state = graphics->Save();
-			graphics->SetInterpolationMode(InterpolationModeNearestNeighbor);
-			graphics->DrawImage(&PixmapBitmap(image), corners, 3, 0., 0., image->w, image->h, UnitPixel, &imgAttrs);
-			graphics->Restore(state);
-		}
-		else if (scale < 1.0 && MIN(image->w, image->h) > 10)
-		{
-			int w = ceilf(image->w * scale);
-			int h = ceilf(image->h * scale);
-			
+			float w = image->w * scale;
+			float h = image->h * scale;
 			Bitmap *scaled = new Bitmap(w, h);
+			
 			Graphics g2(scaled);
 			_setup(&g2);
-			g2.DrawImage(&PixmapBitmap(image), 0, 0, w, h);
+			g2.DrawImage(&PixmapBitmap(image), -0.5f, -0.5f, w, h);
 			
-			graphics->DrawImage(scaled, corners, 3, 0, 0, w, h, UnitPixel, &imgAttrs);
+			graphics->DrawImage(scaled, corners, 3, -0.5f, -0.5f, w, h, UnitPixel, &imgAttrs);
 			delete scaled;
 		}
 		else
-			graphics->DrawImage(&PixmapBitmap(image), corners, 3, 0., 0., image->w, image->h, UnitPixel, &imgAttrs);
+			graphics->DrawImage(&PixmapBitmap(image), corners, 3, -0.5f, -0.5f, image->w, image->h, UnitPixel, &imgAttrs);
 	}
 
 	float getAlpha(float alpha=1.0) { return stack->alpha * alpha; }
@@ -405,7 +261,6 @@ protected:
 		graphics->SetInterpolationMode(InterpolationModeHighQualityBicubic);
 		graphics->SetSmoothingMode(SmoothingModeHighQuality);
 		graphics->SetTextRenderingHint(TextRenderingHintAntiAlias);
-		graphics->SetPixelOffsetMode(PixelOffsetModeHighQuality);
 		
 		return graphics;
 	}
@@ -433,7 +288,7 @@ protected:
 					color[0] = maskScan0[col * 4] / 255.0;
 					color[1] = maskScan0[col * 4 + 1] / 255.0;
 					color[2] = maskScan0[col * 4 + 2] / 255.0;
-					fz_convert_color(fz_device_rgb, color, fz_device_gray, &gray);
+					fz_convertcolor(fz_devicergb, color, fz_devicegray, &gray);
 					alpha = gray * 255;
 				}
 				Scan0[col * 4 + 3] *= alpha / 255.0;
@@ -444,7 +299,7 @@ protected:
 		bitmap->UnlockBits(&data);
 	}
 
-	void _applyBlend(Bitmap *bitmap, Rect clipBounds, int blendmode)
+	void _applyBlend(Bitmap *bitmap, Rect clipBounds, fz_blendmode blendmode)
 	{
 		userDataStackItem *bgStack = stack->prev;
 		while (bgStack && !bgStack->layer)
@@ -456,53 +311,7 @@ protected:
 			return;
 		}
 		
-		Rect boundsBg(clipBounds);
-		for (userDataStackItem *si = bgStack; si; si = si->prev)
-			if (si->layer)
-				boundsBg.Intersect(si->bounds);
-		
-		Bitmap *backdrop = _flattenBlendBackdrop(bgStack, boundsBg);
-		
-		Rect bounds(boundsBg);
-		bounds.Offset(-clipBounds.X, -clipBounds.Y);
-		boundsBg.Offset(-boundsBg.X, -boundsBg.Y);
-		
-		_compositeWithBackground(bitmap, bounds, backdrop, boundsBg, blendmode, false);
-		
-		delete backdrop;
-	}
-
-	Bitmap *_flattenBlendBackdrop(userDataStackItem *group, Rect clipBounds)
-	{
-		userDataStackItem *bgStack = group->prev;
-		while (bgStack && !bgStack->layer)
-			bgStack = bgStack->prev;
-		
-		if (!bgStack || group->isolated)
-		{
-			if (group->knockout)
-				return new Bitmap(clipBounds.Width, clipBounds.Height, PixelFormat32bppARGB);
-			
-			clipBounds.Offset(-group->bounds.X, -group->bounds.Y);
-			return group->layer->Clone(clipBounds, PixelFormat32bppARGB);
-		}
-		
-		Bitmap *backdrop = _flattenBlendBackdrop(bgStack, clipBounds);
-		
-		Rect bounds(clipBounds);
-		bounds.Offset(-group->bounds.X, -group->bounds.Y);
-		clipBounds.Offset(-clipBounds.X, -clipBounds.Y);
-		
-		if (group->knockout)
-			fz_warn("non-isolated knockout groups not implemented for GDI+");
-		_compositeWithBackground(group->layer, bounds, backdrop, clipBounds, group->blendmode, true);
-		
-		return backdrop;
-	}
-
-	void _compositeWithBackground(Bitmap *bitmap, Rect bounds, Bitmap *backdrop, Rect boundsBg, int blendmode, bool modifyBackdrop)
-	{
-		separableBlend funcs[] = {
+		seperableBlend funcs[] = {
 			BlendNormal,
 			BlendMultiply,
 			BlendScreen,
@@ -512,26 +321,30 @@ protected:
 			BlendColorDodge,
 			BlendColorBurn,
 			BlendHardLight,
-			NULL, // FZ_BLEND_SOFTLIGHT
+			NULL, // FZ_BSOFTLIGHT
 			BlendDifference,
 			BlendExclusion,
-			NULL // FZ_BLEND_HUE, FZ_BLEND_SATURATION, FZ_BLEND_COLOR, FZ_BLEND_LUMINOSITY
+			NULL // FZ_BHUE, FZ_BSATURATION, FZ_BCOLOR, FZ_BLUMINOSITY
 		};
 		
 		if (blendmode >= nelem(funcs) || !funcs[blendmode])
 		{
 			fz_warn("blend mode %d not implemented for GDI+", blendmode);
-			blendmode = 0;
+			return;
 		}
 		
-		assert(bounds.X >= 0 && bounds.Y >= 0);
-		assert(boundsBg.X == 0 && boundsBg.Y == 0);
-		assert(bounds.Width == boundsBg.Width && bounds.Height == boundsBg.Height);
-		assert(boundsBg.Width == backdrop->GetWidth() && boundsBg.Height == backdrop->GetHeight());
+		Rect bounds(0, 0, bitmap->GetWidth(), bitmap->GetHeight());
+		assert(bounds.Width == clipBounds.Width && bounds.Height == clipBounds.Height);
+		bounds.Offset(clipBounds.X, clipBounds.Y);
+		bounds.Intersect(bgStack->bounds);
+		Rect *boundsBg = bounds.Clone();
+		bounds.Offset(-clipBounds.X, -clipBounds.Y);
+		boundsBg->Offset(-bgStack->bounds.X, -bgStack->bounds.Y);
 		
 		BitmapData data, dataBg;
-		bitmap->LockBits(&bounds, ImageLockModeRead | (modifyBackdrop ? 0 : ImageLockModeWrite), PixelFormat32bppARGB, &data);
-		backdrop->LockBits(&boundsBg, ImageLockModeRead | (modifyBackdrop ? ImageLockModeWrite : 0), PixelFormat32bppARGB, &dataBg);
+		bitmap->LockBits(&bounds, ImageLockModeRead | ImageLockModeWrite, PixelFormat32bppARGB, &data);
+		bgStack->layer->LockBits(boundsBg, ImageLockModeRead, PixelFormat32bppARGB, &dataBg);
+		delete boundsBg;
 		
 		LPBYTE Scan0 = (LPBYTE)data.Scan0, bgScan0 = (LPBYTE)dataBg.Scan0;
 		for (int row = 0; row < bounds.Height; row++)
@@ -542,7 +355,6 @@ protected:
 				{
 					BYTE alpha = Scan0[row * data.Stride + col * 4 + 3];
 					BYTE bgAlpha = bgScan0[row * dataBg.Stride + col * 4 + 3];
-					// if (isolated) bgAlpha = 0;
 					BYTE newAlpha = BlendScreen(alpha, bgAlpha);
 					
 					for (int i = 0; i < 3; i++)
@@ -552,59 +364,27 @@ protected:
 						// basic compositing formula
 						BYTE newColor = (1 - 1.0 * alpha / newAlpha) * bgColor + 1.0 * alpha / newAlpha * ((255 - bgAlpha) * color + bgAlpha * funcs[blendmode](color, bgColor)) / 255;
 						
-						if (modifyBackdrop)
-							bgScan0[row * dataBg.Stride + col * 4 + i] = newColor;
-						else
-							Scan0[row * data.Stride + col * 4 + i] = newColor;
+						Scan0[row * data.Stride + col * 4 + i] = newColor;
 					}
-					if (modifyBackdrop)
-						bgScan0[row * dataBg.Stride + col * 4 + 3] = newAlpha;
-					else
-						Scan0[row * data.Stride + col * 4 + 3] = newAlpha;
+					Scan0[row * data.Stride + col * 4 + 3] = newAlpha;
 				}
 			}
 		}
 		
-		backdrop->UnlockBits(&dataBg);
+		bgStack->layer->UnlockBits(&dataBg);
 		bitmap->UnlockBits(&data);
-	}
-
-	bool _hasSingleColor(fz_pixmap *image)
-	{
-		if (image->w > 2 || image->h > 2 || !image->colorspace)
-			return false;
-		
-		for (int i = 1; i < image->w * image->h; i++)
-			if (memcmp(image->samples + i * image->n, image->samples, image->n) != 0)
-				return false;
-		
-		return true;
-	}
-
-	void _setDrawAttributes(ImageAttributes& imgAttrs, float alpha)
-	{
-		ColorMatrix matrix = { 
-			1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, alpha, 0.0f,
-			0.0f, 0.0f, 0.0f, 0.0f, 1.0f
-		};
-		if (alpha != 1.0f)
-			imgAttrs.SetColorMatrix(&matrix, ColorMatrixFlagsDefault, ColorAdjustTypeBitmap);
-		// imgAttrs.SetWrapMode(WrapModeClamp);
 	}
 };
 
 
 static void
-gdiplus_apply_transform(Graphics *graphics, fz_matrix ctm)
+gdiplusapplytransform(Graphics *graphics, fz_matrix ctm)
 {
 	graphics->SetTransform(&Matrix(ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f));
 }
 
 static fz_matrix
-gdiplus_get_transform(Graphics *graphics)
+gdiplusgettransform(Graphics *graphics)
 {
 	fz_matrix ctm;
 	Matrix matrix;
@@ -617,81 +397,64 @@ gdiplus_get_transform(Graphics *graphics)
 }
 
 static void
-gdiplus_apply_transform(GraphicsPath *gpath, fz_matrix ctm)
+gdiplusapplytransform(GraphicsPath *gpath, fz_matrix ctm)
 {
 	gpath->Transform(&Matrix(ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f));
 }
 
 static Brush *
-gdiplus_get_brush(void *user, fz_colorspace *colorspace, float *color, float alpha)
+gdiplusgetbrush(void *user, fz_colorspace *colorspace, float *color, float alpha)
 {
 	float rgb[3];
-	
-	if (!((userData *)user)->t3color)
-		fz_convert_color(colorspace, color, fz_device_rgb, rgb);
-	else
-		memcpy(rgb, ((userData *)user)->t3color, sizeof(rgb));
-	
+	fz_convertcolor(colorspace, color, fz_devicergb, rgb);
 	return new SolidBrush(Color(((userData *)user)->getAlpha(alpha) * 255,
 		rgb[0] * 255, rgb[1] * 255, rgb[2] * 255));
 }
 
 static GraphicsPath *
-gdiplus_get_path(fz_path *path, fz_matrix ctm, int evenodd=1)
+gdiplusgetpath(fz_path *path, fz_matrix ctm, int evenodd=1)
 {
 	PointF *points = new PointF[path->len / 2];
 	BYTE *types = new BYTE[path->len / 2];
-	PointF origin;
 	int len = 0;
 	
 	for (int i = 0; i < path->len; )
 	{
-		switch (path->items[i++].k)
+		switch (path->els[i++].k)
 		{
 		case FZ_MOVETO:
-			points[len].X = path->items[i++].v; points[len].Y = path->items[i++].v;
-			origin = points[len];
-			// empty paths seem to confuse GDI+, so filter them out
-			if (i < path->len && path->items[i].k == FZ_CLOSE_PATH)
-				i++;
-			else if (i < path->len && path->items[i].k != FZ_MOVETO)
+			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
+			if (i < path->len && path->els[i].k != FZ_MOVETO)
 				types[len++] = PathPointTypeStart;
 			break;
 		case FZ_LINETO:
-			points[len].X = path->items[i++].v; points[len].Y = path->items[i++].v;
+			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
 			types[len++] = PathPointTypeLine;
 			break;
 		case FZ_CURVETO:
-			points[len].X = path->items[i++].v; points[len].Y = path->items[i++].v;
+			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
 			types[len++] = PathPointTypeBezier;
-			points[len].X = path->items[i++].v; points[len].Y = path->items[i++].v;
+			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
 			types[len++] = PathPointTypeBezier;
-			points[len].X = path->items[i++].v; points[len].Y = path->items[i++].v;
+			points[len].X = path->els[i++].v; points[len].Y = path->els[i++].v;
 			types[len++] = PathPointTypeBezier;
 			break;
-		case FZ_CLOSE_PATH:
+		case FZ_CLOSEPATH:
 			types[len - 1] = types[len - 1] | PathPointTypeCloseSubpath;
-			if (i < path->len && (path->items[i].k != FZ_MOVETO && path->items[i].k != FZ_CLOSE_PATH))
-			{
-				points[len] = origin;
-				types[len++] = PathPointTypeStart;
-			}
 			break;
 		}
 	}
 	assert(len <= path->len / 2);
 	
 	// clipping intermittently fails for overly large regions (cf. pathscan.c::fz_insertgel)
-	fz_rect BBOX_BOUNDS = { -(1<<20), -(1<<20) , (1<<20), (1<<20) };
-	BBOX_BOUNDS = fz_transform_rect(fz_invert_matrix(ctm), BBOX_BOUNDS);
 	for (int i = 0; i < len; i++)
 	{
-		points[i].X = CLAMP(points[i].X, BBOX_BOUNDS.x0, BBOX_BOUNDS.x1);
-		points[i].Y = CLAMP(points[i].Y, BBOX_BOUNDS.y0, BBOX_BOUNDS.y1);
+		points[i].X = CLAMP(points[i].X, -(1<<20), (1<<20));
+		points[i].Y = CLAMP(points[i].Y, -(1<<20), (1<<20));
 	}
 	
 	GraphicsPath *gpath = new GraphicsPath(points, types, len, evenodd ? FillModeAlternate : FillModeWinding);
-	gdiplus_apply_transform(gpath, ctm);
+	gdiplusapplytransform(gpath, ctm);
 	
 	delete points;
 	delete types;
@@ -700,12 +463,12 @@ gdiplus_get_path(fz_path *path, fz_matrix ctm, int evenodd=1)
 }
 
 static Pen *
-gdiplus_get_pen(Brush *brush, fz_matrix ctm, fz_stroke_state *stroke)
+gdiplusgetpen(Brush *brush, fz_matrix ctm, fz_strokestate *stroke)
 {
-	Pen *pen = new Pen(brush, stroke->linewidth * fz_matrix_expansion(ctm));
+	Pen *pen = new Pen(brush, stroke->linewidth * fz_matrixexpansion(ctm));
 	
 	pen->SetMiterLimit(stroke->miterlimit);
-	switch (stroke->start_cap)
+	switch (stroke->linecap)
 	{
 	case 0: pen->SetStartCap(LineCapFlat); pen->SetEndCap(LineCapFlat); break;
 	case 1: pen->SetStartCap(LineCapRound); pen->SetEndCap(LineCapRound); break;
@@ -718,19 +481,19 @@ gdiplus_get_pen(Brush *brush, fz_matrix ctm, fz_stroke_state *stroke)
 	case 2: pen->SetLineJoin(LineJoinBevel); break;
 	}
 	
-	if (stroke->dash_len > 0)
+	if (stroke->dashlen > 0)
 	{
-		REAL dashlist[nelem(stroke->dash_list) + 1];
-		int dashCount = stroke->dash_len;
+		REAL dashlist[nelem(stroke->dashlist) + 1];
+		int dashCount = stroke->dashlen;
 		for (int i = 0; i < dashCount; i++)
-			dashlist[i] = stroke->dash_list[i] ? stroke->dash_list[i] / stroke->linewidth : 0.1 /* ??? */;
+			dashlist[i] = stroke->dashlist[i] ? stroke->dashlist[i] / stroke->linewidth : 0.1 /* ??? */;
 		if (dashCount % 2 == 1)
 		{
 			dashlist[dashCount] = dashlist[dashCount - 1];
 			dashCount++;
 		}
 		pen->SetDashPattern(dashlist, dashCount);
-		pen->SetDashOffset(stroke->dash_phase);
+		pen->SetDashOffset(stroke->dashphase);
 		pen->SetDashCap(DashCapFlat);
 	}
 	
@@ -738,41 +501,31 @@ gdiplus_get_pen(Brush *brush, fz_matrix ctm, fz_stroke_state *stroke)
 }
 
 static Font *
-gdiplus_get_font(userData *user, fz_font *font, float height, float *out_ascent)
+gdiplusgetfont(PrivateFontCollection *collection, fz_font *font, float height, float *out_ascent)
 {
-	if (!font->ft_data && !font->ft_file)
+	assert(collection->GetFamilyCount() == 0);
+	if (!font->_data)
 		return NULL;
 	
-	if (!user->fontCollections)
-		user->fontCollections = fz_new_hash_table(13, sizeof(font->name));
-	PrivateFontCollection *collection = (PrivateFontCollection *)fz_hash_find(user->fontCollections, font->name);
-	
-	if (!collection)
+	if (font->_data_len != 0)
 	{
-		collection = new PrivateFontCollection();
-		assert(collection->GetFamilyCount() == 0);
-		
-		/* TODO: this seems to make print-outs larger rather than smaller * /
-		if (font->ft_data)
-		{
-			user->tempFiles = new TempFile(font->ft_data, font->ft_size, user->tempFiles);
-			if (*user->tempFiles->path)
-				collection->AddFontFile(user->tempFiles->path);
-			// TODO: memory fonts seem to get substituted in release builds
-			// collection->AddMemoryFont(font->ft_data, font->ft_size);
-		}
-		else */ if (font->ft_file)
-		{
-			WCHAR fontPath[MAX_PATH];
-			MultiByteToWideChar(CP_ACP, 0, font->ft_file, -1, fontPath, nelem(fontPath));
-			collection->AddFontFile(fontPath);
-		}
-		
-		fz_hash_insert(user->fontCollections, font->name, collection);
+		collection->AddMemoryFont(font->_data, font->_data_len);
+	}
+	else
+	{
+		WCHAR fontPath[MAX_PATH];
+		MultiByteToWideChar(CP_ACP, 0, font->_data, -1, fontPath, nelem(fontPath));
+		collection->AddFontFile(fontPath);
 	}
 	
 	if (collection->GetFamilyCount() == 0)
+	{
+		if (font->_data_len == 0)
+			fz_free((void *)font->_data);
+		font->_data = NULL;
+		
 		return NULL;
+	}
 	
 	FontFamily family;
 	int found = 0;
@@ -796,11 +549,11 @@ gdiplus_get_font(userData *user, fz_font *font, float height, float *out_ascent)
 }
 
 extern "C" static void
-fz_gdiplus_fill_path(void *user, fz_path *path, int evenodd, fz_matrix ctm,
+fz_gdiplusfillpath(void *user, fz_path *path, int evenodd, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
-	GraphicsPath *gpath = gdiplus_get_path(path, ctm, evenodd);
-	Brush *brush = gdiplus_get_brush(user, colorspace, color, alpha);
+	GraphicsPath *gpath = gdiplusgetpath(path, ctm, evenodd);
+	Brush *brush = gdiplusgetbrush(user, colorspace, color, alpha);
 	
 	((userData *)user)->graphics->FillPath(brush, gpath);
 	
@@ -809,12 +562,12 @@ fz_gdiplus_fill_path(void *user, fz_path *path, int evenodd, fz_matrix ctm,
 }
 
 extern "C" static void
-fz_gdiplus_stroke_path(void *user, fz_path *path, fz_stroke_state *stroke, fz_matrix ctm,
+fz_gdiplusstrokepath(void *user, fz_path *path, fz_strokestate *stroke, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
-	GraphicsPath *gpath = gdiplus_get_path(path, ctm);
-	Brush *brush = gdiplus_get_brush(user, colorspace, color, alpha);
-	Pen *pen = gdiplus_get_pen(brush, ctm, stroke);
+	GraphicsPath *gpath = gdiplusgetpath(path, ctm);
+	Brush *brush = gdiplusgetbrush(user, colorspace, color, alpha);
+	Pen *pen = gdiplusgetpen(brush, ctm, stroke);
 	
 	((userData *)user)->graphics->DrawPath(pen, gpath);
 	
@@ -824,31 +577,25 @@ fz_gdiplus_stroke_path(void *user, fz_path *path, fz_stroke_state *stroke, fz_ma
 }
 
 extern "C" static void
-fz_gdiplus_clip_path(void *user, fz_path *path, int evenodd, fz_matrix ctm)
+fz_gdiplusclippath(void *user, fz_path *path, int evenodd, fz_matrix ctm)
 {
-	GraphicsPath *gpath = gdiplus_get_path(path, ctm, evenodd);
+	GraphicsPath *gpath = gdiplusgetpath(path, ctm, evenodd);
 	
 	// TODO: clipping non-rectangular areas doesn't result in anti-aliased edges
-	if (path->len > 0)
-		((userData *)user)->pushClip(gpath);
-	else
-		((userData *)user)->pushClip(&Region(Rect()));
+	((userData *)user)->pushClip(gpath);
 	
 	delete gpath;
 }
 
 extern "C" static void
-fz_gdiplus_clip_stroke_path(void *user, fz_path *path, fz_stroke_state *stroke, fz_matrix ctm)
+fz_gdiplusclipstrokepath(void *user, fz_path *path, fz_strokestate *stroke, fz_matrix ctm)
 {
-	GraphicsPath *gpath = gdiplus_get_path(path, ctm);
+	GraphicsPath *gpath = gdiplusgetpath(path, ctm);
 	
-	Pen *pen = gdiplus_get_pen(&SolidBrush(Color()), ctm, stroke);
+	Pen *pen = gdiplusgetpen(&SolidBrush(Color()), ctm, stroke);
 	gpath->Widen(pen);
 	
-	if (path->len > 0)
-		((userData *)user)->pushClip(gpath);
-	else
-		((userData *)user)->pushClip(&Region(Rect()));
+	((userData *)user)->pushClip(gpath);
 	
 	delete pen;
 	delete gpath;
@@ -876,8 +623,8 @@ extern "C" static int conic_to(const FT_Vector *ctrl, const FT_Vector *to, void 
 		fz_moveto(path, 0, 0);
 	
 	// cf. http://fontforge.sourceforge.net/bezier.html
-	from.x = path->items[path->len - 2].v;
-	from.y = path->items[path->len - 1].v;
+	from.x = path->els[path->len - 2].v;
+	from.y = path->els[path->len - 1].v;
 	ctrl1.x = from.x + 2.0/3 * (ctrl->x - from.x);
 	ctrl1.y = from.y + 2.0/3 * (ctrl->y - from.y);
 	ctrl2.x = ctrl1.x + 1.0/3 * (to->x - from.x);
@@ -892,34 +639,29 @@ static FT_Outline_Funcs OutlineFuncs = {
 static float
 ftgetwidthscale(fz_font *font, int gid)
 {
-	if (font->ft_substitute && gid < font->width_count)
+	if (font->ftsubstitute && gid < font->widthcount)
 	{
 		FT_Fixed advance = 0;
-		FT_Face face = (FT_Face)font->ft_face;
-		FT_Get_Advance(face, gid, FT_LOAD_NO_BITMAP | (font->ft_hint ? 0 : FT_LOAD_NO_HINTING), &advance);
-		
+		FT_Get_Advance((FT_Face)font->ftface, gid, FT_LOAD_NO_BITMAP | (font->fthint ? 0 : FT_LOAD_NO_HINTING), &advance);
 		if (advance)
-		{
-			float charSize = (float)CLAMP(face->units_per_EM, 1000, 65536);
-			return charSize * font->width_table[gid] / advance;
-		}
+			return 1024.0 * font->widthtable[gid] / advance;
 	}
 	
 	return 1.0;
 }
 
 static WCHAR
-ftgetcharcode(fz_font *font, fz_text_item *el)
+ftgetcharcode(fz_font *font, fz_textel *el)
 {
-	FT_Face face = (FT_Face)font->ft_face;
+	FT_Face face = (FT_Face)font->ftface;
 	if (el->gid == FT_Get_Char_Index(face, el->ucs))
 		return el->ucs;
 	
 	FT_UInt gid;
 	WCHAR ucs = FT_Get_First_Char(face, &gid), prev = ucs - 1;
-	while (gid != 0 && ucs != prev && ucs < 256)
+	while (gid != 0 && ucs != prev)
 	{
-		if (gid == el->gid)
+		if (gid == el->gid && ucs < 256)
 			return ucs;
 		ucs = FT_Get_Next_Char(face, (prev = ucs), &gid);
 	}
@@ -933,58 +675,58 @@ typedef struct {
 } ftglyphkey;
 
 static GraphicsPath *
-ftrenderglyph(fz_font *font, int gid, fz_hash_table *outlines)
+ftrenderglyph(fz_font *font, int gid, fz_hashtable *outlines)
 {
-	FT_Face face = (FT_Face)font->ft_face;
+	FT_Face face = (FT_Face)font->ftface;
 	ftglyphkey key = { face, gid };
 	
-	GraphicsPath *glyph = (GraphicsPath *)fz_hash_find(outlines, &key);
+	GraphicsPath *glyph = (GraphicsPath *)fz_hashfind(outlines, &key);
 	if (glyph)
 		return glyph;
 	
-	FT_Error fterr = FT_Load_Glyph(face, gid, FT_LOAD_NO_BITMAP | (font->ft_hint ? 0 : FT_LOAD_NO_HINTING));
+	FT_Error fterr = FT_Load_Glyph(face, gid, FT_LOAD_NO_BITMAP | (font->fthint ? 0 : FT_LOAD_NO_HINTING));
 	if (fterr)
 		return NULL;
 	
-	fz_path *path = fz_new_path();
+	fz_path *path = fz_newpath();
 	FT_Outline_Decompose(&face->glyph->outline, &OutlineFuncs, path);
 	int evenodd = face->glyph->outline.flags & FT_OUTLINE_EVEN_ODD_FILL;
 	
-	glyph = gdiplus_get_path(path, fz_scale(ftgetwidthscale(font, gid), 1), evenodd);
+	glyph = gdiplusgetpath(path, fz_scale(ftgetwidthscale(font, gid), 1), evenodd);
 	
-	fz_free_path(path);
-	fz_hash_insert(outlines, &key, glyph);
+	fz_freepath(path);
+	fz_hashinsert(outlines, &key, glyph);
 	
 	return glyph;
 }
 
 static void
-gdiplus_render_text(userData *user, fz_text *text, fz_matrix ctm, Brush *brush, GraphicsPath *gpath=NULL)
+gdiplusrendertext(userData *user, fz_text *text, fz_matrix ctm, Brush *brush, GraphicsPath *gpath=NULL)
 {
 	Graphics *graphics = user->graphics;
 	
 	if (!user->outlines)
-		user->outlines = fz_new_hash_table(509, sizeof(ftglyphkey));
+		user->outlines = fz_newhash(509, sizeof(ftglyphkey));
 	
-	FT_Face face = (FT_Face)text->font->ft_face;
+	FT_Face face = (FT_Face)text->font->ftface;
 	FT_UShort charSize = CLAMP(face->units_per_EM, 1000, 65536);
 	FT_Set_Char_Size(face, charSize, charSize, 72, 72);
 	FT_Set_Transform(face, NULL, NULL);
 	
 	for (int i = 0; i < text->len; i++)
 	{
-		GraphicsPath *glyph = ftrenderglyph(text->font, text->items[i].gid, user->outlines);
+		GraphicsPath *glyph = ftrenderglyph(text->font, text->els[i].gid, user->outlines);
 		if (!glyph)
 			continue;
 		
-		fz_matrix ctm2 = fz_translate(text->items[i].x, text->items[i].y);
+		fz_matrix ctm2 = fz_translate(text->els[i].x, text->els[i].y);
 		ctm2 = fz_concat(fz_scale(1.0 / charSize, 1.0 / charSize), ctm2);
 		ctm2 = fz_concat(text->trm, ctm2);
 		if (!gpath)
 			ctm2 = fz_concat(ctm2, ctm);
 		
 		GraphicsPath *gpath2 = glyph->Clone();
-		gdiplus_apply_transform(gpath2, ctm2);
+		gdiplusapplytransform(gpath2, ctm2);
 		if (!gpath)
 			graphics->FillPath(brush, gpath2);
 		else
@@ -994,112 +736,110 @@ gdiplus_render_text(userData *user, fz_text *text, fz_matrix ctm, Brush *brush, 
 }
 
 static void
-gdiplus_run_text(userData *user, fz_text *text, fz_matrix ctm, Brush *brush)
+gdiplusruntext(userData *user, fz_text *text, fz_matrix ctm, Brush *brush)
 {
-	float fontSize = fz_matrix_expansion(text->trm), cellAscent = 0;
-	Font *font = gdiplus_get_font(user, text->font, fontSize, &cellAscent);
+	PrivateFontCollection collection;
+	float fontSize = fz_matrixexpansion(text->trm), cellAscent = 0;
+	
+	Font *font = gdiplusgetfont(&collection, text->font, fontSize, &cellAscent);
 	if (!font)
 	{
-		gdiplus_render_text(user, text, ctm, brush);
+		gdiplusrendertext(user, text, ctm, brush);
 		return;
 	}
 	
 	Graphics *graphics = user->graphics;
 	
-	FT_Face face = (FT_Face)text->font->ft_face;
-	FT_UShort charSize = CLAMP(face->units_per_EM, 1000, 65536);
-	FT_Set_Char_Size(face, charSize, charSize, 72, 72);
-	FT_Set_Transform(face, NULL, NULL);
-	
 	const StringFormat *format = StringFormat::GenericTypographic();
 	fz_matrix rotate = fz_concat(text->trm, fz_scale(-1.0 / fontSize, -1.0 / fontSize));
 	assert(text->trm.e == 0 && text->trm.f == 0);
-	fz_matrix oldCtm = gdiplus_get_transform(graphics);
+	fz_matrix oldCtm = gdiplusgettransform(graphics);
 	
 	for (int i = 0; i < text->len; i++)
 	{
-		WCHAR out = ftgetcharcode(text->font, &text->items[i]);
+		WCHAR out = ftgetcharcode(text->font, &text->els[i]);
 		if (!out)
 		{
 			fz_text t2 = *text;
 			t2.len = 1;
-			t2.items = &text->items[i];
-			gdiplus_apply_transform(graphics, oldCtm);
-			gdiplus_render_text(user, &t2, ctm, brush);
+			t2.els = &text->els[i];
+			gdiplusapplytransform(graphics, oldCtm);
+			gdiplusrendertext(user, &t2, ctm, brush);
 			continue;
 		}
 		
-		fz_matrix ctm2 = fz_concat(fz_translate(text->items[i].x, text->items[i].y), ctm);
+		fz_matrix ctm2 = fz_concat(fz_translate(text->els[i].x, text->els[i].y), ctm);
 		ctm2 = fz_concat(fz_scale(-1, 1), fz_concat(rotate, ctm2));
 		ctm2 = fz_concat(fz_translate(0, -fontSize * cellAscent), ctm2);
-		float widthScale = ftgetwidthscale(text->font, text->items[i].gid);
+		float widthScale = ftgetwidthscale(text->font, text->els[i].gid);
 		if (widthScale != 1.0)
 			ctm2 = fz_concat(fz_scale(widthScale, 1), ctm2);
 		
-		gdiplus_apply_transform(graphics, fz_concat(ctm2, oldCtm));
+		gdiplusapplytransform(graphics, fz_concat(ctm2, oldCtm));
 		graphics->DrawString(&out, 1, font, PointF(0, 0), format, brush);
 	}
 	
-	gdiplus_apply_transform(graphics, oldCtm);
+	gdiplusapplytransform(graphics, oldCtm);
 	
 	delete font;
 }
 
 static void
-gdiplus_run_t3_text(void *user, fz_text *text, fz_matrix ctm,
+gdiplusrunt3text(void *user, fz_text *text, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha, GraphicsPath *gpath=NULL)
 {
 	// TODO: type 3 glyphs are rendered slightly cropped
 	if (gpath)
 		fz_warn("stroking Type 3 glyphs is not supported");
 	
-	float rgb[3];
-	fz_convert_color(colorspace, color, fz_device_rgb, rgb);
-	((userData *)user)->t3color = rgb;
-	
 	fz_font *font = text->font;
+	
 	for (int i = 0; i < text->len; i++)
 	{
-		int gid = text->items[i].gid;
+		int gid = text->els[i].gid;
 		if (gid < 0 || gid > 255 || !font->t3procs[gid])
 			continue;
 		
-		fz_matrix ctm2 = fz_concat(fz_translate(text->items[i].x, text->items[i].y), ctm);
+		fz_bbox bbox;
+		fz_device *dev = fz_newbboxdevice(&bbox);
+		font->t3run((pdf_xref_s *)font->t3xref, font->t3resources, font->t3procs[gid], dev, fz_concat(font->t3matrix, text->trm));
+		fz_freedevice(dev);
+		
+		fz_matrix ctm2 = fz_concat(fz_translate(text->els[i].x, text->els[i].y), ctm);
 		ctm2 = fz_concat(text->trm, ctm2);
 		ctm2 = fz_concat(font->t3matrix, ctm2);
+		ctm2 = fz_concat(fz_translate(bbox.x0, bbox.y0), ctm2);
 		
-		font->t3run((void *)font->t3xref, font->t3resources, font->t3procs[gid], ((userData *)user)->dev, ctm2);
+		font->t3run((pdf_xref_s *)font->t3xref, font->t3resources, font->t3procs[gid], ((userData *)user)->dev, ctm2);
 	}
-	
-	((userData *)user)->t3color = NULL;
 }
 
 extern "C" static void
-fz_gdiplus_fill_text(void *user, fz_text *text, fz_matrix ctm,
+fz_gdiplusfilltext(void *user, fz_text *text, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
-	Brush *brush = gdiplus_get_brush(user, colorspace, color, alpha);
-	if (text->font->ft_face)
-		gdiplus_run_text((userData *)user, text, ctm, brush);
+	Brush *brush = gdiplusgetbrush(user, colorspace, color, alpha);
+	if (text->font->ftface)
+		gdiplusruntext((userData *)user, text, ctm, brush);
 	else
-		gdiplus_run_t3_text(user, text, ctm, colorspace, color, alpha);
+		gdiplusrunt3text(user, text, ctm, colorspace, color, alpha);
 	
 	delete brush;
 }
 
 extern "C" static void
-fz_gdiplus_stroke_text(void *user, fz_text *text, fz_stroke_state *stroke, fz_matrix ctm,
+fz_gdiplusstroketext(void *user, fz_text *text, fz_strokestate *stroke, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
 	GraphicsPath gpath;
-	if (text->font->ft_face)
-		gdiplus_render_text((userData *)user, text, ctm, NULL, &gpath);
+	if (text->font->ftface)
+		gdiplusrendertext((userData *)user, text, ctm, NULL, &gpath);
 	else
-		gdiplus_run_t3_text(user, text, ctm, colorspace, color, alpha, &gpath);
-	gdiplus_apply_transform(&gpath, ctm);
+		gdiplusrunt3text(user, text, ctm, colorspace, color, alpha, &gpath);
+	gdiplusapplytransform(&gpath, ctm);
 	
-	Brush *brush = gdiplus_get_brush(user, colorspace, color, alpha);
-	Pen *pen = gdiplus_get_pen(brush, ctm, stroke);
+	Brush *brush = gdiplusgetbrush(user, colorspace, color, alpha);
+	Pen *pen = gdiplusgetpen(brush, ctm, stroke);
 	((userData *)user)->graphics->DrawPath(pen, &gpath);
 	
 	delete pen;
@@ -1107,30 +847,30 @@ fz_gdiplus_stroke_text(void *user, fz_text *text, fz_stroke_state *stroke, fz_ma
 }
 
 extern "C" static void
-fz_gdiplus_clip_text(void *user, fz_text *text, fz_matrix ctm, int accumulate)
+fz_gdipluscliptext(void *user, fz_text *text, fz_matrix ctm, int accumulate)
 {
 	GraphicsPath gpath;
 	float black[3] = { 0 };
-	if (text->font->ft_face)
-		gdiplus_render_text((userData *)user, text, ctm, NULL, &gpath);
+	if (text->font->ftface)
+		gdiplusrendertext((userData *)user, text, ctm, NULL, &gpath);
 	else
-		gdiplus_run_t3_text(user, text, ctm, fz_device_rgb, black, 1.0, &gpath);
-	gdiplus_apply_transform(&gpath, ctm);
+		gdiplusrunt3text(user, text, ctm, fz_devicergb, black, 1.0, &gpath);
+	gdiplusapplytransform(&gpath, ctm);
 	
 	((userData *)user)->pushClip(&gpath, 1.0, accumulate == 2);
 }
 
 extern "C" static void
-fz_gdiplus_clip_stroke_text(void *user, fz_text *text, fz_stroke_state *stroke, fz_matrix ctm)
+fz_gdiplusclipstroketext(void *user, fz_text *text, fz_strokestate *stroke, fz_matrix ctm)
 {
 	GraphicsPath gpath;
 	float black[3] = { 0 };
-	if (text->font->ft_face)
-		gdiplus_render_text((userData *)user, text, ctm, NULL, &gpath);
+	if (text->font->ftface)
+		gdiplusrendertext((userData *)user, text, ctm, NULL, &gpath);
 	else
-		gdiplus_run_t3_text(user, text, ctm, fz_device_rgb, black, 1.0, &gpath);
-	gdiplus_apply_transform(&gpath, ctm);
-	Pen *pen = gdiplus_get_pen(&SolidBrush(Color()), ctm, stroke);
+		gdiplusrunt3text(user, text, ctm, fz_devicergb, black, 1.0, &gpath);
+	gdiplusapplytransform(&gpath, ctm);
+	Pen *pen = gdiplusgetpen(&SolidBrush(Color()), ctm, stroke);
 	
 	gpath.Widen(pen);
 	((userData *)user)->pushClip(&gpath);
@@ -1139,36 +879,36 @@ fz_gdiplus_clip_stroke_text(void *user, fz_text *text, fz_stroke_state *stroke, 
 }
 
 extern "C" static void
-fz_gdiplus_ignore_text(void *user, fz_text *text, fz_matrix ctm)
+fz_gdiplusignoretext(void *user, fz_text *text, fz_matrix ctm)
 {
 }
 
 extern "C" static void
-fz_gdiplus_fill_shade(void *user, fz_shade *shade, fz_matrix ctm, float alpha)
+fz_gdiplusfillshade(void *user, fz_shade *shade, fz_matrix ctm, float alpha)
 {
 	Rect clipRect;
 	((userData *)user)->graphics->GetClipBounds(&clipRect);
 	fz_bbox clip = { clipRect.X, clipRect.Y, clipRect.X + clipRect.Width, clipRect.Y + clipRect.Height };
 	
-	fz_rect bounds = fz_bound_shade(shade, ctm);
-	fz_bbox bbox = fz_intersect_bbox(fz_round_rect(bounds), clip);
+	fz_rect bounds = fz_boundshade(shade, ctm);
+	fz_bbox bbox = fz_intersectbbox(fz_roundrect(bounds), clip);
 	
-	if (!fz_is_empty_rect(shade->bbox))
+	if (!fz_isemptyrect(shade->bbox))
 	{
-		bounds = fz_transform_rect(fz_concat(shade->matrix, ctm), shade->bbox);
-		bbox = fz_intersect_bbox(fz_round_rect(bounds), bbox);
+		bounds = fz_transformrect(fz_concat(shade->matrix, ctm), shade->bbox);
+		bbox = fz_intersectbbox(fz_roundrect(bounds), bbox);
 	}
 	
-	if (fz_is_empty_rect(bbox))
+	if (fz_isemptyrect(bbox))
 		return;
 	
-	fz_pixmap *dest = fz_new_pixmap_with_rect(fz_device_rgb, bbox);
-	fz_clear_pixmap(dest);
+	fz_pixmap *dest = fz_newpixmapwithrect(fz_devicergb, bbox);
+	fz_clearpixmap(dest, 0);
 	
-	if (shade->use_background)
+	if (shade->usebackground)
 	{
 		float colorfv[4];
-		fz_convert_color(shade->colorspace, shade->background, fz_device_rgb, colorfv);
+		fz_convertcolor(shade->cs, shade->background, fz_devicergb, colorfv);
 		colorfv[3] = 1.0;
 		
 		for (int y = bbox.y0; y < bbox.y1; y++)
@@ -1180,35 +920,28 @@ fz_gdiplus_fill_shade(void *user, fz_shade *shade, fz_matrix ctm, float alpha)
 		}
 	}
 	
-	fz_paint_shade(shade, ctm, dest, bbox);
+	fz_rendershade(shade, ctm, dest, bbox);
 	
 	ctm = fz_concat(fz_scale(dest->w, -dest->h), fz_translate(dest->x, dest->y + dest->h));
 	((userData *)user)->drawPixmap(dest, ctm, alpha);
 	
-	fz_drop_pixmap(dest);
+	fz_droppixmap(dest);
 }
 
 extern "C" static void
-fz_gdiplus_fill_image(void *user, fz_pixmap *image, fz_matrix ctm, float alpha)
+fz_gdiplusfillimage(void *user, fz_pixmap *image, fz_matrix ctm, float alpha)
 {
 	((userData *)user)->drawPixmap(image, ctm, alpha);
 }
 
 extern "C" static void
-fz_gdiplus_fill_image_mask(void *user, fz_pixmap *image, fz_matrix ctm,
+fz_gdiplusfillimagemask(void *user, fz_pixmap *image, fz_matrix ctm,
 	fz_colorspace *colorspace, float *color, float alpha)
 {
 	float rgb[3];
-	if (!((userData *)user)->t3color)
-		fz_convert_color(colorspace, color, fz_device_rgb, rgb);
-	else
-		memcpy(rgb, ((userData *)user)->t3color, sizeof(rgb));
+	fz_convertcolor(colorspace, color, fz_devicergb, rgb);
 	
-	fz_pixmap *img2 = fz_new_pixmap_with_limit(fz_device_rgb, image->w, image->h);
-	if (!img2)
-		return;
-	img2->x = image->x; img2->y = image->y;
-	
+	fz_pixmap *img2 = fz_newpixmap(fz_devicergb, image->x, image->y, image->w, image->h);
 	for (int i = 0; i < img2->w * img2->h; i++)
 	{
 		img2->samples[i * 4] = rgb[0] * 255;
@@ -1216,69 +949,56 @@ fz_gdiplus_fill_image_mask(void *user, fz_pixmap *image, fz_matrix ctm,
 		img2->samples[i * 4 + 2] = rgb[2] * 255;
 		img2->samples[i * 4 + 3] = image->samples[i];
 	}
-	img2->interpolate = image->interpolate;
 	
 	((userData *)user)->drawPixmap(img2, ctm, alpha);
 	
-	fz_drop_pixmap(img2);
+	fz_droppixmap(img2);
 }
 
 extern "C" static void
-fz_gdiplus_clip_image_mask(void *user, fz_pixmap *image, fz_matrix ctm)
+fz_gdiplusclipimagemask(void *user, fz_pixmap *image, fz_matrix ctm)
 {
 	((userData *)user)->pushClipMask(image, ctm);
 }
 
 extern "C" static void
-fz_gdiplus_pop_clip(void *user)
+fz_gdipluspopclip(void *user)
 {
 	((userData *)user)->popClip();
 }
 
 extern "C" static void
-fz_gdiplus_begin_mask(void *user, fz_rect rect, int luminosity,
+fz_gdiplusbeginmask(void *user, fz_rect rect, int luminosity,
 	fz_colorspace *colorspace, float *colorfv)
 {
 	float rgb[3] = { 0 };
 	if (luminosity && colorspace && colorfv)
-		fz_convert_color(colorspace, colorfv, fz_device_rgb, rgb);
+		fz_convertcolor(colorspace, colorfv, fz_devicergb, rgb);
 	
 	((userData *)user)->recordClipMask(rect, luminosity == 1, rgb);
 }
 
 extern "C" static void
-fz_gdiplus_end_mask(void *user)
+fz_gdiplusendmask(void *user)
 {
 	((userData *)user)->applyClipMask();
 }
 
 extern "C" static void
-fz_gdiplus_begin_group(void *user, fz_rect rect, int isolated, int knockout,
-	int blendmode, float alpha)
+fz_gdiplusbegingroup(void *user, fz_rect rect, int isolated, int knockout,
+	fz_blendmode blendmode, float alpha)
 {
-	((userData *)user)->pushClipBlend(rect, blendmode, alpha, !!isolated, !!knockout);
+	((userData *)user)->pushClipBlend(rect, blendmode, alpha);
 }
 
 extern "C" static void
-fz_gdiplus_end_group(void *user)
+fz_gdiplusendgroup(void *user)
 {
 	((userData *)user)->popClip();
 }
 
 extern "C" static void
-fz_gdiplus_begin_tile(void *user, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm)
-{
-	((userData *)user)->recordTile(view, area, ctm, xstep, ystep);
-}
-
-extern "C" static void
-fz_gdiplus_end_tile(void *user)
-{
-	((userData *)user)->applyTiling();
-}
-
-extern "C" static void
-fz_gdiplus_free_user(void *user)
+fz_gdiplusfreeuser(void *user)
 {
 	delete (userData *)user;
 	
@@ -1287,7 +1007,7 @@ fz_gdiplus_free_user(void *user)
 }
 
 fz_device *
-fz_new_gdiplus_device(void *hDC, fz_bbox baseClip)
+fz_newgdiplusdevice(void *hDC, fz_bbox baseClip)
 {
 	if (InterlockedIncrement(&m_gdiplusUsage) == 1)
 	{
@@ -1295,35 +1015,32 @@ fz_new_gdiplus_device(void *hDC, fz_bbox baseClip)
 		GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, NULL);
 	}
 	
-	fz_device *dev = fz_new_device(new userData((HDC)hDC, baseClip));
+	fz_device *dev = fz_newdevice(new userData((HDC)hDC, baseClip));
 	((userData *)dev->user)->dev = dev;
-	dev->free_user = fz_gdiplus_free_user;
+	dev->freeuser = fz_gdiplusfreeuser;
 	
-	dev->fill_path = fz_gdiplus_fill_path;
-	dev->stroke_path = fz_gdiplus_stroke_path;
-	dev->clip_path = fz_gdiplus_clip_path;
-	dev->clip_stroke_path = fz_gdiplus_clip_stroke_path;
+	dev->fillpath = fz_gdiplusfillpath;
+	dev->strokepath = fz_gdiplusstrokepath;
+	dev->clippath = fz_gdiplusclippath;
+	dev->clipstrokepath = fz_gdiplusclipstrokepath;
 	
-	dev->fill_text = fz_gdiplus_fill_text;
-	dev->stroke_text = fz_gdiplus_stroke_text;
-	dev->clip_text = fz_gdiplus_clip_text;
-	dev->clip_stroke_text = fz_gdiplus_clip_stroke_text;
-	dev->ignore_text = fz_gdiplus_ignore_text;
+	dev->filltext = fz_gdiplusfilltext;
+	dev->stroketext = fz_gdiplusstroketext;
+	dev->cliptext = fz_gdipluscliptext;
+	dev->clipstroketext = fz_gdiplusclipstroketext;
+	dev->ignoretext = fz_gdiplusignoretext;
 	
-	dev->fill_shade = fz_gdiplus_fill_shade;
-	dev->fill_image = fz_gdiplus_fill_image;
-	dev->fill_image_mask = fz_gdiplus_fill_image_mask;
-	dev->clip_image_mask = fz_gdiplus_clip_image_mask;
+	dev->fillshade = fz_gdiplusfillshade;
+	dev->fillimage = fz_gdiplusfillimage;
+	dev->fillimagemask = fz_gdiplusfillimagemask;
+	dev->clipimagemask = fz_gdiplusclipimagemask;
 	
-	dev->pop_clip = fz_gdiplus_pop_clip;
+	dev->popclip = fz_gdipluspopclip;
 	
-	dev->begin_mask = fz_gdiplus_begin_mask;
-	dev->end_mask = fz_gdiplus_end_mask;
-	dev->begin_group = fz_gdiplus_begin_group;
-	dev->end_group = fz_gdiplus_end_group;
-	
-	dev->begin_tile = fz_gdiplus_begin_tile;
-	dev->end_tile = fz_gdiplus_end_tile;
+	dev->beginmask = fz_gdiplusbeginmask;
+	dev->endmask = fz_gdiplusendmask;
+	dev->begingroup = fz_gdiplusbegingroup;
+	dev->endgroup = fz_gdiplusendgroup;
 	
 	return dev;
 }

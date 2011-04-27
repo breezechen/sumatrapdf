@@ -1,10 +1,8 @@
 ﻿# Translations for Italian (Italiano) (it) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: it Italian (Italiano)
 
@@ -14,32 +12,30 @@ Contributor: Alessandro Visentin
 Contributor: Alessandro Mariani
 Contributor: Massimiliano Beltrando
 Contributor: Mirco Scottà
-Contributor: Cosimo Prete Damiano
-Contributor: Antonio Colombo
 
 &About
 &Informazioni
 
 &Actual Size\tCtrl-1
-Dimensioni re&ali\tCtrl-1
+&Dimensioni reali\tCtrl-1
 
 &All selected pages
-Tutte le p&agine selezionate
+Tutte le pagine selezionate
 
 &Back\tAlt+Left Arrow
-&Indietro\tAlt+Freccia sinistra
+Indietro\tAlt+Freccia sinistra
 
 &Close\tCtrl-W
 &Chiudi\tCtrl-W
 
 &Copy Selection\tCtrl-C
-&Copia Selezione\tCtrl-C
+Copia Selezione\tCtrl-C
 
 &Don't ask me again
-Non chie&dermelo più
+&Non chiedermelo più
 
 &Even pages only
-Solo pagin&e pari
+Solo pagine pari
 
 &File
 &File
@@ -48,10 +44,10 @@ Solo pagin&e pari
 &Ricerca:
 
 &First Page\tHome
-&Prima pagina\tHome
+Prima pagina\tHome
 
 &Fit pages to printable area
-&Adatta pagine alla zona stampabile
+Adatta le pagine alla zona stampabile
 
 &Go To
 &Vai a
@@ -63,7 +59,7 @@ Solo pagin&e pari
 &Aiuto
 
 &Last Page\tEnd
-&Ultima pagina\tEnd
+Ultima pagina\tEnd
 
 &Magnification:
 &Ingrandimento:
@@ -75,7 +71,7 @@ Solo pagin&e pari
 &Maiuscole/minuscole
 
 &Next Page\tRight Arrow
-Pagi&na successiva\tFreccia destra
+Pagina successiva\tFreccia destra
 
 &No
 &No
@@ -84,7 +80,7 @@ Pagi&na successiva\tFreccia destra
 &No, grazie
 
 &Odd pages only
-S&olo pagine dispari
+Solo pagine dispari
 
 &Open\tCtrl-O
 &Apri\tCtrl-O
@@ -96,34 +92,34 @@ S&olo pagine dispari
 &Password:
 
 &Previous Page\tLeft Arrow
-&Pagina Precedente\tFreccia sinistra
+Pagina precedente\tFreccia destra
 
 &Print...\tCtrl-P
-Stam&pa\tCtrl-P
+&Stampa\tCtrl-P
 
 &Print... (denied)
-Stam&pa... (rifiutato)
+&Stampa... (rifiutato)
 
 &Remember the password for this document
-&Ricorda la password per questo documento
+Ricorda la password per questo documento
 
 &Remember these settings for each document
-&Ricorda queste impostazioni per ogni documento
+&Ricorda le impostazioni per ogni documento
 
 &Save As...\tCtrl-S
-&Salva Con Nome...\tCtrl-S
+&Salva come...\tCtrl-S
 
 &Settings
-Impo&stazioni
+&Impostazioni
 
 &Shrink pages to printable area (if necessary)
-Riduci pagine alla zona &stampabile (se necessario)
+Riduci le pagine alla zona stampabile (se necessario)
 
 &Skip this version
 &Salta questa versione
 
 &Use original page sizes
-&Usa larghezza pagina originale
+&Usa la larghezza originale
 
 &View
 &Visualizza
@@ -162,13 +158,13 @@ Automatic
 Automatico
 
 Automatically check for &updates
-Controlla a&utomaticamente aggiornamenti
+Controlla &automaticamente aggiornamenti
 
 Book View
 Vista libro
 
 Book&marks\tF12
-Segna&libri\tF12
+Segnalibri\tF12
 
 Bookmarks
 Segnalibri
@@ -183,31 +179,34 @@ Cancel
 Annulla
 
 Cannot print this file
-Impossibile stampare questo file
+Impossibile stampare il file
 
 Cannot start inverse search command. Please check the command line in the settings.
-Impossibile eseguire il comando di ricerca inversa. Controllare la riga di comando usata nelle impostazioni.
+Impossibile eseguire il comando di ricerca inversa. Controllare la riga di comando usata nelle impostazioni
 
 Change Language
-Cambia lingua (Change Language)
+Cambia lingua
 
 Check for &Updates
-Controlla &Aggiornamenti
+&Controlla aggiornamenti
+
+Check for Updates
+Controlla aggiornamenti
 
 Continuous
 Pagina continua
 
-Continuous Book View
+Continuous book view
 Vista libro continua
 
-Continuous Facing
+Continuous facing
 Pagine affiancate continue
 
 Contribute Translation
 Contribuisci alla traduzione
 
 Copying text was denied (copying as image only)
-Impossibile copiare il testo (copio solo come immagine)
+Impossibile copiare il testo (copia solo come immagine)
 
 Could not open Printer
 Stampante non accessibile
@@ -222,7 +221,7 @@ Created:
 Creato:
 
 Custom &Zoom...\tCtrl-Y
-Ingrandimento personali&zzato\tCtrl-Y
+&Ingrandimento personalizzato\tCtrl-Y
 
 Default &Layout:
 &Vista predefinita:
@@ -230,11 +229,8 @@ Default &Layout:
 Default &Zoom:
 &Ingrandimento predefinito
 
-Default PDF reader can't be changed in portable mode
-Il lettore PDF predefinito non è modificabile in modalità "portable"
-
 Denied Permissions:
-Permessi rifiutati:
+Permessi rifiutati
 
 Document Properties
 Proprietà del documento
@@ -243,7 +239,7 @@ Download
 Scarica
 
 E&xit\tCtrl-Q
-Es&ci\tCtrl-Q
+&Esci\tCtrl-Q
 
 Enter password
 Inserisci password
@@ -254,26 +250,29 @@ Inserisci password per %s
 Enter the command-line to invoke when you double-click on the PDF document:
 Inserire la linea di comando da eseguire quando fai doppio clic su un documento PDF:
 
-F&orward\tAlt+Right Arrow
-A&vanti\tAlt+Freccia Destra
+Error loading PDF file.
+Errore durante l'apertura del file.
 
-F&ullscreen\tCtrl-Shift-L
-S&chermo intero\tCtrl-Shift-L
+F&orward\tAlt+Right Arrow
+Avanti\tAlt+Freccia destra
+
+F&ullscreen\tCtrl-L
+Schermo intero\tCtrl-L
 
 Facing
 Pagine affiancate
 
 Failed to save a file
-Salvataggio file non riuscito
+Salvataggio del file fallito
 
 File Size:
-Dimensione del file:
+Dimensione del file
 
 File:
 File:
 
 Fin&d...\tCtrl-F
-Tro&va...\tCtrl-F
+Trova...\tCtrl-F
 
 Find
 Trova
@@ -305,17 +304,8 @@ Pagina intera
 Fit Width
 Larghezza pagina
 
-Fit Width and Show Pages Continuously
-Adatta la larghezza e visualizza le pagine in modo continuo
-
-Fit a Single Page
-Visualizza una pagina singola
-
 Found text at page %d
 Testo trovato a pagina %d
-
-GB
-GB
 
 Go to page
 Vai a pagina
@@ -323,16 +313,13 @@ Vai a pagina
 Hint: Use the F3 key for finding again
 Consiglio: Usa F3 per trovare il successivo
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Il lettore PDF predefinito non è modificabile in modalità "portable"
 
 Make SumatraPDF default application for PDF files?
 Impostare SumatraPDF come programma predefinito per i file PDF?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Imposta SumatraPDF come lettore PDF predefinito
 
 Match Case
@@ -342,10 +329,13 @@ Modified:
 Modificato:
 
 New version %s is available. Download new version?
-È disponibile la versione %s. Scaricare la nuova versione?
+E' disponibile la versione %s. Scaricare la nuova versione?
+
+New version available.
+E' disponibile una nuova versione.
 
 Next Page
-Pagina Successiva
+Pagina successiva
 
 No matches were found
 Nessuna corrispondenza trovata
@@ -360,7 +350,7 @@ No synchronization info at this position
 Nessuna informazione di sincronizzazione in questa posizione
 
 Number of Pages:
-Numero di Pagine:
+Numero di pagine:
 
 OK
 OK
@@ -370,12 +360,6 @@ Apri
 
 Open in &Adobe Reader
 Apri con &Adobe Reader
-
-Open in &Foxit Reader
-Apri con &Foxit Reader
-
-Open in PDF-XChange
-Apri con PDF-XChange
 
 P&roperties\tCtrl-D
 P&roprietà\tCtrl-D
@@ -393,7 +377,7 @@ PDF documents
 Documenti PDF
 
 Pa&ge...\tCtrl-G
-Pa&gina...\tCtrl-G
+Pagina...\tCtrl-G
 
 Page Size:
 Dimensione pagina:
@@ -407,80 +391,65 @@ Dimensionamento pagina
 Page:
 Pagina:
 
-Please include the following file in your crash report:
-Includi questo file nella segnalazione del crash:
-
 Please wait - rendering...
-Rendering in corso - attendere prego...
-
-Pr&esentation\tCtrl-L
-Pr&esentazione\tCtrl-L
+Prego attendere - sto renderizzando...
 
 Previous Page
 Pagina precedente
 
 Print range
-Stampa serie
+Stampare pagine
 
 Printing problem.
-Problemi di stampa.
+Problema di stampa.
 
 Remember &opened files
-Ric&orda file aperti
+R&icorda i file aperti
 
 Rotate &Left\tCtrl-Shift--
-Ruota a &Sinistra\tCtrl-Shift--
+Ruota a sinistra\tCtrl-Shift--
 
 Rotate &Right\tCtrl-Shift-+
-Ruota a &Destra\tCtrl-Shift-+
+Ruota a destra\tCtrl-Shift-+
 
 Searching %d of %d...
-Cercando: %d di %d...
-
-Select &All\tCtrl-A
-Selezion&a Tutto\tCtrl-A
+In ricerca %d di %d...
 
 Select content with Ctrl+left mouse button
-Seleziona contenuti con Ctrl+pulsante sinistro del mouse
+Seleziona contenuti con Ctrl+tasto sinistro del mouse
 
 Send by &E-mail...
-Invia via &E-mail...
+Invia per &mail...
 
 Set inverse search command-line
-Imposta la ricerca inversa via riga di comando
+Imposta comando di ricerca inversa
 
 Show &Toolbar
-Visualizza la &Toolbar
+Mostra barra strumenti
 
 Show &pages continuously
-Visualizza le &pagine in modo continuo
+Mostra le pagine in modo continuo
 
 Show the &bookmarks sidebar when available
-Visualizza la side&bar dei segnalibri quando disponibile
+Mostra la &barra dei segnalibri quando è disponibile
 
 Single Page
 Pagina singola
 
 Source file %s has no synchronization point
-Il file sorgente %s non ha nessun punto di sincronizzazione
+Il file sorgente non ha punti di sincronizzazione
 
 Subject:
-Oggetto:
+Soggetto:
 
 SumatraPDF Options
-Opzioni di SumatraPDF
+Opzioni SumatraPDF
 
-SumatraPDF Update
-Aggiornamento di SumatraPDF
+SumatraPDF is your main PDF reader
+SumatraPDF è il lettore PDF predefinito
 
-SumatraPDF crashed
-SumatraPDF ha avuto un errore irreparabile
-
-SumatraPDF is your default PDF reader
-SumatraPDF è il tuo lettore PDF predefinito
-
-SumatraPDF should now be your default PDF reader
-Ora SumatraPDF dovrebbe essere il tuo lettore PDF predefinito
+SumatraPDF should now be your main PDF reader
+SumatraPDF dev'essere ora il lettore PDF predefinito
 
 Synchronization file cannot be opened
 Il file di sincronizzazione non può essere aperto
@@ -492,66 +461,41 @@ Title:
 Titolo:
 
 Unknown source file (%s)
-File sorgente sconosciuto (%s)
+File sorgente ignoto
 
 View
-Vista
+Visualizza
 
 Visit &Website
-Visita il sito &web
+&Visita il sito
 
 Warning
-Attenzione
+Avviso
 
 You have the latest version.
-Hai l'ultima versione.
+Hai l'ultima versione disponibile
 
 You have version %s
-Hai la versione %s
+La tua versione è la %s
 
 Zoom
-Zoom
+Ingrandimento
 
 Zoom In
-Zoom In
+Ingrandisci
 
 Zoom Out
-Zoom Out
+Riduci
 
 Zoom factor
-Fattore di Zoom
+Fattore ingrandimento
 
 [Changes detected; refreshing] %s
-[Individuati cambiamenti; aggiornando] %s
+[Cambiamenti rilevati; in aggiornamento] %s
 
 copying text
-sto copiando il testo
+copia testo
 
 printing document
-documento in stampa
-
-# Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#XPS documents
+stampa documento
 

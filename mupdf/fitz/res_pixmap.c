@@ -1,151 +1,66 @@
 #include "fitz.h"
 
-/* SumatraPDF: use max. 512 MB for images (originally 256 MB) */
-static int fz_memory_limit = 512 << 20;
-static int fz_memory_used = 0;
-
 fz_pixmap *
-fz_new_pixmap_with_data(fz_colorspace *colorspace, int w, int h, unsigned char *samples)
+fz_newpixmap(fz_colorspace *colorspace, int x, int y, int w, int h)
 {
 	fz_pixmap *pix;
 
 	pix = fz_malloc(sizeof(fz_pixmap));
 	pix->refs = 1;
-	pix->x = 0;
-	pix->y = 0;
+	pix->x = x;
+	pix->y = y;
 	pix->w = w;
 	pix->h = h;
-	pix->mask = NULL;
-	pix->interpolate = 1;
-	pix->xres = 96;
-	pix->yres = 96;
-	pix->colorspace = NULL;
+	pix->mask = nil;
+	pix->colorspace = nil;
 	pix->n = 1;
 
 	if (colorspace)
 	{
-		pix->colorspace = fz_keep_colorspace(colorspace);
+		pix->colorspace = fz_keepcolorspace(colorspace);
 		pix->n = 1 + colorspace->n;
 	}
 
-	if (samples)
-	{
-		pix->samples = samples;
-		pix->free_samples = 0;
-	}
-	else
-	{
-		/* SumatraPDF: abort on integer overflow */
-		if (pix->w > INT_MAX / pix->n) abort();
-		fz_memory_used += pix->w * pix->h * pix->n;
-		pix->samples = fz_calloc(pix->h, pix->w * pix->n);
-		pix->free_samples = 1;
-	}
+	pix->samples = fz_malloc(pix->w * pix->h * pix->n);
 
 	return pix;
 }
 
 fz_pixmap *
-fz_new_pixmap_with_limit(fz_colorspace *colorspace, int w, int h)
+fz_newpixmapwithrect(fz_colorspace *colorspace, fz_bbox r)
 {
-	int n = colorspace ? colorspace->n + 1 : 1;
-	int size = w * h * n;
-	if (fz_memory_used + size > fz_memory_limit || h != 0 && INT_MAX / h / n < w)
-	{
-		fz_warn("pixmap memory exceeds soft limit %dM + %dM > %dM",
-			fz_memory_used/(1<<20), size/(1<<20), fz_memory_limit/(1<<20));
-		return NULL;
-	}
-	return fz_new_pixmap_with_data(colorspace, w, h, NULL);
+	return fz_newpixmap(colorspace, r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0);
 }
 
 fz_pixmap *
-fz_new_pixmap(fz_colorspace *colorspace, int w, int h)
-{
-	return fz_new_pixmap_with_data(colorspace, w, h, NULL);
-}
-
-fz_pixmap *
-fz_new_pixmap_with_rect(fz_colorspace *colorspace, fz_bbox r)
-{
-	fz_pixmap *pixmap;
-	pixmap = fz_new_pixmap(colorspace, r.x1 - r.x0, r.y1 - r.y0);
-	pixmap->x = r.x0;
-	pixmap->y = r.y0;
-	return pixmap;
-}
-
-fz_pixmap *
-fz_keep_pixmap(fz_pixmap *pix)
+fz_keeppixmap(fz_pixmap *pix)
 {
 	pix->refs++;
 	return pix;
 }
 
 void
-fz_drop_pixmap(fz_pixmap *pix)
+fz_droppixmap(fz_pixmap *pix)
 {
 	if (pix && --pix->refs == 0)
 	{
-		fz_memory_used -= pix->w * pix->h * pix->n;
 		if (pix->mask)
-			fz_drop_pixmap(pix->mask);
+			fz_droppixmap(pix->mask);
 		if (pix->colorspace)
-			fz_drop_colorspace(pix->colorspace);
-		if (pix->free_samples)
-			fz_free(pix->samples);
+			fz_dropcolorspace(pix->colorspace);
+		fz_free(pix->samples);
 		fz_free(pix);
 	}
 }
 
 void
-fz_clear_pixmap(fz_pixmap *pix)
+fz_clearpixmap(fz_pixmap *pix, int value)
 {
-	memset(pix->samples, 0, pix->w * pix->h * pix->n);
-}
-
-void
-fz_clear_pixmap_with_color(fz_pixmap *pix, int value)
-{
-	if (value == 255)
-		memset(pix->samples, 255, pix->w * pix->h * pix->n);
-	else
-	{
-		int k, x, y;
-		unsigned char *s = pix->samples;
-		for (y = 0; y < pix->h; y++)
-		{
-			for (x = 0; x < pix->w; x++)
-			{
-				for (k = 0; k < pix->n - 1; k++)
-					*s++ = value;
-				*s++ = 255;
-			}
-		}
-	}
-}
-
-void
-fz_premultiply_pixmap(fz_pixmap *pix)
-{
-	unsigned char *s = pix->samples;
-	unsigned char a;
-	int k, x, y;
-
-	for (y = 0; y < pix->h; y++)
-	{
-		for (x = 0; x < pix->w; x++)
-		{
-			a = s[pix->n - 1];
-			for (k = 0; k < pix->n - 1; k++)
-				s[k] = fz_mul255(s[k], a);
-			s += pix->n;
-		}
-	}
+	memset(pix->samples, value, pix->w * pix->h * pix->n);
 }
 
 fz_bbox
-fz_bound_pixmap(fz_pixmap *pix)
+fz_boundpixmap(fz_pixmap *pix)
 {
 	fz_bbox bbox;
 	bbox.x0 = pix->x;
@@ -155,8 +70,24 @@ fz_bound_pixmap(fz_pixmap *pix)
 	return bbox;
 }
 
+void
+fz_gammapixmap(fz_pixmap *pix, float gamma)
+{
+	unsigned char table[256];
+	int n = pix->w * pix->h * pix->n;
+	unsigned char *p = pix->samples;
+	int i;
+	for (i = 0; i < 256; i++)
+		table[i] = CLAMP(powf(i / 255.0f, gamma) * 255, 0, 255);
+	while (n--)
+	{
+		*p = table[*p];
+		p++;
+	}
+}
+
 fz_pixmap *
-fz_alpha_from_gray(fz_pixmap *gray, int luminosity)
+fz_alphafromgray(fz_pixmap *gray, int luminosity)
 {
 	fz_pixmap *alpha;
 	unsigned char *sp, *dp;
@@ -164,7 +95,7 @@ fz_alpha_from_gray(fz_pixmap *gray, int luminosity)
 
 	assert(gray->n == 2);
 
-	alpha = fz_new_pixmap_with_rect(NULL, fz_bound_pixmap(gray));
+	alpha = fz_newpixmap(nil, gray->x, gray->y, gray->w, gray->h);
 	dp = alpha->samples;
 	sp = gray->samples;
 	if (!luminosity)
@@ -185,7 +116,7 @@ fz_alpha_from_gray(fz_pixmap *gray, int luminosity)
  */
 
 fz_error
-fz_write_pnm(fz_pixmap *pixmap, char *filename)
+fz_writepnm(fz_pixmap *pixmap, char *filename)
 {
 	FILE *fp;
 	unsigned char *p;
@@ -239,7 +170,7 @@ fz_write_pnm(fz_pixmap *pixmap, char *filename)
  */
 
 fz_error
-fz_write_pam(fz_pixmap *pixmap, char *filename, int savealpha)
+fz_writepam(fz_pixmap *pixmap, char *filename, int savealpha)
 {
 	unsigned char *sp;
 	int y, w, k;
@@ -322,7 +253,7 @@ static void putchunk(char *tag, unsigned char *data, int size, FILE *fp)
 }
 
 fz_error
-fz_write_png(fz_pixmap *pixmap, char *filename, int savealpha)
+fz_writepng(fz_pixmap *pixmap, char *filename, int savealpha)
 {
 	static const unsigned char pngsig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
 	FILE *fp;

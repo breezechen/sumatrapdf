@@ -1,10 +1,8 @@
 ﻿# Translations for Irish (Gaeilge) (ga) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: ga Irish (Gaeilge)
 
@@ -80,7 +78,7 @@ Téigh ar thóir leagan nua
 Continuous
 Ar Leanúint
 
-Continuous Facing
+Continuous facing
 Dhá Leathanach Ar Leanúint
 
 Contribute Translation
@@ -98,8 +96,11 @@ Cuir isteach focal faire
 Enter password for %s
 Cuir isteach focal faire le haghaidh %s
 
-F&ullscreen\tCtrl-Shift-L
-Lánscáileán\tCtrl-Shift-L
+Error loading PDF file.
+Tharla botún ag luchtú comhad PDF.
+
+F&ullscreen\tCtrl-L
+Lánscáileán\tCtrl-L
 
 Facing
 Dhá Leathanach
@@ -131,22 +132,13 @@ Oiriúnaigh don Lch
 Fit Width
 Oiriúnaigh don Leithead
 
-GB
-GB
-
 Go to page
 Téigh chuig lch
-
-KB
-KB
-
-MB
-MB
 
 Make SumatraPDF default application for PDF files?
 Bíodh SumatraPDF mar an léitheoir PDF réamhshocruithe agat?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Bíodh SumatraPDF mar an léitheoir PDF réamhshocruithe
 
 Match Case
@@ -154,6 +146,9 @@ Comhoiriúnaigh an cás
 
 New version %s is available. Download new version?
 Tá an leagan nua %s ar fáil. Íosluchtaigh an leagan nua?
+
+New version available.
+Tá leagan nua ar fáil.
 
 Next Page
 Leathanach Ar Aghaidh
@@ -209,7 +204,6 @@ Féithigh Amach
 # Untranslated:
 #&All selected pages
 #&Back\tAlt+Left Arrow
-#&Copy Selection
 #&Copy Selection\tCtrl-C
 #&Even pages only
 #&Find what:
@@ -222,11 +216,9 @@ Féithigh Amach
 #&Odd pages only
 #&Options...
 #&Password:
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
 #&Remember these settings for each document
-#&Save As...
 #&Settings
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
@@ -234,25 +226,20 @@ Féithigh Amach
 #(of %d)
 #Advanced
 #All files
-#All supported documents
 #Application:
 #Attachment: %s
 #Author:
 #Automatic
 #Automatically check for &updates
 #Book View
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Bytes
 #Can't connect to the Internet (error %#x).
 #Cancel
 #Cannot print this file
 #Cannot start inverse search command. Please check the command line in the settings.
-#Comic books
-#Continuous Book View
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
+#Continuous book view
 #Copying text was denied (copying as image only)
 #Couldn't initialize printer
 #Couldn't render the page
@@ -260,27 +247,19 @@ Féithigh Amach
 #Custom &Zoom...\tCtrl-Y
 #Default &Layout:
 #Default &Zoom:
-#Default PDF reader can't be changed in portable mode
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Download
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #F&orward\tAlt+Right Arrow
 #File Size:
 #File:
 #Find
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
 #Found text at page %d
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
 #Hint: Use the F3 key for finding again
-#Image files (*.%s)
+#Main PDF reader can't be changed in portable mode
 #Modified:
 #No matches were found
 #No result found around line %u in file %s
@@ -288,11 +267,7 @@ Féithigh Amach
 #No synchronization info at this position
 #Number of Pages:
 #OK
-#Open a document...
 #Open in &Adobe Reader
-#Open in &Foxit Reader
-#Open in PDF-XChange
-#P&roperties
 #P&roperties\tCtrl-D
 #PDF Document
 #PDF Producer:
@@ -301,35 +276,24 @@ Féithigh Amach
 #Page Size:
 #Page number %u inexistant
 #Page scaling
-#Please include the following file in your crash report:
 #Please wait - rendering...
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
 #Remember &opened files
-#Save S&hortcut...\tCtrl-Shift-S
 #Searching %d of %d...
-#Select &All
-#Select &All\tCtrl-A
 #Select content with Ctrl+left mouse button
 #Send by &E-mail...
 #Show &pages continuously
-#Show frequently read
 #Show the &bookmarks sidebar when available
 #Source file %s has no synchronization point
 #Subject:
 #SumatraPDF Options
-#SumatraPDF Update
-#SumatraPDF crashed
-#SumatraPDF is your default PDF reader
-#SumatraPDF should now be your default PDF reader
+#SumatraPDF is your main PDF reader
+#SumatraPDF should now be your main PDF reader
 #Synchronization file cannot be opened
 #Text documents
 #Title:
 #Unknown source file (%s)
 #Warning
-#XPS documents
 #Zoom
 #Zoom factor
 #[Changes detected; refreshing] %s

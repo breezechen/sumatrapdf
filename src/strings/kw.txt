@@ -1,10 +1,8 @@
 ﻿# Translations for Cornish (Kernewek) (kw) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: kw Cornish (Kernewek)
 
@@ -150,10 +148,10 @@ Check for &Updates
 Continuous
 Heb aswa
 
-Continuous Book View
+Continuous book view
 Gwel-lyver heb aswa
 
-Continuous Facing
+Continuous facing
 A-dal heb aswa
 
 Contribute Translation
@@ -177,9 +175,6 @@ Default &Layout:
 Default &Zoom:
 &Zoum savonek:
 
-Default PDF reader can't be changed in portable mode
-Ny yll an pennredyer PDF bos chanjyes yn modh porthadow
-
 Download
 Iskarga
 
@@ -192,11 +187,14 @@ Ri ger-tremena
 Enter password for %s
 Ri ger-tremena rag %s
 
+Error loading PDF file.
+Gwall ow karga restren PDF.
+
 F&orward\tAlt+Right Arrow
 Yn-rag\tAlt+->
 
-F&ullscreen\tCtrl-Shift-L
-Skrin Leun\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Skrin Leun\tCtrl-L
 
 Facing
 A-dal
@@ -234,25 +232,19 @@ Desedha Les
 Found text at page %d
 Tekst kevys war folen %d
 
-GB
-GB
-
 Go to page
 Mos dhe folen
 
 Hint: Use the F3 key for finding again
 Hynt: Devnydhya alhwedhen F3 rag daskavos
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Ny yll an pennredyer PDF bos chanjyes yn modh porthadow
 
 Make SumatraPDF default application for PDF files?
 Gul SumatraPDF towlen savonek rag restrennow PDF?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Gwra SumatraPDF ow fennredyer PDF
 
 Match Case
@@ -260,6 +252,9 @@ An keth kas
 
 New version %s is available. Download new version?
 Versyon nowyth %s yw parys. Iskarga versyon nowyth?
+
+New version available.
+Versyon nowyth parys.
 
 Next Page
 Nessa Folen
@@ -284,12 +279,6 @@ Ygeri
 
 Open in &Adobe Reader
 Ygeri yn &Adobe Reader
-
-Open in &Foxit Reader
-Ygeri yn &Foxit Reader
-
-Open in PDF-XChange
-Ygeri yn PDF-XChange
 
 PDF Document
 Restren PDF
@@ -354,10 +343,10 @@ Nyns eus poynt kettermynegi vyth y'n restren %s
 SumatraPDF Options
 Etholyow SumatraPDF
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF yw dha bennredyer PDF
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 Alemma rag y fydh SumatraPDF dha bennredyer PDF
 
 Synchronization file cannot be opened
@@ -401,68 +390,39 @@ Faktor-zoum
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Odd pages only
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Application:
 #Attachment: %s
 #Author:
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Bytes
 #Can't connect to the Internet (error %#x).
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
 #Copying text was denied (copying as image only)
 #Created:
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #File Size:
 #File:
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
 #Modified:
 #Number of Pages:
-#Open a document...
-#P&roperties
 #P&roperties\tCtrl-D
 #PDF Producer:
 #PDF Version:
 #Page Size:
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
 #Subject:
-#SumatraPDF Update
-#SumatraPDF crashed
 #Title:
-#XPS documents
 #copying text
 #printing document
 

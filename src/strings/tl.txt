@@ -1,10 +1,8 @@
 ﻿# Translations for Tagalog (Tagalog) (tl) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: tl Tagalog (Tagalog)
 
@@ -26,17 +24,11 @@ Bumalik\tAlt+Left Arrow
 &Close\tCtrl-W
 Isara\tCtrl-W
 
-&Copy Selection
-Kopyahin ang napili
-
 &Copy Selection\tCtrl-C
 &Kopyahin ang Napili\tCtrl-C
 
 &Don't ask me again
 Huwag na akong tanunging muli
-
-&Even pages only
-Mga &even na pahina lamang
 
 &File
 &File
@@ -46,9 +38,6 @@ Hanapin ang:
 
 &First Page\tHome
 Unang Pahina\tHome
-
-&Fit pages to printable area
-Pagkasyahin ang mga pahina sa printable na area
 
 &Go To
 Pumun&ta Sa...
@@ -68,9 +57,6 @@ Huling Pahina\tEnd
 &Manual
 Gabay
 
-&Match case
-Itug&ma ang laki ng mga letra
-
 &Next Page\tRight Arrow
 Sunod na Pahina\t->
 
@@ -79,9 +65,6 @@ Hindi
 
 &No, thanks
 'Di bale na lang
-
-&Odd pages only
-Mga odd na pahina lamang
 
 &Open\tCtrl-O
 Buksan\tCtrl-O
@@ -95,9 +78,6 @@ Mga Pagpipilian
 &Previous Page\tLeft Arrow
 Naunang Pahina\t<-
 
-&Print...
-I-&print
-
 &Print...\tCtrl-P
 I-&print\tCtrl-P
 
@@ -110,17 +90,11 @@ Tandaan ang password para sa dokumentong ito
 &Remember these settings for each document
 Tandaan ang settings ng bawat dokumento
 
-&Save As...
-I-&save bilang...
-
 &Save As...\tCtrl-S
 I-save Bilang...\tCtrl-S
 
 &Settings
 Mga Setting
-
-&Shrink pages to printable area (if necessary)
-Paliitin ang pahina sa printable na area (kung kinakailangan)
 
 &Skip this version
 Laktawan ang bersyong ito
@@ -135,16 +109,13 @@ Tignan
 Oo
 
 &Zoom
-Palakihin/paliitin
+Baguhin ang laki
 
 (of %d)
 (ng %d)
 
 About SumatraPDF
 Tungkol sa SumatraPDF
-
-Advanced
-Advanced
 
 All files
 Lahat ng files
@@ -156,19 +127,16 @@ Associate with PDF files?
 I-associate sa mga PDF file?
 
 Attachment: %s
-Nakasama: %s
+Naka-attach: %s
 
 Author:
-May-akda:
+May gawa:
 
 Automatic
 Awtomatiko
 
 Automatically check for &updates
-Awtomatikong tignan kung may mga pagbabago
-
-Book View
-Pang-aklat na tingin
+Awtomatikong tignan kung may mga &updates
 
 Book&marks\tF12
 Mga Pananda\tF12
@@ -188,32 +156,23 @@ Ikansela
 Cannot print this file
 Hindi mai-print ang file
 
-Cannot start inverse search command. Please check the command line in the settings.
-Hindi ma-execute ang command para sa inverse search. Pakitingnan ang command line sa settings.
-
 Change Language
-Ibahin ang Wika (Change Language)
+Ibahin ang Wika
 
 Check for &Updates
 Tignan kung may bagong &bersyon
 
+Check for Updates
+Tingnan kung may bagong bersyon
+
 Continuous
 Tuloy-tuloy
 
-Continuous Book View
-Tuluy-tuloy na tinging pang-aklat
-
-Continuous Facing
+Continuous facing
 Tuloy-tuloy na Magkaharap
 
 Contribute Translation
 Magbigay ng Saling-wika
-
-Copy &Link Address
-Kopyahin nag address ng &link
-
-Copy Co&mment
-Kopyahin ang komento
 
 Copying text was denied (copying as image only)
 Hindi maaaring kopyahin ang mensahe (kinopya bilang isang imahe lamang)
@@ -230,24 +189,6 @@ Hindi maipakita ang pahina
 Created:
 Ginawa noong:
 
-Custom &Zoom...\tCtrl-Y
-Custom na laki...\tCtrl-Y
-
-Default &Layout:
-Default na Ayos:
-
-Default &Zoom:
-Default na Laki:
-
-Default PDF reader can't be changed in portable mode
-Hindi maaaring palitan ang default na PDF reader sa portable na mode
-
-Denied Permissions:
-Mga hindi maaaring gawin:
-
-Document Properties
-Mga katangian ng dokumento
-
 Download
 I-download
 
@@ -260,14 +201,11 @@ Ipasok ang password
 Enter password for %s
 Ipasok ang password ng %s
 
-Enter the command-line to invoke when you double-click on the PDF document:
-Pakisulat ang command na gagawin kapag dalawang beses na kli-nik ang dokumentong PDF:
+Error loading PDF file.
+Hindi mabuksan ang PDF file.
 
-F&orward\tAlt+Right Arrow
-Susunod\tAlt+Right Arrow
-
-F&ullscreen\tCtrl-Shift-L
-Pagkasyahin sa buong screen\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Pagkasyahin sa buong screen\tCtrl-L
 
 Facing
 Magkaharap
@@ -314,17 +252,8 @@ Ipagkasya ang Pahina
 Fit Width
 Ipagkasya ang Lapad
 
-Fit Width and Show Pages Continuously
-Pagkasyahin ang lapad at ipakita nang tuluy-tuloy ang mga pahina
-
-Fit a Single Page
-Pagkasyahin ang isang pahina
-
 Found text at page %d
 Nakita ang salita sa pahina %d
-
-GB
-GB
 
 Go to page
 Pumunta sa Pahina
@@ -332,16 +261,10 @@ Pumunta sa Pahina
 Hint: Use the F3 key for finding again
 Payo: Pindutin ang F3 para maghanap muli
 
-KB
-KB
-
-MB
-MB
-
 Make SumatraPDF default application for PDF files?
 Gawin ang SumatraPDF bilang default na pambukas ng mga PDF files?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Gawin ang SumatraPDF bilang default na pambukas ng mga PDF files
 
 Match Case
@@ -353,6 +276,9 @@ Nabago noong:
 New version %s is available. Download new version?
 May bagong bersyon: %s. I-download?
 
+New version available.
+Mayroong bagong bersyon.
+
 Next Page
 Sunod na Pahina
 
@@ -360,13 +286,7 @@ No matches were found
 Walang makitang kapareha
 
 No result found around line %u in file %s
-Walang nakitang resulta sa line %u ng file %s
-
-No synchronization file found
-Walang makitang synchronization file
-
-No synchronization info at this position
-Walang makitang detalye ng synchronization dito
+Walang resultang mahanap sa linya %s ng file %s
 
 Number of Pages:
 Bilang ng mga pahina:
@@ -380,18 +300,6 @@ Buksan
 Open in &Adobe Reader
 Buksan sa Adobe Reader
 
-Open in &Foxit Reader
-Buksan sa Foxit Reader
-
-Open in PDF-XChange
-Buksan sa PDF-XChange
-
-P&roperties
-Mga katangian
-
-P&roperties\tCtrl-D
-Mga Katangian\tCtrl-D
-
 PDF Document
 PDF Document
 
@@ -400,9 +308,6 @@ Gumawa ng PDF:
 
 PDF Version:
 Bersyon ng PDF:
-
-PDF documents
-Mga PDF na dokumento
 
 Pa&ge...\tCtrl-G
 Pahina...\tCtrl-G
@@ -413,26 +318,14 @@ Laki ng Page
 Page number %u inexistant
 Walang pahinang %u
 
-Page scaling
-Pagkalaki ng pahina
-
 Page:
 Pahina:
-
-Please include the following file in your crash report:
-Maaaring pakisama ang mga sumusunod na file sa iyong crash report:
 
 Please wait - rendering...
 Maghintay - pinapakita...
 
-Pr&esentation\tCtrl-L
-Pr&esentasyon\tCtrl-L
-
 Previous Page
 Naunang Pahina
-
-Print range
-Mga ipi-print na pahina
 
 Printing problem.
 May Problema sa Pagpi-print.
@@ -447,13 +340,7 @@ Rotate &Right\tCtrl-Shift-+
 Iikot Pakanan\tCtrl-Shift-+
 
 Searching %d of %d...
-Hinahanap ang %d ng %dâ€¦
-
-Select &All
-Piliin lahat
-
-Select &All\tCtrl-A
-Piliin L&ahat\tCtrl-A
+Hinahanap: $d ng #d...
 
 Select content with Ctrl+left mouse button
 Mamili ng content gamit ang Ctrl+left mouse button
@@ -476,32 +363,14 @@ Ipakita ang &bookmarks sidebar kung naangkop
 Single Page
 Iisang Pahina
 
-Source file %s has no synchronization point
-Walang synchronization point ang source file na %s
-
-Subject:
-Paksa:
-
 SumatraPDF Options
 Mga Opsyon para sa SumatraPDF
 
-SumatraPDF Update
-Update sa SumatraPDF
-
-SumatraPDF crashed
-Nag-crash ang SumatraPDF
-
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF ang iyong default na pambasa ng mga PDF file
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF na dapat ang iyong default na pambasa ng mga PDF file
-
-Synchronization file cannot be opened
-Hindi mabuksan ang synchronization file
-
-Text documents
-Mga tekstong dokumento
 
 Title:
 Pamagat:
@@ -537,7 +406,7 @@ Zoom factor
 Antas ng laki
 
 [Changes detected; refreshing] %s
-[May napansing mga pagbabago; nagre-refresh] %s
+[May napansing pagbabago; nagre-refresh] %s
 
 copying text
 kinokopya ang mensahe
@@ -546,20 +415,31 @@ printing document
 ipini-print ang dokumento
 
 # Untranslated:
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Show frequently read
-#XPS documents
+#&Even pages only
+#&Fit pages to printable area
+#&Match case
+#&Odd pages only
+#&Shrink pages to printable area (if necessary)
+#Advanced
+#Book View
+#Cannot start inverse search command. Please check the command line in the settings.
+#Continuous book view
+#Custom &Zoom...\tCtrl-Y
+#Default &Layout:
+#Default &Zoom:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#Main PDF reader can't be changed in portable mode
+#No synchronization file found
+#No synchronization info at this position
+#P&roperties\tCtrl-D
+#PDF documents
+#Page scaling
+#Print range
+#Source file %s has no synchronization point
+#Subject:
+#Synchronization file cannot be opened
+#Text documents
 

@@ -1,10 +1,8 @@
 ﻿# Translations for Chinese Traditional (繁體中文) (tw) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: tw Chinese Traditional (繁體中文)
 
@@ -144,7 +142,7 @@ Cannot start inverse search command. Please check the command line in the settin
 無法進行逆向搜尋。請檢查設定裡的命令列。
 
 Change Language
-變更語系 (Change Language)
+變更語系
 
 Check for &Updates
 檢查是否有新版本(&C)
@@ -152,10 +150,10 @@ Check for &Updates
 Continuous
 連續頁面
 
-Continuous Book View
+Continuous book view
 連續書本模式
 
-Continuous Facing
+Continuous facing
 連續雙頁模式
 
 Contribute Translation
@@ -182,9 +180,6 @@ Default &Layout:
 Default &Zoom:
 預設比例：(Z)
 
-Default PDF reader can't be changed in portable mode
-不能在便攜模式更改預設 PDF 閱讀器
-
 Denied Permissions:
 權限不足：
 
@@ -203,11 +198,14 @@ Enter password
 Enter password for %s
 輸入 %s 的密碼
 
+Error loading PDF file.
+讀取PDF檔案時發失錯誤。
+
 F&orward\tAlt+Right Arrow
 下一停頓頁面\tAlt+->
 
-F&ullscreen\tCtrl-Shift-L
-全螢幕顯示\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+全螢幕顯示\tCtrl-L
 
 Facing
 雙頁模式
@@ -251,25 +249,19 @@ Fit Width
 Found text at page %d
 於第 %d 頁找到目標
 
-GB
-GB
-
 Go to page
 移至頁面
 
 Hint: Use the F3 key for finding again
 提示：按F3重新尋找
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+不能在便攜模式更改預設 PDF 閱讀器
 
 Make SumatraPDF default application for PDF files?
 把 SumatraPDF 作為預設的PDF閱讀器?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 把 SumatraPDF 作為預設的PDF閱讀工具
 
 Match Case
@@ -280,6 +272,9 @@ Modified:
 
 New version %s is available. Download new version?
 最新版本 %s。 是否下載?
+
+New version available.
+新的可用版本。
 
 Next Page
 下一頁
@@ -304,12 +299,6 @@ Open
 
 Open in &Adobe Reader
 以 Adobe Reader 開啟(&A)
-
-Open in &Foxit Reader
-以 Foxit Reader 開啟(&A)
-
-Open in PDF-XChange
-以 PDF-XChange 開啟(&A)
 
 P&roperties\tCtrl-D
 屬性...(&R)\tCtrl-D
@@ -386,10 +375,10 @@ Subject:
 SumatraPDF Options
 SumatraPDF 選項
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF 已是你的預設 PDF 閱讀器
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF 已成為你的預設 PDF 閱讀器
 
 Synchronization file cannot be opened
@@ -442,54 +431,25 @@ printing document
 
 # Untranslated:
 #&All selected pages
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&No
 #&Odd pages only
-#&Print...
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
 #&Yes
 #(of %d)
-#All supported documents
 #Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Can't connect to the Internet (error %#x).
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
 #Copying text was denied (copying as image only)
-#DjVu documents
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
 #No result found around line %u in file %s
-#Open a document...
-#P&roperties
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
 #Searching %d of %d...
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
-#SumatraPDF Update
-#SumatraPDF crashed
-#XPS documents
 

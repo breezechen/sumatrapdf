@@ -1,43 +1,28 @@
 ﻿# Translations for Slovenian (Slovenščina) (sl) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sl Slovenian (Slovenščina)
 
 Contributor: Janez Vehovec
 Contributor: Martin Srebotnjak
-Contributor: Damjan Gerl
 
 &About
-&O programu …
+&O programu ...
 
 &Actual Size\tCtrl-1
 &Dejanska velikost\tCtrl-1
 
-&All selected pages
-&Vse izbrane strani
-
-&Back\tAlt+Left Arrow
-&Nazaj\tAlt+Leva puščica
-
 &Close\tCtrl-W
 &Zapri\tCtrl-W
-
-&Copy Selection
-Kopiraj izbor
 
 &Copy Selection\tCtrl-C
 Kopiraj izbor\tCtrl-C
 
 &Don't ask me again
 &Ne sprašuj več
-
-&Even pages only
-Samo &parne strani
 
 &File
 &Datoteka
@@ -47,9 +32,6 @@ Samo &parne strani
 
 &First Page\tHome
 Prva stran\tHome
-
-&Fit pages to printable area
-Prilagodi strani na področje tiskanja
 
 &Go To
 Po&jdi na
@@ -73,7 +55,7 @@ P&riročnik
 Razlikuj &med velikimi/malimi črkami
 
 &Next Page\tRight Arrow
-Naslednja stran\tPuščica desno
+Naslednja stran\t->
 
 &No
 &Ne
@@ -81,53 +63,32 @@ Naslednja stran\tPuščica desno
 &No, thanks
 &Ne, hvala
 
-&Odd pages only
-Samo &lihe strani
-
 &Open\tCtrl-O
 &Odpri\tCtrl-O
 
 &Options...
-&Možnosti …
+&Možnosti ...
 
 &Password:
 &Geslo:
 
 &Previous Page\tLeft Arrow
-Predhodna stran\tPuščica levo
-
-&Print...
-&Natisni …
+Predhodna stran\t<-
 
 &Print...\tCtrl-P
-&Natisni …\tCtrl-P
-
-&Print... (denied)
-&Natisni … (onemogočeno)
-
-&Remember the password for this document
-&Zapomni si geslo za ta dokument
+&Natisni\tCtrl-P
 
 &Remember these settings for each document
 Zapomni si te &nastavitve za vsak dokument
 
-&Save As...
-Shrani &kot …
-
 &Save As...\tCtrl-S
-Shrani &kot …\tCtrl-S
+Shrani &kot\tCtrl-S
 
 &Settings
 &Nastavitve
 
-&Shrink pages to printable area (if necessary)
-&Skrči strani na področje tiskanja (če potrebno)
-
 &Skip this version
 &Preskoči to različico
-
-&Use original page sizes
-&Uporabi izvirno velikost strani
 
 &View
 &Pogled
@@ -150,38 +111,17 @@ Napredno
 All files
 Vse datoteke
 
-Application:
-Aplikacija:
-
 Associate with PDF files?
-Povežem z datotekami PDF?
-
-Attachment: %s
-Priponka: %s
-
-Author:
-Avtor:
+Želite povezati z datotekami PDF?
 
 Automatic
 Samodejno
 
 Automatically check for &updates
-&Samodejno preveri za posodobitve
-
-Book View
-Knjižni pogled
+Samodejno preveri &obstoj posodobitev
 
 Book&marks\tF12
 Zaznamki\tF12
-
-Bookmarks
-Zaznamki
-
-Bytes
-Bajtov
-
-Can't connect to the Internet (error %#x).
-Ne morem se povezati na internet (napaka %#x).
 
 Cancel
 Prekliči
@@ -196,31 +136,19 @@ Change Language
 Spremeni jezik (Change Language)
 
 Check for &Updates
-&Preveri za posodobitve
+&Preveri obstoj nove različice
 
 Continuous
 Nepretrgano
 
-Continuous Book View
-Nepretrgan knjižni pogled
-
-Continuous Facing
+Continuous facing
 Nepretrgano dvostransko
 
 Contribute Translation
 Prispevajte prevod
 
-Copy &Link Address
-Kopiraj nas&lov povezave
-
-Copy Co&mment
-Kopiraj ko&mentar
-
-Copying text was denied (copying as image only)
-Kopiranje besedila je bilo zavrnjeno (kopiranje samo kot slika)
-
 Could not open Printer
-Do tiskalnika ni mogoče dostopati
+Do tiskalnika ni mogoče dostopati.
 
 Couldn't initialize printer
 Tiskalnika ni mogoče inicializirati
@@ -228,26 +156,14 @@ Tiskalnika ni mogoče inicializirati
 Couldn't render the page
 Strani ni mogoče upodobiti
 
-Created:
-Ustvarjeno:
-
 Custom &Zoom...\tCtrl-Y
-Povečava po &meri …\tCtrl-Y
+Povečava po &meri ...\tCtrl-Y
 
 Default &Layout:
 &Privzeta postavitev:
 
 Default &Zoom:
 Pri&vzeta povečava:
-
-Default PDF reader can't be changed in portable mode
-Glavnega bralnika PDF ni mogoče spremeniti v prenosnem načinu
-
-Denied Permissions:
-Zavrnjena dovoljenja:
-
-Document Properties
-Lastnosti dokumenta
 
 Download
 Prenesi
@@ -261,14 +177,11 @@ Vnesite geslo
 Enter password for %s
 Vnesite geslo za %s
 
-Enter the command-line to invoke when you double-click on the PDF document:
-Vnesite ukazno vrstico, ki se bo izvedla, ko boste dvokliknili na PDF dokument:
+Error loading PDF file.
+Napaka pri branju datoteke PDF.
 
-F&orward\tAlt+Right Arrow
-Naprej\tAlt+Desna puščica
-
-F&ullscreen\tCtrl-Shift-L
-Celozaslonsko\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Celozaslonsko\tCtrl-L
 
 Facing
 Dvostransko
@@ -276,14 +189,8 @@ Dvostransko
 Failed to save a file
 Shranjevanje datoteke ni uspelo.
 
-File Size:
-Velikost datoteke:
-
-File:
-Datoteka:
-
 Fin&d...\tCtrl-F
-Najdi …\tCtrl-F
+Najdi ...\tCtrl-F
 
 Find
 Išči
@@ -297,35 +204,20 @@ Najdi prejšnje
 Find:
 Najdi:
 
-Fit &Content\tCtrl-3
-&Prilagodi vsebino\tCtrl-3
-
 Fit &Page\tCtrl-0
-&Prilagodi stran\tCtrl-0
+&Prilagodi strani\tCtrl-0
 
 Fit &Width\tCtrl-2
 P&rilagodi po širini\tCtrl-2
 
-Fit Content
-Prilagodi vsebino
-
 Fit Page
-Prilagodi stran
+Prilagodi strani
 
 Fit Width
 Prilagodi po širini
 
-Fit Width and Show Pages Continuously
-Prilagodi po širini in prikaži strani nepretrgano
-
-Fit a Single Page
-Prilagodi enostransko
-
 Found text at page %d
 Besedilo najdeno na strani %d
-
-GB
-GB
 
 Go to page
 Pojdi na stran
@@ -333,26 +225,23 @@ Pojdi na stran
 Hint: Use the F3 key for finding again
 Namig: Uporabite tipko F3 za ponovno iskanje
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Glavnega bralnika PDF ni mogoče spremeniti v prenosnem načinu
 
 Make SumatraPDF default application for PDF files?
 Naj bo SumatraPDF privezti program za datoteke PDF?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 SumatraPDF naj bo privzeti bralnik PDF
 
 Match Case
 Razlikuj med velikimi/malimi črkami
 
-Modified:
-Spremenjeno:
-
 New version %s is available. Download new version?
 Na voljo je nova različica %s. Jo želite prenesti?
+
+New version available.
+Na voljo je nova različica.
 
 Next Page
 Naslednja stran
@@ -363,14 +252,8 @@ Ni zadetkov
 No result found around line %u in file %s
 Okoli vrstice %u v datoteki %s ni zadetkov
 
-No synchronization file found
-Datoteka sinhronizacije ni bila najdena
-
 No synchronization info at this position
 Na tem mestu ni sinhronizacijskih podatkov
-
-Number of Pages:
-Število strani:
 
 OK
 V redu
@@ -381,59 +264,26 @@ Odpri
 Open in &Adobe Reader
 Odpri s programom &Adobe Reader
 
-Open in &Foxit Reader
-Odpri s programom &Foxit Reader
-
-Open in PDF-XChange
-Odpri s programom PDF-XChange
-
-P&roperties
-Lastnosti
-
-P&roperties\tCtrl-D
-Lastnosti\tCtrl-D
-
 PDF Document
 Dokument PDF
-
-PDF Producer:
-PDF izdelovalec:
-
-PDF Version:
-Verzija PDF:
 
 PDF documents
 Dokumenti PDF
 
 Pa&ge...\tCtrl-G
-Stran …\tCtrl-G
-
-Page Size:
-Velikost strani:
+Stran ...\tCtrl-G
 
 Page number %u inexistant
 Stran številka %u ne obstaja
 
-Page scaling
-Merilo strani
-
 Page:
 Stran:
 
-Please include the following file in your crash report:
-Prosim, vključite naslednjo datoteko v vaše poročilo o sesutju:
-
 Please wait - rendering...
-Počakajte trenutek, upodobitev poteka …
-
-Pr&esentation\tCtrl-L
-Pr&edstavitev\tCtrl-L
+Počakajte trenutek, upodobitev poteka ...
 
 Previous Page
 Predhodna stran
-
-Print range
-Natisni razpon
 
 Printing problem.
 Težave pri tiskanju.
@@ -448,28 +298,16 @@ Rotate &Right\tCtrl-Shift-+
 Zasukaj v desno\tCtrl-Shift-+
 
 Searching %d of %d...
-Preiskovanje strani %d od %d …
-
-Select &All
-Izberi vse
-
-Select &All\tCtrl-A
-Izberi vse\tCtrl-A
+Preiskovanje strani %d od %d ...
 
 Select content with Ctrl+left mouse button
 Izberite vsebino s pritisnjeno tipko Ctrl in levim gumbom miške
-
-Send by &E-mail...
-Pošlji po &E-pošti …
 
 Set inverse search command-line
 Nastavi obratno iskanje ukazne vrstice
 
 Show &Toolbar
 Pokaži orodno vrstico
-
-Show &pages continuously
-&Prikaži strani nepretrgano
 
 Show the &bookmarks sidebar when available
 Pokaži podokno z &zaznamki, če so na voljo
@@ -480,32 +318,17 @@ Enostransko
 Source file %s has no synchronization point
 Izvorna datoteka %s nima točke sinhronizacije
 
-Subject:
-Zadeva:
-
 SumatraPDF Options
 Možnosti SumatraPDF
 
-SumatraPDF Update
-Posodobitev SumatraPDF
-
-SumatraPDF crashed
-SumatraPDF se je sesul
-
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF je vaš privzeti bralnik PDF
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF bi zdaj moral biti vaš privzeti bralnik PDF
 
 Synchronization file cannot be opened
 Datoteke sinhronizacije ni mogoče odpreti
-
-Text documents
-Tekstovni dokumenti
-
-Title:
-Naslov:
 
 Unknown source file (%s)
 Neznana izvorna datoteka (%s)
@@ -540,27 +363,49 @@ Faktor povečave
 [Changes detected; refreshing] %s
 [Spremembe zaznane; osvežitev poteka] %s
 
-copying text
-kopiranje besedila
-
-printing document
-tiskanje dokumenta
-
 # Untranslated:
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#DjVu documents
-#Error loading %s
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Show frequently read
-#XPS documents
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Print... (denied)
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Application:
+#Attachment: %s
+#Author:
+#Book View
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Continuous book view
+#Copying text was denied (copying as image only)
+#Created:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#F&orward\tAlt+Right Arrow
+#File Size:
+#File:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Modified:
+#No synchronization file found
+#Number of Pages:
+#P&roperties\tCtrl-D
+#PDF Producer:
+#PDF Version:
+#Page Size:
+#Page scaling
+#Print range
+#Send by &E-mail...
+#Show &pages continuously
+#Subject:
+#Text documents
+#Title:
+#copying text
+#printing document
 

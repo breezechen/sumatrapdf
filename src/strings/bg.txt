@@ -1,10 +1,8 @@
 ﻿# Translations for Bulgarian (Български) (bg) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: bg Bulgarian (Български)
 
@@ -15,9 +13,6 @@ Contributor: Христо Бенев (http://hbcom.info)
 
 &Actual Size\tCtrl-1
 Едно към едно\tCtrl-1
-
-&All selected pages
-Всички избрани страници
 
 &Back\tAlt+Left Arrow
 Назад\tAlt+<-
@@ -31,9 +26,6 @@ Contributor: Христо Бенев (http://hbcom.info)
 &Don't ask me again
 Не питай отново
 
-&Even pages only
-Само четни страници
-
 &File
 &Файл
 
@@ -42,9 +34,6 @@ Contributor: Христо Бенев (http://hbcom.info)
 
 &First Page\tHome
 Начална страница\tHome
-
-&Fit pages to printable area
-Нагласи в мястото за отпечатване
 
 &Go To
 Отиди &на
@@ -76,9 +65,6 @@ Contributor: Христо Бенев (http://hbcom.info)
 &No, thanks
 Не, благодаря
 
-&Odd pages only
-Само нечетни страници
-
 &Open\tCtrl-O
 &Отвори\tCtrl-O
 
@@ -94,12 +80,6 @@ Contributor: Христо Бенев (http://hbcom.info)
 &Print...\tCtrl-P
 От&печатай\tCtrl-P
 
-&Print... (denied)
-Отпечатване... (отказано)
-
-&Remember the password for this document
-Запомни паролата за този документ
-
 &Remember these settings for each document
 Запази настройките за всеки документ
 
@@ -109,14 +89,8 @@ Contributor: Христо Бенев (http://hbcom.info)
 &Settings
 Настройки
 
-&Shrink pages to printable area (if necessary)
-Намали страниците в мястото за отпечатване (при необходимост)
-
 &Skip this version
 Пропусни тази версия.
-
-&Use original page sizes
-Използвай оригиналната големина
 
 &View
 &Виж
@@ -139,17 +113,8 @@ Advanced
 All files
 Всички файлове
 
-Application:
-Приложение
-
 Associate with PDF files?
 Асоцииране с PDF файлове?
-
-Attachment: %s
-Прикрепен: %s
-
-Author:
-Автор
 
 Automatic
 Автоматично
@@ -162,15 +127,6 @@ Book View
 
 Book&marks\tF12
 Етикети\tF12
-
-Bookmarks
-Показалец
-
-Bytes
-Байтове
-
-Can't connect to the Internet (error %#x).
-Няма връзка с Интернет (грешка %#x).
 
 Cancel
 Откажи
@@ -190,17 +146,14 @@ Check for &Updates
 Continuous
 Непрекъснати
 
-Continuous Book View
+Continuous book view
 Като книга - непрекъснати
 
-Continuous Facing
+Continuous facing
 Две непрекъснати
 
 Contribute Translation
 Допринеси за превода
-
-Copying text was denied (copying as image only)
-Текста не може да бъде копиран (копиране само като картинка)
 
 Could not open Printer
 Принтера не е достъпен
@@ -211,9 +164,6 @@ Couldn't initialize printer
 Couldn't render the page
 Страницата не може да се изобрази
 
-Created:
-Създаден:
-
 Custom &Zoom...\tCtrl-Y
 Увеличение по избор...\tCtrl-Y
 
@@ -222,15 +172,6 @@ Default &Layout:
 
 Default &Zoom:
 Увеличение по подразбиране
-
-Default PDF reader can't be changed in portable mode
-PDF четеца не може да бъде сменен в преносим режим
-
-Denied Permissions:
-Отказан достъп
-
-Document Properties
-Свойства на документа
 
 Download
 Свали
@@ -244,26 +185,20 @@ Enter password
 Enter password for %s
 Въведете парола за %s
 
-Enter the command-line to invoke when you double-click on the PDF document:
-Въведете командата, която ще бъде изпълнена при двоен клик на PDF документа:
+Error loading PDF file.
+Грешка при зареждане на файла.
 
 F&orward\tAlt+Right Arrow
 Напред\tAlt+->
 
-F&ullscreen\tCtrl-Shift-L
-Цял Екран\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Цял Екран\tCtrl-L
 
 Facing
 Две страници
 
 Failed to save a file
 Грешка при записване на файла
-
-File Size:
-Размер на файла:
-
-File:
-Файл:
 
 Fin&d...\tCtrl-F
 Търси...\tCtrl-F
@@ -295,35 +230,29 @@ Fit Width
 Found text at page %d
 Текста е намерен на страница %d
 
-GB
-GB
-
 Go to page
 Към страница
 
 Hint: Use the F3 key for finding again
 Съвет: Използвайте F3 за повторно търсене
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+PDF четеца не може да бъде сменен в преносим режим
 
 Make SumatraPDF default application for PDF files?
 Направи SumatraPDF основно приложение за PDF файлове?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Направи SumatraPDF четец на PDF по подразбиране
 
 Match Case
 Точно същите букви
 
-Modified:
-Модифициран:
-
 New version %s is available. Download new version?
 Достъпна е нова версия %s. Искате ли да я свалите?
+
+New version available.
+Има нова версия.
 
 Next Page
 Следваща страница
@@ -340,35 +269,14 @@ No synchronization file found
 No synchronization info at this position
 В тази позиция няма информация за синхронизация
 
-Number of Pages:
-Брой страници:
-
-OK
-Съгласен
-
 Open
 Отвори
 
 Open in &Adobe Reader
 Отвори с &Adobe Reader
 
-Open in &Foxit Reader
-Отвори с &Foxit Reader
-
-Open in PDF-XChange
-Отвори с PDF-XChange
-
-P&roperties\tCtrl-D
-Свойства
-
 PDF Document
 PDF документ
-
-PDF Producer:
-PDF създаден с:
-
-PDF Version:
-PDF версия:
 
 PDF documents
 PDF документи
@@ -376,8 +284,8 @@ PDF документи
 Pa&ge...\tCtrl-G
 Страница...\tCtrl-G
 
-Page Size:
-Размер на страницата:
+Page number %u inexistant
+Страница номер не съществува
 
 Page:
 Страница:
@@ -403,14 +311,8 @@ Rotate &Right\tCtrl-Shift-+
 Searching %d of %d...
 Търсене в страница %d от %d...
 
-Select &All\tCtrl-A
-Избери всичко
-
 Select content with Ctrl+left mouse button
 Изберете съдържание с Ctrl и левия бутон на мишката
-
-Send by &E-mail...
-Изпрати по емайл
 
 Set inverse search command-line
 Активирай обратно търсене
@@ -430,29 +332,17 @@ Single Page
 Source file %s has no synchronization point
 Източника %s няма синхронизационна точка
 
-Subject:
-Относно:
-
 SumatraPDF Options
 Опции на SumatraPDF
 
-SumatraPDF Update
-Обновяване на SumatraPDF
-
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF е вашия PDF четец
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF вече трябва да е четец на PDF по подразбиране
 
 Synchronization file cannot be opened
 Синхронизационния файл не може да бъде отворен
-
-Text documents
-Текстов документ
-
-Title:
-Заглавие:
 
 Unknown source file (%s)
 Непознат файл източник (%s)
@@ -482,49 +372,49 @@ Zoom Out
 Намали
 
 Zoom factor
-Коефициент на увеличение
+оефициент на увеличение
 
 [Changes detected; refreshing] %s
 [Намерени са промени; обновявам] %s
 
-copying text
-копиране на текст
-
-printing document
-Отпечатване на документ
-
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
-#Error loading %s
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Print... (denied)
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Application:
+#Attachment: %s
+#Author:
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Copying text was denied (copying as image only)
+#Created:
+#Denied Permissions:
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#File Size:
+#File:
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#Open a document...
-#P&roperties
-#Page number %u inexistant
+#Modified:
+#Number of Pages:
+#OK
+#P&roperties\tCtrl-D
+#PDF Producer:
+#PDF Version:
+#Page Size:
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Show frequently read
-#SumatraPDF crashed
-#XPS documents
+#Send by &E-mail...
+#Subject:
+#Text documents
+#Title:
+#copying text
+#printing document
 

@@ -10,8 +10,6 @@
 # define _XOPEN_SOURCE 1
 #endif
 
-#define noSHOWINFO
-
 #include "fitz.h"
 
 #include <X11/Xlib.h>
@@ -51,7 +49,6 @@ enum {
 	UNKNOWN
 };
 
-#ifdef SHOWINFO
 static char *modename[] = {
 	"ARGB8888",
 	"BGRA8888",
@@ -66,7 +63,6 @@ static char *modename[] = {
 	"BGR233",
 	"UNKNOWN"
 };
-#endif
 
 extern ximage_convert_func_t ximage_convert_funcs[];
 
@@ -99,12 +95,9 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 	XImage *img;
 	Status status;
 
-	if (!XShmQueryExtension(dpy))
-		goto fallback;
-	if (!info.useshm)
-		goto fallback;
+	if (!XShmQueryExtension(dpy)) goto fallback;
 
-	img = XShmCreateImage(dpy, vis, depth, ZPixmap, NULL, xsi, w, h);
+	img = XShmCreateImage(dpy, vis, depth, ZPixmap, nil, xsi, w, h);
 	if (!img)
 	{
 		fprintf(stderr, "warn: could not XShmCreateImage\n");
@@ -121,7 +114,7 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 		goto fallback;
 	}
 
-	img->data = xsi->shmaddr = shmat(xsi->shmid, NULL, 0);
+	img->data = xsi->shmaddr = shmat(xsi->shmid, nil, 0);
 	if (img->data == (char*)-1)
 	{
 		XDestroyImage(img);
@@ -141,14 +134,14 @@ createximage(Display *dpy, Visual *vis, XShmSegmentInfo *xsi, int depth, int w, 
 
 	XSync(dpy, False);
 
-	shmctl(xsi->shmid, IPC_RMID, NULL);
+	shmctl(xsi->shmid, IPC_RMID, nil);
 
 	return img;
 
 fallback:
 	info.useshm = 0;
 
-	img = XCreateImage(dpy, vis, depth, ZPixmap, 0, NULL, w, h, 32, 0);
+	img = XCreateImage(dpy, vis, depth, ZPixmap, 0, nil, w, h, 32, 0);
 	if (!img)
 	{
 		fprintf(stderr, "fail: could not XCreateImage");
@@ -212,7 +205,7 @@ select_mode(void)
 	unsigned long rs, gs, bs;
 
 	byteorder = ImageByteOrder(info.display);
-	if (fz_is_big_endian())
+	if (fz_isbigendian())
 		byterev = byteorder != MSBFirst;
 	else
 		byterev = byteorder != LSBFirst;
@@ -225,14 +218,12 @@ select_mode(void)
 	gs = ffs(gm) - 1;
 	bs = ffs(bm) - 1;
 
-#ifdef SHOWINFO
 	printf("ximage: mode %d/%d %08lx %08lx %08lx (%ld,%ld,%ld) %s%s\n",
 		info.visual.depth,
 		info.bitsperpixel,
 		rm, gm, bm, rs, gs, bs,
 		byteorder == MSBFirst ? "msb" : "lsb",
 		byterev ? " <swap>":"");
-#endif
 
 	info.mode = UNKNOWN;
 	if (info.bitsperpixel == 8) {
@@ -262,9 +253,7 @@ select_mode(void)
 			info.mode = byteorder == MSBFirst ? RGBA8888 : ABGR8888;
 	}
 
-#ifdef SHOWINFO
 	printf("ximage: RGBA8888 to %s\n", modename[info.mode]);
-#endif
 
 	/* select conversion function */
 	info.convert_func = ximage_convert_funcs[info.mode];
@@ -278,14 +267,14 @@ create_pool(void)
 	info.lastused = 0;
 
 	for (i = 0; i < POOLSIZE; i++) {
-		info.pool[i] = NULL;
+		info.pool[i] = nil;
 	}
 
 	for (i = 0; i < POOLSIZE; i++) {
 		info.pool[i] = createximage(info.display,
 			info.visual.visual, &info.shminfo[i], info.visual.depth,
 			WIDTH, HEIGHT);
-		if (info.pool[i] == NULL) {
+		if (info.pool[i] == nil) {
 			return 0;
 		}
 	}
@@ -314,7 +303,7 @@ ximage_error_handler(Display *display, XErrorEvent *event)
 	{
 		char buf[80];
 		XGetErrorText(display, event->error_code, buf, sizeof buf);
-		fprintf(stderr, "ximage: disabling shared memory extension: %s\n", buf);
+		printf("ximage: disabling shared memory extension: %s\n", buf);
 		info.useshm = 0;
 		return 0;
 	}
@@ -386,9 +375,7 @@ ximage_init(Display *display, int screen, Visual *visual)
 	if (!ok)
 		return 0;
 
-#ifdef SHOWINFO
 	printf("ximage: %sPutImage\n", info.useshm ? "XShm" : "X");
-#endif
 
 	return 1;
 }

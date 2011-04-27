@@ -1,14 +1,11 @@
 ﻿# Translations for Indonesian (Bahasa Indonesia) (id) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: id Indonesian (Bahasa Indonesia)
 
-Contributor: M. Ridwan Hakim (http://rescenin.blogspot.com)
 Contributor: Yudi Wibisono (http://yudiwbs.wordpress.com)
 Contributor: Ricki Yani Setiawan
 Contributor: Tri R.A. Wibowo
@@ -19,38 +16,26 @@ Contributor: Tri R.A. Wibowo
 &Actual Size\tCtrl-1
 &Ukuran Sebenarnya\tCtrl-1
 
-&All selected pages
-&Semua halaman yang dipilih
-
 &Back\tAlt+Left Arrow
 Kembali\tAlt+<-
 
 &Close\tCtrl-W
 &Tutup\tCtrl-W
 
-&Copy Selection
-&Salin Seleksi
-
 &Copy Selection\tCtrl-C
-Salin Hasil Seleksi\tCtrl-C
+Gandakan hasil seleksi\tCtrl-C
 
 &Don't ask me again
 &Jangan ulangi pertanyaan ini
-
-&Even pages only
-Hanya halaman gena&p
 
 &File
 &Berkas
 
 &Find what:
-&Cari:
+&Cari :
 
 &First Page\tHome
 Halaman Pertama\tHome
-
-&Fit pages to printable area
-&Sesuaikan halaman ke area cetakan
 
 &Go To
 &Pergi ke
@@ -59,7 +44,7 @@ Halaman Pertama\tHome
 &Pergi ke halaman:
 
 &Help
-Bantua&n
+Ban&tuan
 
 &Last Page\tEnd
 Halaman Terakhir\tEnd
@@ -71,7 +56,7 @@ Halaman Terakhir\tEnd
 &Manual
 
 &Match case
-&Samakan ukuran
+&Samakan jenis
 
 &Next Page\tRight Arrow
 Halaman Berikutnya\t->
@@ -82,9 +67,6 @@ Halaman Berikutnya\t->
 &No, thanks
 &Tidak, terima kasih
 
-&Odd pages only
-Hanya halaman ganji&l
-
 &Open\tCtrl-O
 &Buka\tCtrl-O
 
@@ -92,46 +74,31 @@ Hanya halaman ganji&l
 &Pilihan...
 
 &Password:
-&Kata kunci:
+&Kata kunci"
 
 &Previous Page\tLeft Arrow
 Halaman Sebelumnya\t<-
 
-&Print...
-&Cetak...
-
 &Print...\tCtrl-P
-&Cetak...\tCtrl-P
+&Cetak\tCtrl-P
 
 &Print... (denied)
 &Cetak... (ditolak)
 
-&Remember the password for this document
-&Ingat kata sandi untuk dokumen ini
-
 &Remember these settings for each document
-&Ingat pengaturan ini untuk setiap dokumen
-
-&Save As...
-Si&mpan Sebagai...
+&Ingat pengaturan ini untuk tiap dokumen
 
 &Save As...\tCtrl-S
-&Simpan Sebagai\tCtrl-S
+&Simpan sebagai\tCtrl-S
 
 &Settings
 &Pengaturan
 
-&Shrink pages to printable area (if necessary)
-&Perkecil halaman ke area cetakan (jika dibutuhkan)
-
 &Skip this version
 &Lewatkan versi ini
 
-&Use original page sizes
-&Gunakan ukuran halaman sebenarnya
-
 &View
-&Tampilan
+&Lihat
 
 &Yes
 &Ya
@@ -146,13 +113,10 @@ About SumatraPDF
 Tentang SumatraPDF
 
 Advanced
-Lanjutan
+Tingkat lanjut
 
 All files
-Semua Berkas
-
-All supported documents
-Semua Dokumen Yang Didukung
+Semua berkas
 
 Application:
 Aplikasi
@@ -160,77 +124,50 @@ Aplikasi
 Associate with PDF files?
 Asosiasikan dengan berkas PDF?
 
-Attachment: %s
-Lampiran: %s
-
 Author:
-Pencipta:
+Pengarang:
 
 Automatic
 Otomatis
 
 Automatically check for &updates
-Periksa &pembaruan secara otomatis
+Periksa &pemutakhiran secara otomatis
 
 Book View
-Tampilan Buku
+Tampilan buku
 
 Book&marks\tF12
-&Markah\tF12
-
-Bookmark Shortcuts
-Jalan Pintas Markah
-
-Bookmark shortcut to page %d of %s
-Jalan pintas markah ke halaman %d dari %s
-
-Bookmarks
-Markah
+Kutipan\tF12
 
 Bytes
 Bytes
-
-Can't connect to the Internet (error %#x).
-Tidak bisa menghubungi Internet (kesalahan %#x).
 
 Cancel
-Batalkan
+Batal
 
 Cannot print this file
 Tidak dapat mencetak berkas ini
 
 Cannot start inverse search command. Please check the command line in the settings.
-Tidak dapat memulai perintah pencarian terbalik. Harap periksa baris perintah di bagian pengaturan.
+Tidak dapat memulai perintah pencarian mundur. Harap periksa baris perintah di bagian pengaturan.
 
 Change Language
-Ubah Bahasa (Change Language)
+Ubah bahasa
 
 Check for &Updates
-&Periksa Versi Terbaru
-
-Comic books
-Buku Komik
+&Periksa versi baru
 
 Continuous
-Kontinu
+Bersambung
 
-Continuous Book View
-Tampilan Buku Secara Kontinu
+Continuous book view
+Tampilan buku secara kontinu
 
-Continuous Facing
-Dua Halaman Kontinu
+Continuous facing
+Dua Halaman Bersambung
 
 Contribute Translation
-Bantu Alihbahasa
-
-Copy &Link Address
-Salin Alamat &Link
-
-Copy Co&mment
-Salin &Komentar
-
-Copying text was denied (copying as image only)
-Menyalin teks ditolak (menyalin sebagai gambar saja)
+Membantu alihbahasa
 
 Could not open Printer
 Tidak dapat membuka printer
@@ -245,7 +182,7 @@ Created:
 Dibuat:
 
 Custom &Zoom...\tCtrl-Y
-&Pembesaran Buatan\tCtrl-Y
+&Pembesaran khusus\tCtrl-Y
 
 Default &Layout:
 Tampilan &Standar
@@ -253,11 +190,8 @@ Tampilan &Standar
 Default &Zoom:
 Pembesaran &Standar
 
-Default PDF reader can't be changed in portable mode
-Pembaca PDF utama tidak dapat diubah dalam mode portabel
-
 Denied Permissions:
-Izin Ditolak:
+Izin yang ditolak:
 
 Document Properties
 Properti Dokumen
@@ -274,17 +208,14 @@ Masukkan kata kunci
 Enter password for %s
 Masukkan kata kunci untuk %s
 
-Enter the command-line to invoke when you double-click on the PDF document:
-Masukkan baris perintah untuk dijalankan ketika Anda mengklik dua kali pada dokumen PDF:
-
-Error loading %s
-Kesalahan memuat %s
+Error loading PDF file.
+Kesalahan dalam memanggil berkas PDF.
 
 F&orward\tAlt+Right Arrow
 Berikutnya\tAlt+->
 
-F&ullscreen\tCtrl-Shift-L
-Selayar Penuh\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+Selayar Penuh\tCtrl-L
 
 Facing
 Dua Halaman
@@ -305,76 +236,46 @@ Find
 Cari
 
 Find Next
-Temukan Selanjutnya
+Temukan Sesudah
 
 Find Previous
-Temukan Sebelumnya
+Temukan Sebelum
 
 Find:
 Temukan:
 
-Fit &Content\tCtrl-3
-Sesuaikan Dengan &Konten\tCtrl-3 
-
 Fit &Page\tCtrl-0
-Sesuaikan Dengan &Halaman\tCtrl-0
+&Sesuaikan\tCtrl-0
 
 Fit &Width\tCtrl-2
-Sesuaikan Dengan &Lebar\tCtrl-2
-
-Fit Content
-Sesuaikan Dengan Konten
+Sesuaikan dengan &Lebar\tCtrl-2
 
 Fit Page
-Sesuaikan Dengan Halaman
+Sesuaikan
 
 Fit Width
-Sesuaikan Dengan Lebar
-
-Fit Width and Show Pages Continuously
-Sesuaikan Lebar Dan Tampilkan Halaman Secara Kontinu
-
-Fit a Single Page
-Sesuaikan Halaman Tunggal
+Sesuaikan dengan Lebar
 
 Found text at page %d
 Teks ditemukan pada halaman %d
 
-Found text at page %d (again)
-Teks ditemukan pada halaman %d (lagi)
-
-Frequently Read
-Yang Sering Dibaca
-
-GB
-GB
-
 Go to page
 Pergi ke halaman
-
-Hide frequently read
-Sembunyikan Yang Sering Dibaca
 
 Hint: Use the F3 key for finding again
 Tips : Gunakan tombol F3 untuk mengulangi pencarian
 
-Image files (*.%s)
-Berkas Gambar (*.%s)
-
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Pembaca PDF utama tidak dapat diubah dalam mode portabel
 
 Make SumatraPDF default application for PDF files?
 Jadikan SumatraPDF sebagai aplikasi standar untuk membuka berkas PDF?
 
-Make SumatraPDF my default PDF reader
-Jadikan SumatraPDF sebagai pembaca PDF utama
+Make SumatraPDF my main PDF reader
+Jadikan SumatraPDF sebagai pembaca-PDF utama
 
 Match Case
-Cocokkan Ukuran Huruf
+Cocokkan Huruf Besar-Kecilnya
 
 Modified:
 Dimodifikasi:
@@ -382,14 +283,17 @@ Dimodifikasi:
 New version %s is available. Download new version?
 Versi baru %s telah tersedia. Unduh versi baru ini?
 
+New version available.
+Versi baru telah tersedia
+
 Next Page
 Halaman Berikutnya
 
 No matches were found
-Tidak ditemukan kesamaan
+Tidak ada persamaan ditemukan
 
 No result found around line %u in file %s
-Tidak ditemukan hasil pada baris %u di dalam berkas %s
+Tidak ada hasil ditemukan pada baris %u di dalam berkas %s
 
 No synchronization file found
 Tidak ada berkas sinkronisasi ditemukan
@@ -398,7 +302,7 @@ No synchronization info at this position
 Tidak ada informasi sinkronisasi pada lokasi ini
 
 Number of Pages:
-Jumlah Halaman:
+Jumlah halaman:
 
 OK
 OK
@@ -406,35 +310,23 @@ OK
 Open
 Buka
 
-Open a document...
-Buka Dokumen...
-
 Open in &Adobe Reader
 Buka di &Adobe Reader
 
-Open in &Foxit Reader
-Buka di &Foxit Reader
-
-Open in PDF-XChange
-Buka di PDF-&XChange
-
-P&roperties
-P&roperti
-
 P&roperties\tCtrl-D
-P&roperti\tCtrl-D
+P&roperti...\tCtrl-D
 
 PDF Document
-Dokumen PDF
+Berkas PDF
 
 PDF Producer:
-Pembuat PDF:
+Produser PDF:
 
 PDF Version:
 Versi PDF:
 
 PDF documents
-Dokumen PDF
+Berkas-berkas dokumen
 
 Pa&ge...\tCtrl-G
 Halaman...\tCtrl-G
@@ -445,80 +337,50 @@ Ukuran Halaman:
 Page number %u inexistant
 Halaman %u tidak tersedia
 
-Page scaling
-Mengukur halaman
-
 Page:
 Halaman:
 
-Please include the following file in your crash report:
-Harap menyertakan berkas berikut ini di laporan crash Anda:
-
 Please wait - rendering...
-Harap tunggu - sedang proses rendering...
-
-Pr&esentation\tCtrl-L
-Presentasi\tCtrl-L
+Harap tunggu - sedang dalam proses...
 
 Previous Page
 Halaman Sebelumnya
 
-Print range
-Kisaran cetakan
-
-Printing is still in progress. Abort and start over?
-Proses pencetakan sedang dilaksanakan. Gagalkan dan ulangi lagi?
-
-Printing page %d of %d...
-Mencetak halaman %d dari %d...
-
 Printing problem.
-Masalah pencetakan.
+Masalahan Pencetakkan.
 
 Remember &opened files
-Ingat &berkas yang pernah dibuka
+Ingat &berkas yang pernah terbuka
 
 Rotate &Left\tCtrl-Shift--
-Putar Ke Kiri\tCtrl-Shift--
+Putar ke kiri\tCtrl-Shift--
 
 Rotate &Right\tCtrl-Shift-+
-Putar Ke Kanan\tCtrl-Shift-+
-
-Save S&hortcut...\tCtrl-Shift-S
-Simpan &Jalan Pintas...\tCtrl-Shift-S
+Putar ke Kanan\tCtrl-Shift-+
 
 Searching %d of %d...
 Sedang mencari %d dari %d
 
-Select &All
-Pilih Semu&a
-
-Select &All\tCtrl-A
-Pilih Semu&a\tCtrl-A
-
 Select content with Ctrl+left mouse button
-Pilih konten dengan tombol Ctrl+tombol kiri mouse 
+Pilih konten dengan tombol Ctrl+left pada mouse
 
 Send by &E-mail...
-Kirim Via &Email...
+Kirim dengan &email
 
 Set inverse search command-line
-Tetapkan baris perintah pencarian terbalik
+Tetapkan perintah pencarian mundur
 
 Show &Toolbar
-Tampilkan &Toolbar
+Perlihatkan toolbar
 
 Show &pages continuously
-Tampilkan Halaman Secara &Kontinu
-
-Show frequently read
-Tampilkan Yang Sering Dibaca
+Tampilkan halaman secara kontinu
 
 Show the &bookmarks sidebar when available
-Tampilkan kolom &markah jika tersedia
+Tampilkan kolom &kutipan jika tersedia
 
 Single Page
-Halaman Tunggal
+Satu Halaman
 
 Source file %s has no synchronization point
 Berkas asal %s tidak mempunyai titik sinkronisasi
@@ -527,25 +389,19 @@ Subject:
 Perihal:
 
 SumatraPDF Options
-Pengaturan SumatraPDF
+Pilihan-pilihan di SumatraPDF
 
-SumatraPDF Update
-Pembaruan SumatraPDF
+SumatraPDF is your main PDF reader
+SumatraPDF ada pembaca berkas PDF utama anda
 
-SumatraPDF crashed
-SumatraPDF berhenti berfungsi
-
-SumatraPDF is your default PDF reader
-SumatraPDF adalah pembaca berkas PDF utama Anda
-
-SumatraPDF should now be your default PDF reader
-SumatraPDF sekarang telah menjadi pembaca berkas PDF utama Anda
+SumatraPDF should now be your main PDF reader
+SumatraPDF sekarang telah menjadi pembaca berkas PDF utama anda
 
 Synchronization file cannot be opened
 Berkas sinkronisasi tidak dapat dibuka
 
 Text documents
-Dokumen Teks
+Dokumen-dokumen teks
 
 Title:
 Judul:
@@ -554,16 +410,13 @@ Unknown source file (%s)
 Berkas asal (%s) tidak diketahui
 
 View
-Tampilan
+Lihat
 
 Visit &Website
 &Kunjungi Halaman Web
 
 Warning
 Peringatan
-
-XPS documents
-Dokumen XPS
 
 You have the latest version.
 Anda telah memiliki versi terbaru
@@ -572,7 +425,7 @@ You have version %s
 Anda memiliki versi %s
 
 Zoom
-Sesuaikan
+Pembesaran
 
 Zoom In
 Perbesar
@@ -593,5 +446,21 @@ printing document
 mencetak dokumen
 
 # Untranslated:
-#DjVu documents
+#&All selected pages
+#&Even pages only
+#&Fit pages to printable area
+#&Odd pages only
+#&Remember the password for this document
+#&Shrink pages to printable area (if necessary)
+#&Use original page sizes
+#Attachment: %s
+#Bookmarks
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Copying text was denied (copying as image only)
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Page scaling
+#Print range
 

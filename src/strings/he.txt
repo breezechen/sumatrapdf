@@ -1,10 +1,8 @@
 ﻿# Translations for Hebrew (עברית) (he) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: he Hebrew (עברית)
 
@@ -63,7 +61,7 @@ Contributor: Amos Kotter http://sites.google.com/site/hillasystem/
 הגדלה
 
 &Manual
-מדריך
+ידני
 
 &Match case
 התאם אות גדולה/קטנה
@@ -116,9 +114,6 @@ Contributor: Amos Kotter http://sites.google.com/site/hillasystem/
 &Skip this version
 דלג מהדורה זו
 
-&Use original page sizes
-השתמש במידות דף מקוריות
-
 &View
 &תצוגה
 
@@ -146,6 +141,9 @@ Application:
 Associate with PDF files?
 ?PDF לשייך לקבצי
 
+Attachment: %s
+מצורף:
+
 Author:
 עורך:
 
@@ -167,9 +165,6 @@ Bookmarks
 Bytes
 ביטים
 
-Can't connect to the Internet (error %#x).
-לא יכול להתקשר לאינטרנט (error %#x).
-
 Cancel
 בטל
 
@@ -188,17 +183,14 @@ Check for &Updates
 Continuous
 רציף
 
-Continuous Book View
+Continuous book view
 תצוגת ספר רציפה
 
-Continuous Facing
+Continuous facing
 המשך תצוגה רציפה
 
 Contribute Translation
 עזור לתרגם
-
-Copying text was denied (copying as image only)
-העתקת טקסט נדחית (מועתק רק כתמונה)
 
 Could not open Printer
 לא ניתן לפתוח מדפסת
@@ -221,9 +213,6 @@ Default &Layout:
 Default &Zoom:
 זום ברירת ברירת מחדל:
 
-Default PDF reader can't be changed in portable mode
-PDF לא ניתן לשנות במצב נייד את קורא ה
-
 Denied Permissions:
 הרשאות חסרות:
 
@@ -242,11 +231,14 @@ Enter password
 Enter password for %s
 %s הכנס סיסמה עבור
 
+Error loading PDF file.
+PDF שגיאה בהעלאת קובץ
+
 F&orward\tAlt+Right Arrow
 קדימה\tAlt+ ?
 
-F&ullscreen\tCtrl-Shift-L
-מסך מלא\tCtrl-Shift-L
+F&ullscreen\tCtrl-L
+מסך מלא\tCtrl-L
 
 Facing
 דף כפול
@@ -275,17 +267,11 @@ Find Previous
 Find:
 חפש:
 
-Fit &Content\tCtrl-3
-התאם לתוכן\tCtrl-3
-
 Fit &Page\tCtrl-0
 התאם דף\tCtrl-0
 
 Fit &Width\tCtrl-2
 התאם רוחב\tCtrl-2
-
-Fit Content
-התאם לתוכן
 
 Fit Page
 התאם דף
@@ -296,25 +282,19 @@ Fit Width
 Found text at page %d
 %d חפש מלל בעמוד
 
-GB
-GB
-
 Go to page
 עבור לעמוד
 
 Hint: Use the F3 key for finding again
 F3 רמז: לחיפוש הבא, השתמש במקש
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+PDF לא ניתן לשנות במצב נייד את קורא ה
 
 Make SumatraPDF default application for PDF files?
 ?SumatraPDF האם לקבוע כברירת מחדל את
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 PDF הפוך את סומטרה לברירת מחדל עבור קבצי
 
 Match Case
@@ -326,11 +306,17 @@ Modified:
 New version %s is available. Download new version?
 ?%s מהדורה חדשה זמינה. להוריד מהדורה
 
+New version available.
+מהדורה חדשה זמינה
+
 Next Page
 דף הבא
 
 No matches were found
 לא נמצאו התאמות
+
+No result found around line %u in file %s
+%s בקובץ %u אין תוצאה באזור שורה
 
 No synchronization file found
 לא נמצא קובץ סנכרון
@@ -349,12 +335,6 @@ Open
 
 Open in &Adobe Reader
 Adobe פתח בקורא
-
-Open in &Foxit Reader
-Foxit פתח בקורא
-
-Open in PDF-XChange
-PDF-XChange פתח בקורא
 
 P&roperties\tCtrl-D
 תכונות...\tCtrl-D
@@ -440,13 +420,10 @@ Subject:
 SumatraPDF Options
 SumatraPDF אפשרויות
 
-SumatraPDF Update
-SumatraPDF עדכון
-
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF ראשי הינו PDF קורא
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF ראשי אמור להיות עכשיו PDF קורא
 
 Synchronization file cannot be opened
@@ -498,36 +475,11 @@ printing document
 מדפיס מסמך
 
 # Untranslated:
-#&Copy Selection
-#&Print...
-#&Save As...
-#All supported documents
-#Attachment: %s
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
-#Comic books
-#Copy &Link Address
-#Copy Co&mment
-#DjVu documents
+#&Use original page sizes
+#Can't connect to the Internet (error %#x).
+#Check for Updates
+#Copying text was denied (copying as image only)
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
-#No result found around line %u in file %s
-#Open a document...
-#P&roperties
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
-#Show frequently read
-#SumatraPDF crashed
-#XPS documents
+#Fit &Content\tCtrl-3
+#Fit Content
 

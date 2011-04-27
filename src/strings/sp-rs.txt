@@ -1,10 +1,8 @@
 ﻿# Translations for Serbian (Latin) (sp-rs) language
 
-# * Lines starting with # are comments (such as this).
-# * This file must be in UTF-8 encoding. Make sure you use a proper
-#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
-# * For lines containing several variables (such as %s, %d or %u), the
-#   variables must remain in that exact order in the translation.
+# Lines at the beginning starting with # are comments
+# This file must be in utf-8 encoding. Make sure you use a proper
+# text editor (notepad++ or notepad2 will work) and set utf8 encoding.
 
 Lang: sp-rs Serbian (Latin)
 
@@ -143,7 +141,7 @@ Proveri postojanje novije verzije
 Continuous
 Neprekidno
 
-Continuous Facing
+Continuous facing
 Neprekidno, dve strane
 
 Contribute Translation
@@ -167,9 +165,6 @@ Podrazumevani prikaz
 Default &Zoom:
 Podrazumevano uvećanje
 
-Default PDF reader can't be changed in portable mode
-Glavni PDF čitač ne može biti promenjen u prenosivnom môdu
-
 Download
 Preuzmi
 
@@ -182,8 +177,11 @@ Unesite lozinku
 Enter password for %s
 Unesite lozinku za %s
 
-F&ullscreen\tCtrl-Shift-L
-Ceo ekran\tCtrl-Shift-L
+Error loading PDF file.
+Greška pri učitavanju PDF dokumenta
+
+F&ullscreen\tCtrl-L
+Ceo ekran\tCtrl-L
 
 Facing
 Dve strane
@@ -221,25 +219,19 @@ Prilagodi širini
 Found text at page %d
 Tekst je pronađen na strani %d
 
-GB
-GB
-
 Go to page
 Idi na stranu
 
 Hint: Use the F3 key for finding again
 Savet: Koristite taster F3 za nastavak pretrage
 
-KB
-KB
-
-MB
-MB
+Main PDF reader can't be changed in portable mode
+Glavni PDF čitač ne može biti promenjen u prenosivnom môdu
 
 Make SumatraPDF default application for PDF files?
 Postaviti SumatraPDF kao podrazumevanu aplikaciju za PDF datoteke?
 
-Make SumatraPDF my default PDF reader
+Make SumatraPDF my main PDF reader
 Neka SumatraPDF bude glavni PDF čitač
 
 Match Case
@@ -247,6 +239,9 @@ Razlikuj mala i velika slova
 
 New version %s is available. Download new version?
 Dostupna je verzija %s. Preuzeti novu verziju?
+
+New version available.
+Novija verzija je dostupna.
 
 Next Page
 Sledeća strana
@@ -271,12 +266,6 @@ Otvori
 
 Open in &Adobe Reader
 Otvori u programu Adobe Reader
-
-Open in &Foxit Reader
-Otvori u programu Foxit Reader
-
-Open in PDF-XChange
-Otvori u programu PDF-XChange
 
 PDF Document
 PDF dokument
@@ -332,13 +321,16 @@ Prikaži traku sa beleškama kada je dostupna
 Single Page
 Jedna strana
 
+Source file %s has no synchronization point
+Izvorna datoteka nema tačku usklađivanja
+
 SumatraPDF Options
 Podešavanja programa SumatraPDF
 
-SumatraPDF is your default PDF reader
+SumatraPDF is your main PDF reader
 SumatraPDF je vaš glavni PDF čitač
 
-SumatraPDF should now be your default PDF reader
+SumatraPDF should now be your main PDF reader
 SumatraPDF bi sada trebao da bude vaš glavni PDF čitač
 
 Synchronization file cannot be opened
@@ -383,73 +375,43 @@ Faktor uvećanja
 # Untranslated:
 #&All selected pages
 #&Back\tAlt+Left Arrow
-#&Copy Selection
 #&Even pages only
 #&Fit pages to printable area
 #&Odd pages only
-#&Print...
 #&Print... (denied)
 #&Remember the password for this document
-#&Save As...
 #&Shrink pages to printable area (if necessary)
 #&Use original page sizes
-#All supported documents
 #Application:
 #Attachment: %s
 #Author:
 #Book View
-#Bookmark Shortcuts
-#Bookmark shortcut to page %d of %s
 #Bookmarks
 #Bytes
 #Can't connect to the Internet (error %#x).
-#Comic books
-#Continuous Book View
-#Copy &Link Address
-#Copy Co&mment
+#Check for Updates
+#Continuous book view
 #Copying text was denied (copying as image only)
 #Created:
 #Denied Permissions:
-#DjVu documents
 #Document Properties
 #Enter the command-line to invoke when you double-click on the PDF document:
-#Error loading %s
 #F&orward\tAlt+Right Arrow
 #File Size:
 #File:
 #Fit &Content\tCtrl-3
 #Fit Content
-#Fit Width and Show Pages Continuously
-#Fit a Single Page
-#Found text at page %d (again)
-#Frequently Read
-#Hide frequently read
-#Image files (*.%s)
 #Modified:
 #Number of Pages:
-#Open a document...
-#P&roperties
 #P&roperties\tCtrl-D
 #PDF Producer:
 #PDF Version:
 #Page Size:
 #Page scaling
-#Please include the following file in your crash report:
-#Pr&esentation\tCtrl-L
 #Print range
-#Printing is still in progress. Abort and start over?
-#Printing page %d of %d...
-#Save S&hortcut...\tCtrl-Shift-S
-#Select &All
-#Select &All\tCtrl-A
 #Send by &E-mail...
-#Show frequently read
-#Source file %s has no synchronization point
 #Subject:
-#SumatraPDF Update
-#SumatraPDF crashed
 #Title:
-#XPS documents
 #copying text
 #printing document
 
