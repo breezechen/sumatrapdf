@@ -1426,9 +1426,10 @@ static void DeleteWindowInfo(WindowInfo *win)
 
 static void UpdateTocWidth(HWND hwndTocBox, const DisplayState *ds=NULL, int defaultDx=0)
 {
-    WindowRect rc(hwndTocBox);
+    RectI rc = WindowRect(hwndTocBox);
     if (rc.IsEmpty())
         return;
+    rc = MapRectToWindow(rc, HWND_DESKTOP, GetParent(hwndTocBox));
 
     if (ds && !gGlobalPrefs.m_globalPrefsOnly)
         rc.dx = ds->tocDx;
@@ -1492,6 +1493,7 @@ static bool LoadDocIntoWindow(
         if (!tryRepair) {
             win.dm = prevModel;
         } else {
+            win.ClearTocBox();
             delete prevModel;
             ScopedMem<TCHAR> title(str::Format(_T("%s - %s"), path::GetBaseName(fileName), SUMATRA_WINDOW_TITLE));
             win::SetText(win.hwndFrame, title);
@@ -1501,6 +1503,7 @@ static bool LoadDocIntoWindow(
         assert(win.IsDocLoaded());
         if (prevModel && str::Eq(win.dm->fileName(), prevModel->fileName()))
             gRenderCache.KeepForDisplayModel(prevModel, win.dm);
+        win.ClearTocBox();
         delete prevModel;
     }
 
@@ -1594,8 +1597,6 @@ Error:
         }
         UpdateWindow(win.hwndFrame);
     }
-    if (win.tocLoaded)
-        win.ClearTocBox();
     if (win.IsDocLoaded())
         win.dm->SetScrollState(ss);
     if (win.IsDocLoaded() && win.tocShow && win.dm->engine && win.dm->engine->HasToCTree()) {
@@ -1603,7 +1604,6 @@ Error:
     } else if (oldTocShow) {
         // Hide the now useless ToC sidebar and force an update afterwards
         win.HideTocBox();
-        win.ClearTocBox();
         win.RedrawAll(true);
     }
     UpdateToolbarAndScrollbarsForAllWindows();
