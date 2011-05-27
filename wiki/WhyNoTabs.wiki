@@ -1,3 +1,4 @@
+#summary Explains why Sumatra doesn't have tabs
 =Why Sumatra doesn't have tabs?=
 
 Adding tabs to Sumatra is a popular feature request. Why haven't we done that?
