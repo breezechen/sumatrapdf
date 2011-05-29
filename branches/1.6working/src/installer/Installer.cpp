@@ -296,10 +296,10 @@ TCHAR *GetOwnPath()
 TCHAR *GetInstallationDir(bool forUninstallation=false)
 {
     // try the previous installation directory first
-    ScopedMem<TCHAR> dir(ReadRegStr(HKEY_LOCAL_MACHINE, REG_PATH_SOFTWARE, INSTALL_DIR));
-    if (!dir) dir.Set(ReadRegStr(HKEY_CURRENT_USER, REG_PATH_SOFTWARE, INSTALL_DIR));
-    if (!dir) dir.Set(ReadRegStr(HKEY_LOCAL_MACHINE, REG_PATH_UNINST, INSTALL_LOCATION));
+    ScopedMem<TCHAR> dir(ReadRegStr(HKEY_CURRENT_USER, REG_PATH_SOFTWARE, INSTALL_DIR));
+    if (!dir) dir.Set(ReadRegStr(HKEY_LOCAL_MACHINE, REG_PATH_SOFTWARE, INSTALL_DIR));
     if (!dir) dir.Set(ReadRegStr(HKEY_CURRENT_USER, REG_PATH_UNINST, INSTALL_LOCATION));
+    if (!dir) dir.Set(ReadRegStr(HKEY_LOCAL_MACHINE, REG_PATH_UNINST, INSTALL_LOCATION));
     if (dir) {
         if (str::EndsWithI(dir, _T(".exe"))) {
             dir.Set(path::GetDir(dir));
@@ -1199,12 +1199,12 @@ static DWORD WINAPI UninstallerThread(LPVOID data)
         KillProcess(exePath, TRUE);
     free(exePath);
 
-    if (!RemoveUninstallerRegistryInfo(HKEY_LOCAL_MACHINE) ||
+    if (!RemoveUninstallerRegistryInfo(HKEY_LOCAL_MACHINE) &&
         !RemoveUninstallerRegistryInfo(HKEY_CURRENT_USER)) {
         NotifyFailed(_T("Failed to delete uninstaller registry keys"));
     }
 
-    if (!RemoveShortcut(true) || !RemoveShortcut(false))
+    if (!RemoveShortcut(true) && !RemoveShortcut(false))
         NotifyFailed(_T("Couldn't remove the shortcut"));
 
     RemoveOwnRegistryKeys();
