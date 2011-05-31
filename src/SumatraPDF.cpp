@@ -5,7 +5,6 @@
 #include <shlobj.h>
 #include <wininet.h>
 #include <locale.h>
-#include <time.h>
 
 #include "WindowInfo.h"
 #include "RenderCache.h"
@@ -576,6 +575,7 @@ MenuDef menuDefHelp[] = {
     { _TRN("&About"),                       IDM_ABOUT,                  0  },
 #ifdef SHOW_DEBUG_MENU_ITEMS
     { SEP_ITEM,                             0,                          0  },
+    { "Test PE rewrite",                    IDM_TEST_PE_REWRITE,        MF_NO_TRANSLATE  },
     { "Crash me",                           IDM_CRASH_ME,               MF_NO_TRANSLATE  },
 #endif
 };
@@ -724,7 +724,7 @@ static bool WindowInfoStillValid(WindowInfo *win)
     return gWindows.Find(win) != -1;
 }
 
-// Find the first window showing a given PDF file 
+// Find the first windows showing a given PDF file 
 WindowInfo* FindWindowInfoByFile(TCHAR *file)
 {
     ScopedMem<TCHAR> normFile(path::Normalize(file));
@@ -737,19 +737,6 @@ WindowInfo* FindWindowInfoByFile(TCHAR *file)
             return win;
     }
 
-    return NULL;
-}
-
-// Find the first window that has been produced from <file>
-WindowInfo* FindWindowInfoBySyncFile(TCHAR *file)
-{
-    for (size_t i = 0; i < gWindows.Count(); i++) {
-        WindowInfo *win = gWindows.At(i);
-        Vec<RectI> rects;
-        UINT page;
-        if (win->pdfsync && win->pdfsync->source_to_pdf(file, 0, 0, &page, rects) != PDFSYNCERR_UNKNOWN_SOURCEFILE)
-            return win;
-    }
     return NULL;
 }
 
@@ -1496,31 +1483,28 @@ static bool LoadDocIntoWindow(
     win.dm = DisplayModel::CreateFromFileName(&win, fileName, displayMode,
         startPage, win.GetViewPortSize());
     bool needrefresh = !win.dm;
-
     bool oldTocShow = win.tocShow;
-    // ToC items might hold a reference to an Engine, so make sure to
-    // delete them before destroying the whole DisplayModel
-    if (win.dm || tryRepair)
-        win.ClearTocBox();
 
-    assert(!win.IsAboutWindow() && win.IsDocLoaded() == (win.dm != NULL));
-    if (win.dm) {
-        if (prevModel && str::Eq(win.dm->fileName(), prevModel->fileName()))
-            gRenderCache.KeepForDisplayModel(prevModel, win.dm);
-        delete prevModel;
-    }
-    else if (tryRepair) {
+    if (!win.dm) {
+        assert(!win.IsDocLoaded() && !win.IsAboutWindow());
         DBG_OUT("failed to load file %s\n", fileName);
-        delete prevModel;
-        ScopedMem<TCHAR> title(str::Format(_T("%s - %s"), path::GetBaseName(fileName), SUMATRA_WINDOW_TITLE));
-        win::SetText(win.hwndFrame, title);
-        goto Error;
-    }
-    else {
         // if there is an error while reading the document and a repair is not requested
         // then fallback to the previous state
-        DBG_OUT("failed to load file %s, falling back to previous DisplayModel\n", fileName);
-        win.dm = prevModel;
+        if (!tryRepair) {
+            win.dm = prevModel;
+        } else {
+            win.ClearTocBox();
+            delete prevModel;
+            ScopedMem<TCHAR> title(str::Format(_T("%s - %s"), path::GetBaseName(fileName), SUMATRA_WINDOW_TITLE));
+            win::SetText(win.hwndFrame, title);
+            goto Error;
+        }
+    } else {
+        assert(win.IsDocLoaded());
+        if (prevModel && str::Eq(win.dm->fileName(), prevModel->fileName()))
+            gRenderCache.KeepForDisplayModel(prevModel, win.dm);
+        win.ClearTocBox();
+        delete prevModel;
     }
 
     float zoomVirtual = gGlobalPrefs.m_defaultZoom;
@@ -1588,7 +1572,7 @@ static bool LoadDocIntoWindow(
     free(title);
 
     if (!gRestrictedUse && Engine_PDF == win.dm->engineType) {
-        int res = Synchronizer::Create(fileName, win.dm, &win.pdfsync);
+        int res = Synchronizer::Create(fileName, &win.pdfsync);
         // expose SyncTeX in the UI
         if (PDFSYNCERR_SUCCESS == res)
             gGlobalPrefs.m_enableTeXEnhancements = true;
@@ -2316,6 +2300,22 @@ static void DeleteOldSelectionInfo(WindowInfo& win, bool alsoTextSel)
         win.dm->textSelection->Reset();
 }
 
+// TODO: temporary
+#ifdef DEBUG
+#include "PEUtil.h"
+
+static void TestPeRewrite()
+{
+    ScopedMem<TCHAR> exePath(GetExePath());
+    ScopedMem<TCHAR> exeDir(path::GetDir(exePath));
+    ScopedMem<TCHAR> installerPath(path::Join(exeDir, _T("Installer.exe")));
+    ScopedMem<TCHAR> rewrittenPath(path::Join(exeDir, _T("Installer-rewritten.exe")));
+    RemoveDataResource(installerPath, rewrittenPath);
+}
+#else
+static void TestPeRewrite() { }
+#endif
+
 // for testing only
 static void CrashMe()
 {
@@ -2369,7 +2369,7 @@ static bool OnInverseSearch(WindowInfo& win, int x, int y)
     // On double-clicking error message will be shown to the user
     // if the PDF does not have a synchronization file
     if (!win.pdfsync) {
-        int err = Synchronizer::Create(win.loadedFilePath, win.dm, &win.pdfsync);
+        int err = Synchronizer::Create(win.loadedFilePath, &win.pdfsync);
         if (err == PDFSYNCERR_SYNCFILE_NOTFOUND) {
             DBG_OUT("Pdfsync: Sync file not found!\n");
             // Fall back to selecting a word when double-clicking over text in
@@ -2394,10 +2394,14 @@ static bool OnInverseSearch(WindowInfo& win, int x, int y)
     if (!win.dm->validPageNo(pageNo))
         return false;
 
-    PointI pt = win.dm->CvtFromScreen(PointI(x, y), pageNo).Convert<int>();
-    ScopedMem<TCHAR> srcfilepath;
+    PointD pt = win.dm->CvtFromScreen(PointI(x, y), pageNo);
+    x = (int)pt.x; y = (int)pt.y;
+
+    const PageInfo *pageInfo = win.dm->getPageInfo(pageNo);
+    TCHAR srcfilepath[MAX_PATH];
+    win.pdfsync->convert_coord_to_internal(&x, &y, pageInfo->page.Convert<int>().dy, BottomLeft);
     UINT line, col;
-    int err = win.pdfsync->pdf_to_source(pageNo, pt, srcfilepath, &line, &col);
+    UINT err = win.pdfsync->pdf_to_source(pageNo, x, y, srcfilepath, dimof(srcfilepath),&line,&col); // record 101
     if (err != PDFSYNCERR_SUCCESS) {
         DBG_OUT("cannot sync from pdf to source!\n");
         win.ShowNotification(_TR("No synchronization info at this position"));
@@ -3538,7 +3542,7 @@ static void OnMenuPrint(WindowInfo& win)
 static void OnMenuSaveAs(WindowInfo& win)
 {
     OPENFILENAME   ofn = {0};
-    TCHAR          dstFileName[MAX_PATH];
+    TCHAR          dstFileName[MAX_PATH] = {0};
     const TCHAR *  srcFileName = NULL;
 
     if (gRestrictedUse) return;
@@ -3653,8 +3657,9 @@ bool LinkSaver::SaveEmbedded(unsigned char *data, int len)
     if (gRestrictedUse)
         return false;
 
-    TCHAR dstFileName[MAX_PATH];
-    str::BufSet(dstFileName, dimof(dstFileName), fileName ? fileName : _T(""));
+    TCHAR dstFileName[MAX_PATH] = { 0 };
+    if (fileName)
+        str::BufSet(dstFileName, dimof(dstFileName), this->fileName);
 
     // Prepare the file filters (use \1 instead of \0 so that the
     // double-zero terminated string isn't cut by the string handling
@@ -3684,7 +3689,7 @@ static void OnMenuSaveBookmark(WindowInfo& win)
 
     const TCHAR *defExt = win.dm->engine->GetDefaultFileExt();
 
-    TCHAR dstFileName[MAX_PATH];
+    TCHAR dstFileName[MAX_PATH] = { 0 };
     // Remove the extension so that it can be re-added depending on the chosen filter
     str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(win.dm->fileName()));
     str::TransChars(dstFileName, _T(":"), _T("_"));
@@ -4264,23 +4269,30 @@ static void OnMenuViewPresentation(WindowInfo& win)
 void WindowInfo::ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT col, UINT ret, UINT page, Vec<RectI> &rects)
 {
     this->fwdsearchmark.rects.Reset();
-    if (ret == PDFSYNCERR_SUCCESS && rects.Count() > 0) {
+    if (ret == PDFSYNCERR_SUCCESS && rects.Count() > 0 ) {
         // remember the position of the search result for drawing the rect later on
         const PageInfo *pi = this->dm->getPageInfo(page);
         if (pi) {
-            this->fwdsearchmark.rects = rects;
+            RectI overallrc;
+            RectI rc = rects[0];
+            this->pdfsync->convert_coord_from_internal(&rc, pi->page.Convert<int>().dy, BottomLeft);
+
+            overallrc = rc;
+            for (size_t i = 0; i < rects.Count(); i++) {
+                rc = rects[i];
+                this->pdfsync->convert_coord_from_internal(&rc, pi->page.Convert<int>().dy, BottomLeft);
+                overallrc = overallrc.Union(rc);
+                this->fwdsearchmark.rects.Push(rc);
+            }
             this->fwdsearchmark.page = page;
             this->fwdsearchmark.show = true;
             if (!gGlobalPrefs.m_fwdsearchPermanent)  {
                 this->fwdsearchmark.hideStep = 0;
                 SetTimer(this->hwndCanvas, HIDE_FWDSRCHMARK_TIMER_ID, HIDE_FWDSRCHMARK_DELAY_IN_MS, NULL);
             }
-
+            
             // Scroll to show the overall highlighted zone
             int pageNo = page;
-            RectI overallrc = rects[0];
-            for (size_t i = 1; i < rects.Count(); i++)
-                overallrc = overallrc.Union(rects[i]);
             TextSel res = { 1, &pageNo, &overallrc };
             if (!this->dm->pageVisible(page))
                 this->dm->goToPage(page, 0, true);
@@ -4292,25 +4304,26 @@ void WindowInfo::ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT 
         }
     }
 
-    ScopedMem<TCHAR> buf;
+    TCHAR *buf = NULL;    
     if (ret == PDFSYNCERR_SYNCFILE_NOTFOUND )
         ShowNotification(_TR("No synchronization file found"));
     else if (ret == PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED)
         ShowNotification(_TR("Synchronization file cannot be opened"));
     else if (ret == PDFSYNCERR_INVALID_PAGE_NUMBER)
-        buf.Set(str::Format(_TR("Page number %u inexistant"), page));
+        buf = str::Format(_TR("Page number %u inexistant"), page);
     else if (ret == PDFSYNCERR_NO_SYNC_AT_LOCATION)
         ShowNotification(_TR("No synchronization info at this position"));
     else if (ret == PDFSYNCERR_UNKNOWN_SOURCEFILE)
-        buf.Set(str::Format(_TR("Unknown source file (%s)"), fileName));
+        buf = str::Format(_TR("Unknown source file (%s)"), fileName);
     else if (ret == PDFSYNCERR_NORECORD_IN_SOURCEFILE)
-        buf.Set(str::Format(_TR("Source file %s has no synchronization point"), fileName));
+        buf = str::Format(_TR("Source file %s has no synchronization point"), fileName);
     else if (ret == PDFSYNCERR_NORECORD_FOR_THATLINE)
-        buf.Set(str::Format(_TR("No result found around line %u in file %s"), line, fileName));
+        buf = str::Format(_TR("No result found around line %u in file %s"), line, fileName);
     else if (ret == PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD)
-        buf.Set(str::Format(_TR("No result found around line %u in file %s"), line, fileName));
+        buf = str::Format(_TR("No result found around line %u in file %s"), line, fileName);
     if (buf)
         ShowNotification(buf);
+    free(buf);
 }
 
 static void OnMenuFindNext(WindowInfo& win)
@@ -5532,7 +5545,7 @@ static HTREEITEM AddTocItemToView(HWND hwnd, DocToCItem *entry, HTREEITEM parent
     tvinsert.itemex.stateMask = TVIS_EXPANDED;
     tvinsert.itemex.lParam = (LPARAM)entry;
     // Replace unprintable whitespace with regular spaces
-    str::NormalizeWS(entry->title);
+    str::TransChars(entry->title, _T("\t\n\v\f\r"), _T("     "));
     tvinsert.itemex.pszText = entry->title;
 
 #ifdef DISPLAY_TOC_PAGE_NUMBERS
@@ -5640,12 +5653,8 @@ void WindowInfo::LoadTocTree()
     tocRoot = NULL;
     if (dm->engine)
         tocRoot = dm->engine->GetToCTree();
-    if (tocRoot) {
-        SendMessage(hwndTocTree, WM_SETREDRAW, FALSE, 0);
+    if (tocRoot)
         PopulateTocTreeView(hwndTocTree, tocRoot, tocState);
-        SendMessage(hwndTocTree, WM_SETREDRAW, TRUE, 0);
-        RedrawWindow(hwndTocTree, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
-    }
 
     tocLoaded = true;
 }
@@ -5724,11 +5733,7 @@ void WindowInfo::ClearTocBox()
 {
     if (!tocLoaded) return;
 
-    SendMessage(hwndTocTree, WM_SETREDRAW, FALSE, 0);
     TreeView_DeleteAllItems(hwndTocTree);
-    SendMessage(hwndTocTree, WM_SETREDRAW, TRUE, 0);
-    RedrawWindow(hwndTocTree, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
-
     delete tocRoot;
     tocRoot = NULL;
 
@@ -6406,6 +6411,11 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
                     CrashMe();
                     break;
 
+                // TODO: temporary
+                case IDM_TEST_PE_REWRITE:
+                    TestPeRewrite();
+                    break;
+
                 default:
                     return DefWindowProc(hwnd, message, wParam, lParam);
             }
@@ -6593,6 +6603,12 @@ static bool InstanceInit(HINSTANCE hInstance, int nCmdShow)
 
 static bool PrintFile(const TCHAR *fileName, const TCHAR *printerName, bool displayErrors=true)
 {
+    TCHAR       devstring[256];      // array for WIN.INI data 
+    HANDLE      printer;
+    LPDEVMODE   devMode = NULL;
+    DWORD       structSize, returnCode;
+    bool        ok = false;
+
     ScopedMem<TCHAR> fileName2(path::Normalize(fileName));
     BaseEngine *engine = EngineManager::CreateEngine(fileName2);
     if (!engine || !engine->IsPrintingAllowed()) {
@@ -6601,46 +6617,47 @@ static bool PrintFile(const TCHAR *fileName, const TCHAR *printerName, bool disp
         return false;
     }
 
-    // Retrieve the printer, printer driver, and output-port names from WIN.INI. 
-    TCHAR devstring[256];
+    // Retrieve the printer, printer driver, and 
+    // output-port names from WIN.INI. 
     GetProfileString(_T("Devices"), printerName, _T(""), devstring, dimof(devstring));
 
-    // Parse the string of names
-    // If the string contains the required names, use them to
-    // create a device context.
-    ScopedMem<TCHAR> driver, port;
-    if (!str::Parse(devstring, _T("%S,%S,"), &driver, &port) &&
-        !str::Parse(devstring, _T("%S,%S"), &driver, &port) || !driver || !port) {
+    // Parse the string of names, setting ptrs as required 
+    // If the string contains the required names, use them to 
+    // create a device context. 
+    TCHAR *driver = _tcstok (devstring, (const TCHAR *)_T(","));
+    TCHAR *port = _tcstok((TCHAR *) NULL, (const TCHAR *)_T(","));
+
+    if (!driver || !port) {
         if (displayErrors)
             MessageBox(NULL, _T("Printer with given name doesn't exist"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
-
-    HANDLE printer;
-    bool ok = OpenPrinter((LPTSTR)printerName, &printer, NULL);
-    if (!ok) {
+    
+    bool fOk = OpenPrinter((LPTSTR)printerName, &printer, NULL);
+    if (!fOk) {
         if (displayErrors)
             MessageBox(NULL, _TR("Could not open Printer"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
 
-    DWORD structSize = DocumentProperties(NULL,
+    HDC  hdcPrint = NULL;
+    structSize = DocumentProperties(NULL,
         printer,                /* Handle to our printer. */ 
         (LPTSTR)printerName,    /* Name of the printer. */ 
         NULL,                   /* Asking for size, so */ 
         NULL,                   /* these are not used. */ 
         0);                     /* Zero returns buffer size. */
-    LPDEVMODE devMode = (LPDEVMODE)malloc(structSize);
-    HDC hdcPrint = NULL;
+    devMode = (LPDEVMODE)malloc(structSize);
     if (!devMode) goto Exit;
 
     // Get the default DevMode for the printer and modify it for your needs.
-    DWORD returnCode = DocumentProperties(NULL,
+    returnCode = DocumentProperties(NULL,
         printer,
         (LPTSTR)printerName,
         devMode,        /* The address of the buffer to fill. */ 
         NULL,           /* Not using the input buffer. */ 
         DM_OUT_BUFFER); /* Have the output buffer filled. */ 
+
     if (IDOK != returnCode) {
         // If failure, inform the user, cleanup and return failure.
         if (displayErrors)

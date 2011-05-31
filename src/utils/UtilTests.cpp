@@ -128,25 +128,6 @@ static void TStrTest()
     count = str::TransChars(buf, _T(""), _T("X"));
     assert(str::Eq(buf, _T("AbC")) && count == 0);
 
-    str::BufSet(buf, dimof(buf), _T("blogarapato"));
-    count = str::RemoveChars(buf, _T("bo"));
-    assert(3 == count);
-    assert(str::Eq(buf, _T("lgarapat")));
-
-    str::BufSet(buf, dimof(buf), _T("one\r\ntwo\t\v\f\tthree"));
-    count = str::NormalizeWS(buf);
-    assert(4 == count);
-    assert(str::Eq(buf, _T("one two three")));
-
-    str::BufSet(buf, dimof(buf), _T(" one    two three "));
-    count = str::NormalizeWS(buf);
-    assert(5 == count);
-    assert(str::Eq(buf, _T("one two three")));
-
-    count = str::NormalizeWS(buf);
-    assert(0 == count);
-    assert(str::Eq(buf, _T("one two three")));
-
     str = _T("[Open(\"filename.pdf\",0,1,0)]");
     {
         UINT u1 = 0;
@@ -207,8 +188,6 @@ static void TStrTest()
         assert(!str1);
         assert(str::Parse(_T("xyz"), _T("x%cz"), &c1));
         assert(c1 == 'y');
-        assert(!str::Parse(_T("leaks memory!?"), _T("%s!%$"), &str1));
-        free(str1);
     }
 
     // the test string should only contain ASCII characters,

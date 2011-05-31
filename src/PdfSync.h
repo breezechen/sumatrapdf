@@ -6,47 +6,156 @@
 #define PdfSync_h
 
 #include "BaseUtil.h"
+#include "StrUtil.h"
+#include "FileUtil.h"
 #include "GeomUtil.h"
 #include "Vec.h"
+#include <time.h>
 
+// size of the mark highlighting the location calculated by forward-search
+#define MARK_SIZE                            10 
+
+// maximum error in the source file line number when doing forward-search
+#define EPSILON_LINE                         5  
+
+// Minimal error distance^2 between a point clicked by the user and a PDF mark
+#define PDFSYNC_EPSILON_SQUARE               800
+
+// Minimal vertical distance
+#define PDFSYNC_EPSILON_Y                    20
+
+//////
 // Error codes returned by the synchronization functions
-enum { 
-    PDFSYNCERR_SUCCESS,                   // the synchronization succeeded
-    PDFSYNCERR_SYNCFILE_NOTFOUND,         // no sync file found
-    PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED, // sync file cannot be opened
-    PDFSYNCERR_INVALID_PAGE_NUMBER,       // the given page number does not exist in the sync file
-    PDFSYNCERR_NO_SYNC_AT_LOCATION,       // no synchronization found at this location
-    PDFSYNCERR_UNKNOWN_SOURCEFILE,        // the source file is not present in the sync file
-    PDFSYNCERR_NORECORD_IN_SOURCEFILE,    // there is not any record declaration for that particular source file
-    PDFSYNCERR_NORECORD_FOR_THATLINE,     // no record found for the requested line
-    PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD,// a record is found for the given source line but there is not point in the PDF that corresponds to it
-    PDFSYNCERR_OUTOFMEMORY,
-    PDFSYNCERR_INVALID_ARGUMENT
+enum {  PDFSYNCERR_SUCCESS,                   // the synchronization succeeded
+        PDFSYNCERR_SYNCFILE_NOTFOUND,         // no sync file found
+        PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED, // sync file cannot be opened
+        PDFSYNCERR_INVALID_PAGE_NUMBER,       // the given page number does not exist in the sync file
+        PDFSYNCERR_NO_SYNC_AT_LOCATION,       // no synchronization found at this location
+        PDFSYNCERR_UNKNOWN_SOURCEFILE,        // the source file is not present in the sync file
+        PDFSYNCERR_NORECORD_IN_SOURCEFILE,    // there is not any record declaration for that particular source file
+        PDFSYNCERR_NORECORD_FOR_THATLINE,     // no record found for the requested line
+        PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD,// a record is found for the given source line but there is not point in the PDF that corresponds to it
+        PDFSYNCERR_OUTOFMEMORY,
+        PDFSYNCERR_INVALID_ARGUMENT
 };
 
-class DisplayModel;
+typedef struct {
+    char filename[_MAX_PATH]; // source file name
+#ifndef NDEBUG
+    fpos_t openline_pos;    // start of the scope in the sync file
+    fpos_t closeline_pos;   // end of the scope
+#endif
+    size_t first_recordsection; // index of the first record section of that file
+    size_t last_recordsection;  // index of the last record section of that file
+} src_file;
+
+
+// a plines_section is a section of consecutive lines of the form "p ..."
+typedef struct {
+    fpos_t startpos; // position of the first "p ..." line
+#ifndef NDEBUG
+    fpos_t endpos;
+#endif
+} plines_section;
+
+
+// a section of consecutive records declarations in the syncfile ('l' lines)
+typedef struct {
+    size_t srcfile;           // index of the `scoping' source file 
+    fpos_t startpos;       // start position in the sync file
+    UINT firstrecord;      // number of the first record in the section
+#ifndef NDEBUG
+    fpos_t endpos;         // end position in the sync file
+    int highestrecord;      // highest record #
+#endif
+} record_section;
+
+
+#define PDF_EXTENSION     _T(".PDF")
+#define PDFSYNC_EXTENSION _T(".PDFSYNC")
+
+// System of point coordinates
+enum CoordSystem {
+    TopLeft,    // origin at the top-left corner
+    BottomLeft, // origin at the bottom-left corner
+};
 
 class Synchronizer
 {
 public:
-    Synchronizer(const TCHAR* _syncfilepath, DisplayModel *dm);
-    virtual ~Synchronizer() { }
+    Synchronizer(const TCHAR* _syncfilepath) {
+        this->index_discarded = true;
+        this->coordsys = BottomLeft; // by default set the internal coordinate system to bottom-left
+        this->dir = path::GetDir(_syncfilepath);
+        str::BufSet(this->syncfilepath, dimof(this->syncfilepath), _syncfilepath);
+        _tstat(_syncfilepath, &syncfileTimestamp);
+    }
+    virtual ~Synchronizer() {
+        free(dir);
+    }
 
+    // conversion from one coordinate system to another
+    void convert_coord_to_internal(int *x, int *y, int pageHeight, CoordSystem src)
+    {
+        if (src != this->coordsys)
+            *y = pageHeight - *y;
+    }
+    void convert_coord_from_internal(int *x, int *y, int pageHeight, CoordSystem dst)
+    {
+        if (dst != this->coordsys)
+            *y = pageHeight - *y;
+    }
+
+    void convert_coord_from_internal(RectI *rc, int pageHeight, CoordSystem dst)
+    {
+        if (dst != this->coordsys)
+            rc->y = pageHeight - (rc->y + rc->dy);
+    }
+    
     // Inverse-search:
-    //  - pageNo: page number in the PDF (starting from 1)
-    //  - x, y: user-specified PDF-coordinates.
+    //  - sheet: page number in the PDF (starting from 1)
+    //  - x,y: user-specified PDF-coordinates. They must be given in the system used internally by the synchronizer.
+    //  - maxy: contains the height of the page. this is necessary to convert into the coordinate-system used internally by the syncrhonizer.
+    //    For an A4 paper it is approximately equal to maxy=842.
+    //  - cchFilename: size of the buffer 'filename'
     // The result is returned in filename, line, col
     //  - filename: receives the name of the source file
     //  - line: receives the line number
     //  - col: receives the column number
-    virtual int pdf_to_source(UINT pageNo, PointI pt, ScopedMem<TCHAR>& filename, UINT *line, UINT *col) = 0;
-
+    virtual UINT pdf_to_source(UINT sheet, UINT x, UINT y, PTSTR filename, UINT cchFilename, UINT *line, UINT *col) = 0;
+    
     // Forward-search:
-    // The result is returned in page and rects (list of rectangles to highlight).
-    virtual int source_to_pdf(const TCHAR* srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects) = 0;
+    // The result is returned in (page,x,y). The coordinates x,y are specified in the internal 
+    // coordinate system.
+    virtual UINT source_to_pdf(const TCHAR* srcfilename, UINT line, UINT col, UINT *page, Vec<RectI>& rects) = 0;
 
-    bool is_index_discarded() const;
-    int rebuild_index();
+    void discard_index() { this->index_discarded = true; }
+    bool is_index_discarded() const
+    {
+        // was the index manually discarded?
+        if (this->index_discarded)
+            return true;
+
+        // has the synchronization file been changed on disk?
+        struct _stat newstamp;
+        if (_tstat(syncfilepath, &newstamp) == 0 &&
+            difftime(newstamp.st_mtime, syncfileTimestamp.st_mtime) > 0) {
+            DBG_OUT("PdfSync:sync file has changed, rebuilding index: %s\n", syncfilepath);
+            // update time stamp
+            memcpy((void *)&syncfileTimestamp, &newstamp, sizeof(syncfileTimestamp));
+            return true; // the file has changed!
+        }
+
+        return false;
+    }
+
+    int rebuild_index()
+    {
+        this->index_discarded = false;
+        // save sync file timestamp
+        _tstat(syncfilepath, &syncfileTimestamp);
+        return 0;
+    }
 
     // the caller must free() the command line
     TCHAR * prepare_commandline(const TCHAR* pattern, const TCHAR* filename, UINT line, UINT col);
@@ -56,12 +165,12 @@ private:
     struct _stat syncfileTimestamp; // time stamp of sync file when index was last built
 
 protected:
-    ScopedMem<TCHAR> syncfilepath;  // path to the synchronization file
-    ScopedMem<TCHAR> dir;           // directory where the syncfile lies
-    DisplayModel * dm;  // needed for converting between coordinate systems
+    TCHAR syncfilepath[MAX_PATH]; // path  to the synchronization file
+    CoordSystem coordsys; // system used internally by the syncfile for the PDF coordinates
+    TCHAR * dir;          // directory where the syncfile lies
 
 public:
-    static int Create(const TCHAR *pdffilename, DisplayModel *dm, Synchronizer **sync);
+    static int Create(const TCHAR *pdffilename, Synchronizer **sync);
 };
 
 
@@ -69,8 +178,7 @@ public:
 #define PDFSYNC_DDE_TOPIC     _T("control")
 
 // forward-search command
-//  format: [ForwardSearch(["<pdffilepath>",]"<sourcefilepath>",<line>,<column>[,<newwindow>, <setfocus>])]
-//    if pdffilepath is provided, the file will be opened if no open window can be found for it
+//  format: [ForwardSearch("<pdffilepath>","<sourcefilepath>",<line>,<column>[,<newwindow>, <setfocus>])]
 //    if newwindow = 1 then a new window is created even if the file is already open
 //    if focus = 1 then the focus is set to the window
 //  eg: [ForwardSearch("c:\file.pdf","c:\folder\source.tex",298,0)]

@@ -247,7 +247,6 @@ class LinkHandler {
     BaseEngine *engine() const;
 
     void ScrollTo(PageDestination *dest);
-    PageDestination *FindToCItem(DocToCItem *item, const TCHAR *name, bool partially=false);
 
 public:
     LinkHandler(WindowInfo& win) : owner(&win) { }
@@ -268,7 +267,6 @@ public:
 
 WindowInfo* FindWindowInfoByFile(TCHAR *file);
 WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
-WindowInfo* FindWindowInfoBySyncFile(TCHAR *file);
 WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL,
                          bool showWin=true, bool forceReuse=false, bool suppressPwdUI=false);
 

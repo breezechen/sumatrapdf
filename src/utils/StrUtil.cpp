@@ -320,49 +320,6 @@ size_t TransChars(WCHAR *str, const WCHAR *oldChars, const WCHAR *newChars)
     return findCount;
 }
 
-// replaces all whitespace characters with spaces, collapses several
-// consecutive spaces into one and strips heading/trailing ones
-// returns the number of removed characters
-size_t NormalizeWS(TCHAR *str)
-{
-    TCHAR *src = str, *dst = str;
-    bool addedSpace = true;
-
-    for (; *src; src++) {
-        if (!_istspace(*src)) {
-            *dst++ = *src;
-            addedSpace = false;
-        }
-        else if (!addedSpace) {
-            *dst++ = ' ';
-            addedSpace = true;
-        }
-    }
-
-    if (dst > str && _istspace(*(dst - 1)))
-        dst--;
-    *dst = '\0';
-
-    return src - dst;
-}
-
-// Remove all characters in "toRemove" from "str", in place.
-// Returns number of removed characters.
-size_t RemoveChars(TCHAR *str, const TCHAR *toRemove)
-{
-    size_t removed = 0;
-    TCHAR *dst = str;
-    while (*str) {
-        TCHAR c = *str++;
-        if (!str::FindChar(toRemove, c))
-            *dst++ = c;
-        else
-            ++removed;
-    }
-    *dst = '\0';
-    return removed;
-}
-
 // Note: BufSet() should only be used when absolutely necessary (e.g. when
 // handling buffers in OS-defined structures)
 // returns the number of characters written (without the terminating \0)
@@ -563,7 +520,7 @@ static const TCHAR *ParseLimitedNumber(const TCHAR *str, const TCHAR *format,
      %x - parses an unsigned hex-int
      %f - parses a float
      %c - parses a single TCHAR
-     %s - parses a string (pass in a TCHAR**, free after use - also on failure!)
+     %s - parses a string (pass in a TCHAR**, free after use)
      %S - parses a string into a ScopedMem<TCHAR>
      %? - makes the next single character optional (e.g. "x%?,y" parses both "xy" and "x,y")
      %$ - causes the parsing to fail if it's encountered when not at the end of the string

@@ -526,67 +526,13 @@ void LinkHandler::ScrollTo(PageDestination *dest)
     dm->goToPage(pageNo, scroll.y, true, scroll.x);
 }
 
-// normalizes case and whitespace in the string
-// caller needs to free() the result
-static TCHAR *NormalizeFuzzy(const TCHAR *str)
-{
-    TCHAR *dup = str::Dup(str);
-    CharLower(dup);
-    // cf. AddTocItemToView in SumatraPDF.cpp
-    str::NormalizeWS(dup);
-    return dup;
-}
-
-static bool MatchFuzzy(const TCHAR *s1, const TCHAR *s2, bool partially=false)
-{
-    if (!partially)
-        return str::Eq(s1, s2);
-
-    // only match at the start of a word (at the beginning and after a space)
-    for (const TCHAR *last = s1; (last = str::Find(last, s2)); last++)
-        if (last == s1 || *(last - 1) == ' ')
-            return true;
-    return false;
-}
-
-// finds the first ToC entry that (partially) matches a given normalized name
-// (ignoring case and whitespace differences)
-PageDestination *LinkHandler::FindToCItem(DocToCItem *item, const TCHAR *name, bool partially)
-{
-    for (; item; item = item->next) {
-        ScopedMem<TCHAR> fuzTitle(NormalizeFuzzy(item->title));
-        if (MatchFuzzy(fuzTitle, name, partially))
-            return item->GetLink();
-        PageDestination *dest = FindToCItem(item->child, name, partially);
-        if (dest)
-            return dest;
-    }
-    return NULL;
-}
-
 void LinkHandler::GotoNamedDest(const TCHAR *name)
 {
     assert(owner && owner->linkHandler == this);
-    if (!engine())
+    PageDestination *dest = engine() ? engine()->GetNamedDest(name) : NULL;
+    if (!dest)
         return;
 
-    // Match order:
-    // 1. Exact match on internal destination name
-    // 2. Fuzzy match on full ToC item title
-    // 3. Fuzzy match on a part of a ToC item title
-    PageDestination *dest = engine()->GetNamedDest(name);
-    if (dest) {
-        ScrollTo(dest);
-        delete dest;
-    }
-    else if (engine()->HasToCTree()) {
-        DocToCItem *root = engine()->GetToCTree();
-        ScopedMem<TCHAR> fuzName(NormalizeFuzzy(name));
-        dest = FindToCItem(root, fuzName);
-        if (!dest)
-            dest = FindToCItem(root, fuzName, true);
-        if (dest)
-            ScrollTo(dest);
-        delete root;
-    }
+    ScrollTo(dest);
+    delete dest;
 }
