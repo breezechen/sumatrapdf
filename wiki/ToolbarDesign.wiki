@@ -1,0 +1,11 @@
+#summary Thinking behind toolbar design
+
+Occasionally people ask us to add even more buttons for even more functionality to the toolbar.
+
+We're very reluctant to do so.
+
+Many programs end up with multi-level, ugly, confusing toolbars. We don't want Sumatra to end up like that.
+
+The only way to keep the toolbar at a manageable size is, unfortunately, to refuse to add more functionality and more buttons to it. Our current toolbar already is quite big.
+
+Another thing that we don't want to do is to make the toolbar configurable, a functionality available in some programs. We don't think that, overall, it's a good idea and our goal with Sumatra is to prioritize simplicity over features. Very few people would end up using this feature, it would likely confuse many people and it would require more code and more UI.
