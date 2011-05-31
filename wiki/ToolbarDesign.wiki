@@ -1,5 +1,7 @@
 #summary Thinking behind toolbar design
 
+=Things that belong in the toolbar=
+
 Occasionally people ask us to add even more buttons for even more functionality to the toolbar.
 
 We're very reluctant to do so.
@@ -9,3 +11,21 @@ Many programs end up with multi-level, ugly, confusing toolbars. We don't want S
 The only way to keep the toolbar at a manageable size is, unfortunately, to refuse to add more functionality and more buttons to it. Our current toolbar already is quite big.
 
 Another thing that we don't want to do is to make the toolbar configurable, a functionality available in some programs. We don't think that, overall, it's a good idea and our goal with Sumatra is to prioritize simplicity over features. Very few people would end up using this feature, it would likely confuse many people and it would require more code and more UI.
+
+=A solution vs. the solution=
+
+Toolbar is just one solution to a more general problem: a quick access to frequently used functionality.
+
+There are other possible solutions to this problem but most people fail to appreciate that and they universally propose a specific solution that involves extending a toolbar, because they're too influenced by the toolbar already being there.
+
+Sumatra already has 3 other solutions for such problem: context menu, direct keyboard shortcuts and menu item keyboard access.
+
+We can imagine new solutions as well.
+
+Instead of using a toolbar, we could have overlaid toolbar that only shows up when mouse is over it, like in some media players.
+
+We could simplify the current toolbar by e.g. removing search UI (and instead make the search UI more on-demand UI like in Google Chrome), therefore freeing space which can be used for other functionality.
+
+I'm sure there are other ideas we haven't thought of.
+
+We didn't have the time to implement any such ideas but we do want to emphasize that toolbar is not the only possible solution for the problem.
