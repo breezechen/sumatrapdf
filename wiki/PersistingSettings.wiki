@@ -1,0 +1,12 @@
+#summary describes design of how we persist settings.
+#labels devnote
+
+This document provides high-level overview of how Sumatra stores settings.
+
+Persisted data is stored in sumatrapdfprefs.dat file. In portable version the file is stored in the same directory as SumatraPDF executable. In non-portable version, it's in %APPDATA%\SumatraPDF directory.
+
+The data is serialized to [http://en.wikipedia.org/wiki/Bencode bencode] format (because it's compact and easy to implement).
+
+Core bencode serialization logic is in http://code.google.com/p/sumatrapdf/source/browse/trunk/src/utils/BencUtil.cpp. The actual serializatioz/deserialization of application data is in http://code.google.com/p/sumatrapdf/source/browse/trunk/src/AppPrefs.cpp (this is a place to consult to see what data we persist).
+
+Starting with version 1.6 we also persist thumbnails for "Frequently read" list. They are stored in subdirectory sumatrapdfcache as .png files.
