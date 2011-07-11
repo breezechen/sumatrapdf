@@ -1,0 +1,480 @@
+﻿# Translations for Serbian (Latin) (sp-rs) language
+
+# * Lines starting with # are comments (such as this).
+# * This file must be in UTF-8 encoding. Make sure you use a proper
+#   text editor (Notepad++ or Notepad2) and set UTF-8 encoding.
+# * For lines containing several variables (such as %s, %d or %u), the
+#   variables must remain in that exact order in the translation.
+
+Lang: sp-rs Serbian (Latin)
+
+Contributor: milanso (milanso@gmail.com)
+Contributor: Slavko Majski (shobra@gmail.com)
+
+&About
+&O programu
+
+&Actual Size\tCtrl-1
+Stvarna veličina\tCtrl-1
+
+&Close\tCtrl-W
+&Zatvori\tCtrl-W
+
+&Copy Selection\tCtrl-C
+Kopiraj izabrano
+
+&Don't ask me again
+Ne pitaj me ponovo
+
+&File
+&Datoteka
+
+&Find what:
+Pojam:
+
+&First Page\tHome
+Prva strana\tHome
+
+&Go To
+&Idi na
+
+&Go to page:
+Idi na stranu:
+
+&Help
+&Pomoć
+
+&Last Page\tEnd
+Poslednja strana\tEnd
+
+&Magnification:
+Uvećanje:
+
+&Manual
+Uputstvo
+
+&Match case
+Razlikuj mala i velika slova
+
+&Next Page\tRight Arrow
+Sledeća strana\t->
+
+&No
+Ne
+
+&No, thanks
+Ne, hvala
+
+&Open\tCtrl-O
+&Otvori\tCtrl-O
+
+&Options...
+Opcije
+
+&Password:
+Lozinka
+
+&Previous Page\tLeft Arrow
+Prethodna strana\t<-
+
+&Print...\tCtrl-P
+&Štampaj\tCtrl-P
+
+&Remember these settings for each document
+Zapamti ova podešavanja za svaki pojedinačni dokument
+
+&Save As...\tCtrl-S
+&Sačuvaj kao...\tCtrl-S
+
+&Settings
+Podešavanja
+
+&Skip this version
+Preskoči ovu verziju
+
+&View
+Prikaz
+
+&Yes
+Da
+
+&Zoom
+&Uvećanje
+
+(of %d)
+(od %d)
+
+About SumatraPDF
+O programu SumatraPDF
+
+Advanced
+Dodatno
+
+All files
+Sve datoteke
+
+Associate with PDF files?
+Povezati sa PDF datotekama?
+
+Automatic
+Automatski
+
+Automatically check for &updates
+Automatski proveravaj dostupnost nove verzije
+
+Book&marks\tF12
+Beleške\tF12
+
+Cancel
+Odustani
+
+Cannot print this file
+Štampanje ove datoteke nije moguće
+
+Cannot start inverse search command. Please check the command line in the settings.
+Ne mogu da započnem komandu inverzne pretrage. Proverite komandnu liniju u opcijama.
+
+Change Language
+Premeni jezik (Change Language)
+
+Check for &Updates
+Proveri postojanje novije verzije
+
+Continuous
+Neprekidno
+
+Continuous Facing
+Neprekidno, dve strane
+
+Contribute Translation
+Pomozi u prevođenju ovog programa
+
+Could not open Printer
+Štampač nije pronađen
+
+Couldn't initialize printer
+Nije moguće pokrenuti štampač
+
+Couldn't render the page
+Nemoguće prikazivanje strane
+
+Custom &Zoom...\tCtrl-Y
+Izborno uvećanje...\tCtrl-Y
+
+Default &Layout:
+Podrazumevani prikaz
+
+Default &Zoom:
+Podrazumevano uvećanje
+
+Default PDF reader can't be changed in portable mode
+Glavni PDF čitač ne može biti promenjen u prenosivnom môdu
+
+Download
+Preuzmi
+
+E&xit\tCtrl-Q
+&Izađi\tCtrl-Q
+
+Enter password
+Unesite lozinku
+
+Enter password for %s
+Unesite lozinku za %s
+
+F&ullscreen\tCtrl-Shift-L
+Ceo ekran\tCtrl-Shift-L
+
+Facing
+Dve strane
+
+Failed to save a file
+Greška pri snimanju PDF dokumenta
+
+Fin&d...\tCtrl-F
+Pronađi...\tCtrl-F
+
+Find
+Pronađi
+
+Find Next
+Pronađi sledeće
+
+Find Previous
+Pronađi prethodno
+
+Find:
+Pronađi:
+
+Fit &Page\tCtrl-0
+Prilagodi &strani\tCtrl-0
+
+Fit &Width\tCtrl-2
+&Prilagodi širini\tCtrl-2
+
+Fit Page
+Prilagodi strani
+
+Fit Width
+Prilagodi širini
+
+Found text at page %d
+Tekst je pronađen na strani %d
+
+GB
+GB
+
+Go to page
+Idi na stranu
+
+Hint: Use the F3 key for finding again
+Savet: Koristite taster F3 za nastavak pretrage
+
+KB
+KB
+
+MB
+MB
+
+Make SumatraPDF default application for PDF files?
+Postaviti SumatraPDF kao podrazumevanu aplikaciju za PDF datoteke?
+
+Make SumatraPDF my default PDF reader
+Neka SumatraPDF bude glavni PDF čitač
+
+Match Case
+Razlikuj mala i velika slova
+
+New version %s is available. Download new version?
+Dostupna je verzija %s. Preuzeti novu verziju?
+
+Next Page
+Sledeća strana
+
+No matches were found
+Pojam nije pronađen
+
+No result found around line %u in file %s
+Rezultati oko linije %u u datoteci %s nisu pronađeni
+
+No synchronization file found
+Usklađivačka datoteka nije nađena
+
+No synchronization info at this position
+Nema podataka o usklađenosti na ovoj poziciji
+
+OK
+U redu
+
+Open
+Otvori
+
+Open in &Adobe Reader
+Otvori u programu Adobe Reader
+
+Open in &Foxit Reader
+Otvori u programu Foxit Reader
+
+Open in PDF-XChange
+Otvori u programu PDF-XChange
+
+PDF Document
+PDF dokument
+
+PDF documents
+PDF dokumenti
+
+Pa&ge...\tCtrl-G
+Strana...\tCtrl-G
+
+Page number %u inexistant
+Strana broj %u ne postoji
+
+Page:
+Strana:
+
+Please wait - rendering...
+Molimo sačekajte - spremam prikaz...
+
+Previous Page
+Prethodna strana
+
+Printing problem.
+Problem pri štampanju
+
+Remember &opened files
+Zapamti otvorene datoteke
+
+Rotate &Left\tCtrl-Shift--
+Rotiraj ulevo\tCtrl-Shift--
+
+Rotate &Right\tCtrl-Shift-+
+Rotiraj udesno\tCtrl-Shift-+
+
+Save As
+Sačuvaj kao
+
+Searching %d of %d...
+Pretražujem stranu %d od %d...
+
+Select content with Ctrl+left mouse button
+Da izaberete sadržaj, koristite Ctrl i levo dugme miša
+
+Set inverse search command-line
+Omogući inverznu pretragu
+
+Show &Toolbar
+Prikaži traku sa alatima
+
+Show &pages continuously
+Neprekidni prikaz strana
+
+Show the &bookmarks sidebar when available
+Prikaži traku sa beleškama kada je dostupna
+
+Single Page
+Jedna strana
+
+SumatraPDF Options
+Podešavanja programa SumatraPDF
+
+SumatraPDF is your default PDF reader
+SumatraPDF je vaš glavni PDF čitač
+
+SumatraPDF should now be your default PDF reader
+SumatraPDF bi sada trebao da bude vaš glavni PDF čitač
+
+Synchronization file cannot be opened
+Nije moguće otvoriti usklađivačku datoteku
+
+Text documents
+Tekstualni dokumenti
+
+Unknown source file (%s)
+Nepoznata izvorna datoteka (%s)
+
+View
+Prikaz
+
+Visit &Website
+&Poseti Internet stranu
+
+Warning
+Upozorenje
+
+You have the latest version.
+Imate najnoviju verziju.
+
+You have version %s
+Imate verziju %s.
+
+Zoom
+Uvećaj
+
+Zoom In
+Uvećaj
+
+Zoom Out
+Umanji
+
+Zoom factor
+Faktor uvećanja
+
+[Changes detected; refreshing] %s
+[Promene su primećene; osvežavam] %s
+
+# Untranslated:
+#&All selected pages
+#&Back\tAlt+Left Arrow
+#&Book View\tCtrl-8
+#&Copy Selection
+#&Even pages only
+#&Facing\tCtrl-7
+#&Fit pages to printable area
+#&Odd pages only
+#&Open Document
+#&Pin Document
+#&Print...
+#&Print... (denied)
+#&Remember the password for this document
+#&Remove Document
+#&Save As...
+#&Shrink pages to printable area (if necessary)
+#&Single Page\tCtrl-6
+#&Use original page sizes
+#(page %d)
+#Add Favorite
+#Add page %d to favorites
+#Add page %d to favorites with (optional) name:
+#Add to favorites
+#All supported documents
+#Application:
+#Attachment: %s
+#Author:
+#Book View
+#Bookmark Shortcuts
+#Bookmark shortcut to page %d of %s
+#Bookmarks
+#Bytes
+#Can't connect to the Internet (error %#x).
+#Comic books
+#Continuous Book View
+#Copy &Link Address
+#Copy Co&mment
+#Copying text was denied (copying as image only)
+#Could not obtain Printer properties
+#Created:
+#Current file
+#Denied Permissions:
+#DjVu documents
+#Document Properties
+#Enter the command-line to invoke when you double-click on the PDF document:
+#Error loading %s
+#F&avorites
+#F&orward\tAlt+Right Arrow
+#Favorites
+#File Size:
+#File:
+#Fit &Content\tCtrl-3
+#Fit Content
+#Fit Width and Show Pages Continuously
+#Fit a Single Page
+#Found text at page %d (again)
+#Frequently Read
+#Hide frequently read
+#Image files (*.%s)
+#Modified:
+#Number of Pages:
+#Open a document...
+#P&roperties
+#P&roperties\tCtrl-D
+#PDF Producer:
+#PDF Version:
+#Page %d
+#Page Size:
+#Page scaling
+#Postscript documents
+#Pr&esentation\tCtrl-L
+#Print
+#Print range
+#Printer with given name doesn't exist
+#Printing is still in progress. Abort and start over?
+#Printing page %d of %d...
+#Remove from favorites
+#Remove page %d from favorites
+#Save S&hortcut...\tCtrl-Shift-S
+#Select &All
+#Select &All\tCtrl-A
+#Send by &E-mail...
+#Show Favorites
+#Show frequently read
+#Sorry, that shouldn't have happened!\n\nPlease press 'Cancel', if you want to help us fix the cause of this crash.
+#Source file %s has no synchronization point
+#Subject:
+#SumatraPDF Update
+#SumatraPDF crashed
+#Title:
+#XPS documents
+#copying text
+#printing document
+
