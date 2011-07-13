@@ -1193,11 +1193,15 @@ static void UpdateWindowRtlLayout(WindowInfo *win)
 
     // cf. http://www.microsoft.com/middleeast/msdn/mirror.aspx
     ToggleWindowStyle(win->hwndFrame, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
+
     ToggleWindowStyle(win->hwndTocBox, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
-    HWND tocBoxTitle = GetDlgItem(win->hwndTocBox, 0);
+    HWND tocBoxTitle = GetDlgItem(win->hwndTocBox, IDC_TOC_TITLE);
     ToggleWindowStyle(tocBoxTitle, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
-    HWND favBoxTitle = GetDlgItem(win->hwndFavBox, 0);
+
+    ToggleWindowStyle(win->hwndFavBox, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
+    HWND favBoxTitle = GetDlgItem(win->hwndFavBox, IDC_FAV_TITLE);
     ToggleWindowStyle(favBoxTitle, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
+    ToggleWindowStyle(win->hwndFavTree, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
 
     ToggleWindowStyle(win->hwndReBar, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
     ToggleWindowStyle(win->hwndToolbar, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
@@ -6566,6 +6570,26 @@ static void RelayoutTocItem(LPNMTVCUSTOMDRAW ntvcd)
 }
 #endif
 
+// copied from mupdf/fitz/dev_text.c
+#define ISLEFTTORIGHTCHAR(c) ((0x0041 <= (c) && (c) <= 0x005A) || (0x0061 <= (c) && (c) <= 0x007A) || (0xFB00 <= (c) && (c) <= 0xFB06))
+#define ISRIGHTTOLEFTCHAR(c) ((0x0590 <= (c) && (c) <= 0x05FF) || (0x0600 <= (c) && (c) <= 0x06FF) || (0x0750 <= (c) && (c) <= 0x077F) || (0xFB50 <= (c) && (c) <= 0xFDFF) || (0xFE70 <= (c) && (c) <= 0xFEFF))
+
+static void GetLeftRightCounts(DocToCItem *node, int& l2r, int& r2l)
+{
+    if (!node)
+        return;
+    if (node->title) {
+        for (const TCHAR *c = node->title; *c; c++) {
+            if (ISLEFTTORIGHTCHAR(*c))
+                l2r++;
+            else if (ISRIGHTTOLEFTCHAR(*c))
+                r2l++;
+        }
+    }
+    GetLeftRightCounts(node->child, l2r, r2l);
+    GetLeftRightCounts(node->next, l2r, r2l);
+}
+
 void WindowInfo::LoadTocTree()
 {
     if (tocLoaded)
@@ -6578,9 +6602,14 @@ void WindowInfo::LoadTocTree()
     if (!tocRoot)
         return;
 
+    // consider a ToC tree right-to-left if a more than half of the
+    // alphabetic characters are in a right-to-left script
+    int l2r = 0, r2l = 0;
+    GetLeftRightCounts(tocRoot, l2r, r2l);
+    bool isRTL = r2l > l2r;
+
     SendMessage(hwndTocTree, WM_SETREDRAW, FALSE, 0);
-    bool enable = dm->engine->PreferredLayout() & Layout_R2L;
-    ToggleWindowStyle(hwndTocTree, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, enable, GWL_EXSTYLE);
+    ToggleWindowStyle(hwndTocTree, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
     PopulateTocTreeView(hwndTocTree, tocRoot, tocState);
     SendMessage(hwndTocTree, WM_SETREDRAW, TRUE, 0);
     UINT fl = RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN;
