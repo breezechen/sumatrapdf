@@ -6,7 +6,7 @@ Occasionally people ask us to add even more buttons for even more functionality 
 
 We're very reluctant to do so.
 
-Many programs end up with multi-level, ugly, confusing toolbars. We don't want Sumatra to end up like that.
+Many programs have multi-level, ugly, confusing toolbars. We don't want Sumatra to end up like that.
 
 The only way to keep the toolbar at a manageable size is, unfortunately, to refuse to add more functionality and more buttons to it. Our current toolbar already is quite big.
 
