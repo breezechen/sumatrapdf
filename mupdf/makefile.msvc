@@ -1,7 +1,7 @@
 # nmake -f makefile.msvc
 # Arguments:
 # CFG=dbg|rel (default: dbg)
-# EXTDIR=<directory where zlib/freetype/jpeg lib live> (default: ..\ext)
+# EXTLIBSDIR=<directory where zlib/freetype/jpeg lib live> (default: ..\ext)
 #  e.g. ..\sumatrapdf\ext
 # NASM=<path to nasm.exe> (default: nasm.exe)
 # PLATFORM=X86
@@ -39,15 +39,15 @@ OA  = $(O)\muapps
 MUPDF_DIR=.
 !endif
 
-!if "$(EXTDIR)"==""
-EXTDIR=..\ext
+!if "$(EXTLIBSDIR)"==""
+EXTLIBSDIR=..\ext
 !endif
 
-ZLIB_DIR=$(EXTDIR)\zlib-1.2.5
-FREETYPE_DIR=$(EXTDIR)\freetype2
-JPEG_TURBO_DIR=$(EXTDIR)\libjpeg-turbo
-OPENJPEG_DIR=$(EXTDIR)\openjpeg
-JBIG2_DIR=$(EXTDIR)\jbig2dec
+ZLIB_DIR=$(EXTLIBSDIR)\zlib-1.2.5
+FREETYPE_DIR=$(EXTLIBSDIR)\freetype2
+JPEG_TURBO_DIR=$(EXTLIBSDIR)\libjpeg-turbo
+OPENJPEG_DIR=$(EXTLIBSDIR)\openjpeg
+JBIG2_DIR=$(EXTLIBSDIR)\jbig2dec
 
 # full path to NASM can be passed in or we'll assume it's in PATH
 !if "$(NASM)"==""
@@ -88,9 +88,10 @@ CFLAGSB = $(CFLAGSB) /D "UNICODE" /D "_UNICODE"
 CFLAGSB = $(CFLAGSB) /EHs-c- 
 
 !if "$(CFG)"=="rel"
+# /Os  : favor code space
 # /Ox  : maximum optimizations
 # /GL  : enable link-time code generation
-CFLAGS = $(CFLAGSB) /Ox /GL /D "NDEBUG"
+CFLAGS = $(CFLAGSB) /Os /Ox /GL /D "NDEBUG"
 CFLAGSOPT = $(CFLAGSB)
 LDFLAGS = $(LDFLAGS) /LTCG
 # /DYNAMICBASE and /NXCOMPAT for better protection against stack overflows
@@ -103,7 +104,7 @@ CFLAGSB = $(CFLAGSB) /MTd
 # /RTCs : stack frame runtime checking
 # /RTCu : ununitialized local usage checks
 CFLAGS = $(CFLAGSB) /Od /RTCs /RTCu
-CFLAGSOPT = $(CFLAGSB) /Ox /D "NDEBUG"
+CFLAGSOPT    = $(CFLAGSB) /Os /Ox /D "NDEBUG"
 !endif
 
 ZLIB_CFLAGS = $(CFLAGSOPT)

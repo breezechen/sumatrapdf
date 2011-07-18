@@ -106,9 +106,9 @@ public:
     DisplayModel(DisplayModelCallback *callback, DisplayMode displayMode);
     ~DisplayModel();
 
-    const TCHAR *FileName() const { return engine->FileName(); }
+    const TCHAR *fileName() const { return engine->FileName(); }
     /* number of pages in the document */
-    int  PageCount() const { return engine->PageCount(); }
+    int  pageCount() const { return engine->PageCount(); }
     bool validPageNo(int pageNo) const {
         return 1 <= pageNo && pageNo <= engine->PageCount();
     }

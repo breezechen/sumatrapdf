@@ -13,10 +13,14 @@
 #include "AppTools.h"
 #include "RenderCache.h"
 #include "SumatraPDF.h"
-#include "Notifications.h"
+
+static bool gStressTestDisableDjvu = false;
+static bool gStressTestDisablePdf = false;
+static bool gStressTestDisableCbx = false;
 
 static Log::Logger *gLog;
 #define logbench(msg, ...) gLog->LogFmt(_T(msg), __VA_ARGS__)
+// #define logbench(msg, ...) Log::LogFmt(_T(msg), __VA_ARGS__)
 
 struct PageRange {
     PageRange() : start(1), end(INT_MAX) { }
@@ -156,12 +160,17 @@ static void BenchFile(TCHAR *filePath, const TCHAR *pagesSpec)
 void Bench(StrVec& filesToBench)
 {
     gLog = new Log::StderrLogger();
+    // Log::Initialize();
+    // Log::StderrLogger logger;
+    // Log::AddLogger(&logger);
 
     size_t n = filesToBench.Count() / 2;
     for (size_t i = 0; i < n; i++)
         BenchFile(filesToBench[2*i], filesToBench[2*i + 1]);
 
     delete gLog;
+    // Log::RemoveLogger(&logger);
+    // Log::Destroy();
 }
 
 inline bool IsSpecialDir(const TCHAR *s)
@@ -190,18 +199,15 @@ bool CollectPathsFromDirectory(const TCHAR *pattern, StrVec& paths, bool dirsIns
     return paths.Count() > 0;
 }
 
-static bool IsStressTestSupportedFile(const TCHAR *fileName, const TCHAR *filter)
+static bool IsStressTestSupportedFile(const TCHAR *fileName)
 {
-    if (filter && !path::Match(fileName, filter))
-        return false;
-
-    return PdfEngine::IsSupportedFile(fileName)  ||
-           XpsEngine::IsSupportedFile(fileName)  ||
-           DjVuEngine::IsSupportedFile(fileName) ||
-           CbxEngine::IsSupportedFile(fileName);
+    return  (!gStressTestDisableDjvu && DjVuEngine::IsSupportedFile(fileName)) ||
+            (!gStressTestDisablePdf && PdfEngine::IsSupportedFile(fileName)) ||
+            XpsEngine::IsSupportedFile(fileName) ||
+            (!gStressTestDisableCbx && CbxEngine::IsSupportedFile(fileName));
 }
 
-static bool CollectStressTestSupportedFilesFromDirectory(const TCHAR *dirPath, const TCHAR *filter, StrVec& paths)
+static bool CollectStressTestSupportedFilesFromDirectory(const TCHAR *dirPath, StrVec& paths)
 {
     ScopedMem<TCHAR> pattern(path::Join(dirPath, _T("*")));
 
@@ -212,7 +218,7 @@ static bool CollectStressTestSupportedFilesFromDirectory(const TCHAR *dirPath, c
 
     do {
         if (!(fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            if (IsStressTestSupportedFile(fdata.cFileName, filter)) {
+            if (IsStressTestSupportedFile(fdata.cFileName)) {
                 paths.Append(path::Join(dirPath, fdata.cFileName));
             }
         }
@@ -282,8 +288,7 @@ class StressTest : public CallbackFunc {
     SYSTEMTIME        stressStartTime;
     int               cycles;
     Vec<PageRange>    pageRanges;
-    ScopedMem<TCHAR>  basePath;
-    ScopedMem<TCHAR>  fileFilter;
+    TCHAR *           basePath;
     // range of files to render (files get a new index when going through several cycles)
     Vec<PageRange>    fileRanges;
     int               fileIndex;
@@ -305,16 +310,19 @@ class StressTest : public CallbackFunc {
 public:
     StressTest(WindowInfo *win, RenderCache *renderCache) :
         win(win), renderCache(renderCache), filesCount(0), 
-        cycles(1), fileIndex(0)
+        cycles(1), basePath(NULL), fileIndex(0)
         { }
+    virtual ~StressTest() {
+        free(basePath);
+    }
 
     char *GetLogInfo();
-    void Start(const TCHAR *path, const TCHAR *filter, const TCHAR *ranges, int cycles);
+    void Start(const TCHAR *path, const TCHAR *ranges, int cycles);
 
     virtual void Callback() { OnTimer(); }
 };
 
-void StressTest::Start(const TCHAR *path, const TCHAR *filter, const TCHAR *ranges, int cycles)
+void StressTest::Start(const TCHAR *path, const TCHAR *ranges, int cycles)
 {
     srand((unsigned int)time(NULL));
     GetSystemTime(&stressStartTime);
@@ -322,8 +330,7 @@ void StressTest::Start(const TCHAR *path, const TCHAR *filter, const TCHAR *rang
     // forbid entering sleep mode during tests
     SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
 
-    basePath.Set(str::Dup(path));
-    fileFilter.Set(filter && !str::Eq(filter, _T("*")) ? str::Dup(filter) : NULL);
+    basePath = str::Dup(path);
     if (file::Exists(basePath)) {
         filesToOpen.Append(str::Dup(basePath));
         ParsePageRanges(ranges, pageRanges);
@@ -335,7 +342,7 @@ void StressTest::Start(const TCHAR *path, const TCHAR *filter, const TCHAR *rang
     else {
         // Note: dev only, don't translate
         ScopedMem<TCHAR> s(str::Format(_T("Path '%s' doesn't exist"), path));
-        ShowNotification(win, s, false /* autoDismiss */, true, NG_STRESS_TEST_SUMMARY);
+        win->ShowNotification(s, false /* autoDismiss */, true, NG_STRESS_TEST_SUMMARY);
         Finished(false);
         return;
     }
@@ -361,7 +368,7 @@ void StressTest::Finished(bool success)
         int secs = SecsSinceSystemTime(stressStartTime);
         ScopedMem<TCHAR> tm(FormatTime(secs));
         ScopedMem<TCHAR> s(str::Format(_T("Stress test complete, rendered %d files in %s"), filesCount, tm));
-        ShowNotification(win, s, false, false, NG_STRESS_TEST_SUMMARY);
+        win->ShowNotification(s, false, false, NG_STRESS_TEST_SUMMARY);
     }
 
     CloseWindow(win, false);
@@ -372,7 +379,7 @@ bool StressTest::OpenDir(const TCHAR *dirPath)
 {
     assert(filesToOpen.Count() == 0);
 
-    bool hasFiles = CollectStressTestSupportedFilesFromDirectory(dirPath, fileFilter, filesToOpen);
+    bool hasFiles = CollectStressTestSupportedFilesFromDirectory(dirPath, filesToOpen);
     filesToOpen.SortNatural();
 
     ScopedMem<TCHAR> pattern(str::Format(_T("%s\\*"), dirPath));
@@ -451,12 +458,12 @@ bool StressTest::OpenFile(const TCHAR *fileName)
     currPageRenderTime.Start();
     ++filesCount;
 
-    pageForSearchStart = (rand() % win->dm->PageCount()) + 1;
+    pageForSearchStart = (rand() % win->dm->pageCount()) + 1;
 
     int secs = SecsSinceSystemTime(stressStartTime);
     ScopedMem<TCHAR> tm(FormatTime(secs));
     ScopedMem<TCHAR> s(str::Format(_T("File %d: %s, time: %s"), filesCount, fileName, tm));
-    ShowNotification(win, s, false, false, NG_STRESS_TEST_SUMMARY);
+    win->ShowNotification(s, false, false, NG_STRESS_TEST_SUMMARY);
 
     return true;
 }
@@ -465,13 +472,13 @@ bool StressTest::GoToNextPage()
 {
     double pageRenderTime = currPageRenderTime.GetCurrTimeInMs();
     ScopedMem<TCHAR> s(str::Format(_T("Page %d rendered in %d milliseconds"), currPage, (int)pageRenderTime));
-    ShowNotification(win, s, true, false, NG_STRESS_TEST_BENCHMARK);
+    win->ShowNotification(s, true, false, NG_STRESS_TEST_BENCHMARK);
 
     ++currPage;
-    while (!IsInRange(pageRanges, currPage) && currPage <= win->dm->PageCount())
+    while (!IsInRange(pageRanges, currPage) && currPage <= win->dm->pageCount())
         currPage++;
 
-    if (currPage > win->dm->PageCount()) {
+    if (currPage > win->dm->pageCount()) {
         if (GoToNextFile())
             return true;
         Finished(true);
@@ -550,13 +557,17 @@ char *GetStressTestInfo(StressTest *dst)
     return dst->GetLogInfo();
 }
 
-void StartStressTest(WindowInfo *win, const TCHAR *path, const TCHAR *filter,
-                     const TCHAR *ranges, int cycles, RenderCache *renderCache)
+void StartStressTest(WindowInfo *win, const TCHAR *path, const TCHAR *ranges, 
+    int cycles, RenderCache *renderCache, bool disableDjvu, bool disablePdf,
+    bool disableCbx)
 {
     // gPredictiveRender = false;
+    gStressTestDisableDjvu = disableDjvu;
+    gStressTestDisablePdf = disablePdf;
+    gStressTestDisableCbx = disableCbx;
 
     // dst will be deleted when the stress ends
     StressTest *dst = new StressTest(win, renderCache);
     win->stressTest = dst;
-    dst->Start(path, filter, ranges, cycles);
+    dst->Start(path, ranges, cycles);
 }

@@ -8,8 +8,6 @@
 #include "AppPrefs.h"
 #include "TextSearch.h"
 
-#define UWM_PREFS_FILE_UPDATED  (WM_USER + 1)
-
 #define FRAME_CLASS_NAME        _T("SUMATRA_PDF_FRAME")
 
 // permissions that can be revoked (or explicitly set) through Group Policies
@@ -32,23 +30,6 @@ enum {
     Perm_RestrictedUse      = 0x1000000,
 };
 
-enum MenuToolbarFlags {
-    MF_NO_TRANSLATE      = 1 << 0,
-    MF_PLUGIN_MODE_ONLY  = 1 << 1,
-#define PERM_FLAG_OFFSET 2
-    MF_REQ_INET_ACCESS   = Perm_InternetAccess << PERM_FLAG_OFFSET,
-    MF_REQ_DISK_ACCESS   = Perm_DiskAccess << PERM_FLAG_OFFSET,
-    MF_REQ_PREF_ACCESS   = Perm_SavePreferences << PERM_FLAG_OFFSET,
-    MF_REQ_PRINTER_ACCESS= Perm_PrinterAccess << PERM_FLAG_OFFSET,
-    MF_REQ_ALLOW_COPY    = Perm_CopySelection << PERM_FLAG_OFFSET,
-};
-
-struct MenuDef {
-    const char *title;
-    int         id;
-    int         flags;
-};
-
 /* styling for About/Properties windows */
 
 #define LEFT_TXT_FONT           _T("Arial")
@@ -56,52 +37,23 @@ struct MenuDef {
 #define RIGHT_TXT_FONT          _T("Arial Black")
 #define RIGHT_TXT_FONT_SIZE     12
 
-class WindowInfo;
-class Favorites;
-
 // all defined in SumatraPDF.cpp
 extern HINSTANCE                ghinst;
+extern SerializableGlobalPrefs  gGlobalPrefs;
 extern HCURSOR                  gCursorHand;
-extern HCURSOR                  gCursorArrow;
-extern HCURSOR                  gCursorIBeam;
 extern HBRUSH                   gBrushNoDocBg;
 extern HBRUSH                   gBrushAboutBg;
-extern HFONT                    gDefaultGuiFont;
 extern bool                     gPluginMode;
 extern TCHAR *                  gPluginURL;
-extern SerializableGlobalPrefs  gGlobalPrefs;
-extern Vec<WindowInfo*>         gWindows;
-extern Favorites *              gFavorites;
-extern FileHistory              gFileHistory;
-extern WNDPROC                  DefWndProcCloseButton;
-extern MenuDef                  menuDefFavorites[];
 
-LRESULT CALLBACK WndProcCloseButton(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-bool  HasPermission(int permission);
-bool  IsUIRightToLeft();
-bool  LaunchBrowser(const TCHAR *url);
-void  AssociateExeWithPdfExtension();
-void  FindTextOnThread(WindowInfo* win, TextSearchDirection direction=FIND_FORWARD);
-void  CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose=false);
-void  SetSidebarVisibility(WindowInfo *win, bool tocVisible, bool favVisible);
-void  RememberFavTreeExpansionState(WindowInfo *win);
-void  LayoutTreeContainer(HWND hwndContainer, int id);
-void  DrawCloseButton(DRAWITEMSTRUCT *dis);
-void  AdvanceFocus(WindowInfo* win);
-bool  WindowInfoStillValid(WindowInfo *win);
-void  ChangeLanguage(const char *langName);
-void  ShowOrHideToolbarGlobally();
-void  UpdateCurrentFileDisplayStateForWin(WindowInfo* win);
-bool  OnFrameKeydown(WindowInfo* win, WPARAM key, LPARAM lparam, bool inTextfield=false);
-void  SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode, bool keepContinuous=false);
-HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuLen, HMENU menu);
-void  ReloadDocument(WindowInfo *win, bool autorefresh=false);
-void  PaintTransparentRectangle(HDC hdc, RectI screenRc, RectI *rect, COLORREF selectionColor, BYTE alpha = 0x5f, int margin = 1);
+class WindowInfo;
 
-WindowInfo* FindWindowInfoByFile(TCHAR *file);
-WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
-WindowInfo* FindWindowInfoBySyncFile(TCHAR *file);
-WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL,
-                         bool showWin=true, bool forceReuse=false, bool suppressPwdUI=false);
+bool HasPermission(int permission);
+bool IsUIRightToLeft();
+bool LaunchBrowser(const TCHAR *url);
+void AssociateExeWithPdfExtension();
+void FindTextOnThread(WindowInfo* win, TextSearchDirection direction=FIND_FORWARD);
+void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose=false);
+void SetSidebarVisibility(WindowInfo *win, bool tocVisible, bool favVisible);
 
 #endif

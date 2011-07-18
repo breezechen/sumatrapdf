@@ -100,8 +100,4 @@ bool            EnumFromName(const TCHAR *txt, DisplayMode *resOut);
 
 }
 
-TCHAR *GetPrefsFileName();
-bool SavePrefs();
-bool ReloadPrefs();
-
 #endif

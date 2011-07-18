@@ -400,7 +400,7 @@ static void DrawProperties(HWND hwnd, HDC hdc)
     SelectObject(hdc, fontLeftTxt);
     for (size_t i = 0; i < layoutData->Count(); i++) {
         PropertyEl *el = layoutData->At(i);
-        DrawText(hdc, el->leftTxt, -1, &el->leftPos.ToRECT(), DT_RIGHT | DT_NOPREFIX);
+        DrawText(hdc, el->leftTxt, -1, &el->leftPos.ToRECT(), DT_RIGHT);
     }
 
     /* render text on the right */
@@ -410,7 +410,7 @@ static void DrawProperties(HWND hwnd, HDC hdc)
         RectI rc = el->rightPos;
         if (rc.x + rc.dx > rcClient.x + rcClient.dx - PROPERTIES_RECT_PADDING)
             rc.dx = rcClient.x + rcClient.dx - PROPERTIES_RECT_PADDING - rc.x;
-        DrawText(hdc, el->rightTxt, -1, &rc.ToRECT(), DT_LEFT | DT_PATH_ELLIPSIS | DT_NOPREFIX);
+        DrawText(hdc, el->rightTxt, -1, &rc.ToRECT(), DT_LEFT | DT_PATH_ELLIPSIS);
     }
 
     SelectObject(hdc, origFont);

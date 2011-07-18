@@ -232,18 +232,6 @@ WCHAR *ToWideChar(const char *src, UINT CodePage)
     return res;
 }
 
-const char *FindI(const char *s, const char *find)
-{
-    char c = tolower(*find);
-    while (*s) {
-        char c2 = *s;
-        if (StartsWithI(s, find))
-            return s;
-        s++;
-    }
-    return NULL;
-}
-
 char *FmtV(const char *fmt, va_list args)
 {
     char    message[256];
@@ -408,12 +396,12 @@ size_t NormalizeWS(TCHAR *str)
 
 // Remove all characters in "toRemove" from "str", in place.
 // Returns number of removed characters.
-size_t RemoveChars(char *str, const char *toRemove)
+size_t RemoveChars(TCHAR *str, const TCHAR *toRemove)
 {
     size_t removed = 0;
-    char *dst = str;
+    TCHAR *dst = str;
     while (*str) {
-        char c = *str++;
+        TCHAR c = *str++;
         if (!str::FindChar(toRemove, c))
             *dst++ = c;
         else
@@ -422,22 +410,6 @@ size_t RemoveChars(char *str, const char *toRemove)
     *dst = '\0';
     return removed;
 }
-
-size_t RemoveChars(WCHAR *str, const WCHAR *toRemove)
-{
-    size_t removed = 0;
-    WCHAR *dst = str;
-    while (*str) {
-        WCHAR c = *str++;
-        if (!str::FindChar(toRemove, c))
-            *dst++ = c;
-        else
-            ++removed;
-    }
-    *dst = '\0';
-    return removed;
-}
-
 
 // Note: BufSet() should only be used when absolutely necessary (e.g. when
 // handling buffers in OS-defined structures)

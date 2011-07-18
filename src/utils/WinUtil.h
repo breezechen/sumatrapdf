@@ -126,6 +126,7 @@ bool DeleteRegKey(HKEY keySub, const TCHAR *keyName, bool resetACLFirst=false);
 
 void EnableNx();
 void RedirectIOToConsole();
+void RedirectIOToFile(const TCHAR *path, bool append=false);
 
 TCHAR *ResolveLnk(const TCHAR *path);
 bool CreateShortcut(const TCHAR *shortcutPath, const TCHAR *exePath,
@@ -297,7 +298,6 @@ HANDLE  LaunchProcess(TCHAR *cmdLine, DWORD flags=0);
 void    PaintRect(HDC hdc, RectI& rect);
 void    PaintLine(HDC hdc, RectI& rect);
 void    DrawCenteredText(HDC hdc, RectI& r, const TCHAR *txt, bool isRTL=false);
-SIZE    TextSizeInHwnd(HWND hwnd, const TCHAR *txt);
 
 bool    IsCursorOverWindow(HWND hwnd);
 void    CenterDialog(HWND hDlg, HWND hParent=NULL);

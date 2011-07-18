@@ -216,6 +216,19 @@ void RedirectIOToConsole()
     setvbuf(stdin, NULL, _IONBF, 0);
 }
 
+void RedirectIOToFile(const TCHAR *path, bool append)
+{
+    FILE *file = _tfopen(path, append ? _T("a") : _T("w"));
+    if (!file)
+        return;
+
+    *stdout = *file;
+    setvbuf(stdout, NULL, _IONBF, 0);
+
+    *stderr = *file;
+    setvbuf(stderr, NULL, _IONBF, 0);
+}
+
 TCHAR *ResolveLnk(const TCHAR * path)
 {
     IShellLink *lnk = NULL;
@@ -429,23 +442,7 @@ void PaintLine(HDC hdc, RectI& rect)
 void DrawCenteredText(HDC hdc, RectI& r, const TCHAR *txt, bool isRTL)
 {    
     SetBkMode(hdc, TRANSPARENT);
-    DrawText(hdc, txt, -1, &r.ToRECT(), DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | (isRTL ? DT_RTLREADING : 0));
-}
-
-/* Return size of a text <txt> in a given <hwnd>, taking into account its font */
-SIZE TextSizeInHwnd(HWND hwnd, const TCHAR *txt)
-{
-    SIZE sz;
-    size_t txtLen = str::Len(txt);
-    HDC dc = GetWindowDC(hwnd);
-    /* GetWindowDC() returns dc with default state, so we have to first set
-       window's current font into dc */
-    HFONT f = (HFONT)SendMessage(hwnd, WM_GETFONT, 0, 0);
-    HGDIOBJ prev = SelectObject(dc, f);
-    GetTextExtentPoint32(dc, txt, (int)txtLen, &sz);
-    SelectObject(dc, prev);
-    ReleaseDC(hwnd, dc);
-    return sz;
+    DrawText(hdc, txt, -1, &r.ToRECT(), DT_CENTER | DT_VCENTER | DT_SINGLELINE | (isRTL ? DT_RTLREADING : 0));
 }
 
 bool IsCursorOverWindow(HWND hwnd)

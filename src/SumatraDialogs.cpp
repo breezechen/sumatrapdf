@@ -920,3 +920,4 @@ bool Dialog_AddFavorite(HWND hwnd, int pageNo, TCHAR **favNameOut)
     *favNameOut = data.favName;
     return true;
 }
+

@@ -7,36 +7,34 @@
 #include <locale.h>
 #include <time.h>
 
-#include "WinUtil.h"
-#include "Http.h"
-#include "FileUtil.h"
-#include "Resource.h"
-#include "translations.h"
-#include "Version.h"
-
 #include "WindowInfo.h"
 #include "RenderCache.h"
 #include "PdfSync.h"
+#include "Resource.h"
 
 #include "AppPrefs.h"
 #include "SumatraDialogs.h"
 #include "SumatraProperties.h"
 #include "SumatraAbout.h"
 #include "FileHistory.h"
-#include "Favorites.h"
 #include "FileWatch.h"
 #include "AppTools.h"
 #include "Notifications.h"
-#include "TableOfContents.h"
-#include "Toolbar.h"
-#include "Print.h"
-#include "Search.h"
-#include "ExternalPdfViewer.h"
-#include "Selection.h"
 
+#include "WinUtil.h"
+#include "Http.h"
+#include "FileUtil.h"
 #include "CrashHandler.h"
 #include "ParseCommandLine.h"
 #include "StressTesting.h"
+
+#include "translations.h"
+#include "Version.h"
+
+// experimental: if 1, if there is only one favorite
+// for a given file, it'll be displayed as a final node, not
+// a tree, in menu and tree view
+#define COLLAPSE_SINGLE_PAGE_FAVS 1
 
 // those are defined here instead of resource.h to avoid
 // having them overwritten by dialog editor
@@ -48,6 +46,14 @@
 //       IDM_ZOOM_FIT_PAGE - IDM_ZOOM_CUSTOM must be in a continuous range!
 CASSERT(IDM_VIEW_LAYOUT_LAST - IDM_VIEW_LAYOUT_FIRST == 3, view_layout_range);
 CASSERT(IDM_ZOOM_LAST - IDM_ZOOM_FIRST == 17, zoom_range);
+
+// Undefine any of these two, if you prefer MuPDF/Fitz to render the whole page
+// (using FreeType for fonts) at the expense of higher memory/spooler requirements.
+// #define USE_GDI_FOR_RENDERING
+#define USE_GDI_FOR_PRINTING
+
+/* Define if you want page numbers to be displayed in the ToC sidebar */
+// #define DISPLAY_TOC_PAGE_NUMBERS
 
 /* Define THREAD_BASED_FILEWATCH to use the thread-based implementation of file change detection. */
 #define THREAD_BASED_FILEWATCH
@@ -69,9 +75,13 @@ static bool             gDebugShowLinks = false;
 #endif
 
 /* if true, we're rendering everything with the GDI+ back-end,
-   otherwise Fitz/MuPDF is used at least for screen rendering.
-   In Debug builds, you can switch between the two through the Debug menu */
+   otherwise Fitz is used at least for screen rendering.
+   In Debug builds, you can switch between the two by hitting the '$' key */
+#ifdef USE_GDI_FOR_RENDERING
+static bool             gUseGdiRenderer = true;
+#else
 static bool             gUseGdiRenderer = false;
+#endif
 
 // in plugin mode, the window's frame isn't drawn and closing and
 // fullscreen are disabled, so that SumatraPDF can be displayed
@@ -101,11 +111,13 @@ TCHAR *                 gPluginURL = NULL; // owned by CommandLineInfo in WinMai
 #define COL_WINDOW_SHADOW       RGB(0x40, 0x40, 0x40)
 #define COL_PAGE_FRAME          RGB(0x88, 0x88, 0x88)
 #define COL_FWDSEARCH_BG        RGB(0x65, 0x81 ,0xff)
+#define COL_SELECTION_RECT      RGB(0xF5, 0xFC, 0x0C)
 
 #define SUMATRA_WINDOW_TITLE    _T("SumatraPDF")
 
 #define CANVAS_CLASS_NAME       _T("SUMATRA_PDF_CANVAS")
 #define SPLITER_CLASS_NAME      _T("Spliter")
+#define PREFS_FILE_NAME         _T("sumatrapdfprefs.dat")
 #define RESTRICTIONS_FILE_NAME  _T("sumatrapdfrestrict.ini")
 #define CRASH_DUMP_FILE_NAME    _T("sumatrapdfcrash.dmp")
 
@@ -117,8 +129,17 @@ TCHAR *                 gPluginURL = NULL; // owned by CommandLineInfo in WinMai
 #define REPAINT_TIMER_ID            1
 #define REPAINT_MESSAGE_DELAY_IN_MS 1000
 
+#define SMOOTHSCROLL_TIMER_ID       2
+#define SMOOTHSCROLL_DELAY_IN_MS    20
+#define SMOOTHSCROLL_SLOW_DOWN_FACTOR 10
+
 #define HIDE_CURSOR_TIMER_ID        3
 #define HIDE_CURSOR_DELAY_IN_MS     3000
+
+#define HIDE_FWDSRCHMARK_TIMER_ID                4
+#define HIDE_FWDSRCHMARK_DELAY_IN_MS             400
+#define HIDE_FWDSRCHMARK_DECAYINTERVAL_IN_MS     100
+#define HIDE_FWDSRCHMARK_STEPS                   5
 
 #define AUTO_RELOAD_TIMER_ID        5
 #define AUTO_RELOAD_DELAY_IN_MS     100
@@ -127,12 +148,17 @@ TCHAR *                 gPluginURL = NULL; // owned by CommandLineInfo in WinMai
 #define FILEWATCH_DELAY_IN_MS       1000
 #endif
 
+#define UWM_PREFS_FILE_UPDATED  (WM_USER + 1)
+
+#define WS_REBAR (WS_CHILD | WS_CLIPCHILDREN | WS_BORDER | RBS_VARHEIGHT | \
+                  RBS_BANDBORDERS | CCS_NODIVIDER | CCS_NOPARENTALIGN)
+
        HINSTANCE                    ghinst = NULL;
 
-       HCURSOR                      gCursorArrow;
+static HCURSOR                      gCursorArrow;
        HCURSOR                      gCursorHand;
 static HCURSOR                      gCursorDrag;
-       HCURSOR                      gCursorIBeam;
+static HCURSOR                      gCursorIBeam;
 static HCURSOR                      gCursorScroll;
 static HCURSOR                      gCursorSizeWE;
 static HCURSOR                      gCursorNo;
@@ -141,13 +167,13 @@ static HCURSOR                      gCursorNo;
 static HBRUSH                       gBrushWhite;
 static HBRUSH                       gBrushBlack;
 static HBRUSH                       gBrushShadow;
-       HFONT                        gDefaultGuiFont;
+static HFONT                        gDefaultGuiFont;
 static HBITMAP                      gBitmapReloadingCue;
 
 static RenderCache                  gRenderCache;
-       Vec<WindowInfo*>             gWindows;
-       FileHistory                  gFileHistory;
-       Favorites *                  gFavorites;
+static Vec<WindowInfo*>             gWindows;
+static FileHistory                  gFileHistory;
+static Favorites *                  gFavorites;
 static UIThreadWorkItemQueue        gUIThreadMarshaller;
 
 // in restricted mode, some features can be disabled (such as
@@ -189,13 +215,65 @@ SerializableGlobalPrefs             gGlobalPrefs = {
     { 0, 0 }, // FILETIME lastPrefUpdate
 };
 
+enum MenuToolbarFlags {
+    MF_NO_TRANSLATE      = 1 << 0,
+    MF_PLUGIN_MODE_ONLY  = 1 << 1,
+#define PERM_FLAG_OFFSET 2
+    MF_REQ_INET_ACCESS   = Perm_InternetAccess << PERM_FLAG_OFFSET,
+    MF_REQ_DISK_ACCESS   = Perm_DiskAccess << PERM_FLAG_OFFSET,
+    MF_REQ_PREF_ACCESS   = Perm_SavePreferences << PERM_FLAG_OFFSET,
+    MF_REQ_PRINTER_ACCESS= Perm_PrinterAccess << PERM_FLAG_OFFSET,
+    MF_REQ_ALLOW_COPY    = Perm_CopySelection << PERM_FLAG_OFFSET,
+};
+
+struct ToolbarButtonInfo {
+    /* index in the toolbar bitmap (-1 for separators) */
+    int           bmpIndex;
+    int           cmdId;
+    const char *  toolTip;
+    int           flags;
+};
+
+static ToolbarButtonInfo gToolbarButtons[] = {
+    { 0,   IDM_OPEN,              _TRN("Open"),           MF_REQ_DISK_ACCESS },
+// the Open button is replaced with a Save As button in Plugin mode:
+//  { 12,  IDM_SAVEAS,            _TRN("Save As"),        MF_REQ_DISK_ACCESS },
+    { 1,   IDM_PRINT,             _TRN("Print"),          MF_REQ_PRINTER_ACCESS },
+    { -1,  IDM_GOTO_PAGE,         NULL,                   0 },
+    { 2,   IDM_GOTO_PREV_PAGE,    _TRN("Previous Page"),  0 },
+    { 3,   IDM_GOTO_NEXT_PAGE,    _TRN("Next Page"),      0 },
+    { -1,  0,                     NULL,                   0 },
+    { 4,   IDT_VIEW_FIT_WIDTH,    _TRN("Fit Width and Show Pages Continuously"), 0 },
+    { 5,   IDT_VIEW_FIT_PAGE,     _TRN("Fit a Single Page"), 0 },
+    { 6,   IDT_VIEW_ZOOMOUT,      _TRN("Zoom Out"),       0 },
+    { 7,   IDT_VIEW_ZOOMIN,       _TRN("Zoom In"),        0 },
+    { -1,  IDM_FIND_FIRST,        NULL,                   0 },
+    { 8,   IDM_FIND_PREV,         _TRN("Find Previous"),  0 },
+    { 9,   IDM_FIND_NEXT,         _TRN("Find Next"),      0 },
+    { 10,  IDM_FIND_MATCH,        _TRN("Match Case"),     0 },
+};
+
+#define TOOLBAR_BUTTONS_COUNT dimof(gToolbarButtons)
+
+static void CreateToolbar(WindowInfo& win);
+static void CreateSidebar(WindowInfo* win);
+static void ToggleTocBox(WindowInfo *win);
+static void ClearTocBox(WindowInfo *win);
+static void ToggleFavorites(WindowInfo *win);
+static void UpdateFavoritesTreeForAllWindows();
+static void RememberFavTreeExpansionState(WindowInfo *win);
+static void UpdateToolbarFindText(WindowInfo& win);
+static void UpdateToolbarPageText(WindowInfo& win, int pageCount);
 static void UpdateUITextForLanguage();
 static void UpdateToolbarAndScrollbarsForAllWindows();
 static void RebuildMenuBar();
+static void OnMenuFindMatchCase(WindowInfo& win);
 static bool LoadDocIntoWindow(const TCHAR *fileName, WindowInfo& win, 
-    const DisplayState *state, bool isNewWindow, bool allowFailure, 
+    const DisplayState *state, bool isNewWindow, bool tryRepair, 
     bool showWin, bool placeWindow);
 
+static void DeleteOldSelectionInfo(WindowInfo& win, bool alsoTextSel=false);
+static void ClearSearchResult(WindowInfo& win);
 static void EnterFullscreen(WindowInfo& win, bool presentation=false);
 static void ExitFullscreen(WindowInfo& win);
 
@@ -204,7 +282,7 @@ bool HasPermission(int permission)
     return (permission & gPolicyRestrictions) == permission;
 }
 
-bool CurrLangNameSet(const char *langName)
+static bool CurrLangNameSet(const char *langName)
 {
     const char *langCode = Trans::ConfirmLanguage(langName);
     if (!langCode)
@@ -255,6 +333,126 @@ bool LaunchBrowser(const TCHAR *url)
     return true;
 }
 
+static bool HasFavorites()
+{
+    for (size_t i=0; i<gFavorites->Count(); i++)
+    {
+        FileFavs *f = gFavorites->favs.At(i);
+        if (f->favNames.Count() > 0)
+            return true;
+    }
+    return false;
+}
+
+static bool CanViewExternally(WindowInfo *win=NULL)
+{
+    if (!HasPermission(Perm_DiskAccess))
+        return false;
+    if (!win || win->IsAboutWindow())
+        return true;
+    return file::Exists(win->loadedFilePath);
+}
+
+static bool IsNonPdfDocument(WindowInfo *win=NULL)
+{
+    if (!win || !win->dm)
+        return false;
+    return win->dm->engineType != Engine_PDF;
+}
+
+static bool CanViewWithFoxit(WindowInfo *win=NULL)
+{
+    // Requirements: a valid filename and a valid path to Foxit
+    if (!CanViewExternally(win) || IsNonPdfDocument(win))
+        return false;
+    ScopedMem<TCHAR> path(GetFoxitPath());
+    return path != NULL;
+}
+
+static bool ViewWithFoxit(WindowInfo *win, TCHAR *args=NULL)
+{
+    if (!CanViewWithFoxit(win))
+        return false;
+
+    ScopedMem<TCHAR> exePath(GetFoxitPath());
+    if (!exePath)
+        return false;
+    if (!args)
+        args = _T("");
+
+    // Foxit cmd-line format:
+    // [PDF filename] [-n <page number>] [-pwd <password>] [-z <zoom>]
+    // TODO: Foxit allows passing password and zoom
+    ScopedMem<TCHAR> params(str::Format(_T("%s \"%s\" -n %d"), args, win->loadedFilePath, win->dm->currentPageNo()));
+    LaunchFile(exePath, params);
+    return true;
+}
+
+static bool CanViewWithPDFXChange(WindowInfo *win=NULL)
+{
+    // Requirements: a valid filename and a valid path to PDF X-Change
+    if (!CanViewExternally(win) || IsNonPdfDocument(win))
+        return false;
+    ScopedMem<TCHAR> path(GetPDFXChangePath());
+    return path != NULL;
+}
+
+static bool ViewWithPDFXChange(WindowInfo *win, TCHAR *args=NULL)
+{
+    if (!CanViewWithPDFXChange(win))
+        return false;
+
+    ScopedMem<TCHAR> exePath(GetPDFXChangePath());
+    if (!exePath)
+        return false;
+    if (!args)
+        args = _T("");
+
+    // PDFXChange cmd-line format:
+    // [/A "param=value [&param2=value ..."] [PDF filename] 
+    // /A params: page=<page number>
+    ScopedMem<TCHAR> params(str::Format(_T("%s /A \"page=%d\" \"%s\""), args, win->dm->currentPageNo(), win->loadedFilePath));
+    LaunchFile(exePath, params);
+    return true;
+}
+
+static bool CanViewWithAcrobat(WindowInfo *win=NULL)
+{
+    // Requirements: a valid filename and a valid path to Adobe Reader
+    if (!CanViewExternally(win) || IsNonPdfDocument(win))
+        return false;
+    ScopedMem<TCHAR> exePath(GetAcrobatPath());
+    return exePath != NULL;
+}
+
+static bool ViewWithAcrobat(WindowInfo *win, TCHAR *args=NULL)
+{
+    if (!CanViewWithAcrobat(win))
+        return false;
+
+    ScopedMem<TCHAR> exePath(GetAcrobatPath());
+    if (!exePath)
+        return false;
+
+    if (!args)
+        args = _T("");
+
+    ScopedMem<TCHAR> params(NULL);
+    // Command line format for version 6 and later:
+    //   /A "page=%d&zoom=%.1f,%d,%d&..." <filename>
+    // see http://www.adobe.com/devnet/acrobat/pdfs/pdf_open_parameters.pdf
+    //   /P <filename>
+    // see http://www.adobe.com/devnet/acrobat/pdfs/Acrobat_SDK_developer_faq.pdf#page=24
+    // TODO: Also set zoom factor and scroll to current position?
+    if (win->dm && HIWORD(GetFileVersion(exePath)) >= 6)
+        params.Set(str::Format(_T("/A \"page=%d\" %s \"%s\""), win->dm->currentPageNo(), args, win->dm->fileName()));
+    else
+        params.Set(str::Format(_T("%s \"%s\""), args, win->loadedFilePath));
+    LaunchFile(exePath, params);
+
+    return true;
+}
+
 #define DEFINE_GUID_STATIC(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     static const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 DEFINE_GUID_STATIC(CLSID_SendMail, 0x9E56BE60, 0xC50F, 0x11CF, 0x9A, 0x2C, 0x00, 0xA0, 0xC9, 0x0A, 0x90, 0xCE); 
@@ -280,7 +478,7 @@ static bool SendAsEmailAttachment(WindowInfo *win)
     // We use the SendTo drop target provided by SendMail.dll, which should ship with all
     // commonly used Windows versions, instead of MAPISendMail, which doesn't support
     // Unicode paths and might not be set up on systems not having Microsoft Outlook installed.
-    IDataObject *pDataObject = GetDataObjectForFile(win->dm->FileName(), win->hwndFrame);
+    IDataObject *pDataObject = GetDataObjectForFile(win->dm->fileName(), win->hwndFrame);
     if (!pDataObject)
         return false;
 
@@ -326,12 +524,12 @@ static void MenuUpdateDisplayMode(WindowInfo& win)
         win::menu::SetChecked(win.menu, IDM_VIEW_CONTINUOUS, true);
 }
 
-void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode, bool keepContinuous)
+void WindowInfo::SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous)
 {
-    if (!win->IsDocLoaded())
+    if (!this->IsDocLoaded())
         return;
 
-    if (keepContinuous && displayModeContinuous(win->dm->displayMode())) {
+    if (keepContinuous && displayModeContinuous(this->dm->displayMode())) {
         switch (displayMode) {
             case DM_SINGLE_PAGE: displayMode = DM_CONTINUOUS; break;
             case DM_FACING: displayMode = DM_CONTINUOUS_FACING; break;
@@ -339,11 +537,17 @@ void SwitchToDisplayMode(WindowInfo *win, DisplayMode displayMode, bool keepCont
         }
     }
 
-    win->dm->changeDisplayMode(displayMode);
-    UpdateToolbarState(win);
+    this->dm->changeDisplayMode(displayMode);
+    UpdateToolbarState();
 }
 
 #define SEP_ITEM "-----"
+
+struct MenuDef {
+    const char *title;
+    int         id;
+    int         flags;
+};
 
 MenuDef menuDefFile[] = {
     { _TRN("&Open\tCtrl+O"),                IDM_OPEN ,                  MF_REQ_DISK_ACCESS },
@@ -416,6 +620,12 @@ MenuDef menuDefZoom[] = {
     { "8.33%",                              IDM_ZOOM_8_33,              MF_NO_TRANSLATE  },
 };
 
+MenuDef menuDefFavorites[] = {
+    { _TRN("Add to favorites"),             IDM_FAV_ADD,                0 },
+    { _TRN("Remove from favorites"),        IDM_FAV_DEL,                0 },
+    { _TRN("Show Favorites"),               IDM_FAV_TOGGLE,             MF_REQ_DISK_ACCESS },
+};
+
 MenuDef menuDefSettings[] = {
     { _TRN("Change Language"),              IDM_CHANGE_LANGUAGE,        0  },
 #if 0
@@ -423,12 +633,6 @@ MenuDef menuDefSettings[] = {
     { SEP_ITEM,                             0,                          MF_REQ_DISK_ACCESS },
 #endif
     { _TRN("&Options..."),                  IDM_SETTINGS,               MF_REQ_PREF_ACCESS },
-};
-
-MenuDef menuDefFavorites[] = {
-    { _TRN("Add to favorites"),             IDM_FAV_ADD,                0 },
-    { _TRN("Remove from favorites"),        IDM_FAV_DEL,                0 },
-    { _TRN("Show Favorites"),               IDM_FAV_TOGGLE,             MF_REQ_DISK_ACCESS },
 };
 
 MenuDef menuDefHelp[] = {
@@ -443,8 +647,8 @@ MenuDef menuDefHelp[] = {
 MenuDef menuDefDebug[] = {
     { "Highlight links",                    IDM_DEBUG_SHOW_LINKS,       MF_NO_TRANSLATE },
     { "Use GDI+ renderer",                  IDM_DEBUG_GDI_RENDERER,     MF_NO_TRANSLATE },
-    //{ SEP_ITEM,                             0,                          0 },
-    //{ "Crash me",                           IDM_DEBUG_CRASH_ME,         MF_NO_TRANSLATE },
+    { SEP_ITEM,                             0,                          0 },
+    { "Crash me",                           IDM_DEBUG_CRASH_ME,         MF_NO_TRANSLATE },
 };
 #endif
 
@@ -467,18 +671,21 @@ MenuDef menuDefContextStart[] = {
     { _TRN("&Remove Document"),             IDM_FORGET_SELECTED_DOCUMENT, MF_REQ_DISK_ACCESS | MF_REQ_PREF_ACCESS },
 };
 
+MenuDef menuDefFavContext[] = {
+    { _TRN("Remove from favorites"),        IDM_FAV_DEL,                0 }
+};
+
 static void AddFileMenuItem(HMENU menuFile, const TCHAR *filePath, UINT index)
 {
     assert(filePath && menuFile);
     if (!filePath || !menuFile) return;
 
-    ScopedMem<TCHAR> fileName(MenuSafeString(path::GetBaseName(filePath)));
-    ScopedMem<TCHAR> menuString(str::Format(_T("&%d) %s"), (index + 1) % 10, fileName));
+    ScopedMem<TCHAR> menuString(str::Format(_T("&%d) %s"), (index + 1) % 10, path::GetBaseName(filePath)));
     UINT menuId = IDM_FILE_HISTORY_FIRST + index;
     InsertMenu(menuFile, IDM_EXIT, MF_BYCOMMAND | MF_ENABLED | MF_STRING, menuId, menuString);
 }
 
-HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuLen, HMENU menu)
+static HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuLen, HMENU menu)
 {
     assert(menu);
 
@@ -521,6 +728,168 @@ static void AppendRecentFilesToMenu(HMENU m)
     }
 
     InsertMenu(m, IDM_EXIT, MF_BYCOMMAND | MF_SEPARATOR, 0, NULL);
+}
+
+// Note: those might be too big
+#define MAX_FAV_SUBMENUS 10
+#define MAX_FAV_MENUS 10
+
+// caller has to free() the result
+static TCHAR *FavReadableName(FavName *fn)
+{
+    if (fn->name) {
+        ScopedMem<TCHAR> pageNo(str::Format(_TR("(page %d)"), fn->pageNo));
+        return str::Join(fn->name, _T(" "), pageNo);
+    }
+    return str::Format(_TR("Page %d"), fn->pageNo);
+}
+
+// caller has to free() the result
+static TCHAR *FavCompactReadableName(FileFavs *fav, FavName *fn, bool isCurrent=false)
+{
+    ScopedMem<TCHAR> rn(FavReadableName(fn));
+    if (isCurrent)
+        return str::Format(_T("%s : %s"), _TR("Current file"), rn);
+    const TCHAR *fp = path::GetBaseName(fav->filePath);
+    return str::Format(_T("%s : %s"), fp, rn);
+}
+
+static void AppendFavMenuItems(HMENU m, FileFavs *f, UINT& idx, bool combined=false, bool isCurrent=false)
+{
+    size_t items = f->favNames.Count();
+    if (items > MAX_FAV_MENUS) {
+        items = MAX_FAV_MENUS;
+    }
+    for (size_t i=0; i<items; i++)
+    {
+        FavName *fn = f->favNames.At(i);
+        fn->menuId = idx++;
+        if (combined) {
+            ScopedMem<TCHAR> s(FavCompactReadableName(f, fn, isCurrent));
+            AppendMenu(m, MF_STRING, (UINT_PTR)fn->menuId, s);
+        } else {
+            ScopedMem<TCHAR> s(FavReadableName(fn));
+            AppendMenu(m, MF_STRING, (UINT_PTR)fn->menuId, s);
+        }
+    }
+}
+
+static int SortByBaseFileName(const void *a, const void *b)
+{
+    TCHAR *filePathA = *(TCHAR**)a;
+    TCHAR *filePathB = *(TCHAR**)b;
+    return str::CmpNatural(path::GetBaseName(filePathA), path::GetBaseName(filePathB));
+}
+
+static void GetSortedFilePaths(Favorites *favorites, Vec<TCHAR*>& filePathsSortedOut, FileFavs *toIgnore)
+{
+    for (size_t i = 0; i < favorites->favs.Count(); i++) {
+        FileFavs *f = favorites->favs.At(i);
+        if (f != toIgnore)
+            filePathsSortedOut.Append(f->filePath);
+    }
+    filePathsSortedOut.Sort(SortByBaseFileName);
+}
+    
+// For easy access, we try to show favorites in the menu, similar to a list of
+// recently opened files.
+// The first menu items are for currently opened file (up to MAX_FAV_MENUS), based
+// on the assumption that user is usually interested in navigating current file.
+// Then we have a submenu for each file for which there are bookmarks (up to
+// MAX_FAV_SUBMENUS), each having up to MAX_FAV_MENUS menu items.
+// If not all favorites can be shown, we also enable "Show all favorites" menu which
+// will provide a way to see all favorites.
+// Note: not sure if that's the best layout. Maybe we should always use submenu and
+// put the submenu for current file as the first one (potentially named as "Current file"
+// or some such, to make it stand out from other submenus)
+static void AppendFavMenus(HMENU m, const TCHAR *currFilePath)
+{
+    // To minimize mouse movement when navigating current file via favorites
+    // menu, put favorites for current file first
+    FileFavs *currFileFav = NULL;
+    if (NULL != currFilePath) {
+        currFileFav = gFavorites->GetFavByFilePath(currFilePath);
+    }
+
+    // sort the files with favorites by base file name of file path
+    Vec<TCHAR*> filePathsSorted;
+    if (HasPermission(Perm_DiskAccess)) {
+        // only show favorites for other files, if we're allowed to open them
+        GetSortedFilePaths(gFavorites, filePathsSorted, currFileFav);
+    }
+    if (currFileFav)
+        filePathsSorted.InsertAt(0, currFileFav->filePath);
+
+    if (filePathsSorted.Count() == 0)
+        return;
+
+    AppendMenu(m, MF_SEPARATOR, 0, NULL);
+
+    gFavorites->ResetMenuIds();
+    UINT menuId = IDM_FAV_FIRST;
+
+    size_t menusCount = filePathsSorted.Count();
+    if (menusCount > MAX_FAV_MENUS)
+        menusCount = MAX_FAV_MENUS;
+    for (size_t i = 0; i < menusCount; i++) {
+        TCHAR *filePath = filePathsSorted.At(i);
+        const TCHAR *fileName = path::GetBaseName(filePath);
+        FileFavs *f = gFavorites->GetFavByFilePath(filePath);
+#if COLLAPSE_SINGLE_PAGE_FAVS
+        HMENU sub = m;
+        bool combined = (f->favNames.Count() == 1);
+        if (!combined)
+            sub = CreateMenu();
+        AppendFavMenuItems(sub, f, menuId, combined, f == currFileFav);
+        if (!combined) {
+            if (f == currFileFav)
+                AppendMenu(m, MF_POPUP | MF_STRING, (UINT_PTR)sub, _TR("Current file"));
+            else
+                AppendMenu(m, MF_POPUP | MF_STRING, (UINT_PTR)sub, fileName);
+        }
+#else
+        HMENU sub = CreateMenu();
+        AppendFavMenuItems(sub, f, menuId);
+        if (f == currFileFav)
+            AppendMenu(m, MF_POPUP | MF_STRING, (UINT_PTR)sub, _TR("Current file"));
+        else
+            AppendMenu(m, MF_POPUP | MF_STRING, (UINT_PTR)sub, fileName);
+#endif
+    }
+}
+
+// Called when a user opens "Favorites" top-level menu. We need to construct
+// the menu:
+// - disable add/remove menu items if no document is opened
+// - if a document is opened and the page is already bookmarked,
+//   disable "add" menu item and enable "remove" menu item
+// - if a document is opened and the page is not bookmarked,
+//   enable "add" menu item and disable "remove" menu item
+static void RebuildFavMenu(WindowInfo *win, HMENU menu)
+{
+    win::menu::Empty(menu);
+    BuildMenuFromMenuDef(menuDefFavorites, dimof(menuDefFavorites), menu);
+    if (!win->IsDocLoaded()) {
+        win::menu::SetEnabled(menu, IDM_FAV_ADD, false);
+        win::menu::SetEnabled(menu, IDM_FAV_DEL, false);
+        AppendFavMenus(menu, NULL);
+    } else {
+        int pageNo = win->currPageNo;
+        TCHAR *filePath = win->loadedFilePath;
+        bool isBookmarked = gFavorites->IsPageInFavorites(filePath, pageNo);
+        if (isBookmarked)
+        {
+            win::menu::SetEnabled(menu, IDM_FAV_ADD, false);
+            ScopedMem<TCHAR> s(str::Format(_TR("Remove page %d from favorites"), pageNo));
+            win::menu::SetText(menu, IDM_FAV_DEL, s);
+        } else {
+            win::menu::SetEnabled(menu, IDM_FAV_DEL, false);
+            ScopedMem<TCHAR> s(str::Format(_TR("Add page %d to favorites"), pageNo));
+            win::menu::SetText(menu, IDM_FAV_ADD, s);
+        }
+        AppendFavMenus(menu, filePath);
+    }
+    win::menu::SetEnabled(menu, IDM_FAV_TOGGLE, HasFavorites());
 }
 
 static void RebuildFileMenu(HMENU menu)
@@ -601,7 +970,7 @@ WindowInfo *FindWindowInfoByHwnd(HWND hwnd)
     return NULL;
 }
 
-bool WindowInfoStillValid(WindowInfo *win)
+static bool WindowInfoStillValid(WindowInfo *win)
 {
     return gWindows.Find(win) != -1;
 }
@@ -655,6 +1024,12 @@ TCHAR *WindowInfo::GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
 
     fileName = path::GetBaseName(fileName);
     return Dialog_GetPassword(this->hwndFrame, fileName, gGlobalPrefs.rememberOpenedFiles ? saveKey : NULL);
+}
+
+/* Caller needs to free() the result. */
+static TCHAR *GetPrefsFileName()
+{
+    return AppGenDataFilename(PREFS_FILE_NAME);
 }
 
 static struct {
@@ -757,30 +1132,13 @@ static void UpdateDisplayStateWindowRect(WindowInfo& win, DisplayState& ds, bool
     ds.sidebarDx = gGlobalPrefs.sidebarDx;
 }
 
-static void UpdateSidebarDisplayState(WindowInfo *win, DisplayState *ds)
+static void UpdateCurrentFileDisplayStateForWin(WindowInfo& win)
 {
-    ds->tocVisible = win->tocVisible;
-
-    if (win->tocLoaded) {
-        win->tocState.Reset();
-        HTREEITEM hRoot = TreeView_GetRoot(win->hwndTocTree);
-        if (hRoot)
-            UpdateTocExpansionState(win, hRoot);
-    }
-
-    delete ds->tocState;
-    ds->tocState = NULL;
-    if (win->tocState.Count() > 0)
-        ds->tocState = new Vec<int>(win->tocState);
-}
-
-void UpdateCurrentFileDisplayStateForWin(WindowInfo* win)
-{
-    RememberWindowPosition(*win);
-    if (!win->IsDocLoaded())
+    RememberWindowPosition(win);
+    if (!win.IsDocLoaded())
         return;
 
-    const TCHAR *fileName = win->dm->FileName();
+    const TCHAR *fileName = win.dm->fileName();
     assert(fileName);
     if (!fileName)
         return;
@@ -790,11 +1148,28 @@ void UpdateCurrentFileDisplayStateForWin(WindowInfo* win)
     if (!state)
         return;
 
-    if (!win->dm->displayStateFromModel(state))
+    if (!win.dm->displayStateFromModel(state))
         return;
     state->useGlobalValues = gGlobalPrefs.globalPrefsOnly;
-    UpdateDisplayStateWindowRect(*win, *state, false);
-    UpdateSidebarDisplayState(win, state);
+    UpdateDisplayStateWindowRect(win, *state, false);
+    win.UpdateSidebarDisplayState(state);
+}
+
+static void ShowOrHideToolbarGlobally()
+{
+    for (size_t i = 0; i < gWindows.Count(); i++) {
+        WindowInfo *win = gWindows[i];
+        if (gGlobalPrefs.toolbarVisible) {
+            ShowWindow(win->hwndReBar, SW_SHOW);
+        } else {
+            // Move the focus out of the toolbar
+            if (win->hwndFindBox == GetFocus() || win->hwndPageBox == GetFocus())
+                SetFocus(win->hwndFrame);
+            ShowWindow(win->hwndReBar, SW_HIDE);
+        }
+        ClientRect rect(win->hwndFrame);
+        SendMessage(win->hwndFrame, WM_SIZE, 0, MAKELONG(rect.dx, rect.dy));
+    }
 }
 
 bool IsUIRightToLeft()
@@ -834,7 +1209,7 @@ static void UpdateWindowRtlLayout(WindowInfo *win)
     ToggleWindowStyle(win->hwndFindText, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
     ToggleWindowStyle(win->hwndPageText, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
 
-    win->notifications->Relayout();
+    win->messages->Relayout();
 
     // TODO: also update the canvas scrollbars (?)
 
@@ -849,11 +1224,75 @@ static void UpdateWindowRtlLayout(WindowInfo *win)
     }
 }
 
-void UpdateRtlLayoutForAllWindows()
+static void UpdateRtlLayoutForAllWindows()
 {
     for (size_t i = 0; i < gWindows.Count(); i++) {
         UpdateWindowRtlLayout(gWindows[i]);
     }
+}
+
+// called whenever global preferences change or a file is
+// added or removed from gFileHistory (in order to keep
+// the list of recently opened documents in sync)
+static bool SavePrefs()
+{
+    // don't save preferences for plugin windows
+    if (gPluginMode)
+        return false;
+
+    /* mark currently shown files as visible */
+    for (size_t i = 0; i < gWindows.Count(); i++)
+        UpdateCurrentFileDisplayStateForWin(*gWindows[i]);
+
+    ScopedMem<TCHAR> path(GetPrefsFileName());
+    bool ok = Prefs::Save(path, gGlobalPrefs, gFileHistory, gFavorites);
+    if (ok) {
+        // notify all SumatraPDF instances about the updated prefs file
+        HWND hwnd = NULL;
+        while ((hwnd = FindWindowEx(HWND_DESKTOP, hwnd, FRAME_CLASS_NAME, NULL)))
+            PostMessage(hwnd, UWM_PREFS_FILE_UPDATED, 0, 0);
+    }
+    return ok;
+}
+
+// refresh the preferences when a different SumatraPDF process saves them
+static bool ReloadPrefs()
+{
+    ScopedMem<TCHAR> path(GetPrefsFileName());
+
+    FILETIME time = file::GetModificationTime(path);
+    if (time.dwLowDateTime == gGlobalPrefs.lastPrefUpdate.dwLowDateTime &&
+        time.dwHighDateTime == gGlobalPrefs.lastPrefUpdate.dwHighDateTime) {
+        return true;
+    }
+
+    const char *currLang = gGlobalPrefs.currentLanguage;
+    bool toolbarVisible = gGlobalPrefs.toolbarVisible;
+
+    FileHistory fileHistory;
+    Favorites *favs = NULL;
+    Prefs::Load(path, gGlobalPrefs, fileHistory, &favs);
+
+    gFileHistory.Clear();
+    gFileHistory.ExtendWith(fileHistory);
+    delete gFavorites;
+    gFavorites = favs;
+
+    if (gWindows.Count() > 0 && gWindows[0]->IsAboutWindow()) {
+        gWindows[0]->DeleteInfotip();
+        gWindows[0]->RedrawAll(true);
+    }
+
+    // update the current language
+    if (!str::Eq(currLang, gGlobalPrefs.currentLanguage)) {
+        CurrLangNameSet(gGlobalPrefs.currentLanguage);
+        UpdateRtlLayoutForAllWindows();
+        RebuildMenuBar();
+        UpdateUITextForLanguage();
+    }
+    if (gGlobalPrefs.toolbarVisible != toolbarVisible)
+        ShowOrHideToolbarGlobally();
+    return true;
 }
 
 static int GetPolicies(bool isRestricted)
@@ -968,42 +1407,42 @@ void CreateThumbnailForFile(WindowInfo& win, DisplayState& state)
     gRenderCache.Render(win.dm, 1, 0, zoom, pageRect, *callback);
 }
 
-void ReloadDocument(WindowInfo *win, bool autorefresh)
+void WindowInfo::Reload(bool autorefresh)
 {
     DisplayState ds;
     ds.useGlobalValues = gGlobalPrefs.globalPrefsOnly;
-    if (!win->IsDocLoaded() || !win->dm->displayStateFromModel(&ds)) {
-        if (!autorefresh && !win->IsDocLoaded() && !win->IsAboutWindow())
-            LoadDocument(win->loadedFilePath, win);
+    if (!this->IsDocLoaded() || !this->dm->displayStateFromModel(&ds)) {
+        if (!autorefresh && !this->IsDocLoaded() && !this->IsAboutWindow())
+            LoadDocument(this->loadedFilePath, this);
         return;
     }
-    UpdateDisplayStateWindowRect(*win, ds);
-    UpdateSidebarDisplayState(win, &ds);
+    UpdateDisplayStateWindowRect(*this, ds);
+    UpdateSidebarDisplayState(&ds);
     // Set the windows state based on the actual window's placement
-    ds.windowState =  win->fullScreen ? WIN_STATE_FULLSCREEN
-                    : IsZoomed(win->hwndFrame) ? WIN_STATE_MAXIMIZED 
-                    : IsIconic(win->hwndFrame) ? WIN_STATE_MINIMIZED
+    ds.windowState =  this->fullScreen ? WIN_STATE_FULLSCREEN
+                    : IsZoomed(this->hwndFrame) ? WIN_STATE_MAXIMIZED 
+                    : IsIconic(this->hwndFrame) ? WIN_STATE_MINIMIZED
                     : WIN_STATE_NORMAL ;
 
     // We don't allow PDF-repair if it is an autorefresh because
     // a refresh event can occur before the file is finished being written,
     // in which case the repair could fail. Instead, if the file is broken, 
     // we postpone the reload until the next autorefresh event
-    bool allowFailure = !autorefresh;
-    ScopedMem<TCHAR> path(str::Dup(win->loadedFilePath));
-    if (!LoadDocIntoWindow(path, *win, &ds, false /* isNewWindow */, allowFailure, true /* showWin */, false /* placeWindow */))
+    bool tryRepair = !autorefresh;
+    ScopedMem<TCHAR> path(str::Dup(this->loadedFilePath));
+    if (!LoadDocIntoWindow(path, *this, &ds, false, tryRepair, true, false))
         return;
 
     if (gGlobalPrefs.showStartPage) {
         // refresh the thumbnail for this file
         DisplayState *state = gFileHistory.Find(ds.filePath);
         if (state)
-            CreateThumbnailForFile(*win, *state);
+            CreateThumbnailForFile(*this, *state);
     }
 
     // save a newly remembered password into file history so that
     // we don't ask again at the next refresh
-    ScopedMem<char> decryptionKey(win->dm->engine->GetDecryptionKey());
+    ScopedMem<char> decryptionKey(this->dm->engine->GetDecryptionKey());
     if (decryptionKey) {
         DisplayState *state = gFileHistory.Find(ds.filePath);
         if (state && !str::Eq(state->decryptionKey, decryptionKey))
@@ -1011,13 +1450,112 @@ void ReloadDocument(WindowInfo *win, bool autorefresh)
     }
 }
 
-static bool IsFileCloseMenuEnabled()
+static void UpdateToolbarBg(HWND hwnd, bool enabled)
 {
-    for (size_t i = 0; i < gWindows.Count(); i++) {
+    ToggleWindowStyle(hwnd, SS_WHITERECT, enabled);
+}
+
+static void UpdateFindbox(WindowInfo* win)
+{
+    UpdateToolbarBg(win->hwndFindBg, win->IsDocLoaded());
+    UpdateToolbarBg(win->hwndPageBg, win->IsDocLoaded());
+
+    InvalidateRect(win->hwndToolbar, NULL, TRUE);
+    UpdateWindow(win->hwndToolbar);
+
+    if (!win->IsDocLoaded()) {  // Avoid focus on Find box
+        SetClassLongPtr(win->hwndFindBox, GCLP_HCURSOR, (LONG_PTR)gCursorArrow);
+        HideCaret(NULL);
+    } else {
+        SetClassLongPtr(win->hwndFindBox, GCLP_HCURSOR, (LONG_PTR)gCursorIBeam);
+        ShowCaret(NULL);
+    }
+}
+
+static bool FileCloseMenuEnabled()
+{
+    for (size_t i = 0; i < gWindows.Count(); i++)
         if (!gWindows[i]->IsAboutWindow())
             return true;
-    }
     return false;
+}
+
+bool TbIsSeparator(ToolbarButtonInfo& tbi)
+{
+    return tbi.bmpIndex < 0;
+}
+
+static BOOL IsVisibleToolbarButton(WindowInfo& win, int buttonNo)
+{
+    if (!win.dm || !win.dm->engine || !win.dm->engine->IsImageCollection())
+        return TRUE;
+
+    int cmdId = gToolbarButtons[buttonNo].cmdId;
+    switch (cmdId) {
+        case IDM_FIND_FIRST:
+        case IDM_FIND_NEXT:
+        case IDM_FIND_PREV:
+        case IDM_FIND_MATCH:
+            return FALSE;
+    }
+    return TRUE;
+}
+
+static LPARAM ToolbarButtonEnabledState(WindowInfo& win, int buttonNo)
+{
+    const LPARAM enabled = (LPARAM)MAKELONG(1,0);
+    const LPARAM disabled = (LPARAM)MAKELONG(0,0);
+
+    int cmdId = gToolbarButtons[buttonNo].cmdId;
+
+    // If restricted, disable
+    if (!HasPermission(gToolbarButtons[buttonNo].flags >> PERM_FLAG_OFFSET))
+        return disabled;
+
+    // If no file open, only enable open button
+    if (!win.IsDocLoaded())
+        return IDM_OPEN == cmdId ? enabled : disabled;
+
+    switch (cmdId)
+    {
+        case IDM_OPEN:
+            // opening different files isn't allowed in plugin mode
+            if (gPluginMode)
+                return disabled;
+            break;
+
+        case IDM_FIND_NEXT:
+        case IDM_FIND_PREV:
+            // TODO: Update on whether there's more to find, not just on whether there is text.
+            if (win::GetTextLen(win.hwndFindBox) == 0)
+                return disabled;
+            break;
+
+        case IDM_GOTO_NEXT_PAGE:
+            if (win.dm->currentPageNo() == win.dm->pageCount())
+                return disabled;
+            break;
+        case IDM_GOTO_PREV_PAGE:
+            if (win.dm->currentPageNo() == 1)
+                return disabled;
+            break;
+    }
+
+    return enabled;
+}
+
+static void ToolbarUpdateStateForWindow(WindowInfo& win) {
+
+    for (int i = 0; i < TOOLBAR_BUTTONS_COUNT; i++) {
+        BOOL hide = !IsVisibleToolbarButton(win, i);
+        SendMessage(win.hwndToolbar, TB_HIDEBUTTON, gToolbarButtons[i].cmdId, hide);
+
+        if (TbIsSeparator(gToolbarButtons[i]))
+            continue;
+
+        LPARAM buttonState = ToolbarButtonEnabledState(win, i);
+        SendMessage(win.hwndToolbar, TB_ENABLEBUTTON, gToolbarButtons[i].cmdId, buttonState);
+    }
 }
 
 static void MenuUpdatePrintItem(WindowInfo& win, HMENU menu, bool disableOnly=false) {
@@ -1053,8 +1591,8 @@ static void MenuUpdateStateForWindow(WindowInfo& win) {
         IDM_SAVEAS, IDM_SEND_BY_EMAIL
     };
 
-    assert(IsFileCloseMenuEnabled() == !win.IsAboutWindow());
-    win::menu::SetEnabled(win.menu, IDM_CLOSE, IsFileCloseMenuEnabled());
+    assert(FileCloseMenuEnabled() == !win.IsAboutWindow()); // TODO: ???
+    win::menu::SetEnabled(win.menu, IDM_CLOSE, FileCloseMenuEnabled());
 
     MenuUpdatePrintItem(win, win.menu);
 
@@ -1107,7 +1645,7 @@ static void UpdateToolbarAndScrollbarsForAllWindows()
 {
     for (size_t i = 0; i < gWindows.Count(); i++) {
         WindowInfo *win = gWindows[i];
-        ToolbarUpdateStateForWindow(win);
+        ToolbarUpdateStateForWindow(*win);
 
         if (!win->IsDocLoaded()) {
             ShowScrollBar(win->hwndCanvas, SB_BOTH, FALSE);
@@ -1141,25 +1679,6 @@ void EnsureWindowVisibility(RectI& rect)
     RectI halfCaption(rect.x, rect.y + captionDy / 2, rect.dx, captionDy / 2);
     if (halfCaption.Intersect(work).IsEmpty())
         rect = RectI(work.TL(), rect.Size());
-}
-
-static void CreateSidebar(WindowInfo* win)
-{
-    win->hwndSidebarSpliter = CreateWindow(SPLITER_CLASS_NAME, _T(""), 
-        WS_CHILDWINDOW, 0, 0, 0, 0, win->hwndFrame, (HMENU)0, ghinst, NULL);
-
-    CreateToc(win);
-    CreateFavorites(win);
-
-    if (win->tocVisible) {
-        InvalidateRect(win->hwndTocBox, NULL, TRUE);
-        UpdateWindow(win->hwndTocBox);
-    }
-
-    if (gGlobalPrefs.favVisible) {
-        InvalidateRect(win->hwndFavBox, NULL, TRUE);
-        UpdateWindow(win->hwndFavBox);
-    }
 }
 
 static WindowInfo* CreateWindowInfo()
@@ -1216,7 +1735,7 @@ static WindowInfo* CreateWindowInfo()
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
         win->hwndCanvas, NULL, ghinst, NULL);
 
-    CreateToolbar(win);
+    CreateToolbar(*win);
     CreateSidebar(win);
     UpdateFindbox(win);
     DragAcceptFiles(win->hwndCanvas, TRUE);
@@ -1243,9 +1762,6 @@ static void DeleteWindowInfo(WindowInfo *win)
     ImageList_Destroy((HIMAGELIST)SendMessage(win->hwndToolbar, TB_GETIMAGELIST, 0, 0));
     DragAcceptFiles(win->hwndCanvas, FALSE);
 
-    AbortFinding(win);
-    AbortPrinting(win);
-
     delete win;
 }
 
@@ -1254,7 +1770,7 @@ static bool LoadDocIntoWindow(
     WindowInfo& win,       // destination window
     const DisplayState *state,   // state
     bool isNewWindow,      // if true then 'win' refers to a newly created window that needs to be resized and placed
-    bool allowFailure,     // if false then keep displaying the previously loaded document if the new one is broken
+    bool tryRepair,        // if true then try to repair the document if it is broken
     bool showWin,          // window visible or not
     bool placeWindow)      // if true then the Window will be moved/sized according to the 'state' information even if the window was already placed before (isNewWindow=false)
 {
@@ -1282,7 +1798,7 @@ static bool LoadDocIntoWindow(
     }
 
     DisplayModel *prevModel = win.dm;
-    AbortFinding(&win);
+    win.AbortFinding();
     delete win.pdfsync;
     win.pdfsync = NULL;
 
@@ -1293,60 +1809,23 @@ static bool LoadDocIntoWindow(
 
     // ToC items might hold a reference to an Engine, so make sure to
     // delete them before destroying the whole DisplayModel
-    if (win.dm || allowFailure)
+    if (win.dm || tryRepair)
         ClearTocBox(&win);
 
     assert(!win.IsAboutWindow() && win.IsDocLoaded() == (win.dm != NULL));
-    /* TODO: this doesn't handle well several use cases:
-    // * a document gets refreshed too early during a recompilation
-    //   (what should happen: title bar changes to "[Changes detected; refreshing] ...",
-    //   previous document remains loaded)
-    // * a document is intentionally refreshed intentionally
-    //   (what should happen: the previous document remains loaded, a notification
-    //   informs that reloading the document has failed)
-    // * the user wanted to display the next/previous document in the folder
-    //   through BrowseFolder
-    //   (what should happen: a full-canvas error message is displayed, so that
-    //   folder browsing isn't broken on the first unrenderable document)
-    // * a user clicks on a link to an inexistent external document in a PDF
-    //   (what should happen: no new window opens at all, the error notification
-    //   is displayed in the original window)
-    // * a broken document is loaded through a double-click
-    //   (what should happen: a full-canvas error message is displayed, so that
-    //   the user doesn't get distracted too much and has to hunt for the error
-    //   notification - also, (manually) refreshing that document remains enabled
-    //   as does opening it in Adobe Reader, if it's a PDF)
-    // * a user fails to enter the correct password three times
-    //   (what should happen: display an error notification if isNewWindow == false,
-    //   else don't display any window at all but instead an error message box)
-    // * a user passes several invalid paths on the command line
-    //   (what should happen: all the error notifications are displayed in a single
-    //   window - maybe even with a longer or no timeout, so that the user gets
-    //   a chance to read them)
-    // * a broken document is loaded with -plugin
-    //   (what should happen: a full-canvas error message is displayed, as the plugin
-    //   is document-specific so there must always be a document "loaded")
-    if (!win.dm) {
-        // TODO: this should be "Error opening %s". Change after 1.7 is released
-        ScopedMem<TCHAR> msg(str::Format(_TR("Error loading %s"), win.loadedFilePath));
-        ShowNotification(&win, msg, true, false, NG_RESPONSE_TO_ACTION);
-        // TODO: CloseWindow() does slightly more than this
-        //       (also, some code presumes that there is at least one window with
-        //        IsAboutWindow() == true and that that window is gWindows[0])
-        str::ReplacePtr(&win.loadedFilePath, NULL);
-    }
-    */
     if (win.dm) {
-        if (prevModel && str::Eq(win.dm->FileName(), prevModel->FileName()))
+        if (prevModel && str::Eq(win.dm->fileName(), prevModel->fileName()))
             gRenderCache.KeepForDisplayModel(prevModel, win.dm);
         delete prevModel;
-    } else if (allowFailure) {
+    }
+    else if (tryRepair) {
         DBG_OUT("failed to load file %s\n", fileName);
         delete prevModel;
         ScopedMem<TCHAR> title(str::Format(_T("%s - %s"), path::GetBaseName(fileName), SUMATRA_WINDOW_TITLE));
         win::SetText(win.hwndFrame, title);
         goto Error;
-    } else {
+    }
+    else {
         // if there is an error while reading the document and a repair is not requested
         // then fallback to the previous state
         DBG_OUT("failed to load file %s, falling back to previous DisplayModel\n", fileName);
@@ -1364,9 +1843,9 @@ static bool LoadDocIntoWindow(
                 ss.y = state->scrollPos.y;
             }
             // else let win.dm->Relayout() scroll to fit the page (again)
-        } else if (startPage > win.dm->PageCount()) {
-            ss.page = win.dm->PageCount();
         }
+        else if (startPage > win.dm->pageCount())
+            ss.page = win.dm->pageCount();
         zoomVirtual = state->zoomVirtual;
         rotation = state->rotation;
 
@@ -1374,7 +1853,8 @@ static bool LoadDocIntoWindow(
         win.tocState.Reset();
         if (state->tocState)
             win.tocState = *state->tocState;
-    } else {
+    }
+    else {
         win.tocVisible = gGlobalPrefs.tocVisible;
     }
     //SidebarDxFromDisplayState(state);
@@ -1395,17 +1875,17 @@ static bool LoadDocIntoWindow(
 
     if (!isNewWindow) {
         win.RedrawAll();
-        OnMenuFindMatchCase(&win);
+        OnMenuFindMatchCase(win);
     }
     UpdateFindbox(&win);
 
-    int pageCount = win.dm->PageCount();
+    int pageCount = win.dm->pageCount();
     if (pageCount > 0) {
-        UpdateToolbarPageText(&win, pageCount);
-        UpdateToolbarFindText(&win);
+        UpdateToolbarPageText(win, pageCount);
+        UpdateToolbarFindText(win);
     }
 
-    const TCHAR *baseName = path::GetBaseName(win.dm->FileName());
+    const TCHAR *baseName = path::GetBaseName(win.dm->fileName());
     TCHAR *title = str::Format(_T("%s - %s"), baseName, SUMATRA_WINDOW_TITLE);
 #ifdef UNICODE
     if (IsUIRightToLeft()) {
@@ -1447,7 +1927,7 @@ Error:
     if (win.IsDocLoaded()) {
         ToggleWindowStyle(win.hwndPageBox, ES_NUMBER, !win.dm->engine || !win.dm->engine->HasPageLabels());
         win.dm->SetScrollState(ss);
-        UpdateToolbarState(&win);
+        win.UpdateToolbarState();
     }
 
     SetSidebarVisibility(&win, win.tocVisible, gGlobalPrefs.favVisible);
@@ -1504,25 +1984,7 @@ WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin, b
 
     ScopedMem<TCHAR> fullpath(path::Normalize(fileName));
     if (!fullpath)
-        return NULL;
-
-    // fail with a notification if the file doesn't exist and
-    // there is a window the user has just been interacting with
-    if (win && !forceReuse && !file::Exists(fullpath)) {
-        // TODO: reword to "File %s not found!" after 1.7 is released
-        ScopedMem<TCHAR> msg(str::Format(_TR("Error loading %s"), fullpath));
-        ShowNotification(win, msg, true /* autoDismiss */, true /* highlight */);
-        // display the notification ASAP (SavePrefs() can introduce a notable delay)
-        win->RedrawAll(true);
-
-        if (gFileHistory.MarkFileInexistent(fullpath)) {
-            SavePrefs();
-            // update the Frequently Read list
-            if (1 == gWindows.Count() && gWindows[0]->IsAboutWindow())
-                gWindows[0]->RedrawAll(true);
-        }
-        return NULL;
-    }
+        return win;
 
     bool isNewWindow = false;
     if (!win && 1 == gWindows.Count() && gWindows[0]->IsAboutWindow()) {
@@ -1539,10 +2001,10 @@ WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin, b
         }
     }
 
-    DeleteOldSelectionInfo(win, true);
+    DeleteOldSelectionInfo(*win, true);
     win->fwdSearchMark.show = false;
-    win->notifications->RemoveAllInGroup(NG_RESPONSE_TO_ACTION);
-    win->notifications->RemoveAllInGroup(NG_PAGE_INFO_HELPER);
+    win->messages->CleanUp(NG_RESPONSE_TO_ACTION);
+    win->messages->CleanUp(NG_PAGE_INFO_HELPER);
 
     DisplayState *ds = gFileHistory.Find(fullpath);
     if (ds) {
@@ -1553,7 +2015,7 @@ WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin, b
     }
 
     win->suppressPwdUI = suppressPwdUI;
-    if (!LoadDocIntoWindow(fullpath, *win, ds, isNewWindow, true /* allowFailure */, showWin, true /* placeWindow */)) {
+    if (!LoadDocIntoWindow(fullpath, *win, ds, isNewWindow, true, showWin, true)) {
         /* failed to open */
         if (gFileHistory.MarkFileInexistent(fullpath))
             SavePrefs();
@@ -1586,33 +2048,31 @@ WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin, b
 // The current page edit box is updated with the current page number
 void WindowInfo::PageNoChanged(int pageNo)
 {
-    assert(dm && dm->PageCount() > 0);
-    if (!dm || dm->PageCount() == 0)
+    assert(dm && dm->pageCount() > 0);
+    if (!dm || dm->pageCount() == 0)
         return;
 
     if (INVALID_PAGE_NO != pageNo) {
         ScopedMem<TCHAR> buf(dm->engine->GetPageLabel(pageNo));
         win::SetText(hwndPageBox, buf);
-        ToolbarUpdateStateForWindow(this);
+        ToolbarUpdateStateForWindow(*this);
         if (dm->engine && dm->engine->HasPageLabels())
-            UpdateToolbarPageText(this, dm->PageCount());
+            UpdateToolbarPageText(*this, dm->pageCount());
     }
-    if (pageNo == currPageNo)
-        return;
+    if (pageNo != currPageNo) {
+        UpdateTocSelection(pageNo);
+        currPageNo = pageNo;
 
-    UpdateTocSelection(this, pageNo);
-    currPageNo = pageNo;
-
-    NotificationWnd *wnd = notifications->GetFirstInGroup(NG_PAGE_INFO_HELPER);
-    if (NULL == wnd)
-        return;
-
-    ScopedMem<TCHAR> pageInfo(str::Format(_T("%s %d / %d"), _TR("Page:"), pageNo, dm->PageCount()));
-    if (dm->engine && dm->engine->HasPageLabels()) {
-        ScopedMem<TCHAR> label(dm->engine->GetPageLabel(pageNo));
-        pageInfo.Set(str::Format(_T("%s %s (%d / %d)"), _TR("Page:"), label, pageNo, dm->PageCount()));
+        MessageWnd *wnd = messages->GetFirst(NG_PAGE_INFO_HELPER);
+        if (wnd) {
+            ScopedMem<TCHAR> pageInfo(str::Format(_T("%s %d / %d"), _TR("Page:"), pageNo, dm->pageCount()));
+            if (dm->engine && dm->engine->HasPageLabels()) {
+                ScopedMem<TCHAR> label(dm->engine->GetPageLabel(pageNo));
+                pageInfo.Set(str::Format(_T("%s %s (%d / %d)"), _TR("Page:"), label, pageNo, dm->pageCount()));
+            }
+            wnd->MessageUpdate(pageInfo);
+        }
     }
-    wnd->UpdateMessage(pageInfo);
 }
 
 /* Send the request to render a given page to a rendering thread */
@@ -1849,8 +2309,7 @@ static void DownloadSumatraUpdateInfo(WindowInfo& win, bool autoCheck)
     gGlobalPrefs.lastUpdateTime = _MemToHex(&ft);
 }
 
-void PaintTransparentRectangle(HDC hdc, RectI screenRc, RectI *rect, COLORREF selectionColor, BYTE alpha, int margin)
-{
+static void PaintTransparentRectangle(HDC hdc, RectI screenRc, RectI *rect, COLORREF selectionColor, BYTE alpha = 0x5f, int margin = 1) {
     // don't draw selection parts not visible on screen
     screenRc.Inflate(margin, margin);
     RectI isect = rect->Intersect(screenRc);
@@ -1881,6 +2340,69 @@ void PaintTransparentRectangle(HDC hdc, RectI screenRc, RectI *rect, COLORREF se
 
     DeleteObject(hbitmap);
     DeleteDC(rectDC);
+}
+
+static void UpdateTextSelection(WindowInfo& win, bool select=true)
+{
+    assert(win.IsDocLoaded());
+    if (!win.IsDocLoaded()) return;
+
+    if (select) {
+        int pageNo = win.dm->GetPageNoByPoint(win.selectionRect.BR());
+        if (win.dm->validPageNo(pageNo)) {
+            PointD pt = win.dm->CvtFromScreen(win.selectionRect.BR(), pageNo);
+            win.dm->textSelection->SelectUpTo(pageNo, pt.x, pt.y);
+        }
+    }
+
+    DeleteOldSelectionInfo(win);
+    win.selectionOnPage = SelectionOnPage::FromTextSelect(&win.dm->textSelection->result);
+    win.showSelection = true;
+}
+
+static void PaintSelection(WindowInfo& win, HDC hdc) {
+    if (win.mouseAction == MA_SELECTING) {
+        // during selecting
+        RectI selRect = win.selectionRect;
+        if (selRect.dx < 0) {
+            selRect.x += selRect.dx;
+            selRect.dx *= -1;
+        }
+        if (selRect.dy < 0) {
+            selRect.y += selRect.dy;
+            selRect.dy *= -1;
+        }
+
+        PaintTransparentRectangle(hdc, win.canvasRc, &selRect, COL_SELECTION_RECT);
+    } else {
+        if (MA_SELECTING_TEXT == win.mouseAction)
+            UpdateTextSelection(win);
+
+        // after selection is done
+        for (size_t i = 0; i < win.selectionOnPage->Count(); i++)
+            PaintTransparentRectangle(hdc, win.canvasRc,
+                &win.selectionOnPage->At(i).GetRect(win.dm), COL_SELECTION_RECT);
+    }
+}
+
+static void PaintForwardSearchMark(WindowInfo& win, HDC hdc) {
+    PageInfo *pageInfo = win.dm->getPageInfo(win.fwdSearchMark.page);
+    if (!pageInfo || 0.0 == pageInfo->visibleRatio)
+        return;
+    
+    // Draw the rectangles highlighting the forward search results
+    for (UINT i = 0; i < win.fwdSearchMark.rects.Count(); i++) {
+        RectD recD = win.fwdSearchMark.rects[i].Convert<double>();
+        RectI recI = win.dm->CvtToScreen(win.fwdSearchMark.page, recD);
+        if (gGlobalPrefs.fwdSearchOffset > 0) {
+            recI.x = max(pageInfo->pageOnScreen.x, 0) + (int)(gGlobalPrefs.fwdSearchOffset * win.dm->zoomReal());
+            recI.dx = (int)((gGlobalPrefs.fwdSearchWidth > 0 ? gGlobalPrefs.fwdSearchWidth : 15.0) * win.dm->zoomReal());
+            recI.y -= 4;
+            recI.dy += 8;
+        }
+        BYTE alpha = (BYTE)(0x5f * 1.0f * (HIDE_FWDSRCHMARK_STEPS - win.fwdSearchMark.hideStep) / HIDE_FWDSRCHMARK_STEPS);
+        PaintTransparentRectangle(hdc, win.canvasRc, &recI, gGlobalPrefs.fwdSearchColor, alpha, 0);
+    }
 }
 
 #ifdef DRAW_PAGE_SHADOWS
@@ -1940,7 +2462,7 @@ static void DebugShowLinks(DisplayModel& dm, HDC hdc)
     HPEN pen = CreatePen(PS_SOLID, 1, RGB(0x00, 0xff, 0xff));
     HGDIOBJ oldPen = SelectObject(hdc, pen);
 
-    for (int pageNo = dm.PageCount(); pageNo >= 1; --pageNo) {
+    for (int pageNo = dm.pageCount(); pageNo >= 1; --pageNo) {
         PageInfo *pageInfo = dm.getPageInfo(pageNo);
         if (!pageInfo->shown || 0.0 == pageInfo->visibleRatio)
             continue;
@@ -1965,7 +2487,7 @@ static void DebugShowLinks(DisplayModel& dm, HDC hdc)
         pen = CreatePen(PS_SOLID, 1, RGB(0xff, 0x00, 0xff));
         oldPen = SelectObject(hdc, pen);
 
-        for (int pageNo = dm.PageCount(); pageNo >= 1; --pageNo) {
+        for (int pageNo = dm.pageCount(); pageNo >= 1; --pageNo) {
             PageInfo *pageInfo = dm.getPageInfo(pageNo);
             if (!pageInfo->shown || 0.0 == pageInfo->visibleRatio)
                 continue;
@@ -1996,7 +2518,7 @@ static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
     RectI screen(PointI(), dm->viewPort.Size());
 
     DBG_OUT("DrawDocument() ");
-    for (int pageNo = 1; pageNo <= dm->PageCount(); ++pageNo) {
+    for (int pageNo = 1; pageNo <= dm->pageCount(); ++pageNo) {
         PageInfo *pageInfo = dm->getPageInfo(pageNo);
         if (0.0 == pageInfo->visibleRatio)
             continue;
@@ -2049,14 +2571,75 @@ static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
     }
 
     if (win.showSelection)
-        PaintSelection(&win, hdc);
+        PaintSelection(win, hdc);
     
     if (win.fwdSearchMark.show)
-        PaintForwardSearchMark(&win, hdc);
+        PaintForwardSearchMark(win, hdc);
 
     DBG_OUT("\n");
     if (!rendering)
         DebugShowLinks(*dm, hdc);
+}
+
+static void CopySelectionToClipboard(WindowInfo& win)
+{
+    if (!win.selectionOnPage) return;
+    if (!win.dm->engine) return;
+
+    if (!OpenClipboard(NULL)) return;
+    EmptyClipboard();
+
+    if (!win.dm->engine->IsCopyingTextAllowed())
+        win.ShowNotification(_TR("Copying text was denied (copying as image only)"));
+    else if (!win.dm->engine->IsImageCollection()) {
+        ScopedMem<TCHAR> selText;
+        bool isTextSelection = win.dm->textSelection->result.len > 0;
+        if (isTextSelection) {
+            selText.Set(win.dm->textSelection->ExtractText(_T("\r\n")));
+        }
+        else {
+            StrVec selections;
+            for (size_t i = 0; i < win.selectionOnPage->Count(); i++) {
+                SelectionOnPage *selOnPage = &win.selectionOnPage->At(i);
+                TCHAR *text = win.dm->getTextInRegion(selOnPage->pageNo, selOnPage->rect);
+                if (text)
+                    selections.Push(text);
+            }
+            selText.Set(selections.Join());
+        }
+
+        // don't copy empty text
+        if (!str::IsEmpty(selText.Get()))
+            CopyTextToClipboard(selText, true);
+
+        if (isTextSelection) {
+            // don't also copy the first line of a text selection as an image
+            CloseClipboard();
+            return;
+        }
+    }
+
+    /* also copy a screenshot of the current selection to the clipboard */
+    SelectionOnPage *selOnPage = &win.selectionOnPage->At(0);
+    RenderedBitmap * bmp = win.dm->engine->RenderBitmap(selOnPage->pageNo,
+        win.dm->zoomReal(), win.dm->rotation(), &selOnPage->rect, Target_Export);
+    if (bmp) {
+        if (!SetClipboardData(CF_BITMAP, bmp->GetBitmap()))
+            SeeLastError();
+        delete bmp;
+    }
+
+    CloseClipboard();
+}
+
+static void DeleteOldSelectionInfo(WindowInfo& win, bool alsoTextSel)
+{
+    delete win.selectionOnPage;
+    win.selectionOnPage = NULL;
+    win.showSelection = false;
+
+    if (alsoTextSel && win.IsDocLoaded())
+        win.dm->textSelection->Reset();
 }
 
 // for testing only
@@ -2083,6 +2666,107 @@ static void ToggleGdiDebugging()
             gWindows[i]->RedrawAll(true);
         }
     }
+}
+
+static void OnSelectAll(WindowInfo& win, bool textOnly=false)
+{
+    if (!HasPermission(Perm_CopySelection))
+        return;
+    if (!win.IsDocLoaded())
+        return;
+
+    if (win.hwndFindBox == GetFocus() || win.hwndPageBox == GetFocus()) {
+        Edit_SelectAll(GetFocus());
+        return;
+    }
+
+    if (textOnly) {
+        int pageNo;
+        for (pageNo = 1; !win.dm->getPageInfo(pageNo)->shown; pageNo++);
+        win.dm->textSelection->StartAt(pageNo, 0);
+        for (pageNo = win.dm->pageCount(); !win.dm->getPageInfo(pageNo)->shown; pageNo--);
+        win.dm->textSelection->SelectUpTo(pageNo, -1);
+        win.selectionRect = RectI::FromXY(INT_MIN / 2, INT_MIN / 2, INT_MAX, INT_MAX);
+        UpdateTextSelection(win);
+    }
+    else {
+        DeleteOldSelectionInfo(win, true);
+        win.selectionRect = RectI::FromXY(INT_MIN / 2, INT_MIN / 2, INT_MAX, INT_MAX);
+        win.selectionOnPage = SelectionOnPage::FromRectangle(win.dm, win.selectionRect);
+    }
+
+    win.showSelection = true;
+    win.RepaintAsync();
+}
+
+// returns true if the double-click was handled and false if it wasn't
+static bool OnInverseSearch(WindowInfo& win, int x, int y)
+{
+    if (!HasPermission(Perm_DiskAccess) || gPluginMode) return false;
+    if (!win.IsDocLoaded() || win.dm->engineType != Engine_PDF) return false;
+
+    // Clear the last forward-search result
+    win.fwdSearchMark.rects.Reset();
+    InvalidateRect(win.hwndCanvas, NULL, FALSE);
+
+    // On double-clicking error message will be shown to the user
+    // if the PDF does not have a synchronization file
+    if (!win.pdfsync) {
+        int err = Synchronizer::Create(win.loadedFilePath, win.dm, &win.pdfsync);
+        if (err == PDFSYNCERR_SYNCFILE_NOTFOUND) {
+            DBG_OUT("Pdfsync: Sync file not found!\n");
+            // Fall back to selecting a word when double-clicking over text in
+            // a document with no corresponding synchronization file
+            if (win.dm->IsOverText(PointI(x, y)))
+                return false;
+            // In order to avoid confusion for non-LaTeX users, we do not show
+            // any error message if the SyncTeX enhancements are hidden from UI
+            if (gGlobalPrefs.enableTeXEnhancements)
+                win.ShowNotification(_TR("No synchronization file found"));
+            return true;
+        }
+        if (err != PDFSYNCERR_SUCCESS) {
+            DBG_OUT("Pdfsync: Sync file cannot be loaded!\n");
+            win.ShowNotification(_TR("Synchronization file cannot be opened"));
+            return true;
+        }
+        gGlobalPrefs.enableTeXEnhancements = true;
+    }
+
+    int pageNo = win.dm->GetPageNoByPoint(PointI(x, y));
+    if (!win.dm->validPageNo(pageNo))
+        return false;
+
+    PointI pt = win.dm->CvtFromScreen(PointI(x, y), pageNo).Convert<int>();
+    ScopedMem<TCHAR> srcfilepath;
+    UINT line, col;
+    int err = win.pdfsync->pdf_to_source(pageNo, pt, srcfilepath, &line, &col);
+    if (err != PDFSYNCERR_SUCCESS) {
+        DBG_OUT("cannot sync from pdf to source!\n");
+        win.ShowNotification(_TR("No synchronization info at this position"));
+        return true;
+    }
+
+    TCHAR *inverseSearch = gGlobalPrefs.inverseSearchCmdLine;
+    if (!inverseSearch)
+        // Detect a text editor and use it as the default inverse search handler for now
+        inverseSearch = AutoDetectInverseSearchCommands();
+
+    ScopedMem<TCHAR> cmdline;
+    if (inverseSearch)
+        cmdline.Set(win.pdfsync->prepare_commandline(inverseSearch, srcfilepath, line, col));
+    if (!str::IsEmpty(cmdline.Get())) {
+        ScopedHandle process(LaunchProcess(cmdline));
+        if (!process)
+            win.ShowNotification(_TR("Cannot start inverse search command. Please check the command line in the settings."));
+    }
+    else if (gGlobalPrefs.enableTeXEnhancements)
+        win.ShowNotification(_TR("Cannot start inverse search command. Please check the command line in the settings."));
+
+    if (inverseSearch != gGlobalPrefs.inverseSearchCmdLine)
+        free(inverseSearch);
+
+    return true;
 }
 
 static void OnAboutContextMenu(WindowInfo& win, int x, int y)
@@ -2196,6 +2880,35 @@ static void OnDraggingStop(WindowInfo& win, int x, int y, bool aborted)
     win.MoveDocBy(drag.dx, -2 * drag.dy);
 }
 
+#define SELECT_AUTOSCROLL_AREA_WIDTH 15
+#define SELECT_AUTOSCROLL_STEP_LENGTH 10
+
+static void OnSelectionEdgeAutoscroll(WindowInfo& win, int x, int y)
+{
+    int dx = 0, dy = 0;
+
+    if (x < SELECT_AUTOSCROLL_AREA_WIDTH * win.uiDPIFactor)
+        dx = -SELECT_AUTOSCROLL_STEP_LENGTH;
+    else if (x > (win.canvasRc.dx - SELECT_AUTOSCROLL_AREA_WIDTH) * win.uiDPIFactor)
+        dx = SELECT_AUTOSCROLL_STEP_LENGTH;
+    if (y < SELECT_AUTOSCROLL_AREA_WIDTH * win.uiDPIFactor)
+        dy = -SELECT_AUTOSCROLL_STEP_LENGTH;
+    else if (y > (win.canvasRc.dy - SELECT_AUTOSCROLL_AREA_WIDTH) * win.uiDPIFactor)
+        dy = SELECT_AUTOSCROLL_STEP_LENGTH;
+
+    if (dx != 0 || dy != 0) {
+        PointI oldOffset = win.dm->viewPort.TL();
+        win.MoveDocBy(dx, dy);
+
+        dx = win.dm->viewPort.x - oldOffset.x;
+        dy = win.dm->viewPort.y - oldOffset.y;
+        win.selectionRect.x -= dx;
+        win.selectionRect.y -= dy;
+        win.selectionRect.dx += dx;
+        win.selectionRect.dy += dy;
+    }
+}
+
 static void OnMouseMove(WindowInfo& win, int x, int y, WPARAM flags)
 {
     if (!win.IsDocLoaded())
@@ -2238,7 +2951,7 @@ static void OnMouseMove(WindowInfo& win, int x, int y, WPARAM flags)
         win.selectionRect.dx = x - win.selectionRect.x;
         win.selectionRect.dy = y - win.selectionRect.y;
         win.RepaintAsync();
-        OnSelectionEdgeAutoscroll(&win, x, y);
+        OnSelectionEdgeAutoscroll(win, x, y);
         break;
     case MA_DRAGGING:
     case MA_DRAGGING_RIGHT:
@@ -2249,6 +2962,48 @@ static void OnMouseMove(WindowInfo& win, int x, int y, WPARAM flags)
     }
 
     win.dragPrevPos = PointI(x, y);
+}
+
+static void OnSelectionStart(WindowInfo& win, int x, int y, WPARAM key)
+{
+    DeleteOldSelectionInfo(win, true);
+
+    win.selectionRect = RectI(x, y, 0, 0);
+    win.showSelection = true;
+    win.mouseAction = MA_SELECTING;
+
+    // Ctrl+drag forces a rectangular selection
+    if (!(key & MK_CONTROL) || (key & MK_SHIFT)) {
+        int pageNo = win.dm->GetPageNoByPoint(PointI(x, y));
+        if (win.dm->validPageNo(pageNo)) {
+            PointD pt = win.dm->CvtFromScreen(PointI(x, y), pageNo);
+            win.dm->textSelection->StartAt(pageNo, pt.x, pt.y);
+            win.mouseAction = MA_SELECTING_TEXT;
+        }
+    }
+
+    SetCapture(win.hwndCanvas);
+    SetTimer(win.hwndCanvas, SMOOTHSCROLL_TIMER_ID, SMOOTHSCROLL_DELAY_IN_MS, NULL);
+
+    win.RepaintAsync();
+}
+
+static void OnSelectionStop(WindowInfo& win, int x, int y, bool aborted)
+{
+    if (GetCapture() == win.hwndCanvas)
+        ReleaseCapture();
+    KillTimer(win.hwndCanvas, SMOOTHSCROLL_TIMER_ID);
+
+    // update the text selection before changing the selectionRect
+    if (MA_SELECTING_TEXT == win.mouseAction)
+        UpdateTextSelection(win);
+
+    win.selectionRect = RectI::FromXY(win.selectionRect.x, win.selectionRect.y, x, y);
+    if (aborted || (MA_SELECTING == win.mouseAction ? win.selectionRect.IsEmpty() : !win.selectionOnPage))
+        DeleteOldSelectionInfo(win, true);
+    else if (win.mouseAction == MA_SELECTING)
+        win.selectionOnPage = SelectionOnPage::FromRectangle(win.dm, win.selectionRect);
+    win.RepaintAsync();
 }
 
 static void OnMouseLeftButtonDown(WindowInfo& win, int x, int y, WPARAM key)
@@ -2291,7 +3046,7 @@ static void OnMouseLeftButtonDown(WindowInfo& win, int x, int y, WPARAM key)
     if (!HasPermission(Perm_CopySelection) || ((key & MK_SHIFT) || !win.dm->IsOverText(PointI(x, y))) && !(key & MK_CONTROL))
         OnDraggingStart(win, x, y);
     else
-        OnSelectionStart(&win, x, y, key);
+        OnSelectionStart(win, x, y, key);
 }
 
 static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
@@ -2310,9 +3065,9 @@ static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
                 win.RedrawAll(true);
             } else if (!str::StartsWithI(url, _T("http:")) &&
                        !str::StartsWithI(url, _T("https:")) &&
-                       !str::StartsWithI(url, _T("mailto:"))) {
+                       !str::StartsWithI(url, _T("mailto:")))
                 LoadDocument(url, &win);
-            } else
+            else
                 LaunchBrowser(url);
         }
         win.url = NULL;
@@ -2331,7 +3086,7 @@ static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
     if (MA_DRAGGING == win.mouseAction)
         OnDraggingStop(win, x, y, !didDragMouse);
     else
-        OnSelectionStop(&win, x, y, !didDragMouse);
+        OnSelectionStop(win, x, y, !didDragMouse);
 
     PointD ptPage = win.dm->CvtFromScreen(PointI(x, y));
 
@@ -2343,7 +3098,7 @@ static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
     }
     /* if we had a selection and this was just a click, hide the selection */
     else if (win.showSelection)
-        ClearSearchResult(&win);
+        ClearSearchResult(win);
     /* in presentation mode, change pages on left/right-clicks */
     else if (win.fullScreen || PM_ENABLED == win.presentation) {
         if ((key & MK_SHIFT))
@@ -2372,7 +3127,7 @@ static void OnMouseLeftButtonDblClk(WindowInfo& win, int x, int y, WPARAM key)
 
     bool dontSelect = false;
     if (gGlobalPrefs.enableTeXEnhancements && !(key & ~MK_LBUTTON))
-        dontSelect = OnInverseSearch(&win, x, y);
+        dontSelect = OnInverseSearch(win, x, y);
 
     if (dontSelect || !win.IsDocLoaded() || !win.dm->IsOverText(PointI(x, y)))
         return;
@@ -2383,7 +3138,7 @@ static void OnMouseLeftButtonDblClk(WindowInfo& win, int x, int y, WPARAM key)
         win.dm->textSelection->SelectWordAt(pageNo, pt.x, pt.y);
     }
 
-    UpdateTextSelection(&win, false);
+    UpdateTextSelection(win, false);
     win.RepaintAsync();
 }
 
@@ -2490,8 +3245,8 @@ static void OnPaint(WindowInfo& win)
         else
             DrawAboutPage(win, win.buffer->GetDC());
         win.buffer->Flush(hdc);
-    } else if (!win.IsDocLoaded()) {
-        // TODO: replace with notifications as far as reasonably possible
+    }
+    else if (!win.IsDocLoaded()) {
         win::font::ScopedFont fontRightTxt(hdc, _T("MS Shell Dlg"), 14);
         win::HdcScopedSelectFont scope(hdc, fontRightTxt);
         SetBkMode(hdc, TRANSPARENT);
@@ -2521,9 +3276,8 @@ static void OnMenuExit()
         return;
 
     for (size_t i = 0; i < gWindows.Count(); i++) {
-        WindowInfo *win = gWindows[i];
-        AbortFinding(win);
-        AbortPrinting(win);
+        gWindows[i]->AbortFinding();
+        gWindows[i]->AbortPrinting();
     }
 
     SavePrefs();
@@ -2581,7 +3335,7 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
     if (lastWindow)
         SavePrefs();
     else
-        UpdateCurrentFileDisplayStateForWin(win);
+        UpdateCurrentFileDisplayStateForWin(*win);
 
     if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
@@ -2589,22 +3343,22 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
         win->watcher = NULL;
         SetSidebarVisibility(win, false, gGlobalPrefs.favVisible);
         ClearTocBox(win);
-        AbortFinding(win, true);
+        win->AbortFinding(true);
         delete win->dm;
         win->dm = NULL;
         str::ReplacePtr(&win->loadedFilePath, NULL);
         delete win->pdfsync;
         win->pdfsync = NULL;
-        win->notifications->RemoveAllInGroup(NG_RESPONSE_TO_ACTION);
-        win->notifications->RemoveAllInGroup(NG_PAGE_INFO_HELPER);
+        win->messages->CleanUp(NG_RESPONSE_TO_ACTION);
+        win->messages->CleanUp(NG_PAGE_INFO_HELPER);
 
         if (win->hwndProperties) {
             DestroyWindow(win->hwndProperties);
             assert(!win->hwndProperties);
         }
-        UpdateToolbarPageText(win, 0);
-        UpdateToolbarFindText(win);
-        DeleteOldSelectionInfo(win, true);
+        UpdateToolbarPageText(*win, 0);
+        UpdateToolbarFindText(*win);
+        DeleteOldSelectionInfo(*win, true);
         win->RedrawAll();
         UpdateFindbox(win);
         SetFocus(win->hwndFrame);
@@ -2631,7 +3385,7 @@ static void OnMenuZoom(WindowInfo& win, UINT menuId)
         return;
 
     float zoom = ZoomMenuItemToZoom(menuId);
-    ZoomToSelection(&win, zoom, false);
+    win.ZoomToSelection(zoom, false);
 }
 
 static void OnMenuCustomZoom(WindowInfo& win)
@@ -2642,7 +3396,484 @@ static void OnMenuCustomZoom(WindowInfo& win)
     float zoom = win.dm->zoomVirtual();
     if (IDCANCEL == Dialog_CustomZoom(win.hwndFrame, &zoom))
         return;
-    ZoomToSelection(&win, zoom, false);
+    win.ZoomToSelection(zoom, false);
+}
+
+static bool CheckPrinterStretchDibSupport(HWND hwndForMsgBox, HDC hdc)
+{
+#ifdef USE_GDI_FOR_PRINTING
+    // assume the printer supports enough of GDI(+) for reasonable results
+    return true;
+#else
+    // most printers can support stretchdibits,
+    // whereas a lot of printers do not support bitblt
+    // quit if printer doesn't support StretchDIBits
+    int rasterCaps = GetDeviceCaps(hdc, RASTERCAPS);
+    int supportsStretchDib = rasterCaps & RC_STRETCHDIB;
+    if (supportsStretchDib)
+        return true;
+
+    MessageBox(hwndForMsgBox, _T("This printer doesn't support the StretchDIBits function"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK);
+    return false;
+#endif
+}
+
+struct PrintData {
+    HDC hdc; // owned by PrintData
+
+    BaseEngine *engine;
+    Vec<PRINTPAGERANGE> ranges; // empty when printing a selection
+    Vec<SelectionOnPage> sel;   // empty when printing a page range
+    int rotation;
+    PrintRangeAdv rangeAdv;
+    PrintScaleAdv scaleAdv;
+    short orientation;
+
+    PrintData(BaseEngine *engine, HDC hdc, DEVMODE *devMode,
+              Vec<PRINTPAGERANGE>& ranges, int rotation=0,
+              PrintRangeAdv rangeAdv=PrintRangeAll,
+              PrintScaleAdv scaleAdv=PrintScaleShrink,
+              Vec<SelectionOnPage> *sel=NULL) :
+        engine(NULL), hdc(hdc), rotation(rotation), rangeAdv(rangeAdv), scaleAdv(scaleAdv)
+    {
+        if (engine)
+            this->engine = engine->Clone();
+
+        if (!sel)
+            this->ranges = ranges;
+        else
+            this->sel = *sel;
+
+        orientation = 0;
+        if (devMode && (devMode->dmFields & DM_ORIENTATION))
+            orientation = devMode->dmOrientation;
+    }
+
+    ~PrintData() {
+        delete engine;
+        DeleteDC(hdc);
+    }
+};
+
+static void PrintToDevice(PrintData& pd, ProgressUpdateUI *progressUI=NULL)
+{
+    assert(pd.engine);
+    if (!pd.engine) return;
+
+    HDC hdc = pd.hdc;
+    BaseEngine& engine = *pd.engine;
+
+    DOCINFO di = { 0 };
+    di.cbSize = sizeof (DOCINFO);
+    di.lpszDocName = engine.FileName();
+
+    int current = 0, total = 0;
+    for (size_t i = 0; i < pd.ranges.Count(); i++) {
+        if (pd.ranges[i].nToPage < pd.ranges[i].nFromPage)
+            total += pd.ranges[i].nFromPage - pd.ranges[i].nToPage + 1;
+        else
+            total += pd.ranges[i].nToPage - pd.ranges[i].nFromPage + 1;
+    }
+    total += (int)pd.sel.Count();
+    if (progressUI)
+        progressUI->ProgressUpdate(current, total);
+
+    if (StartDoc(hdc, &di) <= 0)
+        return;
+
+    SetMapMode(hdc, MM_TEXT);
+
+    const int paperWidth = GetDeviceCaps(hdc, PHYSICALWIDTH);
+    const int paperHeight = GetDeviceCaps(hdc, PHYSICALHEIGHT);
+    const int printableWidth = GetDeviceCaps(hdc, HORZRES);
+    const int printableHeight = GetDeviceCaps(hdc, VERTRES);
+    const int leftMargin = GetDeviceCaps(hdc, PHYSICALOFFSETX);
+    const int topMargin = GetDeviceCaps(hdc, PHYSICALOFFSETY);
+    const int rightMargin = paperWidth - printableWidth - leftMargin;
+    const int bottomMargin = paperHeight - printableHeight - topMargin;
+    const float dpiFactor = min(GetDeviceCaps(hdc, LOGPIXELSX) / engine.GetFileDPI(),
+                                GetDeviceCaps(hdc, LOGPIXELSY) / engine.GetFileDPI());
+    bool bPrintPortrait = paperWidth < paperHeight;
+    if (pd.orientation)
+        bPrintPortrait = DMORIENT_PORTRAIT == pd.orientation;
+
+    if (pd.sel.Count() > 0) {
+        DBG_OUT(" printing:  drawing bitmap for selection\n");
+
+        for (size_t i = 0; i < pd.sel.Count(); i++) {
+            StartPage(hdc);
+            RectD *clipRegion = &pd.sel[i].rect;
+
+            Size<float> sSize = clipRegion->Size().Convert<float>();
+            // Swap width and height for rotated documents
+            int rotation = engine.PageRotation(pd.sel[i].pageNo) + pd.rotation;
+            if (rotation % 180 != 0)
+                swap(sSize.dx, sSize.dy);
+
+            float zoom = min((float)printableWidth / sSize.dx,
+                             (float)printableHeight / sSize.dy);
+            // use the correct zoom values, if the page fits otherwise
+            // and the user didn't ask for anything else (default setting)
+            if (PrintScaleShrink == pd.scaleAdv)
+                zoom = min(dpiFactor, zoom);
+            else if (PrintScaleNone == pd.scaleAdv)
+                zoom = dpiFactor;
+
+#ifdef USE_GDI_FOR_PRINTING
+            RectI rc = RectI::FromXY((int)(printableWidth - sSize.dx * zoom) / 2,
+                                     (int)(printableHeight - sSize.dy * zoom) / 2,
+                                     paperWidth, paperHeight);
+            engine.RenderPage(hdc, rc, pd.sel[i].pageNo, zoom, pd.rotation, clipRegion, Target_Print);
+#else
+            RenderedBitmap *bmp = engine.RenderBitmap(pd.sel[i].pageNo, zoom, pd.rotation, clipRegion, Target_Print);
+            if (bmp) {
+                PointI TL((printableWidth - bmp->Size().dx) / 2,
+                          (printableHeight - bmp->Size().dy) / 2);
+                bmp->StretchDIBits(hdc, RectI(TL, bmp->Size()));
+                delete bmp;
+            }
+#endif
+            if (EndPage(hdc) <= 0) {
+                AbortDoc(hdc);
+                return;
+            }
+
+            current++;
+            if (progressUI && !progressUI->ProgressUpdate(current, total)) {
+                AbortDoc(hdc);
+                return;
+            }
+        }
+
+        EndDoc(hdc);
+        return;
+    }
+
+    // print all the pages the user requested
+    for (size_t i = 0; i < pd.ranges.Count(); i++) {
+        int dir = pd.ranges[i].nFromPage > pd.ranges[i].nToPage ? -1 : 1;
+        for (DWORD pageNo = pd.ranges[i].nFromPage; pageNo != pd.ranges[i].nToPage + dir; pageNo += dir) {
+            if ((PrintRangeEven == pd.rangeAdv && pageNo % 2 != 0) ||
+                (PrintRangeOdd == pd.rangeAdv && pageNo % 2 == 0))
+                continue;
+
+            DBG_OUT(" printing:  drawing bitmap for page %d\n", pageNo);
+
+            StartPage(hdc);
+            // MM_TEXT: Each logical unit is mapped to one device pixel.
+            // Positive x is to the right; positive y is down.
+
+            Size<float> pSize = engine.PageMediabox(pageNo).Size().Convert<float>();
+            int rotation = engine.PageRotation(pageNo);
+            // Turn the document by 90 deg if it isn't in portrait mode
+            if (pSize.dx > pSize.dy) {
+                rotation += 90;
+                swap(pSize.dx, pSize.dy);
+            }
+            // make sure not to print upside-down
+            rotation = (rotation % 180) == 0 ? 0 : 270;
+            // finally turn the page by (another) 90 deg in landscape mode
+            if (!bPrintPortrait) {
+                rotation = (rotation + 90) % 360;
+                swap(pSize.dx, pSize.dy);
+            }
+
+            // dpiFactor means no physical zoom
+            float zoom = dpiFactor;
+            // offset of the top-left corner of the page from the printable area
+            // (negative values move the page into the left/top margins, etc.);
+            // offset adjustments are needed because the GDI coordinate system
+            // starts at the corner of the printable area and we rather want to
+            // center the page on the physical paper (default behavior)
+            int horizOffset = (paperWidth - printableWidth) / 2 - leftMargin;
+            int vertOffset = (paperHeight - printableHeight) / 2 - topMargin;
+
+            if (pd.scaleAdv != PrintScaleNone) {
+                // make sure to fit all content into the printable area when scaling
+                // and the whole document page on the physical paper
+                RectD rect = engine.PageContentBox(pageNo, Target_Print);
+                Rect<float> cbox = engine.Transform(rect, pageNo, 1.0, rotation).Convert<float>();
+                zoom = min((float)printableWidth / cbox.dx,
+                       min((float)printableHeight / cbox.dy,
+                       min((float)paperWidth / pSize.dx,
+                           (float)paperHeight / pSize.dy)));
+                // use the correct zoom values, if the page fits otherwise
+                // and the user didn't ask for anything else (default setting)
+                if (PrintScaleShrink == pd.scaleAdv && dpiFactor < zoom)
+                    zoom = dpiFactor;
+                // make sure that no content lies in the non-printable paper margins
+                Rect<float> onPaper((paperWidth - pSize.dx * zoom) / 2 + cbox.x * zoom,
+                                    (paperHeight - pSize.dy * zoom) / 2 + cbox.y * zoom,
+                                    cbox.dx * zoom, cbox.dy * zoom);
+                if (leftMargin > onPaper.x)
+                    horizOffset = (int)(horizOffset + leftMargin - onPaper.x);
+                else if (paperWidth - rightMargin < onPaper.BR().x)
+                    horizOffset = (int)(horizOffset - onPaper.BR().x + (paperWidth - rightMargin));
+                if (topMargin > onPaper.y)
+                    vertOffset = (int)(vertOffset + topMargin - onPaper.y);
+                else if (paperHeight - bottomMargin < onPaper.BR().y)
+                    vertOffset = (int)(vertOffset - onPaper.BR().y + (paperHeight - bottomMargin));
+            }
+
+#ifdef USE_GDI_FOR_PRINTING
+            RectI rc = RectI::FromXY((int)(paperWidth - pSize.dx * zoom) / 2 + horizOffset - leftMargin,
+                                     (int)(paperHeight - pSize.dy * zoom) / 2 + vertOffset - topMargin,
+                                     paperWidth, paperHeight);
+            engine.RenderPage(hdc, rc, pageNo, zoom, rotation, NULL, Target_Print);
+#else
+            RenderedBitmap *bmp = engine.RenderBitmap(pageNo, zoom, rotation, NULL, Target_Print);
+            if (bmp) {
+                PointI TL((paperWidth - bmp->Size().dx) / 2 + horizOffset - leftMargin,
+                          (paperHeight - bmp->Size().dy) / 2 + vertOffset - topMargin);
+                bmp->StretchDIBits(hdc, RectI(TL, bmp->Size()));
+                delete bmp;
+            }
+#endif
+            if (EndPage(hdc) <= 0) {
+                AbortDoc(hdc);
+                return;
+            }
+
+            current++;
+            if (progressUI && !progressUI->ProgressUpdate(current, total)) {
+                AbortDoc(hdc);
+                return;
+            }
+        }
+    }
+
+    EndDoc(hdc);
+}
+
+class PrintThreadUpdateWorkItem : public UIThreadWorkItem {
+    MessageWnd *wnd;
+    int current, total;
+
+public:
+    PrintThreadUpdateWorkItem(WindowInfo *win, MessageWnd *wnd, int current, int total)
+        : UIThreadWorkItem(win), wnd(wnd), current(current), total(total) { }
+
+    virtual void Execute() {
+        if (WindowInfoStillValid(win) && win->messages->Contains(wnd))
+            wnd->ProgressUpdate(current, total);
+    }
+};
+
+class PrintThreadWorkItem : public ProgressUpdateUI, public UIThreadWorkItem, public MessageWndCallback {
+    MessageWnd *wnd;
+    bool isCanceled;
+
+public:
+    // owned and deleted by PrintThreadWorkItem
+    PrintData *data;
+
+    PrintThreadWorkItem(WindowInfo *win, PrintData *data) :
+        UIThreadWorkItem(win), data(data), isCanceled(false) { 
+        wnd = new MessageWnd(win->hwndCanvas, _T(""), _TR("Printing page %d of %d..."), this);
+        win->messages->Add(wnd);
+    }
+    ~PrintThreadWorkItem() {
+        delete data;
+        CleanUp(wnd);
+    }
+
+    virtual bool ProgressUpdate(int current, int total) {
+        QueueWorkItem(new PrintThreadUpdateWorkItem(win, wnd, current, total));
+        return WindowInfoStillValid(win) && !win->printCanceled && !isCanceled;
+    }
+
+    void CleanUp() {
+        QueueWorkItem(this);
+    }
+
+    // called when printing has been canceled
+    virtual void CleanUp(MessageWnd *wnd) {
+        isCanceled = true;
+        this->wnd = NULL;
+        if (WindowInfoStillValid(win))
+            win->messages->CleanUp(wnd);
+    }
+
+    virtual void Execute() {
+        if (!WindowInfoStillValid(win))
+            return;
+
+        HANDLE thread = win->printThread;
+        win->printThread = NULL;
+        CloseHandle(thread);
+    }
+};
+
+static DWORD WINAPI PrintThread(LPVOID data)
+{
+    PrintThreadWorkItem *progressUI = (PrintThreadWorkItem *)data;
+    assert(progressUI && progressUI->data);
+    if (progressUI->data)
+        PrintToDevice(*progressUI->data, progressUI);
+    progressUI->CleanUp();
+
+    return 0;
+}
+
+static void PrintToDeviceOnThread(WindowInfo& win, PrintData *data)
+{
+    PrintThreadWorkItem *progressUI = new PrintThreadWorkItem(&win, data);
+    win.printThread = CreateThread(NULL, 0, PrintThread, progressUI, 0, NULL);
+}
+
+#ifndef ID_APPLY_NOW
+#define ID_APPLY_NOW 0x3021
+#endif
+
+static LRESULT CALLBACK DisableApplyBtnWndProc(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+{
+    if (uiMsg == WM_ENABLE)
+        EnableWindow(hWnd, FALSE);
+
+    WNDPROC nextWndProc = (WNDPROC)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+    return CallWindowProc(nextWndProc, hWnd, uiMsg, wParam, lParam);
+}
+
+/* minimal IPrintDialogCallback implementation for hiding the useless Apply button */
+class ApplyButtonDiablingCallback : public IPrintDialogCallback
+{
+public:
+    ApplyButtonDiablingCallback() : m_cRef(0) { };
+    STDMETHODIMP QueryInterface(REFIID riid, void **ppv) {
+        if (riid == IID_IUnknown || riid == IID_IPrintDialogCallback) {
+            *ppv = this;
+            this->AddRef();
+            return S_OK;
+        }
+        *ppv = NULL;
+        return E_NOINTERFACE;
+    };
+    STDMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&m_cRef); };
+    STDMETHODIMP_(ULONG) Release() { return InterlockedDecrement(&m_cRef); };
+    STDMETHODIMP HandleMessage(HWND hDlg, UINT uiMsg, WPARAM wParam, LPARAM lParam, LRESULT *pResult) {
+        if (uiMsg == WM_INITDIALOG) {
+            HWND hPropSheetContainer = GetParent(GetParent(hDlg));
+            HWND hApplyButton = GetDlgItem(hPropSheetContainer, ID_APPLY_NOW);
+            WNDPROC nextWndProc = (WNDPROC)SetWindowLongPtr(hApplyButton, GWLP_WNDPROC, (LONG_PTR)DisableApplyBtnWndProc);
+            SetWindowLongPtr(hApplyButton, GWLP_USERDATA, (LONG_PTR)nextWndProc);
+        }
+        return S_FALSE;
+    };
+    STDMETHODIMP InitDone() { return S_FALSE; };
+    STDMETHODIMP SelectionChange() { return S_FALSE; };
+protected:
+    LONG m_cRef;
+    WNDPROC m_wndProc;
+};
+
+/* Show Print Dialog box to allow user to select the printer
+and the pages to print.
+
+Note: The following doesn't apply for USE_GDI_FOR_PRINTING
+
+Creates a new dummy page for each page with a large zoom factor,
+and then uses StretchDIBits to copy this to the printer's dc.
+
+So far have tested printing from XP to
+ - Acrobat Professional 6 (note that acrobat is usually set to
+   downgrade the resolution of its bitmaps to 150dpi)
+ - HP Laserjet 2300d
+ - HP Deskjet D4160
+ - Lexmark Z515 inkjet, which should cover most bases.
+*/
+#define MAXPAGERANGES 10
+static void OnMenuPrint(WindowInfo& win)
+{
+    // In order to print with Adobe Reader instead:
+    // ViewWithAcrobat(win, _T("/P"));
+
+    if (!HasPermission(Perm_PrinterAccess)) return;
+
+    DisplayModel *dm = win.dm;
+    assert(dm);
+    if (!dm) return;
+
+    if (win.printThread) {
+        int res = MessageBox(win.hwndFrame, _TR("Printing is still in progress. Abort and start over?"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        if (res == IDNO)
+            return;
+    }
+    win.AbortPrinting();
+
+    PRINTDLGEX pd;
+    ZeroMemory(&pd, sizeof(PRINTDLGEX));
+    pd.lStructSize = sizeof(PRINTDLGEX);
+    pd.hwndOwner   = win.hwndFrame;
+    pd.hDevMode    = NULL;
+    pd.hDevNames   = NULL;
+    pd.Flags       = PD_RETURNDC | PD_USEDEVMODECOPIESANDCOLLATE | PD_COLLATE;
+    if (!win.selectionOnPage)
+        pd.Flags |= PD_NOSELECTION;
+    pd.nCopies     = 1;
+    /* by default print all pages */
+    pd.nPageRanges =1;
+    pd.nMaxPageRanges = MAXPAGERANGES;
+    PRINTPAGERANGE *ppr = SAZA(PRINTPAGERANGE, MAXPAGERANGES);
+    pd.lpPageRanges = ppr;
+    ppr->nFromPage = 1;
+    ppr->nToPage = dm->pageCount();
+    pd.nMinPage = 1;
+    pd.nMaxPage = dm->pageCount();
+    pd.nStartPage = START_PAGE_GENERAL;
+    pd.lpCallback = new ApplyButtonDiablingCallback();
+
+    // TODO: remember these (and maybe all of PRINTDLGEX) at least for this document/WindowInfo?
+    Print_Advanced_Data advanced = { PrintRangeAll, PrintScaleShrink };
+    ScopedMem<DLGTEMPLATE> dlgTemplate; // needed for RTL languages
+    HPROPSHEETPAGE hPsp = CreatePrintAdvancedPropSheet(&advanced, dlgTemplate);
+    pd.lphPropertyPages = &hPsp;
+    pd.nPropertyPages = 1;
+
+    if (PrintDlgEx(&pd) == S_OK) {
+        if (pd.dwResultAction == PD_RESULT_PRINT) {
+            if (CheckPrinterStretchDibSupport(win.hwndFrame, pd.hDC)) {
+                bool printSelection = false;
+                Vec<PRINTPAGERANGE> ranges;
+                if (pd.Flags & PD_CURRENTPAGE) {
+                    PRINTPAGERANGE pr = { dm->currentPageNo(), dm->currentPageNo() };
+                    ranges.Append(pr);
+                } else if (win.selectionOnPage && (pd.Flags & PD_SELECTION)) {
+                    printSelection = true;
+                } else if (!(pd.Flags & PD_PAGENUMS)) {
+                    PRINTPAGERANGE pr = { 1, dm->pageCount() };
+                    ranges.Append(pr);
+                } else {
+                    assert(pd.nPageRanges > 0);
+                    for (DWORD i = 0; i < pd.nPageRanges; i++)
+                        ranges.Append(pd.lpPageRanges[i]);
+                }
+
+                LPDEVMODE devMode = (LPDEVMODE)GlobalLock(pd.hDevMode);
+                PrintData *data = new PrintData(dm->engine, pd.hDC, devMode, ranges,
+                                                dm->rotation(), advanced.range, advanced.scale,
+                                                printSelection ? win.selectionOnPage : NULL);
+                pd.hDC = NULL; // deleted by PrintData
+                if (devMode)
+                    GlobalUnlock(pd.hDevMode);
+
+                PrintToDeviceOnThread(win, data);
+            }
+        }
+    }
+    else if (CommDlgExtendedError() != 0) { 
+        /* if PrintDlg was cancelled then
+           CommDlgExtendedError is zero, otherwise it returns the
+           error code, which we could look at here if we wanted.
+           for now just warn the user that printing has stopped
+           becasue of an error */
+        MessageBox(win.hwndFrame, _TR("Couldn't initialize printer"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+    }
+
+    free(ppr);
+    free(pd.lpCallback);
+    DeleteDC(pd.hDC);
+    GlobalFree(pd.hDevNames);
+    GlobalFree(pd.hDevMode);
 }
 
 // caller needs to free() the result
@@ -2680,7 +3911,7 @@ static void OnMenuSaveAs(WindowInfo& win)
     assert(win.dm);
     if (!win.IsDocLoaded()) return;
 
-    const TCHAR *srcFileName = win.dm->FileName();
+    const TCHAR *srcFileName = win.dm->fileName();
     ScopedMem<TCHAR> urlName;
     if (gPluginMode) {
         urlName.Set(ExtractFilenameFromURL(gPluginURL));
@@ -2760,7 +3991,7 @@ static void OnMenuSaveAs(WindowInfo& win)
     // Extract all text when saving as a plain text file
     if (hasCopyPerm && str::EndsWithI(realDstFileName, _T(".txt"))) {
         str::Str<TCHAR> text(1024);
-        for (int pageNo = 1; pageNo <= win.dm->PageCount(); pageNo++)
+        for (int pageNo = 1; pageNo <= win.dm->pageCount(); pageNo++)
             text.AppendAndFree(win.dm->engine->ExtractPageText(pageNo, _T("\r\n"), NULL, Target_Export));
 
         ScopedMem<char> textUTF8(str::conv::ToUtf8(text.LendData()));
@@ -2848,7 +4079,7 @@ static void OnMenuSaveBookmark(WindowInfo& win)
 
     TCHAR dstFileName[MAX_PATH];
     // Remove the extension so that it can be re-added depending on the chosen filter
-    str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(win.dm->FileName()));
+    str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(win.dm->fileName()));
     str::TransChars(dstFileName, _T(":"), _T("_"));
     if (str::EndsWithI(dstFileName, defExt))
         dstFileName[str::Len(dstFileName) - str::Len(defExt)] = '\0';
@@ -2888,9 +4119,9 @@ static void OnMenuSaveBookmark(WindowInfo& win)
 
     ScopedMem<TCHAR> exePath(GetExePath());
     ScopedMem<TCHAR> args(str::Format(_T("\"%s\" -page %d -view \"%s\" -zoom %s -scroll %d,%d -reuse-instance"),
-                          win.dm->FileName(), ss.page, viewMode, zoomVirtual, (int)ss.x, (int)ss.y));
+                          win.dm->fileName(), ss.page, viewMode, zoomVirtual, (int)ss.x, (int)ss.y));
     ScopedMem<TCHAR> desc(str::Format(_TR("Bookmark shortcut to page %d of %s"),
-                          ss.page, path::GetBaseName(win.dm->FileName())));
+                          ss.page, path::GetBaseName(win.dm->fileName())));
 
     CreateShortcut(filename, exePath, args, desc, 1);
 }
@@ -2942,8 +4173,6 @@ static void OnMenuOpen(WindowInfo& win)
         { _TR("DjVu documents"),        _T("*.djvu"),       true },
         { _TR("Postscript documents"),  _T("*.ps;*.eps"),   PsEngine::IsAvailable() },
         { _TR("Comic books"),           _T("*.cbz;*.cbr"),  true },
-        // TODO: translate after 1.7 is released
-        { _T("CHM documents"),          _T("*.chm"),        true },
     };
     // Prepare the file filters (use \1 instead of \0 so that the
     // double-zero terminated string isn't cut by the string handling
@@ -3040,7 +4269,7 @@ static void BrowseFolder(WindowInfo& win, bool forward)
     else
         index = (int)(index + files.Count() - 1) % files.Count();
 
-    UpdateCurrentFileDisplayStateForWin(&win);
+    UpdateCurrentFileDisplayStateForWin(win);
     LoadDocument(files[index], &win, true, true);
 }
 
@@ -3148,14 +4377,6 @@ static void OnFrameSize(WindowInfo* win, int dx, int dy)
         SetWindowPos(win->hwndCanvas, NULL, 0, rebBarDy, dx, dy - rebBarDy, SWP_NOZORDER);
 }
 
-void ChangeLanguage(const char *langName)
-{
-    CurrLangNameSet(langName);
-    UpdateRtlLayoutForAllWindows();
-    RebuildMenuBar();
-    UpdateUITextForLanguage();
-}
-
 static void OnMenuChangeLanguage(WindowInfo& win)
 {
     int langId = Trans::GetLanguageIndex(gGlobalPrefs.currentLanguage);
@@ -3167,8 +4388,10 @@ static void OnMenuChangeLanguage(WindowInfo& win)
         if (!langName)
             return;
 
-        ChangeLanguage(langName);
-
+        CurrLangNameSet(langName);
+        UpdateRtlLayoutForAllWindows();
+        RebuildMenuBar();
+        UpdateUITextForLanguage();
         if (gWindows.Count() > 0 && gWindows[0]->IsAboutWindow())
             gWindows[0]->RedrawAll(true);
         SavePrefs();
@@ -3219,41 +4442,41 @@ static void OnMenuViewContinuous(WindowInfo& win)
             newMode = displayModeContinuous(newMode) ? DM_BOOK_VIEW : DM_CONTINUOUS_BOOK_VIEW;
             break;
     }
-    SwitchToDisplayMode(&win, newMode);
+    win.SwitchToDisplayMode(newMode);
 }
 
-static void ChangeZoomLevel(WindowInfo *win, float newZoom, bool pagesContinuously)
+static void ToggleToolbarViewButton(WindowInfo& win, float newZoom, bool pagesContinuously)
 {
-    if (!win->IsDocLoaded())
+    if (!win.IsDocLoaded())
         return;
 
-    float zoom = win->dm->zoomVirtual();
-    DisplayMode mode = win->dm->displayMode();
+    float zoom = win.dm->zoomVirtual();
+    DisplayMode mode = win.dm->displayMode();
     DisplayMode newMode = pagesContinuously ? DM_CONTINUOUS : DM_SINGLE_PAGE;
 
     if (mode != newMode || zoom != newZoom) {
-        DisplayMode prevMode = win->prevDisplayMode;
-        float prevZoom = win->prevZoomVirtual;
+        DisplayMode prevMode = win.prevDisplayMode;
+        float prevZoom = win.prevZoomVirtual;
 
         if (mode != newMode)
-            SwitchToDisplayMode(win, newMode);
-        OnMenuZoom(*win, MenuIdFromVirtualZoom(newZoom));
+            win.SwitchToDisplayMode(newMode);
+        OnMenuZoom(win, MenuIdFromVirtualZoom(newZoom));
 
         // remember the previous values for when the toolbar button is unchecked
         if (INVALID_ZOOM == prevZoom) {
-            win->prevZoomVirtual = zoom;
-            win->prevDisplayMode = mode;
+            win.prevZoomVirtual = zoom;
+            win.prevDisplayMode = mode;
         }
         // keep the rememberd values when toggling between the two toolbar buttons
         else {
-            win->prevZoomVirtual = prevZoom;
-            win->prevDisplayMode = prevMode;
+            win.prevZoomVirtual = prevZoom;
+            win.prevDisplayMode = prevMode;
         }
     }
-    else if (win->prevZoomVirtual != INVALID_ZOOM) {
-        float prevZoom = win->prevZoomVirtual;
-        SwitchToDisplayMode(win, win->prevDisplayMode);
-        ZoomToSelection(win, prevZoom, false);
+    else if (win.prevZoomVirtual != INVALID_ZOOM) {
+        float prevZoom = win.prevZoomVirtual;
+        win.SwitchToDisplayMode(win.prevDisplayMode);
+        win.ZoomToSelection(prevZoom, false);
     }
 }
 
@@ -3277,7 +4500,7 @@ static void OnMenuGoToPage(WindowInfo& win)
     }
 
     ScopedMem<TCHAR> label(win.dm->engine->GetPageLabel(win.dm->currentPageNo()));
-    ScopedMem<TCHAR> newPageLabel(Dialog_GoToPage(win.hwndFrame, label, win.dm->PageCount(),
+    ScopedMem<TCHAR> newPageLabel(Dialog_GoToPage(win.hwndFrame, label, win.dm->pageCount(),
                                                   !win.dm->engine->HasPageLabels()));
     if (!newPageLabel)
         return;
@@ -3285,6 +4508,49 @@ static void OnMenuGoToPage(WindowInfo& win)
     int newPageNo = win.dm->engine->GetPageByLabel(newPageLabel);
     if (win.dm->validPageNo(newPageNo))
         win.dm->goToPage(newPageNo, 0, true);
+}
+
+static bool NeedsFindUI(WindowInfo& win)
+{
+    return !win.IsDocLoaded() || win.dm->engine && !win.dm->engine->IsImageCollection();
+}
+
+static void OnMenuFind(WindowInfo& win)
+{
+    if (!win.IsDocLoaded() || !NeedsFindUI(win))
+        return;
+
+    // Don't show a dialog if we don't have to - use the Toolbar instead
+    if (gGlobalPrefs.toolbarVisible && !win.fullScreen && PM_DISABLED == win.presentation) {
+        if (GetFocus() == win.hwndFindBox)
+            SendMessage(win.hwndFindBox, WM_SETFOCUS, 0, 0);
+        else
+            SetFocus(win.hwndFindBox);
+        return;
+    }
+
+    ScopedMem<TCHAR> previousFind(win::GetText(win.hwndFindBox));
+    WORD state = (WORD)SendMessage(win.hwndToolbar, TB_GETSTATE, IDM_FIND_MATCH, 0);
+    bool matchCase = (state & TBSTATE_CHECKED) != 0;
+
+    ScopedMem<TCHAR> findString(Dialog_Find(win.hwndFrame, previousFind, &matchCase));
+    if (!findString)
+        return;
+
+    win::SetText(win.hwndFindBox, findString);
+    Edit_SetModify(win.hwndFindBox, TRUE);
+
+    bool matchCaseChanged = matchCase != (0 != (state & TBSTATE_CHECKED));
+    if (matchCaseChanged) {
+        if (matchCase)
+            state |= TBSTATE_CHECKED;
+        else
+            state &= ~TBSTATE_CHECKED;
+        SendMessage(win.hwndToolbar, TB_SETSTATE, IDM_FIND_MATCH, state);
+        win.dm->textSearch->SetSensitive(matchCase);
+    }
+
+    FindTextOnThread(&win);
 }
 
 static void EnterFullscreen(WindowInfo& win, bool presentation)
@@ -3400,7 +4666,85 @@ static void OnMenuViewPresentation(WindowInfo& win)
     OnMenuViewFullscreen(win, true);
 }
 
-void AdvanceFocus(WindowInfo* win)
+// Show the result of a PDF forward-search synchronization (initiated by a DDE command)
+void WindowInfo::ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT col, UINT ret, UINT page, Vec<RectI> &rects)
+{
+    this->fwdSearchMark.rects.Reset();
+    if (ret == PDFSYNCERR_SUCCESS && rects.Count() > 0) {
+        // remember the position of the search result for drawing the rect later on
+        const PageInfo *pi = this->dm->getPageInfo(page);
+        if (pi) {
+            fwdSearchMark.rects = rects;
+            fwdSearchMark.page = page;
+            fwdSearchMark.show = true;
+            if (!gGlobalPrefs.fwdSearchPermanent)  {
+                fwdSearchMark.hideStep = 0;
+                SetTimer(this->hwndCanvas, HIDE_FWDSRCHMARK_TIMER_ID, HIDE_FWDSRCHMARK_DELAY_IN_MS, NULL);
+            }
+
+            // Scroll to show the overall highlighted zone
+            int pageNo = page;
+            RectI overallrc = rects[0];
+            for (size_t i = 1; i < rects.Count(); i++)
+                overallrc = overallrc.Union(rects[i]);
+            TextSel res = { 1, &pageNo, &overallrc };
+            if (!this->dm->pageVisible(page))
+                this->dm->goToPage(page, 0, true);
+            if (!this->dm->ShowResultRectToScreen(&res))
+                this->RepaintAsync();
+            if (IsIconic(this->hwndFrame))
+                ShowWindowAsync(this->hwndFrame, SW_RESTORE);
+            return;
+        }
+    }
+
+    ScopedMem<TCHAR> buf;
+    if (ret == PDFSYNCERR_SYNCFILE_NOTFOUND )
+        ShowNotification(_TR("No synchronization file found"));
+    else if (ret == PDFSYNCERR_SYNCFILE_CANNOT_BE_OPENED)
+        ShowNotification(_TR("Synchronization file cannot be opened"));
+    else if (ret == PDFSYNCERR_INVALID_PAGE_NUMBER)
+        buf.Set(str::Format(_TR("Page number %u inexistant"), page));
+    else if (ret == PDFSYNCERR_NO_SYNC_AT_LOCATION)
+        ShowNotification(_TR("No synchronization info at this position"));
+    else if (ret == PDFSYNCERR_UNKNOWN_SOURCEFILE)
+        buf.Set(str::Format(_TR("Unknown source file (%s)"), fileName));
+    else if (ret == PDFSYNCERR_NORECORD_IN_SOURCEFILE)
+        buf.Set(str::Format(_TR("Source file %s has no synchronization point"), fileName));
+    else if (ret == PDFSYNCERR_NORECORD_FOR_THATLINE)
+        buf.Set(str::Format(_TR("No result found around line %u in file %s"), line, fileName));
+    else if (ret == PDFSYNCERR_NOSYNCPOINT_FOR_LINERECORD)
+        buf.Set(str::Format(_TR("No result found around line %u in file %s"), line, fileName));
+    if (buf)
+        ShowNotification(buf);
+}
+
+static void OnMenuFindNext(WindowInfo& win)
+{
+    if (!NeedsFindUI(win))
+        return;
+    if (SendMessage(win.hwndToolbar, TB_ISBUTTONENABLED, IDM_FIND_NEXT, 0))
+        FindTextOnThread(&win, FIND_FORWARD);
+}
+
+static void OnMenuFindPrev(WindowInfo& win)
+{
+    if (!NeedsFindUI(win))
+        return;
+    if (SendMessage(win.hwndToolbar, TB_ISBUTTONENABLED, IDM_FIND_PREV, 0))
+        FindTextOnThread(&win, FIND_BACKWARD);
+}
+
+static void OnMenuFindMatchCase(WindowInfo& win)
+{
+    if (!NeedsFindUI(win))
+        return;
+    WORD state = (WORD)SendMessage(win.hwndToolbar, TB_GETSTATE, IDM_FIND_MATCH, 0);
+    win.dm->textSearch->SetSensitive((state & TBSTATE_CHECKED) != 0);
+    Edit_SetModify(win.hwndFindBox, TRUE);
+}
+
+static void AdvanceFocus(WindowInfo* win)
 {
     // Tab order: Frame -> Page -> Find -> ToC -> Favorites -> Frame -> ...
 
@@ -3414,7 +4758,7 @@ void AdvanceFocus(WindowInfo* win)
     } tabOrder[] = {
         { win->hwndFrame,   true                                },
         { win->hwndPageBox, hasToolbar                          },
-        { win->hwndFindBox, hasToolbar && NeedsFindUI(win)      },
+        { win->hwndFindBox, hasToolbar && NeedsFindUI(*win)     },
         { win->hwndTocTree, win->tocLoaded && win->tocVisible   },
         { win->hwndFavTree, gGlobalPrefs.favVisible             },
     };
@@ -3448,68 +4792,68 @@ void AdvanceFocus(WindowInfo* win)
 // from one typed on the main keyboard (focuses the find textbox)
 static bool gIsDivideKeyDown = false;
 
-bool OnFrameKeydown(WindowInfo *win, WPARAM key, LPARAM lparam, bool inTextfield)
+static bool OnKeydown(WindowInfo& win, WPARAM key, LPARAM lparam, bool inTextfield=false)
 {
     if ((VK_LEFT == key || VK_RIGHT == key) &&
         IsShiftPressed() && IsCtrlPressed() &&
-        win->loadedFilePath && !inTextfield) {
+        win.loadedFilePath && !inTextfield) {
         // folder browsing should also work when an error page is displayed,
         // so special-case it before the win.IsDocLoaded() check
-        BrowseFolder(*win, VK_RIGHT == key);
+        BrowseFolder(win, VK_RIGHT == key);
         return true;
     }
 
-    if (!win->IsDocLoaded())
+    if (!win.IsDocLoaded())
         return false;
     
     //DBG_OUT("key=%d,%c,shift=%d\n", key, (char)key, (int)WasKeyDown(VK_SHIFT));
 
-    if (PM_BLACK_SCREEN == win->presentation || PM_WHITE_SCREEN == win->presentation)
+    if (PM_BLACK_SCREEN == win.presentation || PM_WHITE_SCREEN == win.presentation)
         return false;
 
     if (VK_PRIOR == key) {
-        int currentPos = GetScrollPos(win->hwndCanvas, SB_VERT);
-        if (win->dm->zoomVirtual() != ZOOM_FIT_CONTENT)
-            SendMessage(win->hwndCanvas, WM_VSCROLL, SB_PAGEUP, 0);
-        if (GetScrollPos(win->hwndCanvas, SB_VERT) == currentPos)
-            win->dm->goToPrevPage(-1);
+        int currentPos = GetScrollPos(win.hwndCanvas, SB_VERT);
+        if (win.dm->zoomVirtual() != ZOOM_FIT_CONTENT)
+            SendMessage(win.hwndCanvas, WM_VSCROLL, SB_PAGEUP, 0);
+        if (GetScrollPos(win.hwndCanvas, SB_VERT) == currentPos)
+            win.dm->goToPrevPage(-1);
     } else if (VK_NEXT == key) {
-        int currentPos = GetScrollPos(win->hwndCanvas, SB_VERT);
-        if (win->dm->zoomVirtual() != ZOOM_FIT_CONTENT)
-            SendMessage(win->hwndCanvas, WM_VSCROLL, SB_PAGEDOWN, 0);
-        if (GetScrollPos(win->hwndCanvas, SB_VERT) == currentPos)
-            win->dm->goToNextPage(0);
+        int currentPos = GetScrollPos(win.hwndCanvas, SB_VERT);
+        if (win.dm->zoomVirtual() != ZOOM_FIT_CONTENT)
+            SendMessage(win.hwndCanvas, WM_VSCROLL, SB_PAGEDOWN, 0);
+        if (GetScrollPos(win.hwndCanvas, SB_VERT) == currentPos)
+            win.dm->goToNextPage(0);
     } else if (VK_UP == key) {
-        if (win->dm->needVScroll())
-            SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
+        if (win.dm->needVScroll())
+            SendMessage(win.hwndCanvas, WM_VSCROLL, SB_LINEUP, 0);
         else
-            win->dm->goToPrevPage(-1);
+            win.dm->goToPrevPage(-1);
     } else if (VK_DOWN == key) {
-        if (win->dm->needVScroll())
-            SendMessage(win->hwndCanvas, WM_VSCROLL, SB_LINEDOWN, 0);
+        if (win.dm->needVScroll())
+            SendMessage(win.hwndCanvas, WM_VSCROLL, SB_LINEDOWN, 0);
         else
-            win->dm->goToNextPage(0);
+            win.dm->goToNextPage(0);
     } else if (inTextfield) {
         // The remaining keys have a different meaning
         return false;
     } else if (VK_LEFT == key) {
-        if (win->dm->needHScroll())
-            SendMessage(win->hwndCanvas, WM_HSCROLL, IsShiftPressed() ? SB_PAGELEFT : SB_LINELEFT, 0);
+        if (win.dm->needHScroll())
+            SendMessage(win.hwndCanvas, WM_HSCROLL, IsShiftPressed() ? SB_PAGELEFT : SB_LINELEFT, 0);
         else
-            win->dm->goToPrevPage(0);
+            win.dm->goToPrevPage(0);
     } else if (VK_RIGHT == key) {
-        if (win->dm->needHScroll())
-            SendMessage(win->hwndCanvas, WM_HSCROLL, IsShiftPressed() ? SB_PAGERIGHT : SB_LINERIGHT, 0);
+        if (win.dm->needHScroll())
+            SendMessage(win.hwndCanvas, WM_HSCROLL, IsShiftPressed() ? SB_PAGERIGHT : SB_LINERIGHT, 0);
         else
-            win->dm->goToNextPage(0);
+            win.dm->goToNextPage(0);
     } else if (VK_HOME == key) {
-        win->dm->goToFirstPage();
+        win.dm->goToFirstPage();
     } else if (VK_END == key) {
-        win->dm->goToLastPage();
+        win.dm->goToLastPage();
     } else if (VK_MULTIPLY == key) {
-        win->dm->rotateBy(90);
+        win.dm->rotateBy(90);
     } else if (VK_DIVIDE == key) {
-        win->dm->rotateBy(-90);
+        win.dm->rotateBy(-90);
         gIsDivideKeyDown = true;
     } else {
         return false;
@@ -3518,7 +4862,7 @@ bool OnFrameKeydown(WindowInfo *win, WPARAM key, LPARAM lparam, bool inTextfield
     return true;
 }
 
-static void OnFrameChar(WindowInfo& win, WPARAM key)
+static void OnChar(WindowInfo& win, WPARAM key)
 {
 //    DBG_OUT("char=%d,%c\n", key, (char)key);
 
@@ -3533,9 +4877,9 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
     switch (key) {
     case VK_ESCAPE:
         if (win.findThread)
-            AbortFinding(&win);
-        else if (win.notifications->GetFirstInGroup(NG_PAGE_INFO_HELPER))
-            win.notifications->RemoveAllInGroup(NG_PAGE_INFO_HELPER);
+            win.AbortFinding();
+        else if (win.messages->GetFirst(NG_PAGE_INFO_HELPER))
+            win.messages->CleanUp(NG_PAGE_INFO_HELPER);
         else if (win.presentation)
             OnMenuViewPresentation(win);
         else if (gGlobalPrefs.escToExit)
@@ -3543,14 +4887,14 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
         else if (win.fullScreen)
             OnMenuViewFullscreen(win);
         else if (win.showSelection)
-            ClearSearchResult(&win);
+            ClearSearchResult(win);
         return;
     case 'q':
         if (!gPluginMode)
             DestroyWindow(win.hwndFrame);
         return;
     case 'r':
-        ReloadDocument(&win);
+        win.Reload();
         return;
     case VK_TAB:
         AdvanceFocus(&win);
@@ -3563,7 +4907,7 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
     switch (key) {
     case VK_SPACE:
     case VK_RETURN:
-        OnFrameKeydown(&win, IsShiftPressed() ? VK_PRIOR : VK_NEXT, 0);
+        OnKeydown(win, IsShiftPressed() ? VK_PRIOR : VK_NEXT, 0);
         break;
     case VK_BACK:
         {
@@ -3590,14 +4934,14 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
         win.ToggleZoom();
         break;
     case '+':
-        ZoomToSelection(&win, ZOOM_IN_FACTOR, true);
+        win.ZoomToSelection(ZOOM_IN_FACTOR, true);
         break;
     case '-':
-        ZoomToSelection(&win, ZOOM_OUT_FACTOR, true);
+        win.ZoomToSelection(ZOOM_OUT_FACTOR, true);
         break;
     case '/':
         if (!gIsDivideKeyDown)
-            OnMenuFind(&win);
+            OnMenuFind(win);
         gIsDivideKeyDown = false;
         break;
     case 'c':
@@ -3614,7 +4958,7 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
             DisplayMode newMode = DM_BOOK_VIEW;
             if (displayModeShowCover(win.dm->displayMode()))
                 newMode = DM_FACING;
-            SwitchToDisplayMode(&win, newMode, true);
+            win.SwitchToDisplayMode(newMode, true);
 
             if (forward && currPage >= win.dm->currentPageNo() && (currPage > 1 || newMode == DM_BOOK_VIEW))
                 win.dm->goToNextPage(0);
@@ -3635,14 +4979,14 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
         // experimental "page info" tip: make figuring out current page and
         // total pages count a one-key action (unless they're already visible)
         if (!gGlobalPrefs.toolbarVisible || win.fullScreen || PM_ENABLED == win.presentation) {
-            int current = win.dm->currentPageNo(), total = win.dm->PageCount();
+            int current = win.dm->currentPageNo(), total = win.dm->pageCount();
             ScopedMem<TCHAR> pageInfo(str::Format(_T("%s %d / %d"), _TR("Page:"), current, total));
             if (win.dm->engine && win.dm->engine->HasPageLabels()) {
                 ScopedMem<TCHAR> label(win.dm->engine->GetPageLabel(current));
                 pageInfo.Set(str::Format(_T("%s %s (%d / %d)"), _TR("Page:"), label, current, total));
             }
             bool autoDismiss = !IsShiftPressed();
-            ShowNotification(&win, pageInfo, autoDismiss, false, NG_PAGE_INFO_HELPER);
+            win.ShowNotification(pageInfo, autoDismiss, false, NG_PAGE_INFO_HELPER);
         }
         break;
 #ifdef DEBUG
@@ -3650,6 +4994,78 @@ static void OnFrameChar(WindowInfo& win, WPARAM key)
         ToggleGdiDebugging();
         break;
 #endif
+    }
+}
+
+class GoToTocLinkWorkItem : public UIThreadWorkItem
+{
+    DocToCItem *tocItem;
+
+public:
+    GoToTocLinkWorkItem(WindowInfo *win, DocToCItem *ti) :
+        UIThreadWorkItem(win), tocItem(ti) {}
+
+    virtual void Execute() {
+        if (WindowInfoStillValid(win) && win->IsDocLoaded())
+            win->linkHandler->GotoLink(tocItem->GetLink());
+    }
+};
+
+static void GoToTocLinkForTVItem(WindowInfo* win, HWND hTV, HTREEITEM hItem=NULL, bool allowExternal=true)
+{
+    if (!hItem)
+        hItem = TreeView_GetSelection(hTV);
+
+    TVITEM item;
+    item.hItem = hItem;
+    item.mask = TVIF_PARAM;
+    TreeView_GetItem(hTV, &item);
+    DocToCItem *tocItem = (DocToCItem *)item.lParam;
+    if (win->IsDocLoaded() && tocItem &&
+        (allowExternal || tocItem->GetLink() && str::Eq(tocItem->GetLink()->GetType(), "ScrollTo"))) {
+        QueueWorkItem(new GoToTocLinkWorkItem(win, tocItem));
+    }
+}
+
+static TBBUTTON TbButtonFromButtonInfo(int i) {
+    TBBUTTON tbButton = {0};
+    tbButton.idCommand = gToolbarButtons[i].cmdId;
+    if (TbIsSeparator(gToolbarButtons[i])) {
+        tbButton.fsStyle = TBSTYLE_SEP;
+    } else {
+        tbButton.iBitmap = gToolbarButtons[i].bmpIndex;
+        tbButton.fsState = TBSTATE_ENABLED;
+        tbButton.fsStyle = TBSTYLE_BUTTON;
+        tbButton.iString = (INT_PTR)Trans::GetTranslation(gToolbarButtons[i].toolTip);
+    }
+    return tbButton;
+}
+
+#define WS_TOOLBAR (WS_CHILD | WS_CLIPSIBLINGS | \
+                    TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | \
+                    TBSTYLE_LIST | CCS_NODIVIDER | CCS_NOPARENTALIGN)
+
+static void BuildTBBUTTONINFO(TBBUTTONINFO& info, TCHAR *txt) {
+    info.cbSize = sizeof(TBBUTTONINFO);
+    info.dwMask = TBIF_TEXT | TBIF_BYINDEX;
+    info.pszText = txt;
+}
+
+// Set toolbar button tooltips taking current language into account.
+static void UpdateToolbarButtonsToolTipsForWindow(WindowInfo& win)
+{
+    TBBUTTONINFO buttonInfo;
+    HWND hwnd = win.hwndToolbar;
+    LRESULT res;
+    for (int i = 0; i < TOOLBAR_BUTTONS_COUNT; i++) {
+        WPARAM buttonId = (WPARAM)i;
+        const char *txt = gToolbarButtons[i].toolTip;
+        if (NULL == txt)
+            continue;
+        const TCHAR *translation = Trans::GetTranslation(txt);
+        BuildTBBUTTONINFO(buttonInfo, (TCHAR *)translation);
+        res = SendMessage(hwnd, TB_SETBUTTONINFO, buttonId, (LPARAM)&buttonInfo);
+        assert(0 != res);
     }
 }
 
@@ -3674,9 +5090,9 @@ static void UpdateUITextForLanguage()
 {
     for (size_t i = 0; i < gWindows.Count(); i++) {
         WindowInfo *win = gWindows[i];
-        UpdateToolbarPageText(win, -1);
-        UpdateToolbarFindText(win);
-        UpdateToolbarButtonsToolTipsForWindow(win);
+        UpdateToolbarPageText(*win, -1);
+        UpdateToolbarFindText(*win);
+        UpdateToolbarButtonsToolTipsForWindow(*win);
         // also update the sidebar title at this point
         UpdateSidebarTitles(*win);
     }        
@@ -3690,6 +5106,608 @@ static void RebuildMenuBar()
         win->menu = BuildMenu(win);
         DestroyMenu(oldMenu);
     }
+}
+
+#define UWM_DELAYED_SET_FOCUS (WM_APP + 1)
+
+// selects all text in an edit box if it's selected either
+// through a keyboard shortcut or a non-selecting mouse click
+static bool FocusUnselectedWndProc(HWND hwnd, UINT message)
+{
+    static bool delayFocus = false;
+
+    switch (message) {
+    case WM_LBUTTONDOWN:
+        delayFocus = GetFocus() != hwnd;
+        return true;
+
+    case WM_LBUTTONUP:
+        if (delayFocus) {
+            DWORD sel = Edit_GetSel(hwnd);
+            if (LOWORD(sel) == HIWORD(sel))
+                PostMessage(hwnd, UWM_DELAYED_SET_FOCUS, 0, 0);
+            delayFocus = false;
+        }
+        return true;
+
+    case WM_SETFOCUS:
+        if (!delayFocus)
+            PostMessage(hwnd, UWM_DELAYED_SET_FOCUS, 0, 0);
+        return true;
+
+    case UWM_DELAYED_SET_FOCUS:
+        Edit_SelectAll(hwnd);
+        return true;
+
+    default:
+        return false;
+    }
+}
+
+static WNDPROC DefWndProcFindBox = NULL;
+static LRESULT CALLBACK WndProcFindBox(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win || !win->IsDocLoaded())
+        return DefWindowProc(hwnd, message, wParam, lParam);
+
+    if (FocusUnselectedWndProc(hwnd, message)) {
+        // select the whole find box on a non-selecting click
+    } else if (WM_CHAR == message) {
+        switch (wParam) {
+        case VK_ESCAPE:
+            if (win->findThread)
+                win->AbortFinding();
+            else
+                SetFocus(win->hwndFrame);
+            return 1;
+
+        case VK_RETURN:
+            FindTextOnThread(win);
+            return 1;
+
+        case VK_TAB:
+            AdvanceFocus(win);
+            return 1;
+        }
+    }
+    else if (WM_ERASEBKGND == message) {
+        RECT r;
+        Edit_GetRect(hwnd, &r);
+        if (r.left == 0 && r.top == 0) { // virgin box
+            r.left += 4;
+            r.top += 3;
+            r.bottom += 3;
+            r.right -= 2;
+            Edit_SetRectNoPaint(hwnd, &r);
+        }
+    }
+    else if (WM_KEYDOWN == message) {
+        if (OnKeydown(*win, wParam, lParam, true))
+            return 0;
+    }
+
+    LRESULT ret = CallWindowProc(DefWndProcFindBox, hwnd, message, wParam, lParam);
+
+    if (WM_CHAR  == message ||
+        WM_PASTE == message ||
+        WM_CUT   == message ||
+        WM_CLEAR == message ||
+        WM_UNDO  == message) {
+        ToolbarUpdateStateForWindow(*win);
+    }
+
+    return ret;
+}
+
+static void ShowSearchResult(WindowInfo& win, TextSel *result, bool addNavPt)
+{
+    assert(result->len > 0);
+    if (addNavPt || !win.dm->pageShown(result->pages[0]) ||
+        (win.dm->zoomVirtual() == ZOOM_FIT_PAGE || win.dm->zoomVirtual() == ZOOM_FIT_CONTENT))
+        win.dm->goToPage(result->pages[0], 0, addNavPt);
+
+    win.dm->textSelection->CopySelection(win.dm->textSearch);
+
+    UpdateTextSelection(win, false);
+    win.dm->ShowResultRectToScreen(result);
+    win.RepaintAsync();
+}
+
+static void ClearSearchResult(WindowInfo& win)
+{
+    DeleteOldSelectionInfo(win, true);
+    win.RepaintAsync();
+}
+
+class UpdateFindStatusWorkItem : public UIThreadWorkItem {
+    MessageWnd *wnd;
+    int current, total;
+
+public:
+    UpdateFindStatusWorkItem(WindowInfo *win, MessageWnd *wnd, int current, int total)
+        : UIThreadWorkItem(win), wnd(wnd), current(current), total(total) { }
+
+    virtual void Execute() {
+        if (WindowInfoStillValid(win) && !win->findCanceled && win->messages->Contains(wnd))
+            wnd->ProgressUpdate(current, total);
+    }
+};
+
+struct FindThreadData : public ProgressUpdateUI {
+    WindowInfo *win;
+    TextSearchDirection direction;
+    bool wasModified;
+    TCHAR *text;
+
+    FindThreadData(WindowInfo& win, TextSearchDirection direction, HWND findBox) :
+        win(&win), direction(direction) {
+        text = win::GetText(findBox);
+        wasModified = Edit_GetModify(findBox);
+    }
+    ~FindThreadData() { free(text); }
+
+    void ShowUI() const {
+        const LPARAM disable = (LPARAM)MAKELONG(0, 0);
+
+        MessageWnd *wnd = new MessageWnd(win->hwndCanvas, _T(""), _TR("Searching %d of %d..."), win->messages);
+        // let win->messages own the MessageWnd (FindThreadData might get deleted before)
+        win->messages->Add(wnd, NG_FIND_PROGRESS);
+
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_PREV, disable);
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_NEXT, disable);
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_MATCH, disable);
+    }
+
+    void HideUI(MessageWnd *wnd, bool success, bool loopedAround) const {
+        LPARAM enable = (LPARAM)MAKELONG(1, 0);
+
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_PREV, enable);
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_NEXT, enable);
+        SendMessage(win->hwndToolbar, TB_ENABLEBUTTON, IDM_FIND_MATCH, enable);
+
+        if (!success && !loopedAround || !wnd) // i.e. canceled
+            win->messages->CleanUp(wnd);
+        else if (!success && loopedAround)
+            wnd->MessageUpdate(_TR("No matches were found"), 3000);
+        else if (!loopedAround) {
+            ScopedMem<TCHAR> buf(str::Format(_TR("Found text at page %d"), win->dm->currentPageNo()));
+            wnd->MessageUpdate(buf, 3000);
+        } else {
+            ScopedMem<TCHAR> buf(str::Format(_TR("Found text at page %d (again)"), win->dm->currentPageNo()));
+            wnd->MessageUpdate(buf, 3000, true);
+        }    
+    }
+
+    virtual bool ProgressUpdate(int current, int total) {
+        if (!WindowInfoStillValid(win) || !win->messages->GetFirst(NG_FIND_PROGRESS) || win->findCanceled)
+            return false;
+        QueueWorkItem(new UpdateFindStatusWorkItem(win, win->messages->GetFirst(NG_FIND_PROGRESS), current, total));
+        return true;
+    }
+};
+
+class FindEndWorkItem : public UIThreadWorkItem {
+    FindThreadData *ftd;
+    TextSel*textSel;
+    bool    wasModifiedCanceled;
+    bool    loopedAround;
+
+public:
+    FindEndWorkItem(WindowInfo *win, FindThreadData *ftd, TextSel *textSel,
+                    bool wasModifiedCanceled, bool loopedAround=false) :
+        UIThreadWorkItem(win), ftd(ftd), textSel(textSel),
+        loopedAround(loopedAround), wasModifiedCanceled(wasModifiedCanceled) { }
+    ~FindEndWorkItem() { delete ftd; }
+
+    virtual void Execute() {
+        if (!WindowInfoStillValid(win))
+            return;
+        if (!win->IsDocLoaded()) {
+            // the UI has already been disabled and hidden
+        } else if (textSel) {
+            ShowSearchResult(*win, textSel, wasModifiedCanceled);
+            ftd->HideUI(win->messages->GetFirst(NG_FIND_PROGRESS), true, loopedAround);
+        } else {
+            // nothing found or search canceled
+            ClearSearchResult(*win);
+            ftd->HideUI(win->messages->GetFirst(NG_FIND_PROGRESS), false, !wasModifiedCanceled);
+        }
+
+        HANDLE hThread = win->findThread;
+        win->findThread = NULL;
+        CloseHandle(hThread);
+    }
+};
+
+static DWORD WINAPI FindThread(LPVOID data)
+{
+    FindThreadData *ftd = (FindThreadData *)data;
+    assert(ftd && ftd->win && ftd->win->dm);
+    WindowInfo *win = ftd->win;
+
+    TextSel *rect;
+    win->dm->textSearch->SetDirection(ftd->direction);
+    if (ftd->wasModified || !win->dm->validPageNo(win->dm->textSearch->GetCurrentPageNo()) ||
+        !win->dm->getPageInfo(win->dm->textSearch->GetCurrentPageNo())->visibleRatio)
+        rect = win->dm->textSearch->FindFirst(win->dm->currentPageNo(), ftd->text, ftd);
+    else
+        rect = win->dm->textSearch->FindNext(ftd);
+
+    bool loopedAround = false;
+    if (!win->findCanceled && !rect) {
+        // With no further findings, start over (unless this was a new search from the beginning)
+        int startPage = (FIND_FORWARD == ftd->direction) ? 1 : win->dm->pageCount();
+        if (!ftd->wasModified || win->dm->currentPageNo() != startPage) {
+            loopedAround = true;
+            MessageBeep(MB_ICONINFORMATION);
+            rect = win->dm->textSearch->FindFirst(startPage, ftd->text, ftd);
+        }
+    }
+
+    if (!win->findCanceled && rect)
+        QueueWorkItem(new FindEndWorkItem(win, ftd, rect, ftd->wasModified, loopedAround));
+    else
+        QueueWorkItem(new FindEndWorkItem(win, ftd, NULL, win->findCanceled));
+
+    return 0;
+}
+
+void FindTextOnThread(WindowInfo* win, TextSearchDirection direction)
+{
+    win->AbortFinding(true);
+
+    FindThreadData *ftd = new FindThreadData(*win, direction, win->hwndFindBox);
+    Edit_SetModify(win->hwndFindBox, FALSE);
+
+    if (str::IsEmpty(ftd->text)) {
+        delete ftd;
+        return;
+    }
+
+    ftd->ShowUI();
+    win->findThread = CreateThread(NULL, 0, FindThread, ftd, 0, 0);
+}
+
+static WNDPROC DefWndProcToolbar = NULL;
+static LRESULT CALLBACK WndProcToolbar(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (WM_CTLCOLORSTATIC == message) {
+        SetBkMode((HDC)wParam, TRANSPARENT);
+        SelectBrush((HDC)wParam, GetStockBrush(NULL_BRUSH));
+        return 0;
+    }
+    return CallWindowProc(DefWndProcToolbar, hwnd, message, wParam, lParam);
+}
+
+/* Return size of a text <txt> in a given <hwnd>, taking into account its font */
+SIZE TextSizeInHwnd(HWND hwnd, const TCHAR *txt)
+{
+    SIZE sz;
+    size_t txtLen = str::Len(txt);
+    HDC dc = GetWindowDC(hwnd);
+    /* GetWindowDC() returns dc with default state, so we have to first set
+       window's current font into dc */
+    HFONT f = (HFONT)SendMessage(hwnd, WM_GETFONT, 0, 0);
+    HGDIOBJ prev = SelectObject(dc, f);
+    GetTextExtentPoint32(dc, txt, (int)txtLen, &sz);
+    SelectObject(dc, prev);
+    ReleaseDC(hwnd, dc);
+    return sz;
+}
+
+#define TOOLBAR_MIN_ICON_SIZE 16
+#define FIND_BOX_WIDTH 160
+
+// Note: a bit of a hack, but doing just ShowWindow(..., SW_HIDE | SW_SHOW)
+// didn't work for me
+static void MoveOffScreen(HWND hwnd)
+{
+    WindowRect r(hwnd);
+    MoveWindow(hwnd, -200, -100, r.dx, r.dy, FALSE);
+    ShowWindow(hwnd, SW_HIDE);
+}
+
+static void HideToolbarFindUI(WindowInfo& win)
+{
+    MoveOffScreen(win.hwndFindText);
+    MoveOffScreen(win.hwndFindBg);
+    MoveOffScreen(win.hwndFindBox);
+}
+
+static void UpdateToolbarFindText(WindowInfo& win)
+{
+    if (!NeedsFindUI(win)) {
+        HideToolbarFindUI(win);
+        return;
+    }
+
+    ShowWindow(win.hwndFindText, SW_SHOW);
+    ShowWindow(win.hwndFindBg, SW_SHOW);
+    ShowWindow(win.hwndFindBox, SW_SHOW);
+
+    const TCHAR *text = _TR("Find:");
+    win::SetText(win.hwndFindText, text);
+
+    WindowRect findWndRect(win.hwndFindBg);
+
+    RECT r;
+    SendMessage(win.hwndToolbar, TB_GETRECT, IDT_VIEW_ZOOMIN, (LPARAM)&r);
+    int pos_x = r.right + 10;
+    int pos_y = (r.bottom - findWndRect.dy) / 2;
+
+    SIZE size = TextSizeInHwnd(win.hwndFindText, text);
+    size.cx += 6;
+
+    int padding = GetSystemMetrics(SM_CXEDGE);
+    MoveWindow(win.hwndFindText, pos_x, (findWndRect.dy - size.cy + 1) / 2 + pos_y, size.cx, size.cy, TRUE);
+    MoveWindow(win.hwndFindBg, pos_x + size.cx, pos_y, findWndRect.dx, findWndRect.dy, FALSE);
+    MoveWindow(win.hwndFindBox, pos_x + size.cx + padding, (findWndRect.dy - size.cy + 1) / 2 + pos_y,
+        findWndRect.dx - 2 * padding, size.cy, FALSE);
+
+    TBBUTTONINFO bi;
+    bi.cbSize = sizeof(bi);
+    bi.dwMask = TBIF_SIZE;
+    bi.cx = (WORD)(size.cx + findWndRect.dx + 12);
+    SendMessage(win.hwndToolbar, TB_SETBUTTONINFO, IDM_FIND_FIRST, (LPARAM)&bi);
+}
+
+static void CreateFindBox(WindowInfo& win)
+{
+    HWND findBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                            0, 1, (int)(FIND_BOX_WIDTH * win.uiDPIFactor), (int)(TOOLBAR_MIN_ICON_SIZE * win.uiDPIFactor + 4),
+                            win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    HWND find = CreateWindowEx(0, WC_EDIT, _T(""), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL,
+                            0, 1, (int)(FIND_BOX_WIDTH * win.uiDPIFactor - 2 * GetSystemMetrics(SM_CXEDGE)), (int)(TOOLBAR_MIN_ICON_SIZE * win.uiDPIFactor + 2),
+                            win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                            0, 1, 0, 0, win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    SetWindowFont(label, gDefaultGuiFont, FALSE);
+    SetWindowFont(find, gDefaultGuiFont, FALSE);
+
+    if (!DefWndProcToolbar)
+        DefWndProcToolbar = (WNDPROC)GetWindowLongPtr(win.hwndToolbar, GWLP_WNDPROC);
+    SetWindowLongPtr(win.hwndToolbar, GWLP_WNDPROC, (LONG_PTR)WndProcToolbar);
+
+    if (!DefWndProcFindBox)
+        DefWndProcFindBox = (WNDPROC)GetWindowLongPtr(find, GWLP_WNDPROC);
+    SetWindowLongPtr(find, GWLP_WNDPROC, (LONG_PTR)WndProcFindBox);
+
+    win.hwndFindText = label;
+    win.hwndFindBox = find;
+    win.hwndFindBg = findBg;
+
+    UpdateToolbarFindText(win);
+}
+
+static WNDPROC DefWndProcPageBox = NULL;
+static LRESULT CALLBACK WndProcPageBox(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win || !win->IsDocLoaded())
+        return DefWindowProc(hwnd, message, wParam, lParam);
+
+    if (FocusUnselectedWndProc(hwnd, message)) {
+        // select the whole page box on a non-selecting click
+    } else if (WM_CHAR == message) {
+        switch (wParam) {
+        case VK_RETURN: {
+            ScopedMem<TCHAR> buf(win::GetText(win->hwndPageBox));
+            int newPageNo = win->dm->engine->GetPageByLabel(buf);
+            if (win->dm->validPageNo(newPageNo)) {
+                win->dm->goToPage(newPageNo, 0, true);
+                SetFocus(win->hwndFrame);
+            }
+            return 1;
+        }
+        case VK_ESCAPE:
+            SetFocus(win->hwndFrame);
+            return 1;
+
+        case VK_TAB:
+            AdvanceFocus(win);
+            return 1;
+        }
+    } else if (WM_ERASEBKGND == message) {
+        RECT r;
+        Edit_GetRect(hwnd, &r);
+        if (r.left == 0 && r.top == 0) { // virgin box
+            r.left += 4;
+            r.top += 3;
+            r.bottom += 3;
+            r.right -= 2;
+            Edit_SetRectNoPaint(hwnd, &r);
+        }
+    } else if (WM_KEYDOWN == message) {
+        if (OnKeydown(*win, wParam, lParam, true))
+            return 0;
+    }
+
+    return CallWindowProc(DefWndProcPageBox, hwnd, message, wParam, lParam);
+}
+
+#define PAGE_BOX_WIDTH 40
+void UpdateToolbarPageText(WindowInfo& win, int pageCount)
+{
+    const TCHAR *text = _TR("Page:");
+    win::SetText(win.hwndPageText, text);
+    SIZE size = TextSizeInHwnd(win.hwndPageText, text);
+    size.cx += 6;
+
+    WindowRect pageWndRect(win.hwndPageBg);
+
+    RECT r;
+    SendMessage(win.hwndToolbar, TB_GETRECT, IDM_PRINT, (LPARAM)&r);
+    int pos_x = r.right + 10;
+    int pos_y = (r.bottom - pageWndRect.dy) / 2;
+
+    TCHAR *buf;
+    SIZE size2 = { 0 };
+    if (-1 == pageCount)
+        buf = win::GetText(win.hwndPageTotal);
+    else if (!pageCount)
+        buf = str::Dup(_T(""));
+    else if (!win.dm || !win.dm->engine || !win.dm->engine->HasPageLabels())
+        buf = str::Format(_T(" / %d"), pageCount);
+    else {
+        buf = str::Format(_T(" (%d / %d)"), win.dm->currentPageNo(), pageCount);
+        ScopedMem<TCHAR> buf2(str::Format(_T(" (%d / %d)"), pageCount, pageCount));
+        size2 = TextSizeInHwnd(win.hwndPageTotal, buf2);
+    }
+
+    win::SetText(win.hwndPageTotal, buf);
+    if (0 == size2.cx)
+        size2 = TextSizeInHwnd(win.hwndPageTotal, buf);
+    size2.cx += 6;
+    free(buf);
+
+    int padding = GetSystemMetrics(SM_CXEDGE);
+    MoveWindow(win.hwndPageText, pos_x, (pageWndRect.dy - size.cy + 1) / 2 + pos_y, size.cx, size.cy, true);
+    if (IsUIRightToLeft())
+        pos_x += size2.cx - 6;
+    MoveWindow(win.hwndPageBg, pos_x + size.cx, pos_y, pageWndRect.dx, pageWndRect.dy, false);
+    MoveWindow(win.hwndPageBox, pos_x + size.cx + padding, (pageWndRect.dy - size.cy + 1) / 2 + pos_y,
+        pageWndRect.dx - 2 * padding, size.cy, false);
+    // in right-to-left layout, the total comes "before" the current page number
+    if (IsUIRightToLeft()) {
+        pos_x -= size2.cx;
+        MoveWindow(win.hwndPageTotal, pos_x + size.cx, (pageWndRect.dy - size.cy + 1) / 2 + pos_y, size2.cx, size.cy, false);
+    }
+    else
+        MoveWindow(win.hwndPageTotal, pos_x + size.cx + pageWndRect.dx, (pageWndRect.dy - size.cy + 1) / 2 + pos_y, size2.cx, size.cy, false);
+
+    TBBUTTONINFO bi;
+    bi.cbSize = sizeof(bi);
+    bi.dwMask = TBIF_SIZE;
+    bi.cx = (WORD)(size.cx + pageWndRect.dx + size2.cx + 12);
+    SendMessage(win.hwndToolbar, TB_SETBUTTONINFO, IDM_GOTO_PAGE, (LPARAM)&bi);
+}
+
+static void CreatePageBox(WindowInfo& win)
+{
+    HWND pageBg = CreateWindowEx(WS_EX_STATICEDGE, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                            0, 1, (int)(PAGE_BOX_WIDTH * win.uiDPIFactor), (int)(TOOLBAR_MIN_ICON_SIZE * win.uiDPIFactor + 4),
+                            win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    HWND page = CreateWindowEx(0, WC_EDIT, _T("0"), WS_VISIBLE | WS_CHILD | ES_AUTOHSCROLL | ES_NUMBER | ES_RIGHT,
+                            0, 1, (int)(PAGE_BOX_WIDTH * win.uiDPIFactor - 2 * GetSystemMetrics(SM_CXEDGE)), (int)(TOOLBAR_MIN_ICON_SIZE * win.uiDPIFactor + 2),
+                            win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    HWND label = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                            0, 1, 0, 0, win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    HWND total = CreateWindowEx(0, WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                            0, 1, 0, 0, win.hwndToolbar, (HMENU)0, ghinst, NULL);
+
+    SetWindowFont(label, gDefaultGuiFont, FALSE);
+    SetWindowFont(page, gDefaultGuiFont, FALSE);
+    SetWindowFont(total, gDefaultGuiFont, FALSE);
+
+    if (!DefWndProcPageBox)
+        DefWndProcPageBox = (WNDPROC)GetWindowLongPtr(page, GWLP_WNDPROC);
+    SetWindowLongPtr(page, GWLP_WNDPROC, (LONG_PTR)WndProcPageBox);
+
+    win.hwndPageText = label;
+    win.hwndPageBox = page;
+    win.hwndPageBg = pageBg;
+    win.hwndPageTotal = total;
+
+    UpdateToolbarPageText(win, -1);
+}
+
+static HBITMAP LoadExternalBitmap(HINSTANCE hInst, TCHAR * filename, INT resourceId)
+{
+    ScopedMem<TCHAR> path(AppGenDataFilename(filename));
+    
+    HBITMAP hBmp = (HBITMAP)LoadImage(NULL, path, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+    if (!hBmp)
+        hBmp = LoadBitmap(hInst, MAKEINTRESOURCE(resourceId));
+    return hBmp;
+}
+
+static void CreateToolbar(WindowInfo& win) {
+    HWND hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, WS_TOOLBAR,
+                                 0,0,0,0, win.hwndFrame,(HMENU)IDC_TOOLBAR, ghinst, NULL);
+    win.hwndToolbar = hwndToolbar;
+    LRESULT lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+
+    ShowWindow(hwndToolbar, SW_SHOW);
+    TBBUTTON tbButtons[TOOLBAR_BUTTONS_COUNT];
+
+    // the name of the bitmap contains the number of icons so that after adding/removing
+    // icons a complete default toolbar is used rather than an incomplete customized one
+    HBITMAP hbmp = LoadExternalBitmap(ghinst, _T("toolbar_11.bmp"), IDB_TOOLBAR);
+    BITMAP bmp;
+    GetObject(hbmp, sizeof(BITMAP), &bmp);
+    // stretch the toolbar bitmaps for higher DPI settings
+    // TODO: get nicely interpolated versions of the toolbar icons for higher resolutions
+    if (bmp.bmHeight < TOOLBAR_MIN_ICON_SIZE * win.uiDPIFactor) {
+        bmp.bmWidth *= (LONG)(win.uiDPIFactor + 0.5f);
+        bmp.bmHeight *= (LONG)(win.uiDPIFactor + 0.5f);
+        hbmp = (HBITMAP)CopyImage(hbmp, IMAGE_BITMAP, bmp.bmWidth, bmp.bmHeight, LR_COPYDELETEORG);
+    }
+    // Assume square icons
+    HIMAGELIST himl = ImageList_Create(bmp.bmHeight, bmp.bmHeight, ILC_COLORDDB | ILC_MASK, 0, 0);
+    ImageList_AddMasked(himl, hbmp, RGB(255, 0, 255));
+    DeleteObject(hbmp);
+
+    // in Plugin mode, replace the Open with a Save As button
+    if (gPluginMode && bmp.bmWidth / bmp.bmHeight == 13) {
+        gToolbarButtons[0].bmpIndex = 12;
+        gToolbarButtons[0].cmdId = IDM_SAVEAS;
+        gToolbarButtons[0].toolTip = _TRN("Save As");
+        gToolbarButtons[0].flags = MF_REQ_DISK_ACCESS;
+    }
+    for (int i = 0; i < TOOLBAR_BUTTONS_COUNT; i++) {
+        tbButtons[i] = TbButtonFromButtonInfo(i);
+        if (gToolbarButtons[i].cmdId == IDM_FIND_MATCH)
+            tbButtons[i].fsStyle = BTNS_CHECK;
+    }
+    lres = SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
+
+    LRESULT exstyle = SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0);
+    exstyle |= TBSTYLE_EX_MIXEDBUTTONS;
+    lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, exstyle);
+
+    lres = SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
+
+    RECT rc;
+    lres = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
+
+    DWORD  reBarStyle = WS_REBAR | WS_VISIBLE;
+    win.hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, reBarStyle,
+                             0,0,0,0, win.hwndFrame, (HMENU)IDC_REBAR, ghinst, NULL);
+    if (!win.hwndReBar)
+        SeeLastError();
+
+    REBARINFO rbi;
+    rbi.cbSize = sizeof(REBARINFO);
+    rbi.fMask  = 0;
+    rbi.himl   = (HIMAGELIST)NULL;
+    lres = SendMessage(win.hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
+
+    REBARBANDINFO rbBand;
+    rbBand.cbSize  = sizeof(REBARBANDINFO);
+    rbBand.fMask   = /*RBBIM_COLORS | RBBIM_TEXT | RBBIM_BACKGROUND | */
+                   RBBIM_STYLE | RBBIM_CHILD | RBBIM_CHILDSIZE /*| RBBIM_SIZE*/;
+    rbBand.fStyle  = /*RBBS_CHILDEDGE |*//* RBBS_BREAK |*/ RBBS_FIXEDSIZE /*| RBBS_GRIPPERALWAYS*/;
+    if (IsAppThemed())
+        rbBand.fStyle |= RBBS_CHILDEDGE;
+    rbBand.hbmBack = NULL;
+    rbBand.lpText     = _T("Toolbar");
+    rbBand.hwndChild  = hwndToolbar;
+    rbBand.cxMinChild = (rc.right - rc.left) * TOOLBAR_BUTTONS_COUNT;
+    rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
+    rbBand.cx         = 0;
+    lres = SendMessage(win.hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+
+    SetWindowPos(win.hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
+    
+    CreatePageBox(win);
+    CreateFindBox(win);
 }
 
 // TODO: the layout logic here is similar to what we do in SetSidebarVisibility()
@@ -3761,13 +5779,85 @@ static LRESULT CALLBACK WndProcSpliter(HWND hwnd, UINT message, WPARAM wParam, L
     return DefWindowProc(hwnd, message, wParam, lParam);
 }
 
+static void TreeView_ExpandRecursively(HWND hTree, HTREEITEM hItem, UINT flag, bool subtree=false)
+{
+    while (hItem) {
+        TreeView_Expand(hTree, hItem, flag);
+        HTREEITEM child = TreeView_GetChild(hTree, hItem);
+        if (child)
+            TreeView_ExpandRecursively(hTree, child, flag);
+        if (subtree)
+            break;
+        hItem = TreeView_GetNextSibling(hTree, hItem);
+    }
+}
+
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+#define WM_APP_REPAINT_TOC     (WM_APP + 1)
+#endif
+
+static WNDPROC DefWndProcTocTree = NULL;
+static LRESULT CALLBACK WndProcTocTree(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win)
+        return CallWindowProc(DefWndProcTocTree, hwnd, message, wParam, lParam);
+
+    switch (message) {
+        case WM_CHAR:
+            if (VK_ESCAPE == wParam && gGlobalPrefs.escToExit)
+                DestroyWindow(win->hwndFrame);
+            break;
+        case WM_KEYDOWN:
+            // consistently expand/collapse whole (sub)trees
+            if (VK_MULTIPLY == wParam && IsShiftPressed())
+                TreeView_ExpandRecursively(hwnd, TreeView_GetRoot(hwnd), TVE_EXPAND);
+            else if (VK_MULTIPLY == wParam)
+                TreeView_ExpandRecursively(hwnd, TreeView_GetSelection(hwnd), TVE_EXPAND, true);
+            else if (VK_DIVIDE == wParam && IsShiftPressed()) {
+                HTREEITEM root = TreeView_GetRoot(hwnd);
+                if (!TreeView_GetNextSibling(hwnd, root))
+                    root = TreeView_GetChild(hwnd, root);
+                TreeView_ExpandRecursively(hwnd, root, TVE_COLLAPSE);
+            }
+            else if (VK_DIVIDE == wParam)
+                TreeView_ExpandRecursively(hwnd, TreeView_GetSelection(hwnd), TVE_COLLAPSE, true);
+            else
+                break;
+            TreeView_EnsureVisible(hwnd, TreeView_GetSelection(hwnd));
+            return 0;
+        case WM_MOUSEWHEEL:
+            // scroll the canvas if the cursor isn't over the ToC tree
+            if (!IsCursorOverWindow(win->hwndTocTree))
+                return SendMessage(win->hwndCanvas, message, wParam, lParam);
+            break;
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+        case WM_SIZE:
+        case WM_HSCROLL:
+            // Repaint the ToC so that RelayoutTocItem is called for all items
+            PostMessage(hwnd, WM_APP_REPAINT_TOC, 0, 0);
+            break;
+        case WM_APP_REPAINT_TOC:
+            InvalidateRect(hwnd, NULL, TRUE);
+            UpdateWindow(hwnd);
+            break;
+#endif
+    }
+    return CallWindowProc(DefWndProcTocTree, hwnd, message, wParam, lParam);
+}
+
+static void CustomizeToCInfoTip(LPNMTVGETINFOTIP nmit);
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+static void RelayoutTocItem(LPNMTVCUSTOMDRAW ntvcd);
+#endif
+
 // A tree container, used for toc and favorites, is a window with following children:
 // - title (id + 1)
 // - close button (id + 2)
 // - tree window (id + 3)
 // This function lays out the child windows inside the container based
 // on the container size.
-void LayoutTreeContainer(HWND hwndContainer, int id)
+static void LayoutTreeContainer(HWND hwndContainer, int id)
 {
     HWND hwndTitle = GetDlgItem(hwndContainer, id + 1);
     HWND hwndClose = GetDlgItem(hwndContainer, id + 2);
@@ -3789,6 +5879,72 @@ void LayoutTreeContainer(HWND hwndContainer, int id)
     MoveWindow(hwndTree, 0, size.cy, rc.dx, rc.dy - size.cy, true);
 }
 
+static LRESULT OnTocTreeNotify(WindowInfo *win, LPNMTREEVIEW pnmtv)
+{
+    switch (pnmtv->hdr.code) 
+    {
+        case TVN_SELCHANGED: 
+            // When the focus is set to the toc window the first item in the treeview is automatically
+            // selected and a TVN_SELCHANGEDW notification message is sent with the special code pnmtv->action == 0x00001000.
+            // We have to ignore this message to prevent the current page to be changed.
+            if (TVC_BYKEYBOARD == pnmtv->action || TVC_BYMOUSE == pnmtv->action)
+                GoToTocLinkForTVItem(win, pnmtv->hdr.hwndFrom, pnmtv->itemNew.hItem, TVC_BYMOUSE == pnmtv->action);
+            // The case pnmtv->action==TVC_UNKNOWN is ignored because 
+            // it corresponds to a notification sent by
+            // the function TreeView_DeleteAllItems after deletion of the item.
+            break;
+
+        case TVN_KEYDOWN: {
+            TV_KEYDOWN *ptvkd = (TV_KEYDOWN *)pnmtv;
+            if (VK_TAB == ptvkd->wVKey) {
+                AdvanceFocus(win);
+                return 1;
+            }
+            break;
+        }
+        case NM_CLICK: {
+            // Determine which item has been clicked (if any)
+            TVHITTESTINFO ht = { 0 };
+            DWORD pos = GetMessagePos();
+            ht.pt.x = GET_X_LPARAM(pos);
+            ht.pt.y = GET_Y_LPARAM(pos);
+            MapWindowPoints(HWND_DESKTOP, pnmtv->hdr.hwndFrom, &ht.pt, 1);
+            TreeView_HitTest(pnmtv->hdr.hwndFrom, &ht);
+
+            // let TVN_SELCHANGED handle the click, if it isn't on the already selected item
+            if ((ht.flags & TVHT_ONITEM) && TreeView_GetSelection(pnmtv->hdr.hwndFrom) == ht.hItem)
+                GoToTocLinkForTVItem(win, pnmtv->hdr.hwndFrom, ht.hItem);
+            break;
+        }
+        case NM_RETURN:
+            GoToTocLinkForTVItem(win, pnmtv->hdr.hwndFrom);
+            break;
+
+        case NM_CUSTOMDRAW:
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+            switch (((LPNMCUSTOMDRAW)pnmtv)->dwDrawStage) {
+                case CDDS_PREPAINT:
+                    return CDRF_NOTIFYITEMDRAW;
+                case CDDS_ITEMPREPAINT:
+                    return CDRF_DODEFAULT | CDRF_NOTIFYPOSTPAINT;
+                case CDDS_ITEMPOSTPAINT:
+                    RelayoutTocItem((LPNMTVCUSTOMDRAW)pnmtv);
+                    // fall through
+                default:
+                    return CDRF_DODEFAULT;
+            }
+            break;
+#else
+            return CDRF_DODEFAULT;
+#endif
+
+        case TVN_GETINFOTIP:
+            CustomizeToCInfoTip((LPNMTVGETINFOTIP)pnmtv);
+            break;
+    }
+    return -1;
+}
+
 #define BUTTON_HOVER_TEXT _T("1")
 
 #define COL_CLOSE_X RGB(0xa0, 0xa0, 0xa0)
@@ -3797,7 +5953,7 @@ void LayoutTreeContainer(HWND hwndContainer, int id)
 
 // Draws the 'x' close button in regular state or onhover state
 // Tries to mimic visual style of Chrome tab close button
-void DrawCloseButton(DRAWITEMSTRUCT *dis)
+static void DrawCloseButton(DRAWITEMSTRUCT *dis)
 {
     using namespace Gdiplus;
 
@@ -3842,13 +5998,13 @@ void DrawCloseButton(DRAWITEMSTRUCT *dis)
     }
 }
 
-WNDPROC DefWndProcCloseButton = NULL;
+static WNDPROC DefWndProcCloseButton = NULL;
 // logic needed to track on hover state of a close button by looking at
 // WM_MOUSEMOVE and WM_MOUSELEAVE messages.
 // We call it a button, but hwnd is really a static text.
 // We persist the state by setting hwnd's text: if cursor is over the hwnd,
 // text is "1", else it's something else.
-LRESULT CALLBACK WndProcCloseButton(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+static  LRESULT CALLBACK WndProcCloseButton(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     bool stateChanged = false;
     if (WM_MOUSEMOVE == msg) {
@@ -3874,6 +6030,701 @@ LRESULT CALLBACK WndProcCloseButton(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     }
 
     return CallWindowProc(DefWndProcCloseButton, hwnd, msg, wParam, lParam);
+}
+
+static WNDPROC DefWndProcTocBox = NULL;
+
+static LRESULT CALLBACK WndProcTocBox(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win)
+        return CallWindowProc(DefWndProcTocBox, hwnd, msg, wParam, lParam);
+
+    switch (msg) {
+        case WM_SIZE:
+            LayoutTreeContainer(hwnd, IDC_TOC_BOX);
+            break;
+
+        case WM_DRAWITEM:
+            if (IDC_TOC_CLOSE == wParam) {
+                DRAWITEMSTRUCT *dis = (DRAWITEMSTRUCT *)lParam;
+                DrawCloseButton(dis);
+                return TRUE;
+            }
+            break;
+
+        case WM_COMMAND:
+            if (LOWORD(wParam) == IDC_TOC_CLOSE && HIWORD(wParam) == STN_CLICKED)
+                ToggleTocBox(win);
+            break;
+
+        case WM_NOTIFY:
+            if (LOWORD(wParam) == IDC_TOC_TREE) {
+                LPNMTREEVIEW pnmtv = (LPNMTREEVIEW) lParam;
+                LRESULT res = OnTocTreeNotify(win, pnmtv);
+                if (res != -1)
+                    return res;
+            }
+            break;
+    }
+    return CallWindowProc(DefWndProcTocBox, hwnd, msg, wParam, lParam);
+}
+
+static WNDPROC DefWndProcFavTree = NULL;
+static LRESULT CALLBACK WndProcFavTree(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win)
+        return CallWindowProc(DefWndProcFavTree, hwnd, msg, wParam, lParam);
+
+    switch (msg) {
+
+        case WM_CHAR:
+            if (VK_ESCAPE == wParam && gGlobalPrefs.escToExit)
+                DestroyWindow(win->hwndFrame);
+            break;
+
+        case WM_MOUSEWHEEL:
+            // scroll the canvas if the cursor isn't over the ToC tree
+            if (!IsCursorOverWindow(win->hwndFavTree))
+                return SendMessage(win->hwndCanvas, msg, wParam, lParam);
+            break;
+    }
+
+    return CallWindowProc(DefWndProcFavTree, hwnd, msg, wParam, lParam);
+}
+
+class GoToFavoriteWorkItem : public UIThreadWorkItem
+{
+    int pageNo;
+
+public:
+    GoToFavoriteWorkItem(WindowInfo *win, int pageNo = -1) :
+        UIThreadWorkItem(win), pageNo(pageNo) {}
+
+    virtual void Execute() {
+        if (!WindowInfoStillValid(win))
+            return;
+        SetForegroundWindow(win->hwndFrame);
+        if (win->IsDocLoaded()) {
+            if (-1 != pageNo)
+                win->dm->goToPage(pageNo, 0);
+            // we might have been invoked by clicking on a tree view
+            // switch focus so that keyboard navigation works, which enables
+            // a fluid experience
+            SetFocus(win->hwndFrame);
+        }
+    }
+};
+
+// Going to a bookmark within current file scrolls to a given page.
+// Going to a bookmark in another file, loads the file and scrolls to a page
+// (similar to how invoking one of the recently opened files works)
+static void GoToFavorite(WindowInfo *win, FileFavs *f, FavName *fn)
+{
+    WindowInfo *existingWin = FindWindowInfoByFile(f->filePath);
+    if (existingWin) {
+        QueueWorkItem(new GoToFavoriteWorkItem(existingWin, fn->pageNo));
+        return;
+    }
+
+    if (!HasPermission(Perm_DiskAccess))
+        return;
+
+    // When loading a new document, go directly to selected page instead of
+    // first showing last seen page stored in file history
+    // A hacky solution because I don't want to add even more parameters to
+    // LoadDocument() and LoadDocumentInto()
+    int pageNo = fn->pageNo;
+    DisplayState *ds = gFileHistory.Find(f->filePath);
+    if (ds) {
+        ds->pageNo = fn->pageNo;
+        ds->scrollPos = PointI(-1, -1); // don't scroll the page
+        pageNo = -1;
+    }
+
+    win = LoadDocument(f->filePath, win);
+    if (win)
+        QueueWorkItem(new GoToFavoriteWorkItem(win, pageNo));
+}
+
+static void GoToFavoriteByMenuId(WindowInfo *win, int wmId)
+{
+    size_t idx;
+    FileFavs *f = gFavorites->GetByMenuId(wmId, idx);
+    if (!f)
+        return;
+    FavName *fn = f->favNames[idx];
+    GoToFavorite(win, f, fn);
+}
+
+static void GoToFavForTVItem(WindowInfo* win, HWND hTV, HTREEITEM hItem=NULL)
+{
+    if (NULL == hItem)
+        hItem = TreeView_GetSelection(hTV);
+
+    TVITEM item;
+    item.hItem = hItem;
+    item.mask = TVIF_PARAM;
+    TreeView_GetItem(hTV, &item);
+
+    FavName *fn = (FavName*)item.lParam;
+    if (!fn) {
+        // can happen for top-level node which is not associated with a favorite
+        // but only serves a parent node for favorites for a given file
+        return;
+    }
+    FileFavs *f = gFavorites->GetByFavName(fn);
+    GoToFavorite(win, f, fn);
+}
+
+static void RememberFavTreeExpansionState(WindowInfo *win)
+{
+    FreeVecMembers(win->expandedFavorites);
+    HTREEITEM treeItem = TreeView_GetRoot(win->hwndFavTree);
+    while (treeItem) {
+        TVITEM item;
+        item.hItem = treeItem;
+        item.mask = TVIF_PARAM | TVIF_STATE;
+        item.stateMask = TVIS_EXPANDED;
+        TreeView_GetItem(win->hwndFavTree, &item);
+        if ((item.state & TVIS_EXPANDED) != 0) {
+            item.hItem = TreeView_GetChild(win->hwndFavTree, treeItem);
+            item.mask = TVIF_PARAM;
+            TreeView_GetItem(win->hwndFavTree, &item);
+            FavName *fn = (FavName*)item.lParam;
+            FileFavs *f = gFavorites->GetByFavName(fn);
+            win->expandedFavorites.Append(str::Dup(f->filePath));
+        }
+
+        treeItem = TreeView_GetNextSibling(win->hwndFavTree, treeItem);
+    }
+}
+
+static void RememberFavTreeExpansionStateForAllWindows()
+{
+    for (size_t i=0; i<gWindows.Count(); i++)
+    {
+        RememberFavTreeExpansionState(gWindows.At(i));
+    }
+}
+
+static LRESULT OnFavTreeNotify(WindowInfo *win, LPNMTREEVIEW pnmtv)
+{
+    switch (pnmtv->hdr.code) 
+    {
+        // TVN_SELCHANGED intentionally not implemented (mouse clicks are handled
+        // in NM_CLICK, and keyboard navigation in NM_RETURN and TVN_KEYDOWN)
+
+        case TVN_KEYDOWN: {
+            TV_KEYDOWN *ptvkd = (TV_KEYDOWN *)pnmtv;
+            if (VK_TAB == ptvkd->wVKey) {
+                AdvanceFocus(win);
+                return 1;
+            }
+            break;
+        }
+
+        case NM_CLICK: {
+            // Determine which item has been clicked (if any)
+            TVHITTESTINFO ht = { 0 };
+            DWORD pos = GetMessagePos();
+            ht.pt.x = GET_X_LPARAM(pos);
+            ht.pt.y = GET_Y_LPARAM(pos);
+            MapWindowPoints(HWND_DESKTOP, pnmtv->hdr.hwndFrom, &ht.pt, 1);
+            TreeView_HitTest(pnmtv->hdr.hwndFrom, &ht);
+
+            if ((ht.flags & TVHT_ONITEM))
+                GoToFavForTVItem(win, pnmtv->hdr.hwndFrom, ht.hItem);
+            break;
+        }
+
+        case NM_RETURN:
+            GoToFavForTVItem(win, pnmtv->hdr.hwndFrom);
+            break;
+
+        case NM_CUSTOMDRAW:
+            return CDRF_DODEFAULT;
+    }
+    return -1;
+}
+
+static void OnFavTreeContextMenu(WindowInfo *win, int xScreen, int yScreen)
+{
+    TVITEM item;
+    if (xScreen != -1 || yScreen != -1) {
+        TVHITTESTINFO ht = { 0 };
+        ht.pt.x = xScreen;
+        ht.pt.y = yScreen;
+
+        MapWindowPoints(HWND_DESKTOP, win->hwndFavTree, &ht.pt, 1);
+        TreeView_HitTest(win->hwndFavTree, &ht);
+        if ((ht.flags & TVHT_ONITEM) == 0)
+            return; // only display menu if over a node in tree
+
+        TreeView_SelectItem(win->hwndFavTree, ht.hItem);
+        item.hItem = ht.hItem;
+    }
+    else {
+        item.hItem = TreeView_GetSelection(win->hwndFavTree);
+        if (!item.hItem)
+            return;
+        RECT rcItem;
+        if (TreeView_GetItemRect(win->hwndFavTree, item.hItem, &rcItem, TRUE)) {
+            MapWindowPoints(win->hwndFavTree, HWND_DESKTOP, (POINT *)&rcItem, 2);
+            xScreen = rcItem.left;
+            yScreen = rcItem.bottom;
+        }
+        else {
+            WindowRect rc(win->hwndFavTree);
+            xScreen = rc.x;
+            yScreen = rc.y;
+        }
+    }
+
+    FavName *toDelete = NULL;
+    item.mask = TVIF_PARAM;
+    TreeView_GetItem(win->hwndFavTree, &item);
+    toDelete = (FavName*)item.lParam;
+
+    HMENU popup = BuildMenuFromMenuDef(menuDefFavContext, dimof(menuDefFavContext), CreatePopupMenu());
+
+    INT cmd = TrackPopupMenu(popup, TPM_RETURNCMD | TPM_RIGHTBUTTON,
+                             xScreen, yScreen, 0, win->hwndFavTree, NULL);
+    DestroyMenu(popup);
+    if (IDM_FAV_DEL == cmd) {
+        RememberFavTreeExpansionStateForAllWindows();
+        if (toDelete) {
+            FileFavs *f = gFavorites->GetByFavName(toDelete);
+            gFavorites->Remove(f->filePath, toDelete->pageNo);
+        } else {
+            // toDelete == NULL => this is a parent node signifying all bookmarks in a file
+            item.hItem = TreeView_GetChild(win->hwndFavTree, item.hItem);
+            item.mask = TVIF_PARAM;
+            TreeView_GetItem(win->hwndFavTree, &item);
+            toDelete = (FavName*)item.lParam;
+            FileFavs *f = gFavorites->GetByFavName(toDelete);
+            gFavorites->RemoveAllForFile(f->filePath);
+        }
+        UpdateFavoritesTreeForAllWindows();
+        SavePrefs();
+
+        // TODO: it would be nice to have a system for undo-ing things, like in Gmail,
+        // so that we can do destructive operations without asking for permission via
+        // invasive model dialog boxes but also allow reverting them if were done
+        // by mistake
+    }
+}
+
+static WNDPROC DefWndProcFavBox = NULL;
+static LRESULT CALLBACK WndProcFavBox(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (!win)
+        return CallWindowProc(DefWndProcFavBox, hwnd, message, wParam, lParam);
+    switch (message) {
+
+        case WM_SIZE:
+            LayoutTreeContainer(hwnd, IDC_FAV_BOX);
+            break;
+
+        case WM_DRAWITEM:
+            if (IDC_FAV_CLOSE == wParam) {
+                DRAWITEMSTRUCT *dis = (DRAWITEMSTRUCT *)lParam;
+                DrawCloseButton(dis);
+                return TRUE;
+            }
+            break;
+
+        case WM_COMMAND:
+            if (LOWORD(wParam) == IDC_FAV_CLOSE && HIWORD(wParam) == STN_CLICKED)
+                ToggleFavorites(win);
+            break;
+
+        case WM_NOTIFY:
+            if (LOWORD(wParam) == IDC_FAV_TREE) {
+                LPNMTREEVIEW pnmtv = (LPNMTREEVIEW) lParam;
+                LRESULT res = OnFavTreeNotify(win, pnmtv);
+                if (res != -1)
+                    return res;
+            }
+            break;
+
+        case WM_CONTEXTMENU:
+            if (win->hwndFavTree == (HWND)wParam) {
+                OnFavTreeContextMenu(win, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+                return 0;
+            }
+            break;
+
+    }
+    return CallWindowProc(DefWndProcFavBox, hwnd, message, wParam, lParam);
+}
+
+static void CreateToc(WindowInfo *win)
+{
+    // toc windows
+    HWND tmp = CreateWindow(SPLITER_CLASS_NAME, _T(""), WS_CHILDWINDOW, 0, 0, 0, 0,
+                       win->hwndFrame, (HMENU)0, ghinst, NULL);
+    win->hwndSidebarSpliter = tmp;
+    win->hwndTocBox = CreateWindow(WC_STATIC, _T(""), WS_CHILD,
+                        0,0,gGlobalPrefs.sidebarDx,0, win->hwndFrame, (HMENU)0, ghinst, NULL);
+    HWND title = CreateWindow(WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                         0,0,0,0, win->hwndTocBox, (HMENU)IDC_TOC_TITLE, ghinst, NULL);
+    SetWindowFont(title, gDefaultGuiFont, FALSE);
+    win::SetText(title, _TR("Bookmarks"));
+
+    HWND hwndClose = CreateWindow(WC_STATIC, _T(""),
+                        SS_OWNERDRAW | SS_NOTIFY | WS_CHILD | WS_VISIBLE,
+                        0, 0, 16, 16, win->hwndTocBox, (HMENU)IDC_TOC_CLOSE, ghinst, NULL);
+
+    win->hwndTocTree = CreateWindowEx(WS_EX_STATICEDGE, WC_TREEVIEW, _T("TOC"),
+                        TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_SHOWSELALWAYS|
+                        TVS_TRACKSELECT|TVS_DISABLEDRAGDROP|TVS_NOHSCROLL|TVS_INFOTIP|
+                        WS_TABSTOP|WS_VISIBLE|WS_CHILD,
+                        0,0,0,0, win->hwndTocBox, (HMENU)IDC_TOC_TREE, ghinst, NULL);
+
+    // Note: those must be consecutive numbers and in title/close/tree order
+    CASSERT(IDC_TOC_BOX + 1 == IDC_TOC_TITLE &&
+            IDC_TOC_BOX + 2 == IDC_TOC_CLOSE &&
+            IDC_TOC_BOX + 3 == IDC_TOC_TREE, consecutive_toc_ids);
+
+#ifdef UNICODE
+    TreeView_SetUnicodeFormat(win->hwndTocTree, true);
+#endif
+
+    if (NULL == DefWndProcTocTree)
+        DefWndProcTocTree = (WNDPROC)GetWindowLongPtr(win->hwndTocTree, GWLP_WNDPROC);
+    SetWindowLongPtr(win->hwndTocTree, GWLP_WNDPROC, (LONG_PTR)WndProcTocTree);
+
+    if (NULL == DefWndProcTocBox)
+        DefWndProcTocBox = (WNDPROC)GetWindowLongPtr(win->hwndTocBox, GWLP_WNDPROC);
+    SetWindowLongPtr(win->hwndTocBox, GWLP_WNDPROC, (LONG_PTR)WndProcTocBox);
+
+    if (NULL == DefWndProcCloseButton)
+        DefWndProcCloseButton = (WNDPROC)GetWindowLongPtr(hwndClose, GWLP_WNDPROC);
+    SetWindowLongPtr(hwndClose, GWLP_WNDPROC, (LONG_PTR)WndProcCloseButton);
+}
+
+static void CreateFavorites(WindowInfo *win)
+{
+    win->hwndFavBox = CreateWindow(WC_STATIC, _T(""), WS_CHILD,
+                        0,0,gGlobalPrefs.sidebarDx,0, win->hwndFrame, (HMENU)0, ghinst, NULL);
+    HWND title = CreateWindow(WC_STATIC, _T(""), WS_VISIBLE | WS_CHILD,
+                         0,0,0,0, win->hwndFavBox, (HMENU)IDC_FAV_TITLE, ghinst, NULL);
+    SetWindowFont(title, gDefaultGuiFont, FALSE);
+    win::SetText(title, _TR("Favorites"));
+
+    HWND hwndClose = CreateWindow(WC_STATIC, _T(""),
+                        SS_OWNERDRAW | SS_NOTIFY | WS_CHILD | WS_VISIBLE,
+                        0, 0, 16, 16, win->hwndFavBox, (HMENU)IDC_FAV_CLOSE, ghinst, NULL);
+
+    win->hwndFavTree = CreateWindowEx(WS_EX_STATICEDGE, WC_TREEVIEW, _T("Fav"),
+                        TVS_HASBUTTONS|TVS_HASLINES|TVS_LINESATROOT|TVS_SHOWSELALWAYS|
+                        TVS_TRACKSELECT|TVS_DISABLEDRAGDROP|TVS_NOHSCROLL|TVS_INFOTIP|
+                        WS_TABSTOP|WS_VISIBLE|WS_CHILD,
+                        0,0,0,0, win->hwndFavBox, (HMENU)IDC_FAV_TREE, ghinst, NULL);
+    
+    // Note: those must be consecutive numbers and in title/close/tree order
+    CASSERT(IDC_FAV_BOX + 1 == IDC_FAV_TITLE &&
+            IDC_FAV_BOX + 2 == IDC_FAV_CLOSE &&
+            IDC_FAV_BOX + 3 == IDC_FAV_TREE, consecutive_fav_ids);
+
+#ifdef UNICODE
+    TreeView_SetUnicodeFormat(win->hwndFavTree, true);
+#endif
+
+    if (NULL == DefWndProcFavTree)
+        DefWndProcFavTree = (WNDPROC)GetWindowLongPtr(win->hwndFavTree, GWLP_WNDPROC);
+    SetWindowLongPtr(win->hwndFavTree, GWLP_WNDPROC, (LONG_PTR)WndProcFavTree);
+
+    if (NULL == DefWndProcFavBox)
+        DefWndProcFavBox = (WNDPROC)GetWindowLongPtr(win->hwndFavBox, GWLP_WNDPROC);
+    SetWindowLongPtr(win->hwndFavBox, GWLP_WNDPROC, (LONG_PTR)WndProcFavBox);
+
+    if (NULL == DefWndProcCloseButton)
+        DefWndProcCloseButton = (WNDPROC)GetWindowLongPtr(hwndClose, GWLP_WNDPROC);
+    SetWindowLongPtr(hwndClose, GWLP_WNDPROC, (LONG_PTR)WndProcCloseButton);
+
+}
+
+static void CreateSidebar(WindowInfo* win)
+{
+    CreateToc(win);
+    CreateFavorites(win);
+
+    if (win->tocVisible) {
+        InvalidateRect(win->hwndTocBox, NULL, TRUE);
+        UpdateWindow(win->hwndTocBox);
+    }
+
+    if (gGlobalPrefs.favVisible) {
+        InvalidateRect(win->hwndFavBox, NULL, TRUE);
+        UpdateWindow(win->hwndFavBox);
+    }
+}
+
+static HTREEITEM AddTocItemToView(HWND hwnd, DocToCItem *entry, HTREEITEM parent, bool toggleItem)
+{
+    TV_INSERTSTRUCT tvinsert;
+    tvinsert.hParent = parent;
+    tvinsert.hInsertAfter = TVI_LAST;
+    tvinsert.itemex.mask = TVIF_TEXT | TVIF_PARAM | TVIF_STATE;
+    tvinsert.itemex.state = entry->open != toggleItem ? TVIS_EXPANDED : 0;
+    tvinsert.itemex.stateMask = TVIS_EXPANDED;
+    tvinsert.itemex.lParam = (LPARAM)entry;
+    // Replace unprintable whitespace with regular spaces
+    str::NormalizeWS(entry->title);
+    tvinsert.itemex.pszText = entry->title;
+
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+    WindowInfo *win = FindWindowInfoByHwnd(hwnd);
+    if (entry->pageNo && win && win->IsDocLoaded() && win->dm->engine) {
+        ScopedMem<TCHAR> label(win->dm->engine->GetPageLabel(entry->pageNo));
+        ScopedMem<TCHAR> text(str::Format(_T("%s  %s"), entry->title, label));
+        tvinsert.itemex.pszText = text;
+        return TreeView_InsertItem(hwnd, &tvinsert);
+    }
+#endif
+
+    return TreeView_InsertItem(hwnd, &tvinsert);
+}
+
+static void PopulateTocTreeView(HWND hwnd, DocToCItem *entry, Vec<int>& tocState, HTREEITEM parent = NULL)
+{
+    for (; entry; entry = entry->next) {
+        bool toggle = tocState.Find(entry->id) != -1;
+        HTREEITEM node = AddTocItemToView(hwnd, entry, parent, toggle);
+        PopulateTocTreeView(hwnd, entry->child, tocState, node);
+    }
+}
+
+#ifdef DISPLAY_TOC_PAGE_NUMBERS
+static void RelayoutTocItem(LPNMTVCUSTOMDRAW ntvcd)
+{
+    // code inspired by http://www.codeguru.com/cpp/controls/treeview/multiview/article.php/c3985/
+    LPNMCUSTOMDRAW ncd = &ntvcd->nmcd;
+    HWND hTV = ncd->hdr.hwndFrom;
+    HTREEITEM hItem = (HTREEITEM)ncd->dwItemSpec;
+    RECT rcItem;
+    if (0 == ncd->rc.right - ncd->rc.left || 0 == ncd->rc.bottom - ncd->rc.top)
+        return;
+    if (!TreeView_GetItemRect(hTV, hItem, &rcItem, TRUE))
+        return;
+    if (rcItem.right > ncd->rc.right)
+        rcItem.right = ncd->rc.right;
+
+    // Clear the label
+    RECT rcFullWidth = rcItem;
+    rcFullWidth.right = ncd->rc.right;
+    HBRUSH brushBg = CreateSolidBrush(GetSysColor(COLOR_WINDOW));
+    FillRect(ncd->hdc, &rcFullWidth, brushBg);
+    DeleteObject(brushBg);
+
+    // Get the label's text
+    TCHAR szText[MAX_PATH];
+    TVITEM item;
+    item.hItem = hItem;
+    item.mask = TVIF_TEXT | TVIF_PARAM;
+    item.pszText = szText;
+    item.cchTextMax = MAX_PATH;
+    TreeView_GetItem(hTV, &item);
+
+    // Draw the page number right-aligned (if there is one)
+    WindowInfo *win = FindWindowInfoByHwnd(hTV);
+    DocToCItem *tocItem = (DocToCItem *)item.lParam;
+    ScopedMem<TCHAR> label;
+    if (tocItem->pageNo && win && win->IsDocLoaded() && win->dm->engine) {
+        label.Set(win->dm->engine->GetPageLabel(tocItem->pageNo));
+        label.Set(str::Join(_T("  "), label));
+    }
+    if (label && str::EndsWith(item.pszText, label)) {
+        RECT rcPageNo = rcFullWidth;
+        InflateRect(&rcPageNo, -2, -1);
+
+        SIZE txtSize;
+        GetTextExtentPoint32(ncd->hdc, label, str::Len(label), &txtSize);
+        rcPageNo.left = rcPageNo.right - txtSize.cx;
+
+        SetTextColor(ncd->hdc, GetSysColor(COLOR_WINDOWTEXT));
+        SetBkColor(ncd->hdc, GetSysColor(COLOR_WINDOW));
+        DrawText(ncd->hdc, label, -1, &rcPageNo, DT_SINGLELINE | DT_VCENTER);
+
+        // Reduce the size of the label and cut off the page number
+        rcItem.right = max(rcItem.right - txtSize.cx, 0);
+        szText[str::Len(szText) - str::Len(label)] = '\0';
+    }
+
+    SetTextColor(ncd->hdc, ntvcd->clrText);
+    SetBkColor(ncd->hdc, ntvcd->clrTextBk);
+
+    // Draw the focus rectangle (including proper background color)
+    brushBg = CreateSolidBrush(ntvcd->clrTextBk);
+    FillRect(ncd->hdc, &rcItem, brushBg);
+    DeleteObject(brushBg);
+    if ((ncd->uItemState & CDIS_FOCUS))
+        DrawFocusRect(ncd->hdc, &rcItem);
+
+    InflateRect(&rcItem, -2, -1);
+    DrawText(ncd->hdc, szText, -1, &rcItem, DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_WORD_ELLIPSIS);
+}
+#endif
+
+// copied from mupdf/fitz/dev_text.c
+#define ISLEFTTORIGHTCHAR(c) ((0x0041 <= (c) && (c) <= 0x005A) || (0x0061 <= (c) && (c) <= 0x007A) || (0xFB00 <= (c) && (c) <= 0xFB06))
+#define ISRIGHTTOLEFTCHAR(c) ((0x0590 <= (c) && (c) <= 0x05FF) || (0x0600 <= (c) && (c) <= 0x06FF) || (0x0750 <= (c) && (c) <= 0x077F) || (0xFB50 <= (c) && (c) <= 0xFDFF) || (0xFE70 <= (c) && (c) <= 0xFEFF))
+
+static void GetLeftRightCounts(DocToCItem *node, int& l2r, int& r2l)
+{
+    if (!node)
+        return;
+    if (node->title) {
+        for (const TCHAR *c = node->title; *c; c++) {
+            if (ISLEFTTORIGHTCHAR(*c))
+                l2r++;
+            else if (ISRIGHTTOLEFTCHAR(*c))
+                r2l++;
+        }
+    }
+    GetLeftRightCounts(node->child, l2r, r2l);
+    GetLeftRightCounts(node->next, l2r, r2l);
+}
+
+void WindowInfo::LoadTocTree()
+{
+    if (tocLoaded)
+        return;
+    tocLoaded = true;
+
+    tocRoot = NULL;
+    if (dm->engine)
+        tocRoot = dm->engine->GetToCTree();
+    if (!tocRoot)
+        return;
+
+    // consider a ToC tree right-to-left if a more than half of the
+    // alphabetic characters are in a right-to-left script
+    int l2r = 0, r2l = 0;
+    GetLeftRightCounts(tocRoot, l2r, r2l);
+    bool isRTL = r2l > l2r;
+
+    SendMessage(hwndTocTree, WM_SETREDRAW, FALSE, 0);
+    ToggleWindowStyle(hwndTocTree, WS_EX_LAYOUTRTL | WS_EX_NOINHERITLAYOUT, isRTL, GWL_EXSTYLE);
+    PopulateTocTreeView(hwndTocTree, tocRoot, tocState);
+    SendMessage(hwndTocTree, WM_SETREDRAW, TRUE, 0);
+    UINT fl = RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN;
+    RedrawWindow(hwndTocTree, NULL, NULL, fl);
+}
+
+static HTREEITEM InsertFavSecondLevelNode(HWND hwnd, HTREEITEM parent, FavName *fn)
+{
+    TV_INSERTSTRUCT tvinsert;
+    tvinsert.hParent = parent;
+    tvinsert.hInsertAfter = TVI_LAST;
+    tvinsert.itemex.mask = TVIF_TEXT | TVIF_STATE | TVIF_PARAM;
+    tvinsert.itemex.state = 0;
+    tvinsert.itemex.stateMask = TVIS_EXPANDED;
+    tvinsert.itemex.lParam = (LPARAM)fn;
+    ScopedMem<TCHAR> s(FavReadableName(fn));
+    tvinsert.itemex.pszText = s;
+    return TreeView_InsertItem(hwnd, &tvinsert);
+}
+
+static void InsertFavSecondLevelNodes(HWND hwnd, HTREEITEM parent, FileFavs *f)
+{
+    for (size_t i = 0; i < f->favNames.Count(); i++)
+    {
+        InsertFavSecondLevelNode(hwnd, parent, f->favNames.At(i));
+    }
+}
+
+static HTREEITEM InsertFavTopLevelNode(HWND hwnd, FileFavs *fav, bool isExpanded)
+{
+    TCHAR *s = NULL;
+#if COLLAPSE_SINGLE_PAGE_FAVS
+    bool collapsed = fav->favNames.Count() == 1;
+    if (collapsed)
+        isExpanded = false;
+#endif
+    TV_INSERTSTRUCT tvinsert;
+    tvinsert.hParent = NULL;
+    tvinsert.hInsertAfter = TVI_LAST;
+    tvinsert.itemex.mask = TVIF_TEXT | TVIF_STATE | TVIF_PARAM;
+    tvinsert.itemex.state = isExpanded ? TVIS_EXPANDED : 0;
+    tvinsert.itemex.stateMask = TVIS_EXPANDED;
+    tvinsert.itemex.lParam = NULL;
+#if COLLAPSE_SINGLE_PAGE_FAVS
+    if (collapsed) {
+        FavName *fn = fav->favNames.At(0);
+        tvinsert.itemex.lParam = (LPARAM)fn;
+        s = FavCompactReadableName(fav, fn);
+        tvinsert.itemex.pszText = s;
+    } else {
+        tvinsert.itemex.pszText = (TCHAR*)path::GetBaseName(fav->filePath);
+    }
+#else
+    tvinsert.itemex.pszText = (TCHAR*)path::GetBaseName(fav->filePath);
+#endif
+    HTREEITEM ret = TreeView_InsertItem(hwnd, &tvinsert);
+    free(s);
+    return ret;
+}
+
+static void PopulateFavTreeIfNeeded(WindowInfo *win)
+{
+    HWND hwndTree = win->hwndFavTree;
+    if (TreeView_GetCount(hwndTree) > 0)
+        return;
+
+    Vec<TCHAR*> filePathsSorted;
+    GetSortedFilePaths(gFavorites, filePathsSorted, NULL);
+
+    SendMessage(hwndTree, WM_SETREDRAW, FALSE, 0);
+    for (size_t i=0; i<filePathsSorted.Count(); i++)
+    {
+        FileFavs *f = gFavorites->GetFavByFilePath(filePathsSorted.At(i));
+        bool isExpanded = (win->expandedFavorites.Find(f->filePath) != -1);
+        HTREEITEM node = InsertFavTopLevelNode(hwndTree, f, isExpanded);
+#if COLLAPSE_SINGLE_PAGE_FAVS
+        if (f->favNames.Count() > 1)
+            InsertFavSecondLevelNodes(hwndTree, node, f);
+#else
+        InsertFavSecondLevelNodes(hwndTree, node, f);
+#endif
+    }
+
+    SendMessage(hwndTree, WM_SETREDRAW, TRUE, 0);
+    UINT fl = RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN;
+    RedrawWindow(hwndTree, NULL, NULL, fl);
+}
+
+static void UpdateFavoritesTreeIfNecessary(WindowInfo *win)
+{
+    HWND hwndTree = win->hwndFavTree;
+    if (0 == TreeView_GetCount(hwndTree))
+        return;
+
+    SendMessage(hwndTree, WM_SETREDRAW, FALSE, 0);
+    TreeView_DeleteAllItems(hwndTree);
+    PopulateFavTreeIfNeeded(win);
+}
+
+static void UpdateFavoritesTreeForAllWindows()
+{
+    for (size_t i=0; i<gWindows.Count(); i++)
+    {
+        UpdateFavoritesTreeIfNecessary(gWindows.At(i));
+    }
+
+    // hide the favorites tree if we removed the last favorite
+    if (!HasFavorites()) {
+        gGlobalPrefs.favVisible = false;
+        for (size_t i=0; i<gWindows.Count(); i++)
+        {
+            WindowInfo *win = gWindows.At(i);
+            SetSidebarVisibility(win, win->tocVisible, gGlobalPrefs.favVisible);
+        }
+    }
 }
 
 /*
@@ -3912,7 +6763,7 @@ void SetSidebarVisibility(WindowInfo *win, bool tocVisible, bool favVisible)
     bool sidebarVisible = tocVisible || favVisible;
 
     if (tocVisible)
-        LoadTocTree(win);
+        win->LoadTocTree();
     if (favVisible)
         PopulateFavTreeIfNeeded(win);
 
@@ -3939,7 +6790,7 @@ void SetSidebarVisibility(WindowInfo *win, bool tocVisible, bool favVisible)
     if (rFrame.IsEmpty()) {
         // don't adjust the ToC sidebar size while the window is minimized
         if (win->tocVisible)
-            UpdateTocSelection(win, win->dm->currentPageNo());
+            win->UpdateTocSelection(win->dm->currentPageNo());
         return;
     }
 
@@ -3969,7 +6820,77 @@ void SetSidebarVisibility(WindowInfo *win, bool tocVisible, bool favVisible)
     SetWinPos(win->hwndCanvas, rCanvas, true);
 
     if (tocVisible)
-        UpdateTocSelection(win, win->dm->currentPageNo());
+        win->UpdateTocSelection(win->dm->currentPageNo());
+}
+
+static void ToggleTocBox(WindowInfo *win)
+{
+    if (!win->IsDocLoaded())
+        return;
+    if (win->tocVisible) {
+        SetSidebarVisibility(win, false, gGlobalPrefs.favVisible);
+    } else {
+        SetSidebarVisibility(win, true,  gGlobalPrefs.favVisible);
+        SetFocus(win->hwndTocTree);
+    }
+}
+
+static void ClearTocBox(WindowInfo *win)
+{
+    if (!win->tocLoaded) return;
+
+    SendMessage(win->hwndTocTree, WM_SETREDRAW, FALSE, 0);
+    TreeView_DeleteAllItems(win->hwndTocTree);
+    SendMessage(win->hwndTocTree, WM_SETREDRAW, TRUE, 0);
+    RedrawWindow(win->hwndTocTree, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
+
+    delete win->tocRoot;
+    win->tocRoot = NULL;
+
+    win->tocLoaded = false;
+    win->currPageNo = 0;
+}
+
+static void ToggleFavorites(WindowInfo *win)
+{
+    if (gGlobalPrefs.favVisible) {
+        SetSidebarVisibility(win, win->tocVisible, false);
+    } else {
+        SetSidebarVisibility(win, win->tocVisible, true);
+        SetFocus(win->hwndFavTree);
+    }
+}
+
+static void CustomizeToCInfoTip(LPNMTVGETINFOTIP nmit)
+{
+    DocToCItem *tocItem = (DocToCItem *)nmit->lParam;
+    ScopedMem<TCHAR> path(tocItem->GetLink() ? tocItem->GetLink()->GetDestValue() : NULL);
+    if (!path)
+        return;
+
+    str::Str<TCHAR> infotip(INFOTIPSIZE);
+
+    RECT rcLine, rcLabel;
+    HWND hTV = nmit->hdr.hwndFrom;
+    // Display the item's full label, if it's overlong
+    TreeView_GetItemRect(hTV, nmit->hItem, &rcLine, FALSE);
+    TreeView_GetItemRect(hTV, nmit->hItem, &rcLabel, TRUE);
+    if (rcLine.right + 2 < rcLabel.right) {
+        TVITEM item;
+        item.hItem = nmit->hItem;
+        item.mask = TVIF_TEXT;
+        item.pszText = infotip.Get();
+        item.cchTextMax = INFOTIPSIZE;
+        TreeView_GetItem(hTV, &item);
+        infotip.LenIncrease(str::Len(item.pszText));
+        infotip.Append(_T("\r\n"));
+    }
+
+    if (tocItem->GetLink() && str::Eq(tocItem->GetLink()->GetType(), "LaunchEmbedded"))
+        path.Set(str::Format(_TR("Attachment: %s"), path));
+
+    infotip.Append(path);
+    str::BufSet(nmit->pszText, nmit->cchTextMax, infotip.Get());
 }
 
 static LRESULT OnSetCursor(WindowInfo& win, HWND hwnd)
@@ -4088,7 +7009,7 @@ static void OnTimer(WindowInfo& win, HWND hwnd, WPARAM timerId)
 
     case AUTO_RELOAD_TIMER_ID:
         KillTimer(hwnd, AUTO_RELOAD_TIMER_ID);
-        ReloadDocument(&win, true);
+        win.Reload(true);
         break;
 
     case DIR_STRESS_TIMER_ID:
@@ -4127,7 +7048,7 @@ static LRESULT OnMouseWheel(WindowInfo& win, UINT message, WPARAM wParam, LPARAM
 
         float factor = delta < 0 ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR;
         win.dm->zoomBy(factor, &PointI(pt.x, pt.y));
-        UpdateToolbarState(&win);
+        win.UpdateToolbarState();
 
         // don't show the context menu when zooming with the right mouse-button down
         if ((LOWORD(wParam) & MK_RBUTTON))
@@ -4309,6 +7230,31 @@ void WindowInfo::RepaintAsync(UINT delay)
     QueueWorkItem(new RepaintCanvasWorkItem(this, delay));
 }
 
+static void AddFavorite(WindowInfo *win)
+{
+    int pageNo = win->currPageNo;
+    TCHAR *filePath = win->loadedFilePath;
+    TCHAR *name = NULL;
+    bool shouldAdd = Dialog_AddFavorite(win->hwndFrame, pageNo, &name);
+    if (!shouldAdd)
+        return;
+    RememberFavTreeExpansionStateForAllWindows();
+    gFavorites->AddOrReplace(filePath, pageNo, name);
+    free(name);
+    UpdateFavoritesTreeForAllWindows();
+    SavePrefs();
+}
+
+static void DelFavorite(WindowInfo *win)
+{
+    int pageNo = win->currPageNo;
+    TCHAR *filePath = win->loadedFilePath;
+    RememberFavTreeExpansionStateForAllWindows();
+    gFavorites->Remove(filePath, pageNo);
+    UpdateFavoritesTreeForAllWindows();
+    SavePrefs();
+}
+
 static void UpdateMenu(WindowInfo *win, HMENU m)
 {
     UINT id = GetMenuItemID(m, 0);
@@ -4359,7 +7305,7 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
     
         case IDT_FILE_PRINT:
         case IDM_PRINT:
-            OnMenuPrint(win);
+            OnMenuPrint(*win);
             break;
     
         case IDT_FILE_EXIT:
@@ -4372,7 +7318,7 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
             break;
     
         case IDM_REFRESH:
-            ReloadDocument(win);
+            win->Reload();
             break;
     
         case IDM_SAVEAS_BOOKMARK:
@@ -4380,19 +7326,19 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
             break;
     
         case IDT_VIEW_FIT_WIDTH:
-            ChangeZoomLevel(win, ZOOM_FIT_WIDTH, true);
+            ToggleToolbarViewButton(*win, ZOOM_FIT_WIDTH, true);
             break;
     
         case IDT_VIEW_FIT_PAGE:
-            ChangeZoomLevel(win, ZOOM_FIT_PAGE, false);
+            ToggleToolbarViewButton(*win, ZOOM_FIT_PAGE, false);
             break;
     
         case IDT_VIEW_ZOOMIN:
-            ZoomToSelection(win, ZOOM_IN_FACTOR, true);
+            win->ZoomToSelection(ZOOM_IN_FACTOR, true);
             break;
     
         case IDT_VIEW_ZOOMOUT:
-            ZoomToSelection(win, ZOOM_OUT_FACTOR, true);
+            win->ZoomToSelection(ZOOM_OUT_FACTOR, true);
             break;
     
         case IDM_ZOOM_6400:
@@ -4420,15 +7366,15 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
             break;
     
         case IDM_VIEW_SINGLE_PAGE:
-            SwitchToDisplayMode(win, DM_SINGLE_PAGE, true);
+            win->SwitchToDisplayMode(DM_SINGLE_PAGE, true);
             break;
     
         case IDM_VIEW_FACING:
-            SwitchToDisplayMode(win, DM_FACING, true);
+            win->SwitchToDisplayMode(DM_FACING, true);
             break;
     
         case IDM_VIEW_BOOK:
-            SwitchToDisplayMode(win, DM_BOOK_VIEW, true);
+            win->SwitchToDisplayMode(DM_BOOK_VIEW, true);
             break;
     
         case IDM_VIEW_CONTINUOUS:
@@ -4490,19 +7436,19 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
             break;
     
         case IDM_FIND_FIRST:
-            OnMenuFind(win);
+            OnMenuFind(*win);
             break;
     
         case IDM_FIND_NEXT:
-            OnMenuFindNext(win);
+            OnMenuFindNext(*win);
             break;
     
         case IDM_FIND_PREV:
-            OnMenuFindPrev(win);
+            OnMenuFindPrev(*win);
             break;
     
         case IDM_FIND_MATCH:
-            OnMenuFindMatchCase(win);
+            OnMenuFindMatchCase(*win);
             break;
     
         case IDM_VISIT_WEBSITE:
@@ -4575,13 +7521,13 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
             else if (!HasPermission(Perm_CopySelection))
                 break;
             else if (win->selectionOnPage)
-                CopySelectionToClipboard(win);
+                CopySelectionToClipboard(*win);
             else
-                ShowNotification(win, _TR("Select content with Ctrl+left mouse button"));
+                win->ShowNotification(_TR("Select content with Ctrl+left mouse button"));
             break;
     
         case IDM_SELECT_ALL:
-            OnSelectAll(win);
+            OnSelectAll(*win);
             break;
     
         case IDM_DEBUG_SHOW_LINKS:
@@ -4609,7 +7555,7 @@ static LRESULT OnCommand(WindowInfo *win, HWND hwnd, UINT message, WPARAM wParam
         case IDM_FAV_TOGGLE:
             ToggleFavorites(win);
             break;
-
+    
         default:
             return DefWindowProc(hwnd, message, wParam, lParam);
     }
@@ -4680,12 +7626,12 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT message, WPARAM wParam, LPA
 
         case WM_CHAR:
             if (win)
-                OnFrameChar(*win, wParam);
+                OnChar(*win, wParam);
             break;
 
         case WM_KEYDOWN:
             if (win)
-                OnFrameKeydown(win, wParam, lParam);
+                OnKeydown(*win, wParam, lParam);
             break;
 
         case WM_CONTEXTMENU:
@@ -4790,7 +7736,13 @@ static bool RegisterWinClass(HINSTANCE hInstance)
     if (!atom)
         return false;
 
-    if (!RegisterNotificationsWndClass(hInstance))
+    FillWndClassEx(wcex, hInstance);
+    wcex.lpfnWndProc    = MessageWnd::WndProc;
+    wcex.hCursor        = LoadCursor(NULL, IDC_APPSTARTING);
+    wcex.hbrBackground  = CreateSolidBrush(GetSysColor(COLOR_BTNFACE));
+    wcex.lpszClassName  = MESSAGE_WND_CLASS_NAME;
+    atom = RegisterClassEx(&wcex);
+    if (!atom)
         return false;
 
     return true;
@@ -4827,6 +7779,103 @@ static bool InstanceInit(HINSTANCE hInstance, int nCmdShow)
     gBitmapReloadingCue = LoadBitmap(ghinst, MAKEINTRESOURCE(IDB_RELOADING_CUE));
     
     return true;
+}
+
+static bool PrintFile(const TCHAR *fileName, const TCHAR *printerName, bool displayErrors=true)
+{
+    if (!HasPermission(Perm_PrinterAccess))
+        return false;
+
+    ScopedMem<TCHAR> fileName2(path::Normalize(fileName));
+    BaseEngine *engine = EngineManager::CreateEngine(fileName2);
+    if (!engine || !engine->IsPrintingAllowed()) {
+        if (displayErrors)
+            MessageBox(NULL, _TR("Cannot print this file"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        return false;
+    }
+
+    // Retrieve the printer, printer driver, and output-port names from WIN.INI. 
+    TCHAR devstring[256];
+    GetProfileString(_T("Devices"), printerName, _T(""), devstring, dimof(devstring));
+
+    // Parse the string of names
+    // If the string contains the required names, use them to
+    // create a device context.
+    ScopedMem<TCHAR> driver, port;
+    if (!str::Parse(devstring, _T("%S,%S,"), &driver, &port) &&
+        !str::Parse(devstring, _T("%S,%S"), &driver, &port) || !driver || !port) {
+        if (displayErrors)
+            MessageBox(NULL, _TR("Printer with given name doesn't exist"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        return false;
+    }
+
+    HANDLE printer;
+    bool ok = OpenPrinter((LPTSTR)printerName, &printer, NULL);
+    if (!ok) {
+        if (displayErrors)
+            MessageBox(NULL, _TR("Could not open Printer"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        return false;
+    }
+
+    DWORD structSize = DocumentProperties(NULL,
+        printer,                /* Handle to our printer. */ 
+        (LPTSTR)printerName,    /* Name of the printer. */ 
+        NULL,                   /* Asking for size, so */ 
+        NULL,                   /* these are not used. */ 
+        0);                     /* Zero returns buffer size. */
+    LPDEVMODE devMode = (LPDEVMODE)malloc(structSize);
+    HDC hdcPrint = NULL;
+    if (!devMode) goto Exit;
+
+    // Get the default DevMode for the printer and modify it for your needs.
+    DWORD returnCode = DocumentProperties(NULL,
+        printer,
+        (LPTSTR)printerName,
+        devMode,        /* The address of the buffer to fill. */ 
+        NULL,           /* Not using the input buffer. */ 
+        DM_OUT_BUFFER); /* Have the output buffer filled. */ 
+    if (IDOK != returnCode) {
+        // If failure, inform the user, cleanup and return failure.
+        if (displayErrors)
+            MessageBox(NULL, _TR("Could not obtain Printer properties"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        goto Exit;
+    }
+
+    /*
+     * Merge the new settings with the old.
+     * This gives the driver an opportunity to update any private
+     * portions of the DevMode structure.
+     */ 
+    DocumentProperties(NULL,
+        printer,
+        (LPTSTR)printerName,
+        devMode,        /* Reuse our buffer for output. */ 
+        devMode,        /* Pass the driver our changes. */ 
+        DM_IN_BUFFER |  /* Commands to Merge our changes and */ 
+        DM_OUT_BUFFER); /* write the result. */ 
+
+    ClosePrinter(printer);
+
+    hdcPrint = CreateDC(driver, printerName, port, devMode); 
+    if (!hdcPrint) {
+        if (displayErrors)
+            MessageBox(NULL, _TR("Couldn't initialize printer"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        goto Exit;
+    }
+    if (CheckPrinterStretchDibSupport(NULL, hdcPrint)) {
+        PRINTPAGERANGE pr = { 1, engine->PageCount() };
+        Vec<PRINTPAGERANGE> ranges;
+        ranges.Append(pr);
+        PrintData pd(engine, hdcPrint, devMode, ranges);
+        hdcPrint = NULL; // deleted by PrintData
+
+        PrintToDevice(pd);
+        ok = true;
+    }
+Exit:
+    free(devMode);
+    DeleteDC(hdcPrint);
+    return ok;
 }
 
 void UIThreadWorkItemQueue::Queue(UIThreadWorkItem *item)
@@ -4924,6 +7973,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     if (i.showConsole)
         RedirectIOToConsole();
+    else if (i.consoleFile)
+        RedirectIOToFile(i.consoleFile, true);
     if (i.makeDefault)
         AssociateExeWithPdfExtension();
     if (i.filesToBenchmark.Count() > 0) {
@@ -5043,9 +8094,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 if (i.enterPresentation || i.enterFullscreen)
                     EnterFullscreen(*win, i.enterPresentation);
                 if (i.startView != DM_AUTOMATIC)
-                    SwitchToDisplayMode(win, i.startView);
+                    win->SwitchToDisplayMode(i.startView);
                 if (i.startZoom != INVALID_ZOOM)
-                    ZoomToSelection(win, i.startZoom, false);
+                    win->ZoomToSelection(i.startZoom, false);
                 if (i.startScroll.x != -1 || i.startScroll.y != -1) {
                     ScrollState ss = win->dm->GetScrollState();
                     ss.x = i.startScroll.x;
@@ -5056,7 +8107,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
 
         if (i.printDialog)
-            OnMenuPrint(win);
+            OnMenuPrint(*win);
         firstIsDocLoaded = true;
     }
 
@@ -5100,8 +8151,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
 
     if (i.stressTestPath) {
-        StartStressTest(win, i.stressTestPath, i.stressTestFilter,
-                        i.stressTestRanges, i.stressTestCycles, &gRenderCache);
+        StartStressTest(win, i.stressTestPath, i.stressTestRanges, i.stressTestCycles, &gRenderCache,
+                        i.disableDjvu, i.disablePdf, i.disableCbx);
     }
 
     while (GetMessage(&msg, NULL, 0, 0) > 0) {

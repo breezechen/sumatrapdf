@@ -92,8 +92,6 @@ inline const WCHAR * Find(const WCHAR *str, const WCHAR *find) {
     return wcsstr(str, find);
 }
 
-const char * FindI(const char *s, const char *find);
-
 char *  FmtV(const char *fmt, va_list args);
 char *  Format(const char *fmt, ...);
 WCHAR * FmtV(const WCHAR *fmt, va_list args);
@@ -105,8 +103,7 @@ size_t  TransChars(char *str, const char *oldChars, const char *newChars);
 size_t  TransChars(WCHAR *str, const WCHAR *oldChars, const WCHAR *newChars);
 
 size_t  NormalizeWS(TCHAR *str);
-size_t  RemoveChars(char *str, const char *toRemove);
-size_t  RemoveChars(WCHAR *str, const WCHAR *toRemove);
+size_t  RemoveChars(TCHAR *str, const TCHAR *toRemove);
 
 size_t  BufSet(char *dst, size_t dstCchSize, const char *src);
 size_t  BufSet(WCHAR *dst, size_t dstCchSize, const WCHAR *src);

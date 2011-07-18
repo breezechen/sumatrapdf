@@ -129,6 +129,16 @@ public:
     }
 };
 
+void Initialize();
+void Destroy();
+
+void AddLogger(Logger *);
+void RemoveLogger(Logger *);
+
+void Log(TCHAR *s);
+void LogFmt(TCHAR *fmt, ...);
+void LogAndFree(TCHAR *s);
+
 } // namespace Log
 
 #endif

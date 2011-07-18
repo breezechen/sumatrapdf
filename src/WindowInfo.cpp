@@ -9,8 +9,6 @@
 #include "Resource.h"
 #include "FileWatch.h"
 #include "Notifications.h"
-#include "Print.h"
-#include "Selection.h"
 
 WindowInfo::WindowInfo(HWND hwnd) :
     dm(NULL), menu(NULL), hwndFrame(hwnd),
@@ -37,12 +35,14 @@ WindowInfo::WindowInfo(HWND hwnd) :
 
     buffer = new DoubleBuffer(hwndCanvas, canvasRc);
     linkHandler = new LinkHandler(*this);
-    notifications = new Notifications();
+    messages = new MessageWndList();
     fwdSearchMark.show = false;
 }
 
 WindowInfo::~WindowInfo() 
 {
+    AbortFinding();
+    AbortPrinting();
     delete stressTest;
 
     delete dm;
@@ -53,7 +53,7 @@ WindowInfo::~WindowInfo()
     delete buffer;
     delete selectionOnPage;
     delete linkOnLastButtonDown;
-    delete notifications;
+    delete messages;
 
     free(loadedFilePath);
 
@@ -81,7 +81,7 @@ void WindowInfo::UpdateCanvasSize()
 
     // keep the notifications visible (only needed for right-to-left layouts)
     if (IsUIRightToLeft())
-        notifications->Relayout();
+        messages->Relayout();
 }
 
 SizeI WindowInfo::GetViewPortSize()
@@ -97,11 +97,125 @@ SizeI WindowInfo::GetViewPortSize()
     return size;
 }
 
+void WindowInfo::ShowNotification(const TCHAR *message, bool autoDismiss, bool highlight, NotificationGroup groupId)
+{
+    MessageWnd *wnd = new MessageWnd(this->hwndCanvas, message, autoDismiss ? 3000 : 0, highlight, this->messages);
+    this->messages->Add(wnd, groupId);
+}
+
+void WindowInfo::AbortFinding(bool hideMessage)
+{
+    if (this->findThread) {
+        this->findCanceled = true;
+        WaitForSingleObject(this->findThread, INFINITE);
+    }
+    this->findCanceled = false;
+
+    if (hideMessage)
+        this->messages->CleanUp(NG_FIND_PROGRESS);
+}
+
+void WindowInfo::AbortPrinting()
+{
+    if (this->printThread) {
+        this->printCanceled = true;
+        WaitForSingleObject(this->printThread, INFINITE);
+    }
+    this->printCanceled = false;
+}
+
 void WindowInfo::RedrawAll(bool update)
 {
     InvalidateRect(this->hwndCanvas, NULL, false);
     if (update)
         UpdateWindow(this->hwndCanvas);
+}
+
+HTREEITEM WindowInfo::TreeItemForPageNo(HTREEITEM hItem, int pageNo)
+{
+    HTREEITEM hCurrItem = NULL;
+
+    while (hItem) {
+        TVITEM item;
+        item.hItem = hItem;
+        item.mask = TVIF_PARAM | TVIF_STATE;
+        item.stateMask = TVIS_EXPANDED;
+        TreeView_GetItem(this->hwndTocTree, &item);
+
+        // return if this item is on the specified page (or on a latter page)
+        if (item.lParam) {
+            int page = ((DocToCItem *)item.lParam)->pageNo;
+            if (1 <= page && page <= pageNo)
+                hCurrItem = hItem;
+            if (page >= pageNo)
+                break;
+        }
+
+        // find any child item closer to the specified page
+        HTREEITEM hSubItem = NULL;
+        if ((item.state & TVIS_EXPANDED))
+            hSubItem = this->TreeItemForPageNo(TreeView_GetChild(this->hwndTocTree, hItem), pageNo);
+        if (hSubItem)
+            hCurrItem = hSubItem;
+
+        hItem = TreeView_GetNextSibling(this->hwndTocTree, hItem);
+    }
+
+    return hCurrItem;
+}
+
+void WindowInfo::UpdateTocSelection(int currPageNo)
+{
+    if (!this->tocLoaded || !this->tocVisible)
+        return;
+    if (GetFocus() == this->hwndTocTree)
+        return;
+
+    HTREEITEM hRoot = TreeView_GetRoot(this->hwndTocTree);
+    if (!hRoot)
+        return;
+    // select the item closest to but not after the current page
+    // (or the root item, if there's no such item)
+    HTREEITEM hCurrItem = this->TreeItemForPageNo(hRoot, currPageNo);
+    TreeView_SelectItem(this->hwndTocTree, hCurrItem ? hCurrItem : hRoot);
+}
+
+void WindowInfo::UpdateToCExpansionState(HTREEITEM hItem)
+{
+    while (hItem) {
+        TVITEM item;
+        item.hItem = hItem;
+        item.mask = TVIF_PARAM | TVIF_STATE;
+        item.stateMask = TVIS_EXPANDED;
+        TreeView_GetItem(hwndTocTree, &item);
+
+        // add the ids of toggled items to tocState
+        DocToCItem *tocItem = item.lParam ? (DocToCItem *)item.lParam : NULL;
+        bool wasToggled = tocItem && !(item.state & TVIS_EXPANDED) == tocItem->open;
+        if (wasToggled)
+            tocState.Append(tocItem->id);
+
+        if (tocItem && tocItem->child)
+            UpdateToCExpansionState(TreeView_GetChild(hwndTocTree, hItem));
+        hItem = TreeView_GetNextSibling(hwndTocTree, hItem);
+    }
+}
+
+void WindowInfo::UpdateSidebarDisplayState(DisplayState *ds)
+{
+    ds->tocVisible = tocVisible;
+
+    if (tocLoaded) {
+        tocState.Reset();
+        HTREEITEM hRoot = TreeView_GetRoot(hwndTocTree);
+        if (hRoot)
+            UpdateToCExpansionState(hRoot);
+    }
+
+    delete ds->tocState;
+    ds->tocState = NULL;
+    if (tocState.Count() > 0)
+        ds->tocState = new Vec<int>(tocState);
 }
 
 void WindowInfo::ToggleZoom()
@@ -115,6 +229,79 @@ void WindowInfo::ToggleZoom()
         this->dm->zoomTo(ZOOM_FIT_CONTENT);
     else if (ZOOM_FIT_CONTENT == this->dm->zoomVirtual())
         this->dm->zoomTo(ZOOM_FIT_PAGE);
+}
+
+void WindowInfo::ZoomToSelection(float factor, bool relative)
+{
+    if (!this->IsDocLoaded())
+        return;
+
+    PointI pt;
+    bool zoomToPt = this->showSelection && this->selectionOnPage;
+
+    // either scroll towards the center of the current selection
+    if (zoomToPt) {
+        RectI selRect;
+        for (size_t i = 0; i < this->selectionOnPage->Count(); i++)
+            selRect = selRect.Union(this->selectionOnPage->At(i).GetRect(this->dm));
+
+        ClientRect rc(this->hwndCanvas);
+        pt.x = 2 * selRect.x + selRect.dx - rc.dx / 2;
+        pt.y = 2 * selRect.y + selRect.dy - rc.dy / 2;
+
+        pt.x = limitValue(pt.x, selRect.x, selRect.x + selRect.dx);
+        pt.y = limitValue(pt.y, selRect.y, selRect.y + selRect.dy);
+
+        int pageNo = this->dm->GetPageNoByPoint(pt);
+        if (!this->dm->validPageNo(pageNo) || !this->dm->pageVisible(pageNo))
+            zoomToPt = false;
+    }
+    // or towards the top-left-most part of the first visible page
+    else {
+        int page = this->dm->firstVisiblePageNo();
+        PageInfo *pageInfo = this->dm->getPageInfo(page);
+        if (pageInfo) {
+            RectI visible = pageInfo->pageOnScreen.Intersect(this->canvasRc);
+            pt = visible.TL();
+
+            int pageNo = this->dm->GetPageNoByPoint(pt);
+            if (!visible.IsEmpty() && this->dm->validPageNo(pageNo) && this->dm->pageVisible(pageNo))
+                zoomToPt = true;
+        }
+    }
+
+    if (relative)
+        this->dm->zoomBy(factor, zoomToPt ? &pt : NULL);
+    else
+        this->dm->zoomTo(factor, zoomToPt ? &pt : NULL);
+
+    this->UpdateToolbarState();
+}
+
+void WindowInfo::UpdateToolbarState()
+{
+    if (!this->IsDocLoaded())
+        return;
+
+    WORD state = (WORD)SendMessage(this->hwndToolbar, TB_GETSTATE, IDT_VIEW_FIT_WIDTH, 0);
+    if (this->dm->displayMode() == DM_CONTINUOUS && this->dm->zoomVirtual() == ZOOM_FIT_WIDTH)
+        state |= TBSTATE_CHECKED;
+    else
+        state &= ~TBSTATE_CHECKED;
+    SendMessage(this->hwndToolbar, TB_SETSTATE, IDT_VIEW_FIT_WIDTH, state);
+
+    bool isChecked = (state & TBSTATE_CHECKED);
+
+    state = (WORD)SendMessage(this->hwndToolbar, TB_GETSTATE, IDT_VIEW_FIT_PAGE, 0);
+    if (this->dm->displayMode() == DM_SINGLE_PAGE && this->dm->zoomVirtual() == ZOOM_FIT_PAGE)
+        state |= TBSTATE_CHECKED;
+    else
+        state &= ~TBSTATE_CHECKED;
+    SendMessage(this->hwndToolbar, TB_SETSTATE, IDT_VIEW_FIT_PAGE, state);
+
+    isChecked &= (state & TBSTATE_CHECKED);
+    if (!isChecked)
+        prevZoomVirtual = INVALID_ZOOM;
 }
 
 void WindowInfo::MoveDocBy(int dx, int dy)
@@ -145,7 +332,7 @@ void WindowInfo::CreateInfotip(const TCHAR *text, RectI& rc)
     ti.lpszText = (TCHAR *)text;
     ti.rect = rc.ToRECT();
 
-    if (str::FindChar(text, _T('\n')))
+    if (str::FindChar(text, '\n'))
         SendMessage(this->hwndInfotip, TTM_SETMAXTIPWIDTH, 0, MULTILINE_INFOTIP_WIDTH_PX);
     else
         SendMessage(this->hwndInfotip, TTM_SETMAXTIPWIDTH, 0, -1);
@@ -165,6 +352,50 @@ void WindowInfo::DeleteInfotip()
 
     SendMessage(hwndInfotip, TTM_DELTOOL, 0, (LPARAM)&ti);
     infotipVisible = false;
+}
+
+RectI SelectionOnPage::GetRect(DisplayModel *dm)
+{
+    // if the page is not visible, we return an empty rectangle
+    PageInfo *pageInfo = dm->getPageInfo(pageNo);
+    if (!pageInfo || pageInfo->visibleRatio <= 0.0)
+        return RectI();
+
+    return dm->CvtToScreen(pageNo, rect);
+}
+
+Vec<SelectionOnPage> *SelectionOnPage::FromRectangle(DisplayModel *dm, RectI rect)
+{
+    Vec<SelectionOnPage> *sel = new Vec<SelectionOnPage>();
+
+    for (int pageNo = dm->pageCount(); pageNo >= 1; --pageNo) {
+        PageInfo *pageInfo = dm->getPageInfo(pageNo);
+        assert(0.0 == pageInfo->visibleRatio || pageInfo->shown);
+        if (!pageInfo->shown)
+            continue;
+
+        RectI intersect = rect.Intersect(pageInfo->pageOnScreen);
+        if (intersect.IsEmpty())
+            continue;
+
+        /* selection intersects with a page <pageNo> on the screen */
+        RectD isectD = dm->CvtFromScreen(intersect, pageNo);
+        sel->Append(SelectionOnPage(pageNo, &isectD));
+    }
+    sel->Reverse();
+
+    return sel;
+}
+
+Vec<SelectionOnPage> *SelectionOnPage::FromTextSelect(TextSel *textSel)
+{
+    Vec<SelectionOnPage> *sel = new Vec<SelectionOnPage>(textSel->len);
+
+    for (int i = textSel->len - 1; i >= 0; i--)
+        sel->Append(SelectionOnPage(textSel->pages[i], &textSel->rects[i].Convert<double>()));
+    sel->Reverse();
+
+    return sel;
 }
 
 BaseEngine *LinkHandler::engine() const
@@ -194,8 +425,8 @@ void LinkHandler::GotoLink(PageDestination *link)
     }
     else if (str::Eq(type, "LaunchEmbedded")) {
         // open embedded PDF documents in a new window
-        if (path && str::StartsWith(path.Get(), dm->FileName()))
-            LoadDocument(path, owner);
+        if (path && str::StartsWith(path.Get(), dm->fileName()))
+            LoadDocument(path);
         // offer to save other attachments to a file
         else
             link->SaveEmbedded(LinkSaver(owner->hwndFrame, path));
@@ -204,10 +435,10 @@ void LinkHandler::GotoLink(PageDestination *link)
         /* for safety, only handle relative PDF paths and only open them in SumatraPDF */
         if (!str::StartsWith(path.Get(), _T("\\")) &&
             str::EndsWithI(path.Get(), _T(".pdf"))) {
-            ScopedMem<TCHAR> basePath(path::GetDir(dm->FileName()));
+            ScopedMem<TCHAR> basePath(path::GetDir(dm->fileName()));
             ScopedMem<TCHAR> combinedPath(path::Join(basePath, path));
             // TODO: respect fz_to_bool(fz_dict_gets(link->dest, "NewWindow")) for ScrollToEx
-            WindowInfo *newWin = LoadDocument(combinedPath, owner);
+            WindowInfo *newWin = LoadDocument(combinedPath);
 
             if (str::Eq(type, "ScrollToEx") && newWin && newWin->IsDocLoaded())
                 newWin->linkHandler->ScrollTo(link);
@@ -284,7 +515,7 @@ void LinkHandler::ScrollTo(PageDestination *dest)
     if (zoom != INVALID_ZOOM) {
         // TODO: adjust the zoom level before calculating the scrolling coordinates
         dm->zoomTo(zoom);
-        UpdateToolbarState(owner);
+        owner->UpdateToolbarState();
     }
     // */
     dm->goToPage(pageNo, scroll.y, true, scroll.x);
@@ -296,8 +527,8 @@ static TCHAR *NormalizeFuzzy(const TCHAR *str)
 {
     TCHAR *dup = str::Dup(str);
     CharLower(dup);
+    // cf. AddTocItemToView in SumatraPDF.cpp
     str::NormalizeWS(dup);
-    // cf. AddTocItemToView
     return dup;
 }
 

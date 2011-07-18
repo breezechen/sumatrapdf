@@ -2,9 +2,6 @@ The idea is to record here changes that deserve mentioning in
 the release notes, as we make them, to make the release process easier.
 
 Next version:
-* ???
-
-1.7 (2011-07-18)
 
 * favorites
 * logical page numbers are displayed and used, if a document
@@ -13,10 +10,7 @@ Next version:
   http://code.google.com/p/sumatrapdf/source/browse/trunk/docs/sumatrapdfrestrict.ini
 * -named-dest also matches strings in table of contents
 * improved support for EPS files (requires Ghostscript)
-* improved support for right-to-left languages e.g. Arabic
-* more robust installer (requires to close programs, like a browser, that
-  are using Sumatra components, preventing them from being over-written
-  during installation)
+* improved support for right-to-left languages
 
 1.6 (2011-05-30)
 

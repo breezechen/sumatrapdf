@@ -13,7 +13,7 @@ class Synchronizer;
 class DoubleBuffer;
 class SelectionOnPage;
 class LinkHandler;
-class Notifications;
+class MessageWndList;
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -30,6 +30,15 @@ enum PresentationMode {
     PM_ENABLED,
     PM_BLACK_SCREEN,
     PM_WHITE_SCREEN
+};
+
+enum NotificationGroup {
+    NG_RESPONSE_TO_ACTION = 1,
+    NG_FIND_PROGRESS,
+    NG_PRINT_PROGRESS,
+    NG_PAGE_INFO_HELPER,
+    NG_STRESS_TEST_BENCHMARK,
+    NG_STRESS_TEST_SUMMARY,
 };
 
 /* Describes position, the target (URL or file path) and infotip of a "hyperlink" */
@@ -149,7 +158,7 @@ public:
     int             wheelAccumDelta;
     UINT_PTR        delayedRepaintTimer;
 
-    Notifications * notifications;
+    MessageWndList *messages;
 
     HANDLE          printThread;
     bool            printCanceled;
@@ -177,10 +186,13 @@ public:
     CallbackFunc *  stressTest;
     bool            suppressPwdUI;
 
+    void UpdateToolbarState();
+
     void UpdateCanvasSize();
     SizeI GetViewPortSize();
     void RedrawAll(bool update=false);
     void RepaintAsync(UINT delay=0);
+    void Reload(bool autorefresh=false);
 
     void ChangePresentationMode(PresentationMode mode) {
         presentation = mode;
@@ -188,10 +200,24 @@ public:
     }
 
     void ToggleZoom();
+    void ZoomToSelection(float factor, bool relative);
+    void SwitchToDisplayMode(DisplayMode displayMode, bool keepContinuous=false);
     void MoveDocBy(int dx, int dy);
+    void AbortPrinting();
+    void AbortFinding(bool hideMessage=false);
+
+    void LoadTocTree();
+
+    HTREEITEM TreeItemForPageNo(HTREEITEM hItem, int pageNo);
+    void UpdateTocSelection(int currPageNo);
+    void UpdateToCExpansionState(HTREEITEM hItem);
+    void UpdateSidebarDisplayState(DisplayState *ds);
 
     void CreateInfotip(const TCHAR *text, RectI& rc);
     void DeleteInfotip();
+
+    void ShowNotification(const TCHAR *message, bool autoDismiss=true, bool highlight=false, NotificationGroup groupId=NG_RESPONSE_TO_ACTION);
+    void ShowForwardSearchResult(const TCHAR *fileName, UINT line, UINT col, UINT ret, UINT page, Vec<RectI>& rects);
 
     // DisplayModelCallback implementation (incl. PasswordUI)
     virtual TCHAR * GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
@@ -202,6 +228,22 @@ public:
     virtual void RenderPage(int pageNo);
     virtual int  GetScreenDPI() { return dpi; }
     virtual void CleanUp(DisplayModel *dm);
+};
+
+/* Represents selected area on given page */
+class SelectionOnPage {
+public:
+    SelectionOnPage(int pageNo=0, RectD *rect=NULL) :
+        pageNo(pageNo), rect(rect ? *rect : RectD()) { }
+
+    int     pageNo; // page this selection is on
+    RectD   rect;   // position of selection rectangle on page (in page coordinates)
+
+    // position of selection rectangle in the view port
+    RectI   GetRect(DisplayModel *dm);
+
+    static Vec<SelectionOnPage> *FromRectangle(DisplayModel *dm, RectI rect);
+    static Vec<SelectionOnPage> *FromTextSelect(TextSel *textSel);
 };
 
 class LinkHandler {
@@ -227,5 +269,11 @@ public:
 
     virtual bool SaveEmbedded(unsigned char *data, int cbCount);
 };
+
+WindowInfo* FindWindowInfoByFile(TCHAR *file);
+WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
+WindowInfo* FindWindowInfoBySyncFile(TCHAR *file);
+WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL,
+                         bool showWin=true, bool forceReuse=false, bool suppressPwdUI=false);
 
 #endif
