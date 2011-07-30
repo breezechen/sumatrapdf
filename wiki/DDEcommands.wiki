@@ -33,14 +33,17 @@ Multiple commands can be concatenated as follows:
 * Forward-search command
   * Format:
   {{{
-  [ForwardSearch("<pdffilepath>","<sourcefilepath>",<line>,<column>[,<newwindow>,<setfocus>])]
+  [ForwardSearch(["<pdffilepath>",]"<sourcefilepath>",<line>,<column>[,<newwindow>,<setfocus>])]
   }}}
   * Arguments:
+    * pdffilepath: path to the PDF document (if this path is omitted and the document isn't already open, SumatraPDF won't open it for you)
+    * column: this parameter is for future use (just always pass 0)
     * newwindow: 1 to open the document in a new window (even if the file is already opened)
     * focus: 1 to set focus to SumatraPDF's window.
   * Eg:
   {{{
   [ForwardSearch("c:\file.pdf","c:\folder\source.tex",298,0)]
+  [ForwardSearch("c:\folder\source.tex",298,0,0,1)]
   }}}
 
 * Jump to named destination command
@@ -78,7 +81,7 @@ Multiple commands can be concatenated as follows:
   {{{
   [SetView("c:\file.pdf","continuous",-3)]
   }}}
-  * Note: the pdf file must be already opened.
+  * Note: the pdf file must already be opened.
 
 
 = Configuring DDE-synchronization with TeX editors =
@@ -108,14 +111,8 @@ Multiple commands can be concatenated as follows:
   * To enable the inverse search, you also have to append to the (La)TeX compiler arguments:
   {{{-synctex=1}}}
 
-==WinEdt==
+See http://www.texniccenter.org/resources/tutorials/47 for more detailed instructions.
 
-See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
-
-==Emacs==
-
-See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
-
-==Vim==
+==WinEdt, Emacs and Vim==
 
 See instructions at http://william.famille-blum.org/blog/static.php?page=static081010-000413
