@@ -17,8 +17,11 @@ def usage_and_exit():
 	sys.exit(0)
 
 def is_pdf(p):
-	p = p.lower()
-	return p.endswith(".pdf")
+	if len(p) < 4: return False
+	t = p[-4:]
+	t = t.lower()
+	if t == ".pdf": return True
+	return False
 
 def do_path(args, p):
 	if os.path.isdir(p):
@@ -34,7 +37,7 @@ def do_file(args, fname):
 	nargs.append(">>%s" % log_file_name())
 	nargs.append("2>&1")
 	cmd = string.join(nargs, " ")
-	print cmd
+	#print cmd
 	call(cmd, shell=True)
 
 def do_dir(args, d):
@@ -51,11 +54,7 @@ def do_dir(args, d):
 				do_file(args, p)
 
 def main():
-	pdfbench = os.path.join("obj-rel", "pdfbench.exe")
-	if not os.path.exists(pdfbench):
-		print("%s doesn't exist" % pdfbench)
-		sys.exit(1)
-	args = [pdfbench]
+	args = ["Release-pdfbench\\pdfbench.exe"]
 	non_args = []
 	for arg in sys.argv[1:]:
 		if is_arg(arg):

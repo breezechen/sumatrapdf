@@ -34,7 +34,7 @@ EXTDIR=ext
 LIBMUPDF_RES = $(O)\libmupdf.res
 
 # default target
-all_sumatrapdf: SumatraPDF Uninstaller PDFFilter PdfPreview BrowserPlugin PdfBench
+all_sumatrapdf: SumatraPDF Uninstaller PDFFilter PdfPreview BrowserPlugin
 
 ##### add configuration changes that should also affect MuPDF before this line #####
 
@@ -169,7 +169,6 @@ Uninstaller:   $(OS) $(UNINSTALLER_APP)
 PDFFilter:     $(OS) $(LIBMUPDF_DLL) $(PDFFILTER_DLL)
 PdfPreview:    $(OS) $(LIBMUPDF_DLL) $(PDFPREVIEW_DLL)
 BrowserPlugin: $(OS) $(BROWSER_PLUGIN)
-PdfBench:      $(OS) $(PDFBENCH_APP)
 
 $(OS): $(O) $(OE)
 	@if not exist $(OS) mkdir $(OS)
@@ -499,4 +498,4 @@ $(OS)\WindowInfo.obj: src\utils\WinUtil.h src\WindowInfo.h
 $(OS)\WinUtil.obj: src\utils\BaseUtil.h src\utils\FileUtil.h src\utils\GeomUtil.h
 $(OS)\WinUtil.obj: src\utils\StrUtil.h src\utils\Vec.h src\utils\WinUtil.h
 $(OS)\ZipUtil.obj: src\utils\BaseUtil.h src\utils\FileUtil.h src\utils\StrUtil.h
-$(OS)\ZipUtil.obj: src\utils\Vec.h src\utils\ZipUtil.h
+$(OS)\ZipUtil.obj: src\utils\ZipUtil.h

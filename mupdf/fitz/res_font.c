@@ -137,7 +137,7 @@ char *ft_error_string(int err)
 }
 
 static fz_error
-fz_init_freetype_unsafe(void)
+fz_init_freetype(void)
 {
 	int fterr;
 	int maj, min, pat;
@@ -165,23 +165,11 @@ fz_init_freetype_unsafe(void)
 	return fz_okay;
 }
 
-/* SumatraPDF: protect fz_ftlib with a lock to prevent concurrency related crashes */
-static fz_error
-fz_init_freetype(void)
-{
-	fz_error error;
-	fz_synchronize_begin();
-	error = fz_init_freetype_unsafe();
-	fz_synchronize_end();
-	return error;
-}
-
 static void
 fz_finalize_freetype(void)
 {
 	int fterr;
 
-	fz_synchronize_begin();
 	if (--fz_ftlib_refs == 0)
 	{
 		fterr = FT_Done_FreeType(fz_ftlib);
@@ -189,7 +177,6 @@ fz_finalize_freetype(void)
 			fz_warn("freetype finalizing: %s", ft_error_string(fterr));
 		fz_ftlib = NULL;
 	}
-	fz_synchronize_end();
 }
 
 /* SumatraPDF: some Chinese fonts seem to wrongly use pre-devided units */
@@ -207,17 +194,6 @@ fz_check_font_dimensions(FT_Face face)
 		face->bbox.xMax = face->units_per_EM;
 		face->bbox.yMax = face->units_per_EM;
 		face->ascender = face->units_per_EM;
-	}
-
-	/* use default values for fonts with an empty glyph bbox */
-	if (face->bbox.xMin == 0 && face->bbox.yMin == 0 &&
-		face->bbox.xMax == 0 && face->bbox.yMax == 0 &&
-		face->ascender == 0 && face->descender == 0)
-	{
-		face->bbox.xMax = face->units_per_EM;
-		face->bbox.yMax = face->units_per_EM;
-		face->ascender = 0.8f * face->units_per_EM;
-		face->descender = -0.2f * face->units_per_EM;
 	}
 }
 

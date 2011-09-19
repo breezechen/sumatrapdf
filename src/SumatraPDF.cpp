@@ -121,8 +121,6 @@ static RenderCache                  gRenderCache;
        Favorites *                  gFavorites;
 static UIThreadWorkItemQueue        gUIThreadMarshaller;
 
-static bool                         gIsStressTesting = false;
-
 // in restricted mode, some features can be disabled (such as
 // opening files, printing, following URLs), so that SumatraPDF
 // can be used as a PDF reader on locked down systems
@@ -568,10 +566,6 @@ void CreateThumbnailForFile(WindowInfo& win, DisplayState& state)
     if (HasThumbnail(state))
         return;
 
-    // don't unnecessarily accumulate thumbnails during a stress test
-    if (gIsStressTesting)
-        return;
-
     RectD pageRect = win.dm->engine->PageMediabox(1);
     if (pageRect.IsEmpty())
         return;
@@ -783,10 +777,7 @@ Error:
     }
     if (win.IsDocLoaded()) {
         ToggleWindowStyle(win.hwndPageBox, ES_NUMBER, !win.dm->engine || !win.dm->engine->HasPageLabels());
-        // if the window isn't shown and win.canvasRc is still empty, zoom has not been determined yet
-        assert(!showWin || !win.canvasRc.IsEmpty());
-        if (showWin || ss.page != 1)
-            win.dm->SetScrollState(ss);
+        win.dm->SetScrollState(ss);
         UpdateToolbarState(&win);
     }
 
@@ -1957,20 +1948,19 @@ static void OnMenuExit()
 // to test pointers (even if it's not advised in general)
 void GetFilesInfo(str::Str<char>& s)
 {
-    // only add paths to files encountered during an explicit stress test
-    // (for privacy reasons, users should be able to decide themselves
-    // whether they want to share what files they had opened during a crash)
-    if (!gIsStressTesting)
-        return;
-
     for (size_t i = 0; i < gWindows.Count(); i++) {
         WindowInfo *w = gWindows.At(i);
         if (!w || !w->dm || !w->loadedFilePath)
             continue;
+        // only add paths to files encountered during an explicit stress test
+        // (for privacy reasons, users should be able to decide themselves
+        // whether they want to share what files they had opened during a crash)
+        if (!w->stressTest)
+            continue;
 
         s.Append("File: ");
         s.AppendAndFree(str::conv::ToUtf8(w->loadedFilePath));
-        s.AppendAndFree(GetStressTestInfo(w->stressTest));
+        s.AppendAndFree(GetStressTestInfo((StressTest *)w->stressTest));
         s.Append("\r\n");
     }
 }
@@ -4460,7 +4450,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
 
     if (i.stressTestPath) {
-        gIsStressTesting = true;
         StartStressTest(win, i.stressTestPath, i.stressTestFilter,
                         i.stressTestRanges, i.stressTestCycles, &gRenderCache);
     }

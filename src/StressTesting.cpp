@@ -545,9 +545,9 @@ char *StressTest::GetLogInfo()
     return str::Format(", stress test rendered %d files in %s, currPage: %d", filesCount, su, currPage);
 }
 
-char *GetStressTestInfo(CallbackFunc *dst)
+char *GetStressTestInfo(StressTest *dst)
 {
-    return static_cast<StressTest *>(dst)->GetLogInfo();
+    return dst->GetLogInfo();
 }
 
 void StartStressTest(WindowInfo *win, const TCHAR *path, const TCHAR *filter,

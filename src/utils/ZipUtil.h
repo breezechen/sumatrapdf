@@ -7,10 +7,12 @@
 #include "BaseUtil.h"
 
 struct FileToUnzip {
-    const char *    fileName;
+    const char *    fileNamePrefix;
     const TCHAR *   unzippedName; // optional, will use fileNamePrefix if NULL
+    bool            wasUnzipped;
 };
 
-bool UnzipFiles(const TCHAR *zipFile, FileToUnzip *files, const TCHAR *dir);
+bool UnzipFilesStartingWith(const TCHAR *zipFile, FileToUnzip *files, const TCHAR *dir);
 
 #endif
+

@@ -87,15 +87,11 @@ CFLAGSB = $(CFLAGSB) /D "UNICODE" /D "_UNICODE"
 # /EHs-c- : disable C++ exceptions (generates smaller binaries)
 CFLAGSB = $(CFLAGSB) /EHs-c- 
 
-# /Ox  : maximum optimizations
-# /O2  : maximize speed
-# docs say /Ox better, my tests say /O2 better
-OPTLEVEL = /O2
-
 !if "$(CFG)"=="rel"
+# /Ox  : maximum optimizations
 # /GL  : enable link-time code generation
-CFLAGS    = $(CFLAGSB) $(OPTLEVEL) /GL /D "NDEBUG"
-CFLAGSOPT = $(CFLAGSB) $(OPTLEVEL) /D "NDEBUG"
+CFLAGS = $(CFLAGSB) /Ox /GL /D "NDEBUG"
+CFLAGSOPT = $(CFLAGSB)
 LDFLAGS = $(LDFLAGS) /LTCG
 # /DYNAMICBASE and /NXCOMPAT for better protection against stack overflows
 # http://blogs.msdn.com/vcblog/archive/2009/05/21/dynamicbase-and-nxcompat.aspx
@@ -107,7 +103,7 @@ CFLAGSB = $(CFLAGSB) /MTd
 # /RTCs : stack frame runtime checking
 # /RTCu : ununitialized local usage checks
 CFLAGS = $(CFLAGSB) /Od /RTCs /RTCu
-CFLAGSOPT = $(CFLAGSB) $(OPTLEVEL) /D "NDEBUG"
+CFLAGSOPT = $(CFLAGSB) /Ox /D "NDEBUG"
 !endif
 
 ZLIB_CFLAGS = $(CFLAGSOPT)
