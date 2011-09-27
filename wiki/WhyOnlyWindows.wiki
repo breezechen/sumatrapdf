@@ -6,6 +6,6 @@ This won't happen.
 
 The first reason is that current developers don't know how to write software for those other platforms.
 
-Second reason is that it would essentially mean writing the whole program from scratch for a new platform. Sumatra is tightly integrated with and optimized for Windows. Making a version of for another operating system is not a matter of making a few changes here and there but pretty much writing everything from scratch.
+Second reason is that it would essentially mean writing the whole program from scratch for a new platform. Sumatra is tightly integrated with and optimized for Windows. Making a version for another operating system is not a matter of making a few changes here and there but pretty much writing everything from scratch i.e. redoing years of development that went into Sumatra.
 
 SumatraPDF is an open-source project so anyone is free to take our source code and use as much of it as they want to create equivalent for some other operating system, but we're unlikely to do it ourselves.
