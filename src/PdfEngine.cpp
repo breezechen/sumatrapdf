@@ -426,7 +426,7 @@ static LinkRectList *LinkifyText(TCHAR *pageText, RectI *coords)
             if (end != NULL)
                 start = email;
         }
-        else if (start > pageText && ('/' == start[-1]) || _istalnum(start[-1])) {
+        else if (start > pageText && ('/' == start[-1] || _istalnum(start[-1]))) {
             // hyperlinks must not be preceded by a slash (indicates a different protocol)
             // or an alphanumeric character (indicates part of a different protocol)
         }
