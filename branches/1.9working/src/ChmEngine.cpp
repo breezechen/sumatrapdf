@@ -123,6 +123,8 @@ public:
     virtual bool CanNavigate(int dir);
     virtual void Navigate(int dir);
     virtual void ZoomTo(float zoomLevel);
+    virtual void SelectAll() { htmlWindow->SelectAll(); }
+    virtual void CopySelection() { htmlWindow->CopySelection(); }
     virtual int CurrentPageNo() const { return currentPageNo; }
     virtual HtmlWindow *GetHtmlWindow() const { return htmlWindow; }
 
@@ -226,7 +228,7 @@ void CChmEngine::DisplayPage(const TCHAR *pageUrl)
     // TODO: unfortunately we display at standard zoom level first
     // and them zoom in, which is visible to the user. No idea how
     // to fix it (simply)
-    htmlWindow->WaitUntilLoaded(3*1000);
+    htmlWindow->WaitUntilLoaded(3 * 1000, url);
     //htmlWindow->DisplayHtml(_T("<html><body>Hello!</body></html>"));
 }
 
