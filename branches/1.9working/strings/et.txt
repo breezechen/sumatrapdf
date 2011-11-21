@@ -446,7 +446,7 @@ Number of Pages:
 Lehekülgede arv:
 
 OK
-OK
+Sobib
 
 Open
 Ava
