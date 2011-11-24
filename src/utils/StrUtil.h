@@ -122,13 +122,15 @@ const TCHAR *   Parse(const TCHAR *str, const TCHAR *format, ...);
 
 namespace conv {
 
-#ifdef UNICODE
+#ifdef _UNICODE
 inline TCHAR *  FromUtf8(const char *src) { return ToWideChar(src, CP_UTF8); }
 inline char *   ToUtf8(const TCHAR *src) { return ToMultiByte(src, CP_UTF8); }
 inline TCHAR *  FromAnsi(const char *src) { return ToWideChar(src, CP_ACP); }
 inline char *   ToAnsi(const TCHAR *src) { return ToMultiByte(src, CP_ACP); }
 inline TCHAR *  FromWStr(const WCHAR *src) { return Dup(src); }
 inline WCHAR *  ToWStr(const TCHAR *src) { return Dup(src); }
+inline TCHAR *  FromWStrQ(WCHAR *src) { return src; }
+inline WCHAR *  ToWStrQ(TCHAR *src) { return src; }
 #else
 inline TCHAR *  FromUtf8(const char *src) { return ToMultiByte(src, CP_UTF8, CP_ACP); }
 inline char *   ToUtf8(const TCHAR *src) { return ToMultiByte(src, CP_ACP, CP_UTF8); }
@@ -136,20 +138,23 @@ inline TCHAR *  FromAnsi(const char *src) { return Dup(src); }
 inline char *   ToAnsi(const TCHAR *src) { return Dup(src); }
 inline TCHAR *  FromWStr(const WCHAR *src) { return ToMultiByte(src, CP_ACP); }
 inline WCHAR *  ToWStr(const TCHAR *src) { return ToWideChar(src, CP_ACP); }
+inline TCHAR *FromWStrQ(WCHAR *src) {
+    if (!src) return NULL;
+    char *str = FromWStr(src);
+    free(src);
+    return str;
+}
+inline WCHAR *ToWStrQ(TCHAR *src) {
+    if (!src) return NULL;
+    WCHAR *str = ToWStr(src);
+    free(src);
+    return str;
+}
 #endif
 
 }
 
 }
-
-// Quick conversions are no-ops for UNICODE builds
-#ifdef UNICODE
-#define AsWStrQ(src) (src)
-#define AsTStrQ(src) (src)
-#else
-#define AsWStrQ(src) (ScopedMem<WCHAR>(str::conv::ToWStr(src)))
-#define AsTStrQ(src) (ScopedMem<TCHAR>(str::conv::FromWStr(src)))
-#endif
 
 inline bool ChrIsDigit(const WCHAR c)
 {
@@ -161,11 +166,13 @@ inline bool ChrIsDigit(const WCHAR c)
 
 #ifndef DEBUG
   #define DBG_OUT(format, ...) NoOp()
+#elif UNICODE
+  #define DBG_OUT(format, ...) str::DbgOut(L##format, __VA_ARGS__)
 #else
-  #define DBG_OUT(format, ...) str::DbgOut(_T(format), __VA_ARGS__)
+  #define DBG_OUT(format, ...) str::DbgOut(format, __VA_ARGS__)
 #endif
 
-#ifdef UNICODE
+#ifdef _UNICODE
   #define CF_T_TEXT CF_UNICODETEXT
 #else
   #define CF_T_TEXT CF_TEXT

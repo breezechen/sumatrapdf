@@ -220,9 +220,9 @@ static WCHAR *GetSymbolPath()
     }
 #endif
 
-    ScopedMem<TCHAR> symDir(GetCrashDumpDir());
+    ScopedMem<WCHAR> symDir(str::conv::ToWStrQ(GetCrashDumpDir()));
     if (symDir) {
-        path.Append(AsWStrQ(symDir));
+        path.Append(symDir);
         //path.Append(_T(";"));
     }
 #if 0
@@ -236,7 +236,8 @@ static WCHAR *GetSymbolPath()
 #if 0
     // when running local builds, *.pdb is in the same dir as *.exe 
     ScopedMem<TCHAR> exePath(GetExePath());
-    path.AppendFmt(L"%s", AsWStrQ(exePath));
+    ScopedMem<WCHAR> exeDir(str::conv::ToWStrQ(path::GetDir(exePath)));
+    path.AppendFmt(L"%s", exeDir);
 #endif
     return path.StealData();
 }
@@ -295,7 +296,8 @@ static bool InitializeDbgHelp()
     if (_SymInitializeW) {
         gSymInitializeOk = _SymInitializeW(GetCurrentProcess(), symPath, TRUE);
     } else {
-        ScopedMem<char> tmp(str::conv::ToAnsi(AsTStrQ(symPath)));
+        ScopedMem<TCHAR> tstr(str::conv::FromWStr(symPath));
+        ScopedMem<char> tmp(str::conv::ToAnsi(tstr));
         if (tmp)
             gSymInitializeOk = _SymInitialize(GetCurrentProcess(), tmp, TRUE);
     }

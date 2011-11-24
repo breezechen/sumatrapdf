@@ -63,10 +63,10 @@ public:
         ScopedComPtr<IFilter> pFilter;
 
         CLSID clsid;
-        if (SUCCEEDED(CLSIDFromString(AsWStrQ(SZ_PDF_FILTER_CLSID), &clsid)) && IsEqualCLSID(m_clsid, clsid))
+        if (SUCCEEDED(CLSIDFromTString(SZ_PDF_FILTER_CLSID, &clsid)) && IsEqualCLSID(m_clsid, clsid))
             pFilter = new NOTHROW CPdfFilter(&g_lRefCount);
 #ifdef BUILD_TEX_IFILTER
-        else if (SUCCEEDED(CLSIDFromString(AsWStrQ(SZ_TEX_FILTER_CLSID), &clsid)) && IsEqualCLSID(m_clsid, clsid))
+        else if (SUCCEEDED(CLSIDFromTString(SZ_TEX_FILTER_CLSID, &clsid)) && IsEqualCLSID(m_clsid, clsid))
             pFilter = new NOTHROW CTeXFilter(&g_lRefCount);
 #endif
         else
@@ -117,7 +117,7 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, LPVOID *ppv)
 
 STDAPI DllRegisterServer()
 {
-    TCHAR path[MAX_PATH];
+    WCHAR path[MAX_PATH];
     if (!GetModuleFileName(g_hInstance, path, dimof(path)))
         return HRESULT_FROM_WIN32(GetLastError());
 

@@ -49,8 +49,7 @@ FT_BEGIN_HEADER
                          FT_Face     *aface );
 
 
-#if defined( FT_CONFIG_OPTION_GUESSING_EMBEDDED_RFORK ) && \
-    ( !defined( FT_MACINTOSH ) || defined( DARWIN_NO_CARBON ) )
+#ifdef FT_CONFIG_OPTION_GUESSING_EMBEDDED_RFORK
   /* Mac OS X/Darwin kernel often changes recommended method to access */
   /* the resource fork and older methods makes the kernel issue the    */
   /* warning of deprecated method.  To calm it down, the methods based */
@@ -58,7 +57,7 @@ FT_BEGIN_HEADER
   /* the case the resource is opened but found to lack a font in it.   */
   FT_LOCAL( FT_Bool )
   raccess_rule_by_darwin_vfs( FT_UInt  rule_index );
-#endif
+#endif /* FT_CONFIG_OPTION_GUESSING_EMBEDDED_RFORK */
 
 
 FT_END_HEADER

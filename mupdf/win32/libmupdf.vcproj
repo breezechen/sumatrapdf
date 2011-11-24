@@ -323,10 +323,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\fitz\doc_outline.c"
-				>
-			</File>
-			<File
 				RelativePath="..\fitz\dev_bbox.c"
 				>
 			</File>
@@ -471,7 +467,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\draw\draw_simple_scale.c"
+				RelativePath="..\draw\draw_scale.c"
 				>
 			</File>
 			<File
@@ -504,10 +500,6 @@
 			</File>
 			<File
 				RelativePath="..\xps\xps_jpeg.c"
-				>
-			</File>
-			<File
-				RelativePath="..\xps\xps_outline.c"
 				>
 			</File>
 			<File

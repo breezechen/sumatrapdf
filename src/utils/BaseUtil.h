@@ -31,7 +31,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#ifndef UNICODE
+#ifndef _UNICODE
 #include <sys/types.h>
 #include <sys/stat.h>
 #endif

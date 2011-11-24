@@ -83,36 +83,40 @@ TryAgain64Bit:
 }
 
 class ScopedFile {
-    ScopedMem<TCHAR> path;
+    TCHAR *path;
 
 public:
     ScopedFile(const TCHAR *path) : path(path ? str::Dup(path) : NULL) { }
     ~ScopedFile() {
         if (path)
             file::Delete(path);
+        free(path);
     }
 };
 
 // caller must free() the result
 static TCHAR *GetTempFilePath(const TCHAR *prefix=_T("PsE"))
 {
-    TCHAR path[MAX_PATH], tempDir[MAX_PATH - 14];
-    DWORD res = GetTempPath(dimof(tempDir), tempDir);
-    if (!res || res >= dimof(tempDir) || !GetTempFileName(tempDir, prefix, 0, path))
+    TCHAR path[MAX_PATH], shortPath[MAX_PATH];
+    DWORD res = GetTempPath(MAX_PATH - 14, shortPath);
+    if (!res || res >= MAX_PATH - 14 || !GetTempFileName(shortPath, prefix, 0, path))
         return NULL;
-    return str::Dup(path);
+
+    res = GetShortPathName(path, shortPath, dimof(shortPath));
+    if (!res || res >= dimof(shortPath))
+        return str::Dup(path);
+    return str::Dup(shortPath);
 }
 
 static PdfEngine *ps2pdf(const TCHAR *fileName)
 {
     // TODO: read from gswin32c's stdout instead of using a TEMP file
-    ScopedMem<TCHAR> shortPath(path::ShortPath(fileName));
     ScopedMem<TCHAR> tmpFile(GetTempFilePath());
     ScopedFile tmpFileScope(tmpFile);
     ScopedMem<TCHAR> gswin32c(GetGhostscriptPath());
-    if (!shortPath || !tmpFile || !gswin32c)
+    if (!tmpFile || !gswin32c)
         return NULL;
-    ScopedMem<TCHAR> cmdLine(str::Format(_T("\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite -c .setpdfwrite -f \"%s\""), gswin32c, tmpFile, shortPath));
+    ScopedMem<TCHAR> cmdLine(str::Format(_T("\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite -c .setpdfwrite -f \"%s\""), gswin32c, tmpFile, fileName));
 
     if (getenv("MULOG")) {
         _tprintf(_T("ps2pdf: using Ghostscript from '%s'\n"), gswin32c);

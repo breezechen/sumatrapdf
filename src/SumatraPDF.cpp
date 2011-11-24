@@ -132,6 +132,8 @@ static HCURSOR                      gCursorSizeNS;
 static HCURSOR                      gCursorNo;
        HBRUSH                       gBrushNoDocBg;
        HBRUSH                       gBrushAboutBg;
+static HBRUSH                       gBrushWhite;
+static HBRUSH                       gBrushBlack;
        HFONT                        gDefaultGuiFont;
 static HBITMAP                      gBitmapReloadingCue;
 
@@ -354,15 +356,6 @@ TCHAR *WindowInfo::GetPassword(const TCHAR *fileName, unsigned char *fileDigest,
     *saveKey = false;
     if (suppressPwdUI)
         return NULL;
-
-    // extract the filename from the URL in plugin mode instead
-    // of using the more confusing temporary filename
-    ScopedMem<TCHAR> urlName;
-    if (gPluginMode) {
-        urlName.Set(ExtractFilenameFromURL(gPluginURL));
-        if (urlName)
-            fileName = urlName;
-    }
 
     fileName = path::GetBaseName(fileName);
     return Dialog_GetPassword(this->hwndFrame, fileName, gGlobalPrefs.rememberOpenedFiles ? saveKey : NULL);
@@ -626,10 +619,6 @@ static void CreateChmThumbnail(WindowInfo& win, DisplayState& ds)
 
 void CreateThumbnailForFile(WindowInfo& win, DisplayState& ds)
 {
-    // don't create thumbnails if we won't be needing them at all
-    if (!HasPermission(Perm_SavePreferences))
-        return;
-
     // don't even create thumbnails for files that won't need them anytime soon
     Vec<DisplayState *> *list = gFileHistory.GetFrequencyOrder();
     int ix = list->Find(&ds);
@@ -1552,18 +1541,16 @@ static void PaintPageFrameAndShadow(HDC hdc, RectI& bounds, RectI& pageRect, boo
 
     // Draw frame
     ScopedGdiObj<HPEN> pe(CreatePen(PS_SOLID, 1, presentation ? TRANSPARENT : COL_PAGE_FRAME));
-    ScopedGdiObj<HBRUSH> brush(CreateSolidBrush(gRenderCache.colorRange[1]));
     SelectObject(hdc, pe);
-    SelectObject(hdc, brush);
+    SelectObject(hdc, gRenderCache.invertColors ? gBrushBlack : gBrushWhite);
     Rectangle(hdc, frame.x, frame.y, frame.x + frame.dx, frame.y + frame.dy);
 }
 #else
 static void PaintPageFrameAndShadow(HDC hdc, RectI& bounds, RectI& pageRect, bool presentation)
 {
     ScopedGdiObj<HPEN> pe(CreatePen(PS_NULL, 0, 0));
-    ScopedGdiObj<HBRUSH> brush(CreateSolidBrush(gRenderCache.colorRange[1]));
     SelectObject(hdc, pe);
-    SelectObject(hdc, brush);
+    SelectObject(hdc, gRenderCache.invertColors ? gBrushBlack : gBrushWhite);
     Rectangle(hdc, bounds.x, bounds.y, bounds.x + bounds.dx + 1, bounds.y + bounds.dy + 1);
 }
 #endif
@@ -1625,10 +1612,9 @@ static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
     bool paintOnBlackWithoutShadow = win.presentation ||
     // draw comic books and single images on a black background (without frame and shadow)
                                      dm->engine && dm->engine->IsImageCollection();
-    if (paintOnBlackWithoutShadow) {
-        ScopedGdiObj<HBRUSH> brush(CreateSolidBrush(gRenderCache.colorRange[0]));
-        FillRect(hdc, rcArea, brush);
-    } else
+    if (paintOnBlackWithoutShadow)
+        FillRect(hdc, rcArea, gBrushBlack);
+    else
         FillRect(hdc, rcArea, gBrushNoDocBg);
 
     bool rendering = false;
@@ -1658,7 +1644,7 @@ static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
         if (renderDelay) {
             ScopedFont fontRightTxt(GetSimpleFont(hdc, _T("MS Shell Dlg"), 14));
             HGDIOBJ hPrevFont = SelectObject(hdc, fontRightTxt);
-            SetTextColor(hdc, gRenderCache.colorRange[0]);
+            SetTextColor(hdc, gRenderCache.invertColors ? WIN_COL_WHITE : WIN_COL_BLACK);
             if (renderDelay != RENDER_DELAY_FAILED) {
                 if (renderDelay < REPAINT_MESSAGE_DELAY_IN_MS)
                     win.RepaintAsync(REPAINT_MESSAGE_DELAY_IN_MS / 4);
@@ -2037,7 +2023,7 @@ static void OnPaint(WindowInfo& win)
 
     if (win.IsAboutWindow()) {
         if (HasPermission(Perm_SavePreferences | Perm_DiskAccess) && gGlobalPrefs.rememberOpenedFiles && gGlobalPrefs.showStartPage)
-            DrawStartPage(win, win.buffer->GetDC(), gFileHistory, gRenderCache.colorRange);
+            DrawStartPage(win, win.buffer->GetDC(), gFileHistory, gRenderCache.invertColors);
         else
             DrawAboutPage(win, win.buffer->GetDC());
         win.buffer->Flush(hdc);
@@ -2053,10 +2039,10 @@ static void OnPaint(WindowInfo& win)
     } else {
         switch (win.presentation) {
         case PM_BLACK_SCREEN:
-            FillRect(hdc, &ps.rcPaint, GetStockBrush(BLACK_BRUSH));
+            FillRect(hdc, &ps.rcPaint, gBrushBlack);
             break;
         case PM_WHITE_SCREEN:
-            FillRect(hdc, &ps.rcPaint, GetStockBrush(WHITE_BRUSH));
+            FillRect(hdc, &ps.rcPaint, gBrushWhite);
             break;
         default:
             DrawDocument(win, win.buffer->GetDC(), &ps.rcPaint);
@@ -4602,6 +4588,8 @@ static bool InstanceInit(HINSTANCE hInstance, int nCmdShow)
         gBrushAboutBg = CreateSolidBrush(gGlobalPrefs.bgColor);
     else
         gBrushAboutBg = CreateSolidBrush(ABOUT_BG_COLOR);
+    gBrushWhite     = GetStockBrush(WHITE_BRUSH);
+    gBrushBlack     = GetStockBrush(BLACK_BRUSH);
 
     NONCLIENTMETRICS ncm = { 0 };
     ncm.cbSize = sizeof(ncm);
@@ -4726,8 +4714,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     gGlobalPrefs.fwdSearch.permanent = i.fwdSearch.permanent;
     gGlobalPrefs.escToExit = i.escToExit;
     gPolicyRestrictions = GetPolicies(i.restrictedUse);
-    gRenderCache.colorRange[0] = i.colorRange[0];
-    gRenderCache.colorRange[1] = i.colorRange[1];
+    gRenderCache.invertColors = i.invertColors;
     DebugGdiPlusDevice(gUseGdiRenderer);
 
     if (i.inverseSearchCmdLine) {
@@ -4944,6 +4931,8 @@ Exit:
         DeleteWindowInfo(gWindows.At(0));
     DeleteObject(gBrushNoDocBg);
     DeleteObject(gBrushAboutBg);
+    DeleteObject(gBrushWhite);
+    DeleteObject(gBrushBlack);
     DeleteObject(gDefaultGuiFont);
     DeleteBitmap(gBitmapReloadingCue);
 

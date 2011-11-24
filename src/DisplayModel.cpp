@@ -882,9 +882,6 @@ PageElement *DisplayModel::GetElementAtPos(PointI pt)
     int pageNo = GetPageNoByPoint(pt);
     if (!ValidPageNo(pageNo))
         return NULL;
-    // only return visible elements (for cursor interaction)
-    if (!RectI(PointI(), viewPort.Size()).Inside(pt))
-        return NULL;
 
     PointD pos = CvtFromScreen(pt, pageNo);
     return engine->GetElementAtPos(pageNo, pos);
@@ -894,9 +891,6 @@ bool DisplayModel::IsOverText(PointI pt)
 {
     int pageNo = GetPageNoByPoint(pt);
     if (!ValidPageNo(pageNo))
-        return false;
-    // only return visible elements (for cursor interaction)
-    if (!RectI(PointI(), viewPort.Size()).Inside(pt))
         return false;
 
     PointD pos = CvtFromScreen(pt, pageNo);

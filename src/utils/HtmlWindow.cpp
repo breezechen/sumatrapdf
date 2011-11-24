@@ -45,8 +45,6 @@ class HW_IOleCommandTarget;
 class HW_IOleItemContainer;
 class HW_DWebBrowserEvents2;
 class HW_IAdviseSink2;
-class HW_IServiceProvider;
-class HW_IInternetSecurityManager;
 
 inline void VariantSetBool(VARIANT *res, bool val)
 {
@@ -72,8 +70,6 @@ class FrameSite : public IUnknown
     friend class HW_IOleItemContainer;
     friend class HW_DWebBrowserEvents2;
     friend class HW_IAdviseSink2;
-    friend class HW_IServiceProvider;
-    friend class HW_IInternetSecurityManager;
 
 public:
     FrameSite(HtmlWindow * win);
@@ -95,8 +91,6 @@ protected:
     HW_IOleItemContainer *          oleItemContainer;
     HW_DWebBrowserEvents2 *         hwDWebBrowserEvents2;
     HW_IAdviseSink2 *               adviseSink2;
-    HW_IServiceProvider *           serviceProvider;
-    HW_IInternetSecurityManager *   internetSecurityManager;
 
     HtmlWindow * htmlWindow;
 
@@ -328,107 +322,6 @@ public:
     void STDMETHODCALLTYPE OnViewStatusChange(DWORD) { }
 };
 
-class HW_IServiceProvider : public IServiceProvider
-{
-    FrameSite * fs;
-public:
-    HW_IServiceProvider(FrameSite* fs) : fs(fs) { }
-    ~HW_IServiceProvider() {}
-
-    //IUnknown
-    STDMETHODIMP QueryInterface(REFIID iid, void ** ppvObject) { return fs->QueryInterface(iid, ppvObject); }
-    ULONG STDMETHODCALLTYPE AddRef() { return fs->AddRef(); }
-    ULONG STDMETHODCALLTYPE Release() { return fs->Release(); }
-
-    //IServiceProvider
-    STDMETHODIMP QueryService(REFGUID guidService, REFIID riid, void **ppv) {
-        if (guidService != SID_SInternetSecurityManager)
-            return E_UNEXPECTED;
-
-        if (riid != IID_IInternetSecurityManager)
-            return E_NOINTERFACE;
-
-        return fs->QueryInterface(riid, ppv);
-    }
-};
-
-// In theory we should be able to change the trust for its:: urls via MapUrlToZone()
-// and ProcessUrlAction() (see e.g. http://codesearch.google.com/#nJHaZQ1IJ84/trunk/gears/ui/ie/html_dialog_host.cc)
-// so that we can read chm files from network drives but they don't even seem to be
-// reaching here if chm file is on network drive (but do reach if it's on regular drive).
-// Do I have to RegisterNameSpace() with urlmon.dll as in wxWebViewIE::RegisterHandler in
-// http://trac.wxwidgets.org/browser/wxWidgets/trunk/src/msw/webview_ie.cpp ?
-// Or maybe we should implement reading of chm files ourselves instead of relying
-// on IE to load them, as seem to be done in wxHtmlWindow::LoadPage() in
-// http://trac.wxwidgets.org/browser/wxWidgets/trunk/src/html/htmlwin.cpp
-// combined with CHMFSHandler() in xchm's CHMFSHandler.cpp
-class HW_IInternetSecurityManager : public IInternetSecurityManager
-{
-    FrameSite * fs;
-public:
-    HW_IInternetSecurityManager(FrameSite* fs) : fs(fs) { }
-    ~HW_IInternetSecurityManager() {}
-
-    //IUnknown
-    STDMETHODIMP QueryInterface(REFIID iid, void ** ppvObject) { return fs->QueryInterface(iid, ppvObject); }
-    ULONG STDMETHODCALLTYPE AddRef() { return fs->AddRef(); }
-    ULONG STDMETHODCALLTYPE Release() { return fs->Release(); }
-
-    //IInternetSecurityManager
-    STDMETHODIMP GetSecurityId(LPCWSTR pwszUrl, BYTE *pbSecurityId, DWORD *pcbSecurityId, DWORD_PTR dwReserved) {
-        DBG_OUT("GetSecurityId()");
-        if (str::StartsWith(pwszUrl, L"its")) {
-            return INET_E_DEFAULT_ACTION;
-        }
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP GetSecuritySite(IInternetSecurityMgrSite **ppSite) {
-        DBG_OUT("GetSecuritySite()");
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP GetZoneMappings(DWORD dwZone, IEnumString **ppenumString, DWORD dwFlags) {
-        DBG_OUT("GetZoneMappings()");
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP MapUrlToZone(LPCWSTR pwszUrl, DWORD *pdwZone, DWORD dwFlags) {
-        DBG_OUT("MapUrlToZone()");
-        if (str::StartsWith(pwszUrl, L"its")) {
-            return INET_E_DEFAULT_ACTION;
-        }
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP ProcessUrlAction(LPCWSTR pwszUrl, DWORD dwAction, BYTE *pPolicy, DWORD cbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwFlags, DWORD dwReserved) {
-        if (cbPolicy != 4) 
-            return INET_E_DEFAULT_ACTION;
-        if (str::StartsWith(pwszUrl, L"its")) {
-            *pPolicy = URLPOLICY_ALLOW;
-            return S_OK;
-        }
-        return INET_E_DEFAULT_ACTION;
-    }
-    STDMETHODIMP QueryCustomPolicy(LPCWSTR pwszUrl, REFGUID guidKey, BYTE **ppPolicy, DWORD *pcbPolicy, BYTE *pContext, DWORD cbContext, DWORD dwReserved) {
-        DBG_OUT("QueryCustomPolicy()");
-        if (str::StartsWith(pwszUrl, L"its")) {
-            return INET_E_DEFAULT_ACTION;
-        }
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP SetSecuritySite(IInternetSecurityMgrSite *pSite) {
-        DBG_OUT("SetSecuritySite()");
-        return INET_E_DEFAULT_ACTION;
-    }
-
-    STDMETHODIMP SetZoneMapping(DWORD dwZone, LPCWSTR lpszPattern, DWORD dwFlags) {
-        DBG_OUT("SetZoneMapping()");
-        return INET_E_DEFAULT_ACTION;
-    }
-};
-
 static HWND GetBrowserControlHwnd(HWND hwndControlParent)
 {
     // This is a fragile way to get the actual hwnd of the browser control
@@ -656,7 +549,11 @@ void HtmlWindow::NavigateToUrl(const TCHAR *urlStr)
     VARIANT url;
     VariantInit(&url);
     url.vt = VT_BSTR;
-    url.bstrVal = SysAllocString(AsWStrQ(urlStr));
+#ifdef UNICODE
+    url.bstrVal = SysAllocString(urlStr);
+#else
+    url.bstrVal = SysAllocString(ScopedMem<WCHAR>(str::conv::FromAnsi(urlStr)));
+#endif
     if (!url.bstrVal)
         return;
     currentURL.Set(NULL);
@@ -743,7 +640,11 @@ void HtmlWindow::DisplayHtml(const TCHAR *html)
     if (FAILED(hr))
         goto Exit;
     var->vt = VT_BSTR;
-    var->bstrVal = SysAllocString(AsWStrQ(html));
+#ifdef UNICODE
+    var->bstrVal = SysAllocString(html);
+#else
+    var->bstrVal = SysAllocString(ScopedMem<WCHAR>(str::conv::FromAnsi(html)));
+#endif
     if (!var->bstrVal)
         goto Exit;
     SafeArrayUnaccessData(arr);
@@ -802,16 +703,9 @@ HBITMAP HtmlWindow::TakeScreenshot(RectI area, SizeI finalSize)
 bool HtmlWindow::OnBeforeNavigate(const TCHAR *url, bool newWindow)
 {
     currentURL.Set(NULL);
-    if (!htmlWinCb)
-        return true;
-    char *data = NULL;
-    size_t len = 0;
-    bool gotHtmlData = htmlWinCb->GetHtmlForUrl(url, &data, &len);
-    if (gotHtmlData) {
-        // TODO: write me
-        return false;
-    }
-    return htmlWinCb->OnBeforeNavigate(url, newWindow);
+    if (htmlWinCb)
+        return htmlWinCb->OnBeforeNavigate(url, newWindow);
+    return true;
 }
 
 void HtmlWindow::OnDocumentComplete(const TCHAR *url)
@@ -906,22 +800,18 @@ FrameSite::FrameSite(HtmlWindow * win)
     //m_hDCBuffer = NULL;
     hwndParent = htmlWindow->hwndParent;
 
-    oleInPlaceFrame             = new HW_IOleInPlaceFrame(this);
-    oleInPlaceSiteWindowless    = new HW_IOleInPlaceSiteWindowless(this);
-    oleClientSite               = new HW_IOleClientSite(this);
-    oleControlSite              = new HW_IOleControlSite(this);
-    oleCommandTarget            = new HW_IOleCommandTarget(this);
-    oleItemContainer            = new HW_IOleItemContainer(this);
-    hwDWebBrowserEvents2        = new HW_DWebBrowserEvents2(this);
-    adviseSink2                 = new HW_IAdviseSink2(this);
-    serviceProvider             = new HW_IServiceProvider(this);
-    internetSecurityManager     = new HW_IInternetSecurityManager(this);
+    oleInPlaceFrame = new HW_IOleInPlaceFrame(this);
+    oleInPlaceSiteWindowless = new HW_IOleInPlaceSiteWindowless(this);
+    oleClientSite = new HW_IOleClientSite(this);
+    oleControlSite = new HW_IOleControlSite(this);
+    oleCommandTarget = new HW_IOleCommandTarget(this);
+    oleItemContainer = new HW_IOleItemContainer(this);
+    hwDWebBrowserEvents2 = new HW_DWebBrowserEvents2(this);
+    adviseSink2 = new HW_IAdviseSink2(this);
 }
 
 FrameSite::~FrameSite()
 {
-    delete internetSecurityManager;
-    delete serviceProvider;
     delete adviseSink2;
     delete hwDWebBrowserEvents2;
     delete oleItemContainer;
@@ -966,10 +856,6 @@ STDMETHODIMP FrameSite::QueryInterface(REFIID riid, void **ppv)
         riid == IID_IAdviseSink2 ||
         riid == IID_IAdviseSinkEx)
         *ppv = adviseSink2;
-    else if (riid == IID_IServiceProvider)
-        *ppv = serviceProvider;
-    else if (riid == IID_IInternetSecurityManager)
-        *ppv = internetSecurityManager;
 
     if (*ppv == NULL)
         return E_NOINTERFACE;
@@ -1051,7 +937,11 @@ HRESULT HW_DWebBrowserEvents2::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
                 url = *vurl->pbstrVal;
             else
                 url = vurl->bstrVal;
-            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(AsTStrQ(url), false);
+#ifdef UNICODE
+            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(url, false);
+#else
+            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(ScopedMem<char>(str::conv::ToAnsi(url)), false);
+#endif
             *pDispParams->rgvarg[0].pboolVal = shouldCancel ? VARIANT_TRUE : VARIANT_FALSE;
             break;
         }
@@ -1074,7 +964,11 @@ HRESULT HW_DWebBrowserEvents2::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
                 url = *vurl->pbstrVal;
             else
                 url = vurl->bstrVal;
-            fs->htmlWindow->OnDocumentComplete(AsTStrQ(url));
+#ifdef UNICODE
+            fs->htmlWindow->OnDocumentComplete(url);
+#else
+            fs->htmlWindow->OnDocumentComplete(ScopedMem<char>(str::conv::ToAnsi(url)));
+#endif
             break;
         }
 
@@ -1092,7 +986,11 @@ HRESULT HW_DWebBrowserEvents2::Invoke(DISPID dispIdMember, REFIID riid, LCID lci
         case DISPID_NEWWINDOW3:
         {
             BSTR url = pDispParams->rgvarg[0].bstrVal;
-            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(AsTStrQ(url), true);
+#ifdef UNICODE
+            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(url, true);
+#else
+            bool shouldCancel = !fs->htmlWindow->OnBeforeNavigate(ScopedMem<char>(str::conv::ToAnsi(url)), true);
+#endif
             *pDispParams->rgvarg[3].pboolVal = shouldCancel ? VARIANT_TRUE : VARIANT_FALSE;
             break;
         }

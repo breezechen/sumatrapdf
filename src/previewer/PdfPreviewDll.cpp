@@ -58,7 +58,11 @@ public:
         ScopedComPtr<IInitializeWithStream> pObject;
 
         CLSID clsid;
-        HRESULT hr = CLSIDFromString(AsWStrQ(SZ_PDF_PREVIEW_CLSID), &clsid);
+#ifdef UNICODE
+        HRESULT hr = CLSIDFromString(SZ_PDF_PREVIEW_CLSID, &clsid);
+#else
+        HRESULT hr = CLSIDFromString(ScopedMem<WCHAR>(str::conv::ToWStr(SZ_PDF_PREVIEW_CLSID)), &clsid);
+#endif
         if (SUCCEEDED(hr) && IsEqualCLSID(m_clsid, clsid))
             pObject = new NOTHROW CPdfPreview(&g_lRefCount);
         else

@@ -4,7 +4,8 @@
 /*                                                                         */
 /*    OpenType font driver implementation (body).                          */
 /*                                                                         */
-/*  Copyright 1996-2011 by                                                 */
+/*  Copyright 1996-2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,   */
+/*            2010 by                                                      */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -364,8 +365,7 @@
     (PS_GetFontInfoFunc)   cff_ps_get_font_info,
     (PS_GetFontExtraFunc)  NULL,
     (PS_HasGlyphNamesFunc) cff_ps_has_glyph_names,
-    (PS_GetFontPrivateFunc)NULL,        /* unsupported with CFF fonts */
-    (PS_GetFontValueFunc)  NULL         /* not implemented            */
+    (PS_GetFontPrivateFunc)NULL         /* unsupported with CFF fonts */
   )
 
 

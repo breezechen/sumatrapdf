@@ -319,4 +319,13 @@ private:
     CChunkValue                 m_currentChunk;
 };
 
+inline HRESULT CLSIDFromTString(TCHAR *string, CLSID *clsid)
+{
+#ifdef UNICODE
+    return CLSIDFromString(string, clsid);
+#else
+    return CLSIDFromString(ScopedMem<WCHAR>(str::conv::ToWStr(string)), clsid);
+#endif
+}
+
 #endif

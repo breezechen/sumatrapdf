@@ -35,17 +35,21 @@ fz_new_text_span(void)
 void
 fz_free_text_span(fz_text_span *span)
 {
+	/* SumatraPDF: prevent a stack overflow when freeing an overlong linked list */
 	fz_text_span *next;
+free_without_recursion:
+	next = span->next;
+	span->next = NULL;
 
-	while (span)
-	{
-		if (span->font)
-			fz_drop_font(span->font);
-		next = span->next;
-		fz_free(span->text);
-		fz_free(span);
-		span = next;
-	}
+	if (span->font)
+		fz_drop_font(span->font);
+	if (span->next)
+		fz_free_text_span(span->next);
+	fz_free(span->text);
+	fz_free(span);
+
+	if ((span = next))
+		goto free_without_recursion;
 }
 
 static void
@@ -159,34 +163,32 @@ fz_debug_text_span_xml(fz_text_span *span)
 	char buf[10];
 	int c, n, k, i;
 
-	while (span)
+	printf("<span font=\"%s\" size=\"%g\" wmode=\"%d\" eol=\"%d\">\n",
+		span->font ? span->font->name : "NULL", span->size, span->wmode, span->eol);
+
+	for (i = 0; i < span->len; i++)
 	{
-		printf("<span font=\"%s\" size=\"%g\" wmode=\"%d\" eol=\"%d\">\n",
-			span->font ? span->font->name : "NULL", span->size, span->wmode, span->eol);
-
-		for (i = 0; i < span->len; i++)
+		printf("\t<char ucs=\"");
+		c = span->text[i].c;
+		if (c < 128)
+			putchar(c);
+		else
 		{
-			printf("\t<char ucs=\"");
-			c = span->text[i].c;
-			if (c < 128)
-				putchar(c);
-			else
-			{
-				n = runetochar(buf, &c);
-				for (k = 0; k < n; k++)
-					putchar(buf[k]);
-			}
-			printf("\" bbox=\"%d %d %d %d\" />\n",
-				span->text[i].bbox.x0,
-				span->text[i].bbox.y0,
-				span->text[i].bbox.x1,
-				span->text[i].bbox.y1);
+			n = runetochar(buf, &c);
+			for (k = 0; k < n; k++)
+				putchar(buf[k]);
 		}
-
-		printf("</span>\n");
-
-		span = span->next;
+		printf("\" bbox=\"%d %d %d %d\" />\n",
+			span->text[i].bbox.x0,
+			span->text[i].bbox.y0,
+			span->text[i].bbox.x1,
+			span->text[i].bbox.y1);
 	}
+
+	printf("</span>\n");
+
+	if (span->next)
+		fz_debug_text_span_xml(span->next);
 }
 
 void
@@ -195,26 +197,24 @@ fz_debug_text_span(fz_text_span *span)
 	char buf[10];
 	int c, n, k, i;
 
-	while (span)
+	for (i = 0; i < span->len; i++)
 	{
-		for (i = 0; i < span->len; i++)
+		c = span->text[i].c;
+		if (c < 128)
+			putchar(c);
+		else
 		{
-			c = span->text[i].c;
-			if (c < 128)
-				putchar(c);
-			else
-			{
-				n = runetochar(buf, &c);
-				for (k = 0; k < n; k++)
-					putchar(buf[k]);
-			}
+			n = runetochar(buf, &c);
+			for (k = 0; k < n; k++)
+				putchar(buf[k]);
 		}
-
-		if (span->eol)
-			putchar('\n');
-
-		span = span->next;
 	}
+
+	if (span->eol)
+		putchar('\n');
+
+	if (span->next)
+		fz_debug_text_span(span->next);
 }
 
 /***** SumatraPDF: various string fixups *****/

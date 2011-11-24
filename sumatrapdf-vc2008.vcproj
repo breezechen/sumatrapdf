@@ -617,10 +617,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\mupdf\fitz\doc_outline.c"
-					>
-				</File>
-				<File
 					RelativePath=".\mupdf\fitz\filt_basic.c"
 					>
 				</File>

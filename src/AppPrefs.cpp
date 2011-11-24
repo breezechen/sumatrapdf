@@ -695,10 +695,6 @@ bool SavePrefs()
     for (size_t i = 0; i < gWindows.Count(); i++)
         UpdateCurrentFileDisplayStateForWin(gWindows.At(i));
 
-    // don't save preferences without the proper permission
-    if (!HasPermission(Perm_SavePreferences))
-        return false;
-
     ScopedMem<TCHAR> path(GetPrefsFileName());
     bool ok = Prefs::Save(path, gGlobalPrefs, gFileHistory, gFavorites);
     if (ok) {

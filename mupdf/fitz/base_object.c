@@ -497,8 +497,9 @@ fz_array_insert(fz_obj *obj, fz_obj *item)
 	}
 }
 
+/* SumatraPDF: helper method */
 int
-fz_array_contains(fz_obj *arr, fz_obj *obj)
+fz_is_in_array(fz_obj *arr, fz_obj *obj)
 {
 	int i;
 

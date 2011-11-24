@@ -184,10 +184,10 @@ fz_seek(fz_stream *stm, int offset, int whence)
 		}
 		if (whence == 0)
 		{
-			int dist = stm->pos - offset;
-			if (dist >= 0 && dist <= stm->wp - stm->bp)
+			unsigned char *p = stm->wp - (stm->pos - offset);
+			if (p >= stm->bp && p <= stm->wp)
 			{
-				stm->rp = stm->wp - dist;
+				stm->rp = p;
 				stm->eof = 0;
 				return;
 			}

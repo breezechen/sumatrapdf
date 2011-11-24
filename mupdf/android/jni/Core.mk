@@ -4,8 +4,6 @@ include $(CLEAR_VARS)
 
 MY_ROOT := ../..
 
-LOCAL_CFLAGS += -DARCH_ARM -DARCH_THUMB -DARCH_ARM_CAN_LOAD_UNALIGNED
-
 LOCAL_C_INCLUDES := \
 	../thirdparty/jbig2dec \
 	../thirdparty/openjpeg-1.4/libopenjpeg \
@@ -55,6 +53,7 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/fitz/stm_buffer.c \
 	$(MY_ROOT)/fitz/stm_open.c \
 	$(MY_ROOT)/fitz/stm_read.c \
+	$(MY_ROOT)/draw/arch_arm.c \
 	$(MY_ROOT)/draw/arch_port.c \
 	$(MY_ROOT)/draw/draw_affine.c \
 	$(MY_ROOT)/draw/draw_blend.c \
@@ -64,7 +63,7 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/draw/draw_mesh.c \
 	$(MY_ROOT)/draw/draw_paint.c \
 	$(MY_ROOT)/draw/draw_path.c \
-	$(MY_ROOT)/draw/draw_simple_scale.c \
+	$(MY_ROOT)/draw/draw_scale.c \
 	$(MY_ROOT)/draw/draw_unpack.c \
 	$(MY_ROOT)/pdf/pdf_annot.c \
 	$(MY_ROOT)/pdf/pdf_cmap.c \

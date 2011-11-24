@@ -56,7 +56,6 @@ EXPORTS
 	fz_transform_vector
 	fz_transform_rect
 	fz_transform_bbox
-	fz_gridfit_matrix
 	fz_md5_init
 	fz_md5_update
 	fz_md5_final
@@ -104,7 +103,7 @@ EXPORTS
 	fz_array_put
 	fz_array_push
 	fz_array_insert
-	fz_array_contains
+	fz_is_in_array
 	fz_dict_len
 	fz_dict_get_key
 	fz_dict_get_val
@@ -173,6 +172,7 @@ EXPORTS
 	fz_invert_pixmap
 	fz_gamma_pixmap
 	fz_scale_pixmap
+	fz_scale_pixmap_gridfit
 	fz_write_pnm
 	fz_write_pam
 	fz_write_png
@@ -282,9 +282,6 @@ EXPORTS
 	fz_execute_display_list
 	fz_list_is_single_image
 	fz_list_requires_blending
-	fz_debug_outline_xml
-	fz_debug_outline
-	fz_free_outline
 	fz_accelerate
 	fz_decode_tile
 	fz_decode_indexed_tile
@@ -419,6 +416,8 @@ EXPORTS
 	pdf_lookup_name
 	pdf_load_name_tree
 	pdf_load_outline
+	pdf_debug_outline
+	pdf_free_outline
 	pdf_load_link
 	pdf_load_links
 	pdf_free_link
@@ -453,9 +452,6 @@ EXPORTS
 	xps_count_pages
 	xps_load_page
 	xps_free_page
-	xps_load_outline
-	xps_find_link_target
-	xps_find_link_target_obj
 	xps_decode_jpeg
 	xps_decode_png
 	xps_decode_tiff
@@ -490,8 +486,12 @@ EXPORTS
 	xps_open_file
 	xps_open_stream
 	xps_free_context
-	xps_extract_anchor_info
-	xps_free_anchor
+	xps_parse_outline
+	xps_free_outline
+	xps_parse_named_dests
+	xps_free_named_dest
+	xps_extract_link_info
+	xps_free_link
 	xps_extract_doc_props
 
 ; jpeg exports

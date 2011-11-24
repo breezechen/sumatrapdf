@@ -10,9 +10,7 @@
 #include "WinUtil.h"
 
 #define CHM_MT
-#ifdef UNICODE
 #define PPC_BSTR
-#endif
 
 #include <inttypes.h>
 #include <chm_lib.h>
@@ -133,7 +131,6 @@ public:
     // from HtmlWindowCallback
     virtual bool OnBeforeNavigate(const TCHAR *url, bool newWindow);
     virtual void OnLButtonDown() { if (navCb) navCb->FocusFrame(true); }
-    virtual bool GetHtmlForUrl(const TCHAR *url, char **data, size_t *len);
 
 protected:
     const TCHAR *fileName;
@@ -154,17 +151,6 @@ CChmEngine::CChmEngine() :
     fileName(NULL), chmHandle(NULL), tocRoot(NULL),
         htmlWindow(NULL), navCb(NULL), currentPageNo(1)
 {
-}
-
-// allows for providing html data for a given url from external source.
-// that way CChmEngine can provide html for CHM files bypassing silly restrictions
-// IE has when doing it internally (like not opening CHM files from network
-// drives).
-// returns false if didn't provide the data
-bool CChmEngine::GetHtmlForUrl(const TCHAR *url, char **data, size_t *len)
-{
-    // TODO: write me
-    return false;
 }
 
 // called when we're about to show a given url. If this is a CHM
@@ -658,7 +644,12 @@ bool CChmEngine::Load(const TCHAR *fileName)
         return false;
 
     this->fileName = str::Dup(fileName);
-    chmHandle = chm_open((TCHAR *)fileName);
+    CASSERT(2 == sizeof(OLECHAR), OLECHAR_must_be_WCHAR);
+#ifdef UNICODE
+    chmHandle = chm_open((WCHAR *)fileName);
+#else
+    chmHandle = chm_open(ScopedMem<WCHAR>(str::conv::FromAnsi(fileName)));
+#endif
     if (!chmHandle)
         return false;
     ParseWindowsChmData(chmHandle, &chmInfo);

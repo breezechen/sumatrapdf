@@ -27,12 +27,7 @@ public:
         hbmp(hbmp), size(size), outOfDate(false) { }
     ~RenderedBitmap() { DeleteObject(hbmp); }
 
-    RenderedBitmap *Clone() {
-        HBITMAP hbmp2 = (HBITMAP)CopyImage(hbmp, IMAGE_BITMAP, size.dx, size.dy, 0);
-        return new RenderedBitmap(hbmp2, size);
-    }
-
-    // callers must not delete this (use Clone if you have to modify it)
+    // callers must not delete this (use CopyImage if you have to modify it)
     HBITMAP GetBitmap() const { return hbmp; }
     SizeI Size() const { return size; }
 
