@@ -1,4 +1,4 @@
-#summary Why SumatraPDF is only available on Windows.#
+#summary Why SumatraPDF is only available on Windows.
 
 People sometimes suggest that Sumatra should be available for some other operating system: Linux, Mac, Android etc.
 
