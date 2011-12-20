@@ -11,31 +11,31 @@ All options start with a dash and have (where indicated) arguments that have to 
 
 = List of recognized command line options =
 
-* {{{-bg-color <hexcolor>}}}
-  
-  Changes the yellow background color to a different color. See e.g. http://html-color-codes.info/webfarben_hexcodes/ for a way to generate the hexcode for a color.
-  
-  * E.g.
+  * {{{-bg-color <hexcolor>}}}
+
+  Changes the yellow background color to a different color. See e.g. http://html-color-codes.info/webfarben_hexcodes/ for a way to generate the hexcode for a color. 
+  E.g.
+
   {{{
   -bg-color #999999
   }}}
   changes the color to gray.
 
-* {{{-esc-to-exit}}}
+  * {{{-esc-to-exit}}}
   
   Enables the Escape key to quit SumatraPDF and stores that setting in sumatrapdfprefs.dat. To revert it, delete sumatrapdfprefs.dat.
 
-* {{{-set-color-range <text-hexcolor> <background-hexcolor>}}}
+  * {{{-set-color-range <text-hexcolor> <background-hexcolor>}}}
   
   Uses the given two colors for foreground and background and maps all other colors used in a document in between these two.
-  
-  * E.g.
+
+  E.g.
   {{{
   -set-color-range #dddddd #333333
   }}}
   displays soft white text on a dark gray background.
 
-* {{{-invert-colors}}}
+  * {{{-invert-colors}}}
   
   Is a shortcut for
   {{{
@@ -43,126 +43,126 @@ All options start with a dash and have (where indicated) arguments that have to 
   }}}
   i.e. will display white text on a black background for most documents.
 
-* {{{-presentation}}}
+  * {{{-presentation}}}
   
   Displays the first indicated file directly in presentation view.
 
-* {{{-fullscreen}}}
+  * {{{-fullscreen}}}
   
   Displays the first indicated file directly in fullscreen view.
 
-* {{{-reuse-instance}}}
+  * {{{-reuse-instance}}}
   
   Tells an already open SumatraPDF to load the indicated files. If there are several running instances, behavior is undefined.
 
-* {{{-lang <language-code>}}}
+  * {{{-lang <language-code>}}}
   
   Sets the UI language. See http://code.google.com/p/sumatrapdf/source/browse/trunk/strings/index.tsv for the list of available language codes.
   
-  * E.g.
+  E.g.
   {{{
   -lang de
   }}}
 
-* {{{-register-for-pdf}}}
+  * {{{-register-for-pdf}}}
   
   Registers SumatraPDF as the default PDF reader for the current user and (if the user is administrator) for all other users. After the registration, SumatraPDF exits immediately.
 
-* {{{-restrict}}}
+  * {{{-restrict}}}
   
   Locks SumatraPDF down so that it doesn't allow access to any drives, the registry or the internet. See http://code.google.com/p/sumatrapdf/source/browse/trunk/docs/sumatrapdfrestrict.ini for a more subtle alternative.
 
 == Printing options ==
 
-* {{{-print-to-default}}}
+  * {{{-print-to-default}}}
   
   Prints all files indicated on this command line to the system default printer. After printing, SumatraPDF exits immediately (check the error code for failure).
 
-* {{{-print-to <printer-name>}}}
+  * {{{-print-to <printer-name>}}}
   
   Prints all files indicated on this command line to the named printer. After printing, SumatraPDF exits immediately (check the error code for failure).
   
-  * E.g.
+  E.g.
   {{{
   -print-to "Microsoft XPS Document Writer"
   }}}
   prints all indicated files to the XPS virtual printer.
 
-* {{{-print-settings <settings-list>}}}
+  * {{{-print-settings <settings-list>}}}
   
   Used in combination with {{{-print-to}}} and {{{-print-to-default}}}. Allows to tweak some of the printing related settings without using the Print dialog. The settings-list is a comma separated list of page ranges and advanced options such as "even" or "odd" and "noscale", "shrink" and "fit".
   
-  * E.g.
+  E.g.
   {{{
   -print-settings "1-3,5,10-8,odd,fit"
   }}}
   prints pages 1, 3, 5, 9 (i.e. the odd pages from the ranges 1-3, 5-5 and 10-8) and scales them so that they fit into the printable area of the paper.
 
-* {{{-silent}}}
+  * {{{-silent}}}
   
   Used in combination with {{{-print-to}}} and {{{-print-to-default}}}. Silences any error messages related to command line printing.
 
-* {{{-print-dialog}}}
+  * {{{-print-dialog}}}
   
   Displays the Print dialog for all the files indicated on this command line.
 
-* {{{-exit-on-print}}}
+  * {{{-exit-on-print}}}
   
   Used in combination with {{{-print-dialog}}}. Exits SumatraPDF after the Print dialog has been dismissed (and the document printed).
 
 == Options related to forward/inverse search (for LaTeX editors) ==
 
-* {{{-inverse-search <command-line>}}}
+  * {{{-inverse-search <command-line>}}}
   
   Sets the command line to be used for performing an inverse search from a PDF document (usually back to a LaTeX source file). The inverse search command line can also be set from the Setting dialog. Use the variable %f for the current filename and %l for the current line.
 
-* {{{-forward-search <sourcepath> <line>}}}
+  * {{{-forward-search <sourcepath> <line>}}}
   
   Performs a forward search from a LaTeX source file to a loaded PDF document (using PdfSync or SyncTeX). This is an alternative to the ForwardSearch DDE command.
   
-  * E.g.
+  E.g.
   {{{
   -forward-search main.tex 123
   }}}
   highlights all text related to line 123 in main.tex.
 
-* {{{-fwdsearch-offset <offset> -fwdsearch-width <width> -fwdsearch-color <hexcolor> -fwdsearch-permanent <flag>}}}
+  * {{{-fwdsearch-offset <offset> -fwdsearch-width <width> -fwdsearch-color <hexcolor> -fwdsearch-permanent <flag>}}}
   
   Allows to customize the forward search highlight. Set the offset to a positive number to change the highlight style to a rectangle at the left of the page (instead of rectangles over the whole text). The flag for {{{-fwdsearch-permanent}}} can be 0 (make the highlight fade away, default) or 1.
 
 == Navigation options ==
 
-* {{{-named-dest <destination-name>}}}
+  * {{{-named-dest <destination-name>}}}
   
   Searches the first indicated file for a destination or a table-of-contents entry matching destination-name and scrolls the document to it. Combine with {{{-reuse-instance}}} if the document is already open.
 
-* {{{-page <pageNo>}}}
+  * {{{-page <pageNo>}}}
   
   Scrolls the first indicated file to the indicated page. Combine with {{{-reuse-instance}}} if the document is already open.
 
-* {{{-view <view-mode>}}}
+  * {{{-view <view-mode>}}}
   
   Sets the view mode for the first indicated file. Alternatives are "single page", "continuous single page", "facing", "continuous facing", "book view", "continuous book view".
 
-* {{{-zoom <zoom-level>}}}
+  * {{{-zoom <zoom-level>}}}
   
   Sets the zoom level for the first indicated file. Alternatives are "fit page", "fit width", "fit content" or any percentage value.
 
-* {{{-scroll <x,y>}}}
+  * {{{-scroll <x,y>}}}
   
   Scrolls to the given coordinates for the first indicated file.
 
 == Developer options ==
 
-* {{{-console}}}
+  * {{{-console}}}
   
   Opens a console window alongside SumatraPDF for accessing (MuPDF) debug output. For slightly more extensive debug messages, first set the environment variable MULOG=a.
 
-* {{{-stress-test <path> [file-filter] [range] [cycle-count]}}}
+  * {{{-stress-test <path> [file-filter] [range] [cycle-count]}}}
   
   Renders all pages of the indicated file/directory for stability and performance testing.
   
-  * E.g.
+  E.g.
   {{{
   -stress-test file1.pdf 25x
   -stress-test file2.pdf 1-3
@@ -170,10 +170,10 @@ All options start with a dash and have (where indicated) arguments that have to 
   }}}
   renders file1.pdf 25 times, renders pages 1 to 3 of file2.pdf and renders all but the first 14 PDF and XPS files from dir 3 times.
 
-* {{{-bench <filepath> [page-range]}}}
+  * {{{-bench <filepath> [page-range]}}}
   
   Renders all pages (or just the indicated ones) for the given file 10 times and then outputs the required rendering times for performance testing and comparisons. Often used together with {{{-console}}}.
 
-* {{{-plugin [url] <hwnd>}}}
+  * {{{-plugin [url] <hwnd>}}}
   
   Makes SumatraPDF a child of the given window, so that it can be used as a plugin. Optionally pass in a URL/filepath that should be displayed instead of the actual filename (in case the actual filename is a temporary file).
