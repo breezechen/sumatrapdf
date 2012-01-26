@@ -18,7 +18,7 @@ If you're using zipped executable, the only thing you need to do is to delete Su
 
 === Uninstalling the installer version ===
 
-If you're using an installer version, you must have ran an [http://blog.kowalczyk.info/article/8nqb/Writing-a-custom-installer-for-Windows-software.html installer].
+If you're using an installer version, you must have ran an [http://blog.kowalczyk.info/article/8nqb/Writing-a-custom-installer-for-Windows-software.html installer]. If you don't remember doing that then it means you didn't install a Sumatra in the first place and therefore there's nothing to do.
 
 The installer creates the standard uninstallation shortucts so go to Control Panel, use "Uninstall a program" category. SumatraPDF should be listed there and you can double-click to uninstall it.
 
@@ -26,7 +26,7 @@ The installer creates the standard uninstallation shortucts so go to Control Pan
 
 What if you still have questions? You can use the [http://fofou.appspot.com/sumatrapdf/ forums] to ask for additional help.
 
-However, in order to help you, you need to provide the following information:
+However, in order for someone to help you, you need to provide the following information:
 
  * Sumatra PDF version you're using
  * your OS (Windows) version
