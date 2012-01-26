@@ -12,11 +12,11 @@ If not, we can't help you because we didn't create the software you're using.
 
 We offer 2 versions: an installer and a zipped executable.
 
-== Uninstalling zipped executable ==
+=== Uninstalling zipped executable ===
 
 If you're using zipped executable, the only thing you need to do is to delete SumatraPDF.exe.
 
-== Uninstalling the installer version ==
+=== Uninstalling the installer version ===
 
 If you're using an installer version, you must have ran an [http://blog.kowalczyk.info/article/8nqb/Writing-a-custom-installer-for-Windows-software.html installer].
 
