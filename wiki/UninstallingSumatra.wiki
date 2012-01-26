@@ -1,40 +1,38 @@
 #summary How to uninstall Sumatra.
 
-= Introduction =
-
 Sometimes people are unclear on how to remove/uninstall Sumatra. This guide tries to explain that.
 
-= Are you using official Sumatra build? =
+== Are you using official Sumatra build? ==
 
 Did you download Sumatra from [http://blog.kowalczyk.info/software/sumatrapdf/download-free-pdf-viewer.html our website]?
 
 If not, we can't help you because we didn't create the software you're using.
 
-= Uninstalling Sumatra =
+== Uninstalling Sumatra ==
 
 We offer 2 versions: an installer and a zipped executable.
 
-= Uninstalling zipped executable =
+== Uninstalling zipped executable ==
 
 If you're using zipped executable, the only thing you need to do is to delete SumatraPDF.exe.
 
-= Uninstalling the installer version =
+== Uninstalling the installer version ==
 
 If you're using an installer version, you must have ran an [http://blog.kowalczyk.info/article/8nqb/Writing-a-custom-installer-for-Windows-software.html installer].
 
 The installer creates the standard uninstallation shortucts so go to Control Panel, use "Uninstall a program" category. SumatraPDF should be listed there and you can double-click to uninstall it.
 
-= What if the above doesn't help? =
+== What if the above doesn't help? ==
 
 What if you still have questions? You can use the [http://fofou.appspot.com/sumatrapdf/ forums] to ask for additional help.
 
 However, in order to help you, you need to provide the following information:
 
-* Sumatra PDF version you're using
-* your OS (Windows) version
-* did you download an installer or zipped executable?
-* where did you download the Sumatra from (the url of the webpage you used to download Sumatra)?
-* is there SumatraPDF directory in your program files directory (usually "c:\Program Files" or "c:\Program Files (x86)" on 64-bit systems)?
-* what evidence there is that Sumatra is installed? Be precise is specifc. Don't just say "there's a link to it" but tell us where is that link, what is the name of the link etc.
+ * Sumatra PDF version you're using
+ * your OS (Windows) version
+ * did you download an installer or zipped executable?
+ * where did you download the Sumatra from (the url of the webpage you used to download Sumatra)?
+ * is there SumatraPDF directory in your program files directory (usually "c:\Program Files" or "c:\Program Files (x86)" on 64-bit systems)?
+ * what evidence there is that Sumatra is installed? Be precise is specifc. Don't just say "there's a link to it" but tell us where is that link, what is the name of the link etc.
 
 To emphasize: if you don't provide this information, we cannot help you.
