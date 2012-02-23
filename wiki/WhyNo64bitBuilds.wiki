@@ -16,3 +16,5 @@ As to bigger addressable memory: we don't think PDFs that require 4GB of memory 
 There is a significant downside to providing 64bit builds: user confusion. Most people are oblivious to 64bit vs. 32bit differences. If we offered both 32bit and 64bit downloads, we would force every person to understand the difference. We would open up a possibility of 32bit users mistakenly downloading 64bit builds, which wouldn't work on their machines.
 
 That is the primary reason we only provide 32bit builds, that work just as well on 64bit systems as on 32bit systems but there are other downsides, like increased workload it would impose on developers (like the need to test 2 builds).
+
+Want to discuss 64-bit builds? Use [http://forums.fofou.org/sumatrapdf/ the forum].
