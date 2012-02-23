@@ -2,7 +2,7 @@
 
 = How to join SumatraPDF project =
 
-SumatraPDF is an open-source project. We always welcome new developers who want to join the project and contribute more code and new features.
+SumatraPDF is an open-source, [http://www.ohloh.net/p/4623/contributors collaborative] project. We always welcome new developers who want to join the project and contribute more code and new features.
 
 The process is simple:
  * write a patch against the latest sources
@@ -12,10 +12,14 @@ The process is simple:
 
 There's plenty of things [http://code.google.com/p/sumatrapdf/issues/list to work on].
 
-= Getting the sources and compiling =
+== Getting the sources and compiling ==
 
 To get the latest sources, follow [http://code.google.com/p/sumatrapdf/source/checkout those instructions].
 
 You'll need Visual Studio 2010 or 2008 to build. A free [http://www.microsoft.com/visualstudio/en-us/products/2010-editions/express#2010-Visual-CPP Express Edition] for C++ will work.
 
 Open sumatrapdf-vc2010.sln, compile and run.
+
+== Questions? ==
+
+You can reach other developers in the [http://forums.fofou.org/sumatrapdf/ forums].
