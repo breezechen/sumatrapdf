@@ -29,3 +29,5 @@ We could simplify the current toolbar by e.g. removing search UI (and instead ma
 I'm sure there are other ideas we haven't thought of.
 
 We didn't have the time to implement any such ideas but we do want to emphasize that toolbar is not the only possible solution for the problem.
+
+Want to discuss toolbar design? Use [http://forums.fofou.org/sumatrapdf/ the forum].
