@@ -2,7 +2,7 @@
 
 = How to join SumatraPDF project =
 
-SumatraPDF is an open-source, [http://www.ohloh.net/p/4623/contributors collaborative] project. We always welcome new developers who want to join the project and contribute more code and new features.
+SumatraPDF is an open-source, [http://www.ohloh.net/p/4623/contributors collaborative] project. We always welcome new developers who want to join the project, contribute code and new features.
 
 The process is simple:
  * write a patch against the latest sources
