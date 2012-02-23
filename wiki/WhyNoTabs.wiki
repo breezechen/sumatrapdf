@@ -21,6 +21,8 @@ We acknowledge that for some people ability to conveniently switch between multi
 
 I don't necessarily think that tabs are the best solution for that. See e.g. how Windows 7 implemented such functionality in a completely different way.
 
-We (i.e. zeniko and kkowalczyk, the 2 Sumatra developers) are not likely to work on that.
+We (i.e. zeniko and kkowalczyk, the 2 [https://www.ohloh.net/p/4623/contributors main Sumatra developers]) are not likely to work on that.
 
 We would gladly guide and help others implement such feature and integrate it into Sumatra if it's done right.
+
+Want to discuss tabs? Use [http://forums.fofou.org/sumatrapdf/ the forum].
