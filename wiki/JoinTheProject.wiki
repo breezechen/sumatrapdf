@@ -1,4 +1,4 @@
-#summary How to join SumatraPDF project
+#summary How to join SumatraPDF project as a developer
 
 = How to join SumatraPDF project =
 
