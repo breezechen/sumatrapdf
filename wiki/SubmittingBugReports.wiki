@@ -4,6 +4,6 @@
 
 Did you find a bug in Sumatra? Create a bug report in our [http://code.google.com/p/sumatrapdf/issues/list bug tracker].
 
-Does it involve a specific PDF? It's important to provide us with a PDF that shows the problem by e.g. uploading it to [http://ge.tt ge.tt] or attaching to a bug report in [http://code.google.com/p/sumatrapdf/issues/list bug tracker].
+Does it involve a specific PDF? It's important to provide us with a PDF that shows the problem by e.g. uploading it to [http://ge.tt ge.tt] or attaching to a bug report.
 
-If the PDF (or other information) is confidential, you can e-mail it directly to SumatraPDF developers: kkowalczyk@gmail.com (Krzysztof Kowalczyk) and zeniko@gmail.com (Simon Bünzli).
+If the PDF (or other information) is confidential, you can e-mail it directly to SumatraPDF developers: zeniko@gmail.com (Simon Bünzli) and kkowalczyk@gmail.com (Krzysztof Kowalczyk).
