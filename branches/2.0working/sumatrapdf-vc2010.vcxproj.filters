@@ -897,7 +897,7 @@
       <Filter>installer</Filter>
     </ClCompile>
     <ClCompile Include="src\utils\DbgHelpDyn.cpp">
-      <Filter>utils</Filter>
+      <Filter>sumatra</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1322,7 +1322,7 @@
       <Filter>installer</Filter>
     </ClInclude>
     <ClInclude Include="src\utils\DbgHelpDyn.h">
-      <Filter>utils</Filter>
+      <Filter>sumatra</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
