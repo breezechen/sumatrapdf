@@ -1,8 +1,19 @@
 Things to do for the first version of ebook (mobi) support:
-* mobi: read codepage and other metadata
+* mobi: document metadata
 * mobi: parse table of content (<html><head><guide><reference type="toc" title="Table of Contents", filepos=$N />)
 * layout: support different font names (are those used by mobi?)
 * layout: links
+
+Things nice to have but can wait for future:
+* ui: double page display
+* ui: change the font size
+* ui: change font/background combinations (just 3 options, like in kindle app:
+  black on white, sepia, white on black)
+* ui: change brightness
+* search
+* table of content
+* bookmarks
+* hyphenation (http://www.tug.org/docs/liang/)
 
 Done:
 * layout: support images
@@ -22,17 +33,3 @@ Done:
   page as soon as it's available
 * layout: improvements to background thread layout. We can't change top of the page
   as a result of the layout as this disorients the user
-
-Things nice to have but can wait for future:
-* ui: double page display
-* ui: change the font size
-* ui: change font/background combinations (just 3 options, like in kindle app:
-  black on white, sepia, white on black)
-* ui: change brightness
-* search
-* table of content
-* bookmarks
-* support epub
-* support other formats
-* hyphenation (http://www.tug.org/docs/liang/)
-
