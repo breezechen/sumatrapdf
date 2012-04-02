@@ -57,12 +57,6 @@ def copy_file(srcDir, dstDir, moveFiles, fileName, dstDir2):
 	if moveFiles:
 		print("  deleting %s" % srcPath)
 		os.remove(srcPath)
-	return sha
-
-# TODO: if there is a .jpg|.jpeg|.opf file with the same basename
-# as fileName, copy it using the sha name as for the .mobi file
-def copy_mobi_file(srcDir, dstDir, moveFiles, fileName):
-	copy_file(srcDir, dstDir, moveFiles, f, "mobi")
 
 def copy_files(srcDir, dstDir, moveFiles):
 	print("Copy files from %s to %s, move: %s" % (srcDir, dstDir, moveFiles))
@@ -73,7 +67,7 @@ def copy_files(srcDir, dstDir, moveFiles):
 		if is_chm(f):  copy_file(srcDir, dstDir, moveFiles, f, "chm")
 		if is_xps(f):  copy_file(srcDir, dstDir, moveFiles, f, "xps")
 		if is_epub(f): copy_file(srcDir, dstDir, moveFiles, f, "epub")
-		if is_mobi(f): copy_mobi_file(srcDir, dstDir, moveFiles, f)
+		if is_mobi(f): copy_file(srcDir, dstDir, moveFiles, f, "mobi")
 
 def verify_dirs(srcDir, dstDir):
 	exit_if_path_not_exists(srcDir)

@@ -21,10 +21,10 @@ using namespace Gdiplus;
 
 #ifdef SHOW_DEBUG_MENU_ITEMS
 // A sample text to display if we don't show an actual mobi file
-static const char *gSampleMobiHtml =
+static const char *gSampleHtml =
     "<html><p align=justify width=1em><b>ClearType</b>, is <b>dependent</b> "\
     "on the <i>orientation &amp; ordering</i> of the LCD stripes and "\
-    "possibly some other <i><b>things</b> unknown</i>.</p> "\
+    "possibly some other things unknown.</p> "\
     "<p align='right height=13pt'><em>Currently</em>, ClearType is implemented "\
     "<hr><br/> only for vertical stripes that are ordered RGB.</p> "\
     "<p align=center height=8pt>This might be a concern if you are using a "\
@@ -406,7 +406,7 @@ static LRESULT OnCommand(MobiWindow *win, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case IDM_DEBUG_PAGE_LAYOUT:
-            win->ebookController->SetHtml(gSampleMobiHtml);
+            win->ebookController->SetHtml(gSampleHtml);
             break;
 
         case IDM_DEBUG_EBOOK_UI:
@@ -611,13 +611,10 @@ void OpenMobiInWindow(MobiDoc *mobiDoc, SumatraWindow& winToReplace)
     if (HasPermission(Perm_DiskAccess) && !gPluginMode)
         SHAddToRecentDocs(SHARD_PATH, fullPath);
 
-    ScopedMem<TCHAR> winTitle(str::Format(_T("%s - %s"), path::GetBaseName(fullPath), SUMATRA_WINDOW_TITLE));
-
     if (winToReplace.AsMobiWindow()) {
         MobiWindow *mw = winToReplace.AsMobiWindow();
         CrashIf(!mw);
         mw->ebookController->SetMobiDoc(mobiDoc);
-        win::SetText(mw->hwndFrame, winTitle);
         // TODO: if we have window position/last position for this file, restore it
         return;
     }
@@ -662,8 +659,6 @@ void OpenMobiInWindow(MobiDoc *mobiDoc, SumatraWindow& winToReplace)
     win->hwndFrame = hwnd;
 
     gMobiWindows.Append(win);
-    win::SetText(win->hwndFrame, winTitle);
-
     ShowWindow(hwnd, wasMaximized ? SW_SHOWMAXIMIZED : SW_SHOW);
     win->ebookController->SetMobiDoc(mobiDoc, startReparseIdx);
 }

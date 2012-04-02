@@ -16,7 +16,10 @@ enum EngineType {
     Engine_PDF, Engine_XPS,
     Engine_PS,
     Engine_Chm,
-    Engine_Epub, Engine_Fb2, Engine_Mobi, Engine_Chm2, Engine_Txt,
+    Engine_Epub,
+    Engine_Fb2,
+    Engine_Mobi,
+    Engine_Chm2,
 };
 
 #include "BaseEngine.h"
@@ -73,10 +76,7 @@ RetrySniffing:
             engineType = Engine_Mobi;
         } else if (Chm2Engine::IsSupportedFile(filePath, sniff) && engineType != Engine_Chm2) {
             engine = Chm2Engine::CreateFromFile(filePath);
-            engineType = Engine_Chm2;
-        } else if (TxtEngine::IsSupportedFile(filePath, sniff) && engineType != Engine_Txt) {
-            engine = TxtEngine::CreateFromFile(filePath);
-            engineType = Engine_Txt;
+            engineType = Engine_Mobi;
 #endif
         }
 

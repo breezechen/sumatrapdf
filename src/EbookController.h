@@ -15,7 +15,7 @@ using namespace mui;
 
 struct  EbookControls;
 class   EbookController;
-class   PageData;
+struct  PageData;
 class   PoolAllocator;
 class   MobiDoc;
 class   ThreadLayoutMobi;
@@ -38,6 +38,7 @@ struct MobiLayoutData {
     bool               fromBeginning;
     bool               finished;
     EbookController *  controller;
+    ThreadLayoutMobi * thread;
     int                threadNo;
 };
 
@@ -56,7 +57,7 @@ struct LayoutTemp {
 
 LayoutInfo *GetLayoutInfo(const char *html, MobiDoc *mobiDoc, int dx, int dy, PoolAllocator *textAllocator);
 
-class EbookController : public sigslot::has_slots
+class EbookController : public IClicked, ISizeChanged
 {
     EbookControls * ctrls;
 
@@ -120,11 +121,11 @@ class EbookController : public sigslot::has_slots
     void        StopLayoutThread(bool forceTerminate);
     void        CloseCurrentDocument();
 
-    // event handlers
-    void        ClickedNext(Control *c, int x, int y);
-    void        ClickedPrev(Control *c, int x, int y);
-    void        ClickedProgress(Control *c, int x, int y);
-    void        SizeChangedPage(Control *c, int dx, int dy);
+    // IClickHandler
+    virtual void Clicked(Control *c, int x, int y);
+
+    // ISizeChanged
+    virtual void SizeChanged(Control *c, int dx, int dy);
 
 public:
     EbookController(EbookControls *ctrls);

@@ -136,7 +136,6 @@ public:
     BaseEngine *    engine;
     EngineType      engineType;
 
-    PageTextCache * textCache;
     TextSelection * textSelection;
     // access only from Search thread
     TextSearch *    textSearch;

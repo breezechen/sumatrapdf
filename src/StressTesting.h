@@ -14,16 +14,11 @@ void BenchFileOrDir(StrVec& pathsToBench);
 
 class WindowInfo;
 class RenderCache;
-
-class StressTestBase {
-public:
-    virtual ~StressTestBase() { }
-    virtual void OnTimer() = 0;
-    virtual void GetLogInfo(str::Str<char> *s) = 0;
-};
+class DisplayModel;
 
 bool CollectPathsFromDirectory(const TCHAR *pattern, StrVec& paths, bool dirsInsteadOfFiles=false);
 void StartStressTest(WindowInfo *win, const TCHAR *path, const TCHAR *filter,
                      const TCHAR *ranges, int cycles, RenderCache *renderCache);
+void GetStressTestInfo(CallbackFunc *dst, str::Str<char> *s);
 
 #endif

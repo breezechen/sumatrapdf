@@ -1,5 +1,21 @@
-#ifndef DOCUMENT_H
-#define DOCUMENT_H
+#ifndef _DOCUMENT_H_
+#define _DOCUMENT_H_
+
+#ifndef _FITZ_H_
+#error "fitz.h must be included before document.h"
+#endif
+
+#ifndef _MUPDF_H_
+#error "mupdf.h must be included before document.h"
+#endif
+
+#ifndef _MUXPS_H_
+#error "muxps.h must be included before document.h"
+#endif
+
+#ifndef _MUCBZ_H_
+#error "mucbz.h must be included before document.h"
+#endif
 
 struct document
 {

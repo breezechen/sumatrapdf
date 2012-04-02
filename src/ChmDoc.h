@@ -6,7 +6,6 @@
 
 #include "BaseUtil.h"
 #include "Scoped.h"
-#include "Vec.h"
 
 #define CP_CHM_DEFAULT 1252
 
@@ -37,13 +36,10 @@ public:
 
     bool HasData(const char *fileName);
     unsigned char *GetData(const char *fileName, size_t *lenOut);
-
-    char *ToUtf8(const unsigned char *text);
-    TCHAR *ToStr(const char *text);
-
     TCHAR *GetProperty(const char *name);
-    const char *GetIndexPath();
-    Vec<char *> *GetAllPaths();
+
+    char *GetHomepage();
+    char *ToUtf8(const unsigned char *text);
 
     bool HasToc();
     bool ParseToc(ChmTocVisitor *visitor);
@@ -51,5 +47,7 @@ public:
     static bool IsSupportedFile(const TCHAR *fileName, bool sniff=false);
     static ChmDoc *CreateFromFile(const TCHAR *fileName);
 };
+
+UINT GetChmCodepage(const TCHAR *fileName);
 
 #endif

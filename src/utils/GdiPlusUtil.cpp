@@ -352,11 +352,6 @@ struct TgaHeader {
 };
 #pragma pack(pop)
 
-inline bool memeq3(char *pix1, char *pix2)
-{
-    return *(WORD *)pix1 == *(WORD *)pix2 && pix1[2] == pix2[2];
-}
-
 unsigned char *SerializeRunLengthEncoded(HBITMAP hbmp, size_t *bmpBytesOut)
 {
     SizeI size = GetBitmapSize(hbmp);
@@ -379,7 +374,7 @@ unsigned char *SerializeRunLengthEncoded(HBITMAP hbmp, size_t *bmpBytesOut)
         char *line = bmpData + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO) + k * stride;
         for (int i = 0, j = 1; i < size.dx; i += j, j = 1) {
             // determine the length of a run of identical pixels
-            while (i + j < size.dx && j < 128 && memeq3(line + i * 3, line + (i + j) * 3)) {
+            while (i + j < size.dx && j < 128 && memeq(line + i * 3, line + (i + j) * 3, 3)) {
                 j++;
             }
             if (j > 1) {
@@ -387,7 +382,7 @@ unsigned char *SerializeRunLengthEncoded(HBITMAP hbmp, size_t *bmpBytesOut)
                 tgaData.Append(line + i * 3, 3);
             } else {
                 // determine the length of a run of different pixels
-                while (i + j < size.dx && j < 128 && !memeq3(line + (i + j - 1) * 3, line + (i + j) * 3)) {
+                while (i + j < size.dx && j < 128 && !memeq(line + (i + j - 1) * 3, line + (i + j) * 3, 3)) {
                     j++;
                 }
                 tgaData.Append(j - 1);

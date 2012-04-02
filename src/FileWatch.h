@@ -6,12 +6,6 @@
 
 #include "BaseUtil.h"
 
-class FileChangeObserver {
-public:
-    virtual ~FileChangeObserver() { }
-    virtual void OnFileChanged() = 0;
-};
-
 // information concerning a directory being watched
 class FileWatcher {
 public:
@@ -24,8 +18,8 @@ public:
     bool IsThreadRunning();
     void SynchronousAbort();
 
-    FileWatcher(FileChangeObserver *observer) : hDir(NULL), curBuffer(0),
-        filePath(NULL), hWatchingThread(NULL), observer(observer) {
+    FileWatcher(CallbackFunc *callback) : hDir(NULL), curBuffer(0),
+        filePath(NULL), hWatchingThread(NULL), pCallback(callback) {
         ZeroMemory(&this->overl, sizeof(this->overl));
         // create the event used to abort the "watching" thread
         hEvtStopWatching = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -33,14 +27,14 @@ public:
 
     ~FileWatcher() {
         SynchronousAbort();
-        delete observer;
+        delete pCallback;
         free(filePath);
         CloseHandle(hEvtStopWatching);
     }
 
 private:
     HANDLE          hDir;      // handle of the directory to watch
-    FileChangeObserver *observer; // function called when a file change is detected
+    CallbackFunc *  pCallback; // function called when a file change is detected
     TCHAR *         filePath;  // path to the file watched
 
     FILE_NOTIFY_INFORMATION buffer[2][512];

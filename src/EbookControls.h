@@ -23,7 +23,7 @@ struct EbookControls {
 EbookControls * CreateEbookControls(HWND hwnd);
 void            DestroyEbookControls(EbookControls* controls);
 
-class PageData;
+struct PageData;
 
 // control that shows a single ebook page
 // TODO: move to a separate file

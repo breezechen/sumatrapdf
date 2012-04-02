@@ -319,9 +319,6 @@ Iepenje mei &Adobe Reader
 Open in &Foxit Reader
 Iepenje mei &Foxit Reader
 
-Open in Microsoft HTML Help
-Iepenje mei Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Iepenje mei Microsoft XPS-Viewer
 

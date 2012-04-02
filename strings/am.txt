@@ -469,9 +469,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Բացել &Foxit Reader-ում
 
-Open in Microsoft HTML Help
-Բացել Microsoft HTML Help-ում
-
 Open in Microsoft XPS-Viewer
 Բացել Microsoft XPS-Viewer-ում
 

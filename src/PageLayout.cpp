@@ -31,9 +31,14 @@ stage 1 calculates the sizes of elements.
 */
 
 /*
-TODO: Instead of inserting explicit SetFont, StartLink, etc. instructions
-at the beginning of every page, DrawPageLayout could always start with
-that page's styleStack.Last().font, etc.
+TODO: properly implement carrying over visual state between pages to allow proper
+re-layout from arbitrary point. Currently we inject SetFont instruction at the beginning
+of every page to ensure that e.g. bold text that carries over to a new page is still bold.
+That's not enough and it breaks when doing re-layout from that page (the bold state is lost).
+Instead we need to remember information affecting visual state (which is a diff from default
+state defined by default font name, font size, color) inside PageData, the way we remember
+reparseIdx. We would no longer need that SetFont instructions but DrawPageLayout() would have
+to take this into account to setup initial state.
 The information that we need to remember:
 * font name (if different from default font name, NULL otherwise)
 * font size scale i.e. 1.f means "default font size". This is to allow the user to change
@@ -42,9 +47,6 @@ The information that we need to remember:
 * a link url if we're carrying over a text for a link (NULL if no link)
 * text color (when/if we support changing text color)
 * more ?
-
-TODO: reuse styleStack, listDepth, preFormatted from PageData when restarting
-layout from a reparseIdx
 
 TODO: HtmlFormatter could be split into DrawInstrBuilder which knows pageDx, pageDy
 and generates DrawInstr and splits them into pages and a better named class that
@@ -118,8 +120,8 @@ DrawInstr DrawInstr::Anchor(const char *s, size_t len, RectF bbox)
 HtmlFormatter::HtmlFormatter(LayoutInfo *li) : layoutInfo(li),
     pageDx((REAL)li->pageDx), pageDy((REAL)li->pageDy),
     textAllocator(li->textAllocator), currLineReparseIdx(NULL),
-    currX(0), currY(0), currLineTopPadding(0), currLinkIdx(0),
-    listDepth(0), preFormatted(false), currPage(NULL)
+    currX(0), currY(0), currJustification(Align_Justify),
+    currLineTopPadding(0), currLinkIdx(0), listDepth(0)
 {
     currReparseIdx = li->reparseIdx;
     htmlParser = new HtmlPullParser(li->htmlStr, li->htmlStrLen);
@@ -129,18 +131,16 @@ HtmlFormatter::HtmlFormatter(LayoutInfo *li) : layoutInfo(li),
     gfx = mui::AllocGraphicsForMeasureText();
     defaultFontName.Set(str::Dup(li->fontName));
     defaultFontSize = li->fontSize;
-    DrawStyle style;
-    style.font = mui::GetCachedFont(defaultFontName, defaultFontSize, FontStyleRegular);
-    style.align = Align_Justify;
-    styleStack.Append(style);
+    SetCurrentFont(FontStyleRegular, defaultFontSize);
 
-    lineSpacing = CurrFont()->GetHeight(gfx);
-    spaceDx = CurrFont()->GetSize() / 2.5f; // note: a heuristic
-    float spaceDx2 = GetSpaceDx(gfx, CurrFont());
+    lineSpacing = currFont->GetHeight(gfx);
+    spaceDx = currFontSize / 2.5f; // note: a heuristic
+    float spaceDx2 = GetSpaceDx(gfx, currFont);
     if (spaceDx2 < spaceDx)
         spaceDx = spaceDx2;
 
-    EmitNewPage();
+    currPage = new PageData();
+    currPage->reparseIdx = currReparseIdx;
 }
 
 HtmlFormatter::~HtmlFormatter()
@@ -161,24 +161,15 @@ void HtmlFormatter::AppendInstr(DrawInstr di)
     }
 }
 
-void HtmlFormatter::SetFont(const WCHAR *fontName, FontStyle fs, float fontSize)
+void HtmlFormatter::SetCurrentFont(FontStyle fontStyle, float fontSize)
 {
-    if (fontSize < 0)
-        fontSize = CurrFont()->GetSize();
-    Font *newFont = mui::GetCachedFont(fontName, fontSize, fs);
-    if (CurrFont() != newFont)
-        AppendInstr(DrawInstr::SetFont(newFont));
-
-    styleStack.Append(styleStack.Last());
-    CurrStyle()->font = newFont;
-}
-
-void HtmlFormatter::SetFont(Font *font, FontStyle fs, float fontSize)
-{
-    LOGFONTW lfw;
-    Status ok = CurrFont()->GetLogFontW(gfx, &lfw);
-    const WCHAR *fontName = ok == Ok ? lfw.lfFaceName : defaultFontName;
-    SetFont(fontName, fs, fontSize);
+    Font *newFont = mui::GetCachedFont(defaultFontName.Get(), fontSize, fontStyle);
+    if (currFont == newFont)
+        return;
+    currFontStyle = fontStyle;
+    currFontSize = fontSize;
+    currFont = newFont;
+    AppendInstr(DrawInstr::SetFont(currFont));
 }
 
 static bool ValidStyleForChangeFontStyle(FontStyle fs)
@@ -194,30 +185,24 @@ static bool ValidStyleForChangeFontStyle(FontStyle fs)
 
 // change the current font by adding (if addStyle is true) or removing
 // a given font style from current font style
-// TODO: it doesn't corrctly support the case where a style is wrongly nested
-// like "<b>fo<i>oo</b>bar</i>" - "bar" should be italic but will be bold
+// TODO: it doesn't support the case where the same style is nested
+// like "<b>fo<b>oo</b>bar</b>" - "bar" should still be bold but wont
+// We would have to maintain counts for each style to do it fully right
 void HtmlFormatter::ChangeFontStyle(FontStyle fs, bool addStyle)
 {
     CrashAlwaysIf(!ValidStyleForChangeFontStyle(fs));
+    FontStyle newFontStyle = currFontStyle;
     if (addStyle)
-        SetFont(CurrFont(), (FontStyle)(fs | CurrFont()->GetStyle()));
+        newFontStyle = (FontStyle) (newFontStyle | fs);
     else
-        RevertStyleChange();
+        newFontStyle = (FontStyle) (newFontStyle & ~fs);
+
+    SetCurrentFont(newFontStyle, currFontSize);
 }
 
-void HtmlFormatter::SetAlignment(AlignAttr align)
+void HtmlFormatter::ChangeFontSize(float fontSize)
 {
-    styleStack.Append(styleStack.Last());
-    CurrStyle()->align = align;
-}
-
-void HtmlFormatter::RevertStyleChange()
-{
-    if (styleStack.Count() > 1) {
-        DrawStyle style = styleStack.Pop();
-        if (style.font != CurrFont())
-            AppendInstr(DrawInstr::SetFont(CurrFont()));
-    }
+    SetCurrentFont(currFontStyle, fontSize);
 }
 
 static bool IsVisibleDrawInstr(DrawInstr *i)
@@ -412,9 +397,13 @@ void HtmlFormatter::ForceNewPage()
         return;
     UpdateLinkBboxes(currPage);
     pagesToSend.Append(currPage);
+    currPage = new PageData();
+    currPage->reparseIdx = currReparseIdx;
 
-    EmitNewPage();
+    currPage->instructions.Append(DrawInstr::SetFont(currFont));
+    currY = 0.f;
     currX = NewLineX();
+    currJustification = Align_Justify;
     currLineTopPadding = 0.f;
 }
 
@@ -432,7 +421,7 @@ bool HtmlFormatter::FlushCurrLine(bool isParagraphBreak)
         }
         return false;
     }
-    AlignAttr align = CurrStyle()->align;
+    AlignAttr align = currJustification;
     if (isParagraphBreak && (Align_Justify == align))
         align = Align_Left;
     JustifyCurrLine(align);
@@ -445,12 +434,14 @@ bool HtmlFormatter::FlushCurrLine(bool isParagraphBreak)
         // so need to start another page
         UpdateLinkBboxes(currPage);
         pagesToSend.Append(currPage);
+        currPage = new PageData();
+        createdPage = true;
         // instructions for each page need to be self-contained
         // so we have to carry over some state (like current font)
-        CrashIf(!CurrFont());
-        EmitNewPage();
+        CrashIf(!currFont);
+        currPage->instructions.Append(DrawInstr::SetFont(currFont));
         currPage->reparseIdx = currLineReparseIdx;
-        createdPage = true;
+        currY = 0.f;
     }
     SetYPos(currLineInstr, currY + currLineTopPadding);
     currY += totalLineDy;
@@ -471,36 +462,6 @@ bool HtmlFormatter::FlushCurrLine(bool isParagraphBreak)
         currLinkIdx = currLineInstr.Count();
     }
     return createdPage;
-}
-
-static DrawInstr *FindLastSetFontInstr(PageData *page)
-{
-    if (!page)
-        return NULL;
-    Vec<DrawInstr> *els = &page->instructions;
-    size_t n = els->Count();
-    for (size_t i = 0; i < n; i++) {
-        DrawInstr *di = &els->At(n - i - 1);
-        if (InstrSetFont == di->type)
-            return di;
-    }
-    return NULL;
-}
-
-void HtmlFormatter::EmitNewPage()
-{
-    PageData *prevPage = currPage;
-    currPage = new PageData();
-    currPage->reparseIdx = currReparseIdx;
-    currPage->styleStack = styleStack;
-    currPage->listDepth = listDepth;
-    currPage->preFormatted = preFormatted;
-    DrawInstr *lastSetFont = FindLastSetFontInstr(prevPage);
-    if (lastSetFont)
-        currPage->instructions.Append(*lastSetFont);
-    else
-        currPage->instructions.Append(DrawInstr::SetFont(CurrFont()));
-    currY = 0.f;
 }
 
 void HtmlFormatter::EmitEmptyLine(float lineDy)
@@ -555,8 +516,8 @@ void HtmlFormatter::EmitParagraph(float indent)
 {
     FlushCurrLine(true);
     CrashIf(NewLineX() != currX);
-    bool needsIndent = Align_Left == CurrStyle()->align ||
-                       Align_Justify == CurrStyle()->align;
+    bool needsIndent = Align_Left == currJustification ||
+                       Align_Justify == currJustification;
     if (indent > 0 && needsIndent && EnsureDx(indent)) {
         AppendInstr(DrawInstr::FixedSpace(indent));
         currX = NewLineX() + indent;
@@ -605,7 +566,7 @@ void HtmlFormatter::EmitTextRun(const char *s, const char *end)
 {
     currReparseIdx = s - htmlParser->Start();
     CrashIf(!ValidReparseIdx(currReparseIdx, htmlParser));
-    CrashIf(IsSpaceOnly(s, end) && !preFormatted);
+    CrashIf(IsSpaceOnly(s, end));
     const char *tmp = ResolveHtmlEntities(s, end, textAllocator);
     bool resolved = tmp != s;
     if (resolved) {
@@ -619,7 +580,8 @@ void HtmlFormatter::EmitTextRun(const char *s, const char *end)
             currReparseIdx = s - htmlParser->Start();
 
         size_t strLen = str::Utf8ToWcharBuf(s, end - s, buf, dimof(buf));
-        RectF bbox = MeasureText(gfx, CurrFont(), buf, strLen);
+        RectF bbox = MeasureText(gfx, currFont, buf, strLen);
+        bbox.Y = 0.f;
         EnsureDx(bbox.Width);
         if (bbox.Width <= pageDx - currX) {
             AppendInstr(DrawInstr::Str(s, end - s, bbox));
@@ -627,27 +589,22 @@ void HtmlFormatter::EmitTextRun(const char *s, const char *end)
             break;
         }
 
-        int lenThatFits = StringLenForWidth(gfx, CurrFont(), buf, strLen, pageDx - NewLineX());
-        // try to prevent a break in the middle of a word
-        if (iswalnum(buf[lenThatFits])) {
-            for (int len = lenThatFits; len > 0; len--) {
-                if (!iswalnum(buf[len-1])) {
-                    lenThatFits = len;
-                    break;
-                }
-            }
-        }
-        bbox = MeasureText(gfx, CurrFont(), buf, lenThatFits);
+        int lenThatFits = StringLenForWidth(gfx, currFont, buf, strLen, pageDx - NewLineX());
+        bbox = MeasureText(gfx, currFont, buf, lenThatFits);
+        bbox.Y = 0.f;
         CrashIf(bbox.Width > pageDx);
         AppendInstr(DrawInstr::Str(s, lenThatFits, bbox));
         currX += bbox.Width;
-
-        for (int i = 0; i < lenThatFits; i++) {
-            // s is UTF-8 and buf is UTF-16, so one
-            // WCHAR doesn't always equal one char
-            s += buf[i] < 0x80 ? 1 : buf[i] < 0x800 ? 2 : 3;
-        }
+        s += lenThatFits;
     }
+}
+
+// parse the number in s as a float
+static float ParseFloat(const char *s, size_t len)
+{
+    float x = 0;
+    str::Parse(s, len, "%f", &x);
+    return x;
 }
 
 // parses size in the form "1em" or "3pt". To interpret ems we need emInPoints
@@ -686,7 +643,7 @@ void HtmlFormatter::HandleAnchorTag(HtmlToken *t, bool idsOnly)
 
 void HtmlFormatter::HandleTagBr()
 {
-    // make sure to always emit a line
+    // Trying to match Kindle behavior
     if (IsCurrLineEmpty())
         EmitEmptyLine(lineSpacing);
     else
@@ -696,56 +653,46 @@ void HtmlFormatter::HandleTagBr()
 void HtmlFormatter::HandleTagP(HtmlToken *t)
 {
     if (!t->IsEndTag()) {
-        AlignAttr align = CurrStyle()->align;
         AttrInfo *attr = t->GetAttrByName("align");
         if (attr) {
             AlignAttr just = GetAlignAttrByName(attr->val, attr->valLen);
             if (just != Align_NotFound)
-                align = just;
+                currJustification = just;
         }
-        SetAlignment(align);
         EmitParagraph(0);
     } else {
         FlushCurrLine(true);
-        RevertStyleChange();
+        currJustification = Align_Justify;
     }
 }
 
 void HtmlFormatter::HandleTagFont(HtmlToken *t)
 {
     if (t->IsEndTag()) {
-        RevertStyleChange();
+        ChangeFontSize(defaultFontSize);
         return;
     }
 
-    AttrInfo *attr = t->GetAttrByName("face");
-    LOGFONTW lfw;
-    CurrFont()->GetLogFontW(gfx, &lfw);
-    const WCHAR *faceName = lfw.lfFaceName;
+    AttrInfo *attr = t->GetAttrByName("name");
+    float size;
     if (attr) {
-        size_t strLen = str::Utf8ToWcharBuf(t->s, t->sLen, buf, dimof(buf));
-        // multiple font names can be comma separated
-        if (strLen > 0 && *buf != ',') {
-            str::TransChars(buf, L",", L"\0");
-            faceName = buf;
-        }
+        // TODO: also use font name (not sure if mobi documents use that)
+        CrashIf(true);
+        size = 0; // only so that we can set a breakpoing
     }
 
-    float fontSize = CurrFont()->GetSize();
     attr = t->GetAttrByName("size");
-    if (attr) {
-        // the sizes are in the range from 1 (tiny) to 7 (huge)
-        int size = 3; // normal size
-        str::Parse(attr->val, attr->valLen, "%d", &size);
-        // sizes can also be relative to the current size
-        if (attr->valLen > 0 && ('-' == *attr->val || '+' == *attr->val))
-            size += 3;
-        size = limitValue(size, 1, 7);
-        float scale = pow(1.2f, size - 3);
-        fontSize = defaultFontSize * scale;
-    }
-
-    SetFont(faceName, (FontStyle)CurrFont()->GetStyle(), fontSize);
+    if (!attr)
+        return;
+    size = ParseFloat(attr->val, attr->valLen);
+    // the sizes seem to be in 3-6 range. I try to convert it to
+    // relative sizes that visually match Kindle app
+    if (size < 1.f)
+        size = 1.f;
+    else if (size > 10.f)
+        size = 10.f;
+    float scale = 1.f + (size/10.f * .4f);
+    ChangeFontSize(defaultFontSize * scale);
 }
 
 bool HtmlFormatter::HandleTagA(HtmlToken *t, const char *linkAttr)
@@ -783,17 +730,18 @@ void HtmlFormatter::HandleTagHx(HtmlToken *t)
 {
     if (t->IsEndTag()) {
         FlushCurrLine(true);
-        currY += CurrFont()->GetSize() / 2;
-        RevertStyleChange();
+        currY += currFontSize / 2;
+        currFontSize = defaultFontSize;
+        currJustification = Align_Justify;
     }
     else {
+        currJustification = Align_Left;
         EmitParagraph(0);
-        float fontSize = defaultFontSize * pow(1.1f, '5' - t->s[1]);
+        currFontSize = defaultFontSize * pow(1.1f, '5' - t->s[1]);
         if (currY > 0)
-            currY += fontSize / 2;
-        SetFont(CurrFont(), FontStyleBold, fontSize);
-        CurrStyle()->align = Align_Left;
+            currY += currFontSize / 2;
     }
+    ChangeFontStyle(FontStyleBold, t->IsStartTag());
 }
 
 void HtmlFormatter::HandleTagList(HtmlToken *t)
@@ -804,20 +752,6 @@ void HtmlFormatter::HandleTagList(HtmlToken *t)
     else if (t->IsEndTag() && listDepth > 0)
         listDepth--;
     currX = NewLineX();
-}
-
-void HtmlFormatter::HandleTagPre(HtmlToken *t)
-{
-    FlushCurrLine(true);
-    if (t->IsStartTag()) {
-        SetFont(L"Courier New", (FontStyle)CurrFont()->GetStyle());
-        CurrStyle()->align = Align_Left;
-        preFormatted = true;
-    }
-    else if (t->IsEndTag()) {
-        RevertStyleChange();
-        preFormatted = false;
-    }
 }
 
 void HtmlFormatter::HandleHtmlTag(HtmlToken *t)
@@ -865,33 +799,26 @@ void HtmlFormatter::HandleHtmlTag(HtmlToken *t)
     } else if (Tag_Center == tag) {
         HandleTagP(t);
         if (!t->IsEndTag())
-            CurrStyle()->align = Align_Center;
+            currJustification = Align_Center;
     } else if ((Tag_Ul == tag) || (Tag_Ol == tag)) {
         HandleTagList(t);
     } else if ((Tag_Li == tag) || (Tag_Dd == tag)) {
         // TODO: display bullet/number for Tag_Li
         FlushCurrLine(true);
     } else if (Tag_Dt == tag) {
-        if (t->IsStartTag())
+        if (t->IsStartTag()) {
             EmitParagraph(15.f);
-        else
+            currJustification = Align_Left;
+        } else {
             FlushCurrLine(true);
+        }
         ChangeFontStyle(FontStyleBold, t->IsStartTag());
-        if (t->IsStartTag())
-            CurrStyle()->align = Align_Left;
     } else if (Tag_Table == tag) {
         // TODO: implement me
         HandleTagList(t);
     } else if (Tag_Tr == tag) {
         // display tables row-by-row for now
         FlushCurrLine(true);
-    } else if (Tag_Code == tag) {
-        if (t->IsStartTag())
-            SetFont(L"Courier New", (FontStyle)CurrFont()->GetStyle());
-        else if (t->IsEndTag())
-            RevertStyleChange();
-    } else if (Tag_Pre == tag) {
-        HandleTagPre(t);
     } else {
         // TODO: temporary debugging
         //lf("unhandled tag: %d", tag);
@@ -907,25 +834,6 @@ void HtmlFormatter::HandleText(HtmlToken *t)
     bool skipped;
     const char *curr = t->s;
     const char *end = t->s + t->sLen;
-
-    if (preFormatted) {
-        // don't collapse whitespace and respect text newlines
-        while (curr < end) {
-            const char *text = curr;
-            currReparseIdx = curr - htmlParser->Start();
-            // skip to the next newline
-            for (; curr < end && *curr != '\n'; curr++);
-            if (curr < end && curr > text && *(curr - 1) == '\r')
-                curr--;
-            EmitTextRun(text, curr);
-            if ('\n' == *curr || '\r' == *curr) {
-                curr += '\r' == *curr ? 2 : 1;
-                HandleTagBr();
-            }
-        }
-        return;
-    }
-
     // break text into runs i.e. chunks that are either all
     // whitespace or all non-whitespace
     while (curr < end) {
@@ -956,7 +864,7 @@ bool HtmlFormatter::IgnoreText()
     return false;
 }
 
-// TODO: draw link in the appropriate format (blue text, underlined, should show hand cursor when
+// TODO: draw link in the appropriate format (blue text, unerlined, should show hand cursor when
 // mouse is over a link. There's a slight complication here: we only get explicit information about
 // strings, not about the whitespace and we should underline the whitespace as well. Also the text
 // should be underlined at a baseline
@@ -1057,7 +965,7 @@ void MobiFormatter::HandleSpacing_Mobi(HtmlToken *t)
     // 3pt top padding (the same seems to apply for <blockquote>)
     AttrInfo *attr = t->GetAttrByName("width");
     if (attr) {
-        float lineIndent = ParseSizeAsPixels(attr->val, attr->valLen, CurrFont()->GetSize());
+        float lineIndent = ParseSizeAsPixels(attr->val, attr->valLen, currFontSize);
         // there are files with negative width which produces partially invisible
         // text, so don't allow that
         if (lineIndent > 0) {
@@ -1068,7 +976,7 @@ void MobiFormatter::HandleSpacing_Mobi(HtmlToken *t)
     attr = t->GetAttrByName("height");
     if (attr) {
         // for use it in FlushCurrLine()
-        currLineTopPadding = ParseSizeAsPixels(attr->val, attr->valLen, CurrFont()->GetSize());
+        currLineTopPadding = ParseSizeAsPixels(attr->val, attr->valLen, currFontSize);
     }
 }
 

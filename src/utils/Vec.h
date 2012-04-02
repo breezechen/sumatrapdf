@@ -29,8 +29,6 @@ protected:
     T *         els;
     T           buf[INTERNAL_BUF_SIZE];
     Allocator * allocator;
-
-    // state of the IterStart()/IterNext() iterator
     T *         iterCurr;
 
     T* MakeSpaceAt(size_t idx, size_t count) {
@@ -138,9 +136,8 @@ public:
         return els[idx];
     }
 
-    T *AtPtr(size_t idx) const {
+    T* AtPtr(size_t idx) const {
         CrashIf(idx >= len);
-        CrashIf(&els[idx] != &At(idx));
         return &els[idx];
     }
 
@@ -203,11 +200,13 @@ public:
         Append(el);
     }
 
-    T Pop() {
+    // TODO: this doesn't preserve 0-padding at the end. Should zero out the memory
+    // for the last element
+    T& Pop() {
         CrashIf(0 == len);
-        T el = At(len - 1);
-        RemoveAt(len - 1);
-        return el;
+        T *el = AtPtr(len - 1);
+        len--;
+        return *el;
     }
 
     T& Last() const {
@@ -273,13 +272,6 @@ public:
         T *res = iterCurr;
         ++iterCurr;
         return res;
-    }
-
-    // return the index of the item returned by last IterStart()/IterNext()
-    size_t IterIdx() {
-        size_t idx = iterCurr - els;
-        CrashIf(0 == idx);
-        return idx - 1;
     }
 };
 
@@ -396,15 +388,6 @@ public:
         for (size_t i = startAt; i < len; i++) {
             TCHAR *item = At(i);
             if (str::Eq(string, item))
-                return (int)i;
-        }
-        return -1;
-    }
-
-    int FindI(const TCHAR *string, size_t startAt=0) const {
-        for (size_t i = startAt; i < len; i++) {
-            TCHAR *item = At(i);
-            if (str::EqI(string, item))
                 return (int)i;
         }
         return -1;

@@ -470,9 +470,6 @@ Oscail in Adobe Reader
 Open in &Foxit Reader
 Oscail i bhFoxit Reader
 
-Open in Microsoft HTML Help
-Oscail i bMicrosoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Oscail i bMicrosoft XPS-Viewer
 

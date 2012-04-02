@@ -470,9 +470,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Відкрити у Foxit Reader
 
-Open in Microsoft HTML Help
-Відкрити у Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Відкрити у Microsoft XPS-Viewer
 

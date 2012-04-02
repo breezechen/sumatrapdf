@@ -71,9 +71,9 @@ void NotificationWnd::UpdateWindowPosition(const TCHAR *message, bool init)
     }
 }
 
-void NotificationWnd::UpdateProgress(int current, int total)
+bool NotificationWnd::UpdateProgress(int current, int total)
 {
-    CrashIf(total <= 0);
+    assert(total > 0);
     if (total <= 0)
         total = 1;
     progress = limitValue(100 * current / total, 0, 100);
@@ -81,10 +81,6 @@ void NotificationWnd::UpdateProgress(int current, int total)
         ScopedMem<TCHAR> message(str::Format(progressMsg, current, total));
         UpdateMessage(message);
     }
-}
-
-bool NotificationWnd::WasCanceled()
-{
     return isCanceled;
 }
 

@@ -104,13 +104,14 @@ static void SetThreadName(DWORD dwThreadID, char* threadName)
 static LONG gThreadNoSeq = 0;
 
 ThreadBase::ThreadBase() :
-      hThread(NULL), cancelRequested(0), threadName(NULL)
+      hThread(NULL), autoDeleteSelf(false),
+      cancelRequested(0), threadName(NULL)
 {
     threadNo = (int)InterlockedIncrement(&gThreadNoSeq);
     //lf("ThreadBase() %d", threadNo);
 }
 
-ThreadBase::ThreadBase(const char *name)
+ThreadBase::ThreadBase(const char *name, bool autoDeleteSelf) : autoDeleteSelf(autoDeleteSelf)
 {
     threadName = str::Dup(name);
     cancelRequested = 0;
@@ -120,7 +121,6 @@ ThreadBase::ThreadBase(const char *name)
 ThreadBase::~ThreadBase()
 {
     //lf("~ThreadBase() %d", threadNo);
-    CloseHandle(hThread);
     free(threadName);
 }
 
@@ -130,29 +130,34 @@ DWORD WINAPI ThreadBase::ThreadProc(void *data)
     if (thread->threadName)
         SetThreadName(GetCurrentThreadId(), thread->threadName);
     thread->Run();
-    thread->UnRef();
+    HANDLE hThread = thread->hThread;
+    thread->hThread = NULL;
+    if (thread->autoDeleteSelf)
+        delete thread;
+    CloseHandle(hThread);
     return 0;
 }
 
 void ThreadBase::Start()
 {
-    Ref(); // will be unref'd at the end of ThreadBase::ThreadProc
     hThread = CreateThread(NULL, 0, ThreadProc, this, 0, 0);
 }
 
 bool ThreadBase::RequestCancelAndWaitToStop(DWORD waitMs, bool terminate)
 {
+    // should not be called on threads that are auto-delete because there's
+    // a race where WaitForSingleObject() might return telling us the thread
+    // is still alive but the thread might auto-delete itself right after
+    // that and we'll crash trying to use hThread which is now garbage
+    CrashIf(autoDeleteSelf && terminate);
+
     RequestCancel();
     DWORD res = WaitForSingleObject(hThread, waitMs);
-    if (WAIT_OBJECT_0 == res) {
-        CloseHandle(hThread);
-        hThread = NULL;
+    if (WAIT_OBJECT_0 == res)
         return true;
-    }
     if (terminate) {
         TerminateThread(hThread, 1);
         CloseHandle(hThread);
-        hThread = NULL;
     }
     return false;
 }

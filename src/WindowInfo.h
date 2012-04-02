@@ -14,7 +14,6 @@ class DoubleBuffer;
 class SelectionOnPage;
 class LinkHandler;
 class Notifications;
-class StressTestBase;
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -187,7 +186,7 @@ public:
         int hideStep;       // value used to gradually hide the markers
     } fwdSearchMark;
 
-    StressTestBase *stressTest;
+    CallbackFunc *  stressTest;
 
     TouchState touchState;
 

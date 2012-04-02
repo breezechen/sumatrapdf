@@ -102,16 +102,27 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
     int h = pixmap->h;
     int rows8 = ((w + 3) / 4) * 4;
 
+    /* BGRA is a GDI compatible format */
+    fz_pixmap *bgrPixmap;
+    fz_try(ctx) {
+        fz_colorspace *colorspace = fz_find_device_colorspace(ctx, "DeviceBGR");
+        bgrPixmap = fz_new_pixmap_with_bbox(ctx, colorspace, fz_pixmap_bbox(ctx, pixmap));
+        fz_convert_pixmap(ctx, bgrPixmap, pixmap);
+    }
+    fz_catch(ctx) {
+        return;
+    }
+
+    assert(bgrPixmap->n == 4);
+
     BITMAPINFO *bmi = (BITMAPINFO *)calloc(1, sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
 
     // always try to produce an 8-bit palette for saving some memory
     unsigned char *bmpData = (unsigned char *)calloc(rows8, h);
-    fz_pixmap *bgrPixmap = NULL;
-    if (bmpData && pixmap->n == 4 &&
-        pixmap->colorspace == fz_find_device_colorspace(ctx, "DeviceRGB"))
+    if (bmpData)
     {
         unsigned char *dest = bmpData;
-        unsigned char *source = pixmap->samples;
+        unsigned char *source = bgrPixmap->samples;
 
         for (int j = 0; j < h; j++)
         {
@@ -119,9 +130,9 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
             {
                 RGBQUAD c = { 0 };
 
-                c.rgbRed = *source++;
-                c.rgbGreen = *source++;
                 c.rgbBlue = *source++;
+                c.rgbGreen = *source++;
+                c.rgbRed = *source++;
                 source++;
 
                 /* find this color in the palette */
@@ -145,19 +156,6 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
 ProducingPaletteDone:
         hasPalette = paletteSize < 256;
     }
-    if (!hasPalette) {
-        free(bmpData);
-        /* BGRA is a GDI compatible format */
-        fz_try(ctx) {
-            fz_colorspace *colorspace = fz_find_device_colorspace(ctx, "DeviceBGR");
-            bgrPixmap = fz_new_pixmap_with_bbox(ctx, colorspace, fz_pixmap_bbox(ctx, pixmap));
-            fz_convert_pixmap(ctx, bgrPixmap, pixmap);
-        }
-        fz_catch(ctx) {
-            free(bmi);
-            return;
-        }
-    }
 
     bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi->bmiHeader.biWidth = w;
@@ -173,11 +171,9 @@ ProducingPaletteDone:
         hasPalette ? bmpData : bgrPixmap->samples, bmi, DIB_RGB_COLORS);
     ReleaseDC(NULL, hDC);
 
-    if (hasPalette)
-        free(bmpData);
-    else
-        fz_drop_pixmap(ctx, bgrPixmap);
+    fz_drop_pixmap(ctx, bgrPixmap);
     free(bmi);
+    free(bmpData);
 }
 
 fz_stream *fz_open_file2(fz_context *ctx, const TCHAR *filePath)
@@ -1096,25 +1092,28 @@ PdfEngineImpl::~PdfEngineImpl()
         free(_pages);
     }
 
-    fz_free_outline(ctx, outline);
-    fz_free_outline(ctx, attachments);
-    pdf_drop_obj(_info);
+    if (outline)
+        fz_free_outline(ctx, outline);
+    if (attachments)
+        fz_free_outline(ctx, attachments);
+    if (_info)
+        pdf_drop_obj(_info);
 
     if (pageComments) {
-        for (int i = 0; i < PageCount(); i++) {
+        for (int i = 0; i < PageCount(); i++)
             free(pageComments[i]);
-        }
         free(pageComments);
     }
     if (imageRects) {
-        for (int i = 0; i < PageCount(); i++) {
+        for (int i = 0; i < PageCount(); i++)
             free(imageRects[i]);
-        }
         free(imageRects);
     }
 
-    pdf_close_document(_doc);
-    _doc = NULL;
+    if (_doc) {
+        pdf_close_document(_doc);
+        _doc = NULL;
+    }
 
     while (runCache.Count() > 0) {
         assert(runCache.Last()->refs == 1);

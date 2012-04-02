@@ -2,10 +2,9 @@
    License: GPLv3 */
 
 #include "ChmDoc.h"
-#include "FileUtil.h"
 #include "StrUtil.h"
+#include "FileUtil.h"
 #include "TrivialHtmlParser.h"
-#include "Vec.h"
 
 #define CHM_MT
 #ifdef UNICODE
@@ -66,21 +65,6 @@ unsigned char *ChmDoc::GetData(const char *fileName, size_t *lenOut)
     if (lenOut)
         *lenOut = len;
     return data.StealData();
-}
-
-char *ChmDoc::ToUtf8(const unsigned char *text)
-{
-    const char *s = (char *)text;
-    if (str::StartsWith(s, "\xEF\xBB\xBF"))
-        return str::Dup(s + 3);
-    if (CP_UTF8 == codepage)
-        return str::Dup(s);
-    return str::ToMultiByte(s, codepage, CP_UTF8);
-}
-
-TCHAR *ChmDoc::ToStr(const char *text)
-{
-    return str::conv::FromCodePage(text, codepage);
 }
 
 inline DWORD GetDWord(const unsigned char *data, size_t offset)
@@ -185,7 +169,7 @@ bool ChmDoc::ParseSystemData()
     return true;
 }
 
-static UINT GetChmCodepage(const TCHAR *fileName)
+UINT GetChmCodepage(const TCHAR *fileName)
 {
     // cf. http://msdn.microsoft.com/en-us/library/bb165625(v=VS.90).aspx
     static struct {
@@ -254,25 +238,19 @@ TCHAR *ChmDoc::GetProperty(const char *name)
     return result.StealData();
 }
 
-const char *ChmDoc::GetIndexPath()
+char *ChmDoc::GetHomepage()
 {
-    return homePath;
+    return (char *)GetData(homePath, NULL);
 }
 
-static int ChmEnumerateEntry(struct chmFile *chmHandle, struct chmUnitInfo *info, void *data)
+char *ChmDoc::ToUtf8(const unsigned char *text)
 {
-    if (info->path) {
-        Vec<char *> *paths = (Vec<char *> *)data;
-        paths->Append(str::Dup(info->path));
-    }
-    return CHM_ENUMERATOR_CONTINUE;
-}
-
-Vec<char *> *ChmDoc::GetAllPaths()
-{
-    Vec<char *> *paths = new Vec<char *>();
-    chm_enumerate(chmHandle, CHM_ENUMERATE_FILES | CHM_ENUMERATE_NORMAL, ChmEnumerateEntry, paths);
-    return paths;
+    const char *s = (char *)text;
+    if (str::StartsWith(s, "\xEF\xBB\xBF"))
+        return str::Dup(s + 3);
+    if (CP_UTF8 == codepage)
+        return str::Dup(s);
+    return str::ToMultiByte(s, codepage, CP_UTF8);
 }
 
 bool ChmDoc::HasToc()
@@ -280,17 +258,6 @@ bool ChmDoc::HasToc()
     return tocPath != NULL;
 }
 
-/* The html looks like:
-<li>
-  <object type="text/sitemap">
-    <param name="Name" value="Main Page">
-    <param name="Local" value="0789729717_main.html">
-    <param name="ImageNumber" value="12">
-  </object>
-  <ul> ... children ... </ul>
-<li>
-  ... siblings ...
-*/
 static bool VisitChmTocItem(ChmTocVisitor *visitor, HtmlElement *el, UINT cp, int level)
 {
     assert(str::Eq("li", el->name));

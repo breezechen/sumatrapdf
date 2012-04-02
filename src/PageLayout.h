@@ -62,26 +62,14 @@ struct DrawInstr {
     static DrawInstr Anchor(const char *s, size_t len, RectF bbox);
 };
 
-struct DrawStyle {
-    Font *font;
-    AlignAttr align;
-};
-
-class PageData {
-public:
-    PageData() : reparseIdx(0), listDepth(0), preFormatted(false) { }
-
-    Vec<DrawInstr>  instructions;
+struct PageData {
+    PageData() : reparseIdx(NULL)
+    {}
     // if we start parsing html again from reparseIdx, we should
     // get the same instructions. reparseIdx is an offset within
     // html data
     int             reparseIdx;
-    // a copy of the current style stack, so that styling
-    // doesn't change on a relayout from reparseIdx
-    Vec<DrawStyle>  styleStack;
-    // further information that is required for reliable relayouting
-    int listDepth;
-    bool preFormatted;
+    Vec<DrawInstr>  instructions;
 };
 
 // just to pack args to HtmlFormatter
@@ -108,7 +96,7 @@ public:
     const char *    htmlStr;
     size_t          htmlStrLen;
 
-    // we start parsing from htmlStr + reparseIdx
+    // we stat parsing from htmlStr + reparseIdx
     int             reparseIdx;
 };
 
@@ -122,7 +110,6 @@ protected:
     bool HandleTagA(HtmlToken *t, const char *linkAttr="href");
     void HandleTagHx(HtmlToken *t);
     void HandleTagList(HtmlToken *t);
-    void HandleTagPre(HtmlToken *t);
     void HandleHtmlTag(HtmlToken *t);
     void HandleText(HtmlToken *t);
 
@@ -141,17 +128,12 @@ protected:
     void  EmitElasticSpace();
     void  EmitParagraph(float indent);
     void  EmitEmptyLine(float lineDy);
-    void  EmitNewPage();
     void  ForceNewPage();
     bool  EnsureDx(float dx);
 
-    DrawStyle *CurrStyle() { return &styleStack.Last(); }
-    Font *CurrFont() { return CurrStyle()->font; }
-    void  SetFont(const WCHAR *fontName, FontStyle fs, float fontSize=-1);
-    void  SetFont(Font *origFont, FontStyle fs, float fontSize=-1);
+    void  SetCurrentFont(FontStyle fs, float fontSize);
     void  ChangeFontStyle(FontStyle fs, bool isStart);
-    void  SetAlignment(AlignAttr align);
-    void  RevertStyleChange();
+    void  ChangeFontSize(float fontSize);
 
     void  AppendInstr(DrawInstr di);
     bool  IsCurrLineEmpty();
@@ -168,7 +150,12 @@ protected:
     float               defaultFontSize;
     Allocator *         textAllocator;
 
-    Vec<DrawStyle>      styleStack;
+    // temporary state during layout process
+    FontStyle           currFontStyle;
+    float               currFontSize;
+    Font *              currFont;
+
+    AlignAttr           currJustification;
     // current position in a page
     float               currX, currY;
     // remembered when we start a new line, used when we actually
@@ -176,8 +163,6 @@ protected:
     float               currLineTopPadding;
     // number of nested lists for indenting whole paragraphs
     int                 listDepth;
-    // set if newlines are not to be ignored
-    bool                preFormatted;
 
     // isntructions for the current line
     Vec<DrawInstr>      currLineInstr;

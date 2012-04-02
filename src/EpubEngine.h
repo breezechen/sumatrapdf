@@ -31,10 +31,4 @@ public:
     static Chm2Engine *CreateFromFile(const TCHAR *fileName);
 };
 
-class TxtEngine : public virtual BaseEngine {
-public:
-    static bool IsSupportedFile(const TCHAR *fileName, bool sniff=false);
-    static TxtEngine *CreateFromFile(const TCHAR *fileName);
-};
-
 #endif

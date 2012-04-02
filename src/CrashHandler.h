@@ -7,6 +7,5 @@
 void InstallCrashHandler(const TCHAR *crashDumpPath, const TCHAR *symDir);
 void SubmitCrashInfo();
 void UninstallCrashHandler();
-void CrashLogFmt(const char *fmt, ...);
 
 #endif

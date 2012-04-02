@@ -24,8 +24,8 @@
 #define FONT_NAME              L"Georgia"
 #define FONT_SIZE              12.5f
 
-// in MobiWindow.cpp
-extern void RestartLayoutTimer(EbookController *controller);
+// in EbookTest.cpp
+void RestartLayoutTimer(EbookController *controller);
 
 void LayoutTemp::DeletePages()
 {
@@ -36,6 +36,7 @@ void LayoutTemp::DeletePages()
 ThreadLoadMobi::ThreadLoadMobi(const TCHAR *fn, EbookController *controller, const SumatraWindow& sumWin) :
     controller(controller)
 {
+    autoDeleteSelf = true;
     fileName = str::Dup(fn);
     win = sumWin;
 }
@@ -82,6 +83,7 @@ public:
 ThreadLayoutMobi::ThreadLayoutMobi(LayoutInfo *li, MobiDoc *doc, EbookController *ctrl) :
     layoutInfo(li), mobiDoc(doc), controller(ctrl), pageCount(0)
 {
+    autoDeleteSelf = false;
 }
 
 ThreadLayoutMobi::~ThreadLayoutMobi()
@@ -112,8 +114,9 @@ void ThreadLayoutMobi::SendPagesIfNecessary(bool force, bool finished, bool from
     ld->fromBeginning = fromBeginning;
     if (pageCount > 0)
         memcpy(ld->pages, pages, pageCount * sizeof(PageData*));
-    //lf("ThreadLayoutMobi::SendPagesIfNecessary() sending %d pages, finished=%d", pageCount, (int)finished);
+    //lf("ThreadLayoutMobi::SendPagesIfNecessary() sending %d pages, ld=0x%x", pageCount, (int)ld);
     ld->pageCount = pageCount;
+    ld->thread = this;
     ld->threadNo = threadNo;
     ld->controller = controller;
     pageCount = 0;
@@ -178,22 +181,18 @@ EbookController::EbookController(EbookControls *ctrls) :
     currPageNo(0), pageShown(NULL), deletePageShown(false),
     pageDx(0), pageDy(0), layoutThread(NULL), layoutThreadNo(-1), startReparseIdx(-1)
 {
-    EventMgr *em = ctrls->mainWnd->evtMgr;
-    em->EventsForControl(ctrls->next)->Clicked.connect(this, &EbookController::ClickedNext);
-    em->EventsForControl(ctrls->prev)->Clicked.connect(this, &EbookController::ClickedPrev);
-    em->EventsForControl(ctrls->progress)->Clicked.connect(this, &EbookController::ClickedProgress);
-    em->EventsForControl(ctrls->page)->SizeChanged.connect(this, &EbookController::SizeChangedPage);
+    ctrls->mainWnd->evtMgr->RegisterClicked(ctrls->next, this);
+    ctrls->mainWnd->evtMgr->RegisterClicked(ctrls->prev, this);
+    ctrls->mainWnd->evtMgr->RegisterClicked(ctrls->progress, this);
+    ctrls->mainWnd->evtMgr->RegisterSizeChanged(ctrls->page, this);
+
     UpdateStatus();
 }
 
 EbookController::~EbookController()
 {
-    StopLayoutThread(true);
-    EventMgr *evtMgr = ctrls->mainWnd->evtMgr;
-    evtMgr->RemoveEventsForControl(ctrls->next);
-    evtMgr->RemoveEventsForControl(ctrls->prev);
-    evtMgr->RemoveEventsForControl(ctrls->progress);
-    evtMgr->RemoveEventsForControl(ctrls->page);
+    ctrls->mainWnd->evtMgr->UnRegisterClicked(this);
+    ctrls->mainWnd->evtMgr->UnRegisterSizeChanged(this);
     CloseCurrentDocument();
 }
 
@@ -211,8 +210,17 @@ void EbookController::StopLayoutThread(bool forceTerminate)
 {
     if (!layoutThread)
         return;
-    if (layoutThread->RequestCancelAndWaitToStop(1000, forceTerminate))
-        layoutThread->UnRef();
+    layoutThread->RequestCancelAndWaitToStop(1000, forceTerminate);
+    // note: we don't delete the thread object, it'll be deleted in
+    // EbookController::HandleMobiLayoutMsg() when its final message
+    // arrives
+    // TODO: unfortunately this leads to leaking thread objects and
+    // messages sent by them. Maintaining the lifteime of thread objects
+    // is tricky
+    // One possibility is to switch to using thread no, disallow ~ThreadBase
+    // by making it private and adding DeleteThread(int threadNo) which ensures
+    // thread object can only be deleted once by tracking undeleted threads
+    // in a Vec (and removing deleted threads from that vector)
     layoutThread = NULL;
     layoutThreadNo = -1;
     layoutTemp.DeletePages();
@@ -340,6 +348,10 @@ void EbookController::HandleMobiLayoutMsg(MobiLayoutData *ld)
     if (layoutThreadNo != ld->threadNo) {
         // this is a message from cancelled thread, we can disregard
         //lf("EbookController::MobiLayout() thread msg discarded, curr thread: %d, sending thread: %d", layoutThreadNo, ld->threadNo);
+        if (ld->finished) {
+            //lf("deleting thread %d", ld->threadNo);
+            delete ld->thread;
+        }
         return;
     }
     //lf("EbookController::HandleMobiLayoutMsg() %d pages, ld=0x%x", ld->pageCount, (int)ld);
@@ -409,6 +421,9 @@ void EbookController::HandleMobiLayoutMsg(MobiLayoutData *ld)
 
     if (ld->finished) {
         CrashIf(pagesFromBeginning || pagesFromPage);
+        delete layoutThread;
+        layoutThread = NULL;
+        layoutThreadNo = -1;
         pagesFromBeginning = new Vec<PageData*>();
         PageData **pages = layoutTemp.pagesFromBeginning.LendData();
         size_t pageCount =  layoutTemp.pagesFromBeginning.Count();
@@ -422,7 +437,6 @@ void EbookController::HandleMobiLayoutMsg(MobiLayoutData *ld)
             pagesFromPage->Append(pages, pageCount);
             layoutTemp.pagesFromPage.Reset();
         }
-        StopLayoutThread(false);
     }
     UpdateStatus();
 }
@@ -511,7 +525,7 @@ void EbookController::OnLayoutTimer()
     TriggerLayout();
 }
 
-void EbookController::SizeChangedPage(Control *c, int dx, int dy)
+void EbookController::SizeChanged(Control *c, int dx, int dy)
 {
     CrashIf(c != ctrls->page);
     // delay re-layout so that we don't unnecessarily do the
@@ -519,22 +533,21 @@ void EbookController::SizeChangedPage(Control *c, int dx, int dy)
     RestartLayoutTimer(this);
 }
 
-void EbookController::ClickedNext(Control *c, int x, int y)
-{
-    CrashIf(c != ctrls->next);
-    AdvancePage(1);
-}
-
-void EbookController::ClickedPrev(Control *c, int x, int y)
-{
-    CrashIf(c != ctrls->prev);
-    AdvancePage(-1);
-}
-
 // (x, y) is in the coordinates of w
-void EbookController::ClickedProgress(Control *c, int x, int y)
+void EbookController::Clicked(Control *c, int x, int y)
 {
+    if (c == ctrls->next) {
+        AdvancePage(1);
+        return;
+    }
+
+    if (c == ctrls->prev) {
+        AdvancePage(-1);
+        return;
+    }
+
     CrashIf(c != ctrls->progress);
+
     float perc = ctrls->progress->GetPercAt(x);
     CrashIf(!GetPagesFromBeginning()); // shouldn't be active if we don't have those
     int pageCount = GetPagesFromBeginning()->Count();

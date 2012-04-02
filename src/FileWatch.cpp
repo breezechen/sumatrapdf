@@ -152,8 +152,8 @@ bool FileWatcher::NotifyChange()
     // Note: the ReadDirectoryChangesW API fills the buffer with WCHAR strings.
     for (;;) {
         ScopedMem<WCHAR> filenameW(str::DupN(pFileNotify->FileName, pFileNotify->FileNameLength / sizeof(WCHAR)));
-        ScopedMem<TCHAR> notifyFilename(str::conv::FromWStr(filenameW));
-        bool isWatchedFile = str::EqI(notifyFilename, path::GetBaseName(filePath));
+        ScopedMem<TCHAR> ptNotifyFilename(str::conv::FromWStr(filenameW));
+        bool isWatchedFile = str::EqI(ptNotifyFilename, path::GetBaseName(filePath));
 
         // is it the file that is being watched?
         if (isWatchedFile && pFileNotify->Action == FILE_ACTION_MODIFIED) {
@@ -161,8 +161,8 @@ bool FileWatcher::NotifyChange()
             // because the time granularity is so big that this can cause genuine
             // file notifications to be ignored. (This happens for instance for
             // PDF files produced by pdftex from small.tex document)
-            if (observer)
-                observer->OnFileChanged();
+            if (pCallback)
+                pCallback->Callback();
             return true;
         }
 

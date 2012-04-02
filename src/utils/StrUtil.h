@@ -31,8 +31,6 @@ bool EqI(const WCHAR *s1, const WCHAR *s2);
 bool EqIS(const TCHAR *s1, const TCHAR *s2);
 bool EqN(const char *s1, const char *s2, size_t len);
 bool EqN(const WCHAR *s1, const WCHAR *s2, size_t len);
-bool EqNI(const char *s1, const char *s2, size_t len);
-bool EqNI(const WCHAR *s1, const WCHAR *s2, size_t len);
 
 template <typename T>
 inline bool IsEmpty(T *s) {
@@ -88,10 +86,8 @@ const char * FindI(const char *s, const char *find);
 int     FindStrPosI(const char *strings, const char *str, size_t len);
 int     FindStrPos(const char *strings, const char *str, size_t len);
 
-bool    BufFmtV(char *buf, size_t bufCchSize, const char *fmt, va_list args);
 char *  FmtV(const char *fmt, va_list args);
 char *  Format(const char *fmt, ...);
-bool    BufFmtV(WCHAR *buf, size_t bufCchSize, const WCHAR *fmt, va_list args);
 WCHAR * FmtV(const WCHAR *fmt, va_list args);
 WCHAR * Format(const WCHAR *fmt, ...);
 
@@ -107,8 +103,6 @@ size_t  RemoveChars(WCHAR *str, const WCHAR *toRemove);
 
 size_t  BufSet(char *dst, size_t dstCchSize, const char *src);
 size_t  BufSet(WCHAR *dst, size_t dstCchSize, const WCHAR *src);
-size_t  BufAppend(char *dst, size_t dstCchSize, const char *s);
-size_t  BufAppend(WCHAR *dst, size_t dstCchSize, const WCHAR *s);
 
 char *  MemToHex(const unsigned char *buf, int len);
 bool    HexToMem(const char *s, unsigned char *buf, int bufLen);

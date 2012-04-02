@@ -11,7 +11,6 @@
 #include "Notifications.h"
 #include "Print.h"
 #include "Selection.h"
-#include "StressTesting.h"
 #include "Translations.h"
 
 WindowInfo::WindowInfo(HWND hwnd) :

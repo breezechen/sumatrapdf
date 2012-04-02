@@ -16,9 +16,6 @@ EventMgr::EventMgr(HwndWrapper *wndRoot)
 
 EventMgr::~EventMgr()
 {
-    // for good programming hygene, we want event subscribers
-    // to unsubscribe
-    CrashIf(0 != eventHandlers.Count());
 }
 
 // Set minimum size that will be enforced by handling WM_GETMINMAXINFO
@@ -35,46 +32,64 @@ void EventMgr::SetMaxSize(Size s)
     maxSize = s;
 }
 
-void EventMgr::RemoveEventsForControl(Control *c)
+void EventMgr::UnRegisterEventHandler(EventHandler::Type type, void *handler)
 {
-    for (size_t i = 0; i < eventHandlers.Count(); i++) {
+    size_t i = 0;
+    while (i < eventHandlers.Count()) {
         EventHandler h = eventHandlers.At(i);
-        if (h.ctrlSource == c) {
-            ControlEvents *events = eventHandlers.At(i).events;
-            eventHandlers.RemoveAtFast(i);
-            delete events;
-            return;
+        if (h.type != type) {
+            i++;
+            continue;
         }
+        if (handler == h.handler)
+            eventHandlers.RemoveAtFast(i);
+        else
+            i++;
     }
 }
 
-ControlEvents *EventMgr::EventsForControl(Control *c)
+void EventMgr::UnRegisterClicked(IClicked *handler)
 {
-    for (EventHandler *h = eventHandlers.IterStart(); h; h = eventHandlers.IterNext()) {
-        if (h->ctrlSource == c)
-            return h->events;
-    }
-    ControlEvents *events = new ControlEvents();
-    EventHandler h = { c, events };
+    void *tmp = reinterpret_cast<void*>(handler);
+    UnRegisterEventHandler(EventHandler::Clicked, tmp);
+}
+
+void EventMgr::RegisterClicked(Control *ctrlSource, IClicked *handler)
+{
+    EventHandler h = { EventHandler::Clicked, ctrlSource, handler };
     eventHandlers.Append(h);
-    return events;
 }
 
 void EventMgr::NotifyClicked(Control *c, int x, int y)
 {
     EventHandler *h;
     for (h = eventHandlers.IterStart(); h; h = eventHandlers.IterNext()) {
-        if (h->ctrlSource == c)
-            return h->events->Clicked.emit(c, x, y);
+        if ((h->ctrlSource == c) && (h->type == EventHandler::Clicked)) {
+            h->clicked->Clicked(c, x, y);
+        }
     }
+}
+
+void EventMgr::UnRegisterSizeChanged(ISizeChanged *handler)
+{
+    void *tmp = reinterpret_cast<void*>(handler);
+    UnRegisterEventHandler(EventHandler::SizeChanged, tmp);
+}
+
+void EventMgr::RegisterSizeChanged(Control *ctrlSource, ISizeChanged *handler)
+{
+    EventHandler h = { EventHandler::SizeChanged, ctrlSource, NULL };
+    h.sizeChanged = handler;
+    eventHandlers.Append(h);
 }
 
 void EventMgr::NotifySizeChanged(Control *c, int dx, int dy)
 {
     EventHandler *h;
     for (h = eventHandlers.IterStart(); h; h = eventHandlers.IterNext()) {
-        if (h->ctrlSource == c)
-            h->events->SizeChanged.emit(c, dx, dy);
+        if ((h->ctrlSource == c) && (h->type == EventHandler::SizeChanged)) {
+            h->sizeChanged->SizeChanged(c, dx, dy);
+        }
     }
 }
 

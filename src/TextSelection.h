@@ -10,22 +10,6 @@ class StrVec;
 
 #define iswordchar(c) IsCharAlphaNumeric(c)
 
-class PageTextCache {
-    BaseEngine* engine;
-    RectI    ** coords;
-    TCHAR    ** text;
-    int       * lens;
-
-    CRITICAL_SECTION access;
-
-public:
-    PageTextCache(BaseEngine *engine);
-    ~PageTextCache();
-
-    bool HasData(int pageNo);
-    const TCHAR *GetData(int pageNo, int *lenOut=NULL, RectI **coordsOut=NULL);
-};
-
 struct TextSel {
     int len;
     int *pages;
@@ -35,7 +19,7 @@ struct TextSel {
 class TextSelection
 {
 public:
-    TextSelection(BaseEngine *engine, PageTextCache *textCache);
+    TextSelection(BaseEngine *engine);
     ~TextSelection();
 
     bool IsOverGlyph(int pageNo, double x, double y);
@@ -55,11 +39,13 @@ public:
     TextSel result;
 
 protected:
-    BaseEngine *    engine;
-    PageTextCache * textCache;
+    BaseEngine* engine;
+    RectI    ** coords;
+    TCHAR    ** text;
+    int       * lens;
 
-    int startPage, endPage;
-    int startGlyph, endGlyph;
+    int         startPage, endPage;
+    int         startGlyph, endGlyph;
 
     int FindClosestGlyph(int pageNo, double x, double y);
     void FillResultRects(int pageNo, int glyph, int length, StrVec *lines=NULL);

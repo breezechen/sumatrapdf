@@ -167,12 +167,9 @@ static void releasePixmap(void *info, const void *data, size_t size)
 
 static UIImage *newImageWithPixmap(fz_pixmap *pix)
 {
-	unsigned char *samples = fz_pixmap_samples(ctx, pix);
-	int w = fz_pixmap_width(ctx, pix);
-	int h = fz_pixmap_height(ctx, pix);
-	CGDataProviderRef cgdata = CGDataProviderCreateWithData(pix, samples, w * 4 * h, releasePixmap);
+	CGDataProviderRef cgdata = CGDataProviderCreateWithData(pix, pix->samples, pix->w * 4 * pix->h, releasePixmap);
 	CGColorSpaceRef cgcolor = CGColorSpaceCreateDeviceRGB();
-	CGImageRef cgimage = CGImageCreate(w, h, 8, 32, 4 * w,
+	CGImageRef cgimage = CGImageCreate(pix->w, pix->h, 8, 32, 4 * pix->w,
 			cgcolor, kCGBitmapByteOrderDefault,
 			cgdata, NULL, NO, kCGRenderingIntentDefault);
 	UIImage *image = [[UIImage alloc]

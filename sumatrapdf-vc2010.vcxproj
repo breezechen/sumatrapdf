@@ -157,30 +157,24 @@
     <ClCompile Include="mupdf\fitz\base_context.c" />
     <ClCompile Include="mupdf\fitz\base_geometry.c" />
     <ClCompile Include="mupdf\fitz\base_getopt.c" />
+    <ClCompile Include="mupdf\fitz\base_link.c" />
+    <ClCompile Include="mupdf\fitz\base_object.c" />
     <ClCompile Include="mupdf\fitz\base_time.c" />
     <ClCompile Include="mupdf\fitz\crypt_sha2.c" />
     <ClCompile Include="mupdf\fitz\dev_bbox.c" />
+    <ClCompile Include="mupdf\fitz\dev_draw.c" />
     <ClCompile Include="mupdf\fitz\dev_gdiplus.cpp" />
     <ClCompile Include="mupdf\fitz\dev_list.c" />
     <ClCompile Include="mupdf\fitz\dev_null.c" />
     <ClCompile Include="mupdf\fitz\dev_text.c" />
     <ClCompile Include="mupdf\fitz\dev_trace.c" />
-    <ClCompile Include="mupdf\fitz\doc_document.c" />
-    <ClCompile Include="mupdf\fitz\doc_link.c" />
     <ClCompile Include="mupdf\fitz\doc_outline.c" />
-    <ClCompile Include="mupdf\fitz\image_jpeg.c" />
-    <ClCompile Include="mupdf\fitz\image_jpx.c" />
-    <ClCompile Include="mupdf\fitz\image_md5.c" />
-    <ClCompile Include="mupdf\fitz\image_png.c" />
-    <ClCompile Include="mupdf\fitz\image_save.c" />
-    <ClCompile Include="mupdf\fitz\image_tiff.c" />
     <ClCompile Include="mupdf\fitz\res_bitmap.c" />
     <ClCompile Include="mupdf\fitz\res_halftone.c" />
     <ClCompile Include="mupdf\fitz\res_path.c" />
     <ClCompile Include="mupdf\fitz\res_pixmap.c" />
     <ClCompile Include="mupdf\fitz\res_store.c" />
     <ClCompile Include="mupdf\fitz\res_text.c" />
-    <ClCompile Include="mupdf\pdf\base_object.c" />
     <ClCompile Include="mupdf\pdf\pdf_annot.c" />
     <ClCompile Include="mupdf\pdf\pdf_cmap.c" />
     <ClCompile Include="mupdf\pdf\pdf_cmap_load.c" />
@@ -227,13 +221,11 @@
     <ClCompile Include="mupdf\xps\xps_zip.c" />
     <ClCompile Include="src\AppPrefs.cpp" />
     <ClCompile Include="src\AppTools.cpp" />
-    <ClCompile Include="src\browserplugin\npPdfViewer.cpp" />
     <ClCompile Include="src\ChmEngine.cpp" />
     <ClCompile Include="src\CrashHandler.cpp" />
     <ClCompile Include="src\DisplayModel.cpp" />
     <ClCompile Include="src\DisplayState.cpp" />
     <ClCompile Include="src\DjVuEngine.cpp" />
-    <ClCompile Include="src\Doc.cpp" />
     <ClCompile Include="src\EbookController.cpp" />
     <ClCompile Include="src\EbookControls.cpp" />
     <ClCompile Include="src\EngineDump.cpp" />
@@ -241,9 +233,6 @@
     <ClCompile Include="src\ExternalPdfViewer.cpp" />
     <ClCompile Include="src\Favorites.cpp" />
     <ClCompile Include="src\FileWatch.cpp" />
-    <ClCompile Include="src\ifilter\CPdfFilter.cpp" />
-    <ClCompile Include="src\ifilter\CTeXFilter.cpp" />
-    <ClCompile Include="src\ifilter\PdfFilterDll.cpp" />
     <ClCompile Include="src\ImagesEngine.cpp" />
     <ClCompile Include="src\installer\Install.cpp" />
     <ClCompile Include="src\installer\Installer.cpp" />
@@ -252,6 +241,7 @@
     <ClCompile Include="src\memtrace\MemTraceDll.cpp" />
     <ClCompile Include="src\Menu.cpp" />
     <ClCompile Include="src\MobiDoc.cpp" />
+    <ClCompile Include="src\MobiEngine.cpp" />
     <ClCompile Include="src\MobiWindow.cpp" />
     <ClCompile Include="src\mui\Mui.cpp" />
     <ClCompile Include="src\mui\MuiBase.cpp" />
@@ -269,8 +259,6 @@
     <ClCompile Include="src\ParseCommandLine.cpp" />
     <ClCompile Include="src\PdfEngine.cpp" />
     <ClCompile Include="src\PdfSync.cpp" />
-    <ClCompile Include="src\previewer\PdfPreview.cpp" />
-    <ClCompile Include="src\previewer\PdfPreviewDll.cpp" />
     <ClCompile Include="src\Print.cpp" />
     <ClCompile Include="src\PsEngine.cpp" />
     <ClCompile Include="src\RenderCache.cpp" />
@@ -293,8 +281,6 @@
     <ClCompile Include="src\utils\FileTransactions.cpp" />
     <ClCompile Include="src\utils\GdiPlusUtil.cpp" />
     <ClCompile Include="src\utils\HtmlPullParser.cpp" />
-    <ClCompile Include="src\utils\Sigslot_ut.cpp" />
-    <ClCompile Include="src\utils\StrUtil_ut.cpp" />
     <ClCompile Include="src\utils\ThreadUtil.cpp" />
     <ClCompile Include="src\utils\Touch.cpp" />
     <ClCompile Include="src\Translations.cpp" />
@@ -311,8 +297,13 @@
     <ClCompile Include="mupdf\fitz\filt_faxd.c" />
     <ClCompile Include="mupdf\fitz\filt_flate.c" />
     <ClCompile Include="mupdf\fitz\filt_jbig2d.c" />
+    <ClCompile Include="mupdf\fitz\filt_jpxd.c" />
     <ClCompile Include="mupdf\fitz\filt_lzwd.c" />
     <ClCompile Include="mupdf\fitz\filt_predict.c" />
+    <ClCompile Include="mupdf\fitz\obj_array.c" />
+    <ClCompile Include="mupdf\fitz\obj_dict.c" />
+    <ClCompile Include="mupdf\fitz\obj_print.c" />
+    <ClCompile Include="mupdf\fitz\obj_simple.c" />
     <ClCompile Include="mupdf\fitz\res_colorspace.c" />
     <ClCompile Include="mupdf\fitz\res_font.c" />
     <ClCompile Include="mupdf\fitz\res_shade.c" />
@@ -345,7 +336,6 @@
     <ClCompile Include="src\utils\StrUtil.cpp" />
     <ClCompile Include="src\utils\TrivialHtmlParser.cpp" />
     <ClCompile Include="src\utils\UtilTests.cpp" />
-    <ClCompile Include="src\utils\Vec_ut.cpp" />
     <ClCompile Include="src\utils\WinUtil.cpp" />
     <ClCompile Include="src\utils\ZipUtil.cpp" />
     <ClCompile Include="src\WindowInfo.cpp" />
@@ -386,10 +376,8 @@
     <ClInclude Include="ext\zlib\zconf.h" />
     <ClInclude Include="ext\zlib\zlib.h" />
     <ClInclude Include="ext\zlib\zutil.h" />
-    <ClInclude Include="mupdf\fitz\fitz-internal.h" />
     <ClInclude Include="mupdf\pdf\data_encodings.h" />
     <ClInclude Include="mupdf\pdf\data_glyphlist.h" />
-    <ClInclude Include="mupdf\pdf\mupdf-internal.h" />
     <ClInclude Include="mupdf\pdf\mupdf.h" />
     <ClInclude Include="mupdf\xps\muxps.h" />
     <ClInclude Include="src\AppPrefs.h" />
@@ -400,7 +388,6 @@
     <ClInclude Include="src\DisplayModel.h" />
     <ClInclude Include="src\DisplayState.h" />
     <ClInclude Include="src\DjVuEngine.h" />
-    <ClInclude Include="src\Doc.h" />
     <ClInclude Include="src\EbookController.h" />
     <ClInclude Include="src\EbookControls.h" />
     <ClInclude Include="src\EngineManager.h" />
@@ -409,10 +396,6 @@
     <ClInclude Include="src\Favorites.h" />
     <ClInclude Include="src\FileHistory.h" />
     <ClInclude Include="src\FileWatch.h" />
-    <ClInclude Include="src\ifilter\CPdfFilter.h" />
-    <ClInclude Include="src\ifilter\CTeXFilter.h" />
-    <ClInclude Include="src\ifilter\FilterBase.h" />
-    <ClInclude Include="src\ifilter\PdfFilter.h" />
     <ClInclude Include="src\ImagesEngine.h" />
     <ClInclude Include="src\installer\Installer.h" />
     <ClInclude Include="src\installer\Resource.h" />
@@ -421,6 +404,7 @@
     <ClInclude Include="src\memtrace\nsWindowsDllInterceptor.h" />
     <ClInclude Include="src\Menu.h" />
     <ClInclude Include="src\MobiDoc.h" />
+    <ClInclude Include="src\MobiEngine.h" />
     <ClInclude Include="src\MobiWindow.h" />
     <ClInclude Include="src\mui\Mui.h" />
     <ClInclude Include="src\mui\MuiBase.h" />
@@ -438,7 +422,6 @@
     <ClInclude Include="src\ParseCommandLine.h" />
     <ClInclude Include="src\PdfEngine.h" />
     <ClInclude Include="src\PdfSync.h" />
-    <ClInclude Include="src\previewer\PdfPreview.h" />
     <ClInclude Include="src\Print.h" />
     <ClInclude Include="src\PsEngine.h" />
     <ClInclude Include="src\RenderCache.h" />
@@ -462,8 +445,6 @@
     <ClInclude Include="src\utils\FileTransactions.h" />
     <ClInclude Include="src\utils\GdiPlusUtil.h" />
     <ClInclude Include="src\utils\HtmlPullParser.h" />
-    <ClInclude Include="src\utils\RefCounted.h" />
-    <ClInclude Include="src\utils\Sigslot.h" />
     <ClInclude Include="src\utils\ThreadUtil.h" />
     <ClInclude Include="src\utils\Touch.h" />
     <ClInclude Include="src\Translations.h" />
@@ -575,10 +556,8 @@
     <Manifest Include="src\SumatraPDF.exe.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="src\ifilter\PdfFilter.rc" />
     <ResourceCompile Include="src\installer\Installer.manifest.rc" />
     <ResourceCompile Include="src\installer\Installer.rc" />
-    <ResourceCompile Include="src\previewer\PdfPreview.rc" />
     <ResourceCompile Include="src\SumatraPDF.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

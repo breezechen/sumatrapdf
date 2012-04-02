@@ -44,10 +44,6 @@ Vec<SelectionOnPage> *SelectionOnPage::FromRectangle(DisplayModel *dm, RectI rec
     }
     sel->Reverse();
 
-    if (sel->Count() == 0) {
-        delete sel;
-        return NULL;
-    }
     return sel;
 }
 
@@ -55,16 +51,10 @@ Vec<SelectionOnPage> *SelectionOnPage::FromTextSelect(TextSel *textSel)
 {
     Vec<SelectionOnPage> *sel = new Vec<SelectionOnPage>(textSel->len);
 
-    for (int i = textSel->len - 1; i >= 0; i--) {
-        RectD rect = textSel->rects[i].Convert<double>();
-        sel->Append(SelectionOnPage(textSel->pages[i], &rect));
-    }
+    for (int i = textSel->len - 1; i >= 0; i--)
+        sel->Append(SelectionOnPage(textSel->pages[i], &textSel->rects[i].Convert<double>()));
     sel->Reverse();
 
-    if (sel->Count() == 0) {
-        delete sel;
-        return NULL;
-    }
     return sel;
 }
 
@@ -106,7 +96,7 @@ void PaintSelection(WindowInfo *win, HDC hdc)
     Vec<RectI> rects;
 
     if (win->mouseAction == MA_SELECTING) {
-        // during rectangle selection
+        // during selecting
         RectI selRect = win->selectionRect;
         if (selRect.dx < 0) {
             selRect.x += selRect.dx;
@@ -119,22 +109,14 @@ void PaintSelection(WindowInfo *win, HDC hdc)
 
         rects.Append(selRect);
     } else {
-        // during text selection or after selection is done
-        if (MA_SELECTING_TEXT == win->mouseAction) {
+        if (MA_SELECTING_TEXT == win->mouseAction)
             UpdateTextSelection(win);
-            if (!win->selectionOnPage) {
-                // prevent the selection from disappearing while the
-                // user is still at it (OnSelectionStop removes it
-                // if it is still empty at the end)
-                win->selectionOnPage = new Vec<SelectionOnPage>();
-                win->showSelection = true;
-            }
-        }
 
-        CrashIf(!win->selectionOnPage);
+        assert(win->selectionOnPage);
         if (!win->selectionOnPage)
             return;
 
+        // after selection is done
         for (size_t i = 0; i < win->selectionOnPage->Count(); i++)
             rects.Append(win->selectionOnPage->At(i).GetRect(win->dm));
     }
@@ -157,7 +139,7 @@ void UpdateTextSelection(WindowInfo *win, bool select)
 
     DeleteOldSelectionInfo(win);
     win->selectionOnPage = SelectionOnPage::FromTextSelect(&win->dm->textSelection->result);
-    win->showSelection = win->selectionOnPage != NULL;
+    win->showSelection = true;
 }
 
 void ZoomToSelection(WindowInfo *win, float factor, bool relative)
@@ -291,7 +273,7 @@ void OnSelectAll(WindowInfo *win, bool textOnly)
         win->selectionOnPage = SelectionOnPage::FromRectangle(win->dm, win->selectionRect);
     }
 
-    win->showSelection = win->selectionOnPage != NULL;
+    win->showSelection = true;
     win->RepaintAsync();
 }
 
@@ -361,9 +343,7 @@ void OnSelectionStop(WindowInfo *win, int x, int y, bool aborted)
     win->selectionRect = RectI::FromXY(win->selectionRect.x, win->selectionRect.y, x, y);
     if (aborted || (MA_SELECTING == win->mouseAction ? win->selectionRect.IsEmpty() : !win->selectionOnPage))
         DeleteOldSelectionInfo(win, true);
-    else if (win->mouseAction == MA_SELECTING) {
+    else if (win->mouseAction == MA_SELECTING)
         win->selectionOnPage = SelectionOnPage::FromRectangle(win->dm, win->selectionRect);
-        win->showSelection = win->selectionOnPage != NULL;
-    }
     win->RepaintAsync();
 }
