@@ -118,7 +118,7 @@ S&olo pagine dispari
 &Stampa
 
 &Print...\tCtrl+P
-Stam&pa\tCtrl+P
+Stam&pa...\tCtrl+P
 
 &Print... (denied)
 Stam&pa... (rifiutato)

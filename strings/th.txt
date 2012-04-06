@@ -53,7 +53,7 @@ Contributor: Uthen Phutneam
 พิมพ์\tCtrl+P
 
 &Save As...\tCtrl+S
-บันทึกเป็น\tCtrl+S
+บันทึกเป็น...\tCtrl+S
 
 &Skip this version
 ช้ามเวอร์ชั่นนี้ไป

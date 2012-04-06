@@ -47,7 +47,7 @@ Vhura\tCtrl+0
 Peji yesure\t<-
 
 &Print...\tCtrl+P
-&Printa\tCtrl+P
+&Printa...\tCtrl+P
 
 &Save As...\tCtrl+S
 &Sevha se...\tCtrl+S

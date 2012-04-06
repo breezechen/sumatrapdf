@@ -115,7 +115,7 @@ Contributor: داود فخیم
 چاپ کردن000
 
 &Print...\tCtrl+P
-&چاپ\tCtrl+P
+&چاپ...\tCtrl+P
 
 &Print... (denied)
 &چاپ(ممنوع).. 

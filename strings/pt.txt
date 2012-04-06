@@ -130,7 +130,7 @@ Esq&uecer documento
 &Gravar como...
 
 &Save As...\tCtrl+S
-&Gravar como\tCtrl+S
+&Gravar como...\tCtrl+S
 
 &Settings
 &Definições
@@ -472,7 +472,7 @@ Number of Pages:
 Número de páginas:
 
 OK
-OK
+Aplicar
 
 Open
 Abrir

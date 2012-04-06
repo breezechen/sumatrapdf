@@ -48,10 +48,10 @@ Sumatra ਬਾਰੇ(&A)
 ਪਿਛਲੇ ਪੰਨੇ ਤੇ\t<-
 
 &Print...\tCtrl+P
-ਪਰਿੰਟ ਕਰੋ(&P)\tCtrl+P
+ਪਰਿੰਟ ਕਰੋ(&P)...\tCtrl+P
 
 &Save As...\tCtrl+S
-ਇੰਝ ਸੰਬਾਲੋ(&S)\tCtrl+S
+ਇੰਝ ਸੰਬਾਲੋ(&S)...\tCtrl+S
 
 &Skip this version
 ਇਸ ਵਰਜਨ ਨੂੰ ਛਡੋ

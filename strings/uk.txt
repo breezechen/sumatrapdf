@@ -111,7 +111,7 @@ Contributor: Andriy Ilechko
 Друк...
 
 &Print...\tCtrl+P
-&Друкувати\tCtrl+P
+&Друкувати...\tCtrl+P
 
 &Print... (denied)
 Друк... (відхилено)

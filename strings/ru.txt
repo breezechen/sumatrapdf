@@ -112,7 +112,7 @@ Contributor: Victor Kozyakin
 Пе&чать...
 
 &Print...\tCtrl+P
-Пе&чать\tCtrl+P
+Пе&чать...\tCtrl+P
 
 &Print... (denied)
 Пе&чать... (отмена)

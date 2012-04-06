@@ -14,7 +14,7 @@ Contributor: Dimitris Mytilinaios
 Contributor: XhmikosR
 
 &About
-&Σχετικά...
+&Σχετικά
 
 &Actual Size\tCtrl+1
 Πραγματικό &Μέγεθος\tCtrl+1
@@ -113,7 +113,7 @@ Contributor: XhmikosR
 &Εκτύπωση
 
 &Print...\tCtrl+P
-&Εκτύπωση\tCtrl+P
+&Εκτύπωση...\tCtrl+P
 
 &Print... (denied)
 &Εκτύπωση... (απαγορεύεται)
@@ -131,7 +131,7 @@ Contributor: XhmikosR
 &Αποθήκευση ως...
 
 &Save As...\tCtrl+S
-&Αποθήκευση ως\tCtrl+S
+&Αποθήκευση ως...\tCtrl+S
 
 &Settings
 &Ρυθμίσεις

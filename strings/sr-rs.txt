@@ -112,7 +112,7 @@ Contributor: Милан Гашић
 Штампај...
 
 &Print...\tCtrl+P
-Штампај\tCtrl+P
+Штампај...\tCtrl+P
 
 &Print... (denied)
 Штампај... (одбијено)

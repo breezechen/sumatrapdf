@@ -111,7 +111,7 @@ Pagina anterioară\t<-
 &Tipărește...
 
 &Print...\tCtrl+P
-I&mprimare\tCtrl+P
+I&mprimare...\tCtrl+P
 
 &Print... (denied)
 &Imprimare... (interzisă)

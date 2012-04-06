@@ -110,7 +110,7 @@ Contributor: Beqa Arabuli (arabulibeqa@yahoo.com)
 &ამობეჭდვა...
 
 &Print...\tCtrl+P
-&ამობეჭდვა\tCtrl+P
+&ამობეჭდვა...\tCtrl+P
 
 &Print... (denied)
 &ამობეჭდვა... (გაუქმდა)

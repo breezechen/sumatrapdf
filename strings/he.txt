@@ -111,7 +111,7 @@ Contributor: Amos Kotter http://sites.google.com/site/hillasystem/
 הדפס
 
 &Print...\tCtrl+P
-הדפס\tCtrl+P
+הדפס...\tCtrl+P
 
 &Print... (denied)
 הדפס... (התקבל סירוב)
@@ -129,7 +129,7 @@ Contributor: Amos Kotter http://sites.google.com/site/hillasystem/
 בשמור בשם
 
 &Save As...\tCtrl+S
-שמירה בשם\tCtrl+S
+שמירה בשם...\tCtrl+S
 
 &Settings
 הגדרות
