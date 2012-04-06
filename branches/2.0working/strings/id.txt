@@ -132,7 +132,7 @@ Halaman Sebelumnya\t<-
 Si&mpan Sebagai...
 
 &Save As...\tCtrl+S
-&Simpan Sebagai\tCtrl+S
+&Simpan Sebagai...\tCtrl+S
 
 &Settings
 &Pengaturan

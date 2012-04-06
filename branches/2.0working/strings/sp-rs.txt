@@ -111,7 +111,7 @@ Prethodna stranica\t<-
 Štampaj...
 
 &Print...\tCtrl+P
-Štampaj\tCtrl+P
+Štampaj...\tCtrl+P
 
 &Print... (denied)
 Štampaj... (odbijeno)

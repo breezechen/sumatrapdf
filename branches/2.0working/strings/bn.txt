@@ -51,7 +51,7 @@ Contributor: Shabab Mustafa (shabab.mustafa@gmail.com)
 পূর্ববর্তী পৃষ্ঠা\t<-
 
 &Print...\tCtrl+P
-&মুদ্রন\tCtrl+P
+&মুদ্রন...\tCtrl+P
 
 &Save As...\tCtrl+S
 &সংরক্ষণ এই রূপে...\tCtrl+S

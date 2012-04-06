@@ -111,7 +111,7 @@ Contributor: Brian S. Vangsgaard
 &Udskriv...
 
 &Print...\tCtrl+P
-&Udskriv\tCtrl+P
+&Udskriv...\tCtrl+P
 
 &Print... (denied)
 &Udskriv... (nægtet)

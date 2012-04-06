@@ -113,7 +113,7 @@ Előző oldal\t<-
 &Nyomtatás
 
 &Print...\tCtrl+P
-Nyomt&atás\tCtrl+P
+Nyomt&atás...\tCtrl+P
 
 &Print... (denied)
 Nyomtatás... (tiltott)

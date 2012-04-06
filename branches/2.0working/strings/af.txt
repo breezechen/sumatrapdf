@@ -43,9 +43,6 @@ Handleiding
 &Next Page\tRight Arrow
 Volgende Bladsy\t->
 
-&Open\tCtrl+O
-&Maak Oop\tCtrl+O
-
 &Previous Page\tLeft Arrow
 Vorige Bladsy\t<-
 
@@ -225,6 +222,7 @@ Zoem Uit
 #&No, thanks
 #&Odd pages only
 #&Open Document
+#&Open\tCtrl+O
 #&Options...
 #&Password:
 #&Pin Document

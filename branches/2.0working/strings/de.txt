@@ -177,7 +177,7 @@ Add page %s to favorites with (optional) name:
 Bezeichnung des Favoriten für Seite %s (optional):
 
 Add to favorites
-Zu Favoriten hinzufügen
+Zu Favoriten hinzufügen…
 
 Advanced
 Weiteres
@@ -345,7 +345,7 @@ Facing
 Doppelseite
 
 Failed to save a file
-Fehler beim Speichern der Datei!
+Die Datei konnte nicht neu gespeichert werden!
 
 Favorites
 Favoriten
@@ -402,7 +402,7 @@ Fonts:
 Schriftarten:
 
 Formatting the book... %d pages
-Buch wird formatiert... Seite %d
+Buch wird formatiert… Seite %d
 
 Found text at page %s
 Text auf Seite %s gefunden
@@ -432,7 +432,7 @@ KB
 KB
 
 Loading file %s...
-%s wird geladen...
+%s wird geladen…
 
 MB
 MB

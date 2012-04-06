@@ -110,7 +110,7 @@ Páxina anterior\t<-
 &Imprimir...
 
 &Print...\tCtrl+P
-&Imprimir\tCtrl+P
+&Imprimir...\tCtrl+P
 
 &Print... (denied)
 &Imprimir... (denegado)

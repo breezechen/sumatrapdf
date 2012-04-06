@@ -93,7 +93,7 @@ Tudalennau &odrif yn unig
 Tudalen Flaenorol\t<-
 
 &Print...\tCtrl+P
-&Argraffu\tCtrl+P
+&Argraffu...\tCtrl+P
 
 &Print... (denied)
 &Argraffu... (gwrthodwyd)

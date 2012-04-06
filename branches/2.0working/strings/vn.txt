@@ -111,7 +111,7 @@ Trang trước\tMũi tên trái
 In...
 
 &Print...\tCtrl+P
-In\tCtrl+P
+In...\tCtrl+P
 
 &Print... (denied)
 &In... (bị từ chối)
@@ -129,7 +129,7 @@ Xóa tập tin
 Lưu thành...
 
 &Save As...\tCtrl+S
-Lưu thành\tCtrl+S
+Lưu thành...\tCtrl+S
 
 &Settings
 Cài đặt

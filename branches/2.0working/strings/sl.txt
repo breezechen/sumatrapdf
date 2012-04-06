@@ -13,7 +13,7 @@ Contributor: Martin Srebotnjak
 Contributor: Damjan Gerl
 
 &About
-&O programu …
+&O programu
 
 &Actual Size\tCtrl+1
 &Dejanska velikost\tCtrl+1
@@ -343,7 +343,7 @@ Facing
 Dvostransko
 
 Failed to save a file
-Shranjevanje datoteke ni uspelo.
+Shranjevanje datoteke ni uspelo
 
 Favorites
 Priljubljeni
@@ -358,7 +358,7 @@ File:
 Datoteka:
 
 Fin&d...\tCtrl+F
-Najdi …\tCtrl+F
+Išči …\tCtrl+F
 
 Find
 Išči
@@ -399,6 +399,9 @@ Prilagodi enostransko
 Fonts:
 Pisave:
 
+Formatting the book... %d pages
+Oblikovanje knjige … %d strani
+
 Found text at page %s
 Besedilo najdeno na strani %s
 
@@ -425,6 +428,9 @@ Slikovne datoteke (*.%s)
 
 KB
 KB
+
+Loading file %s...
+Nalaganje datoteke %s …
 
 MB
 MB
@@ -686,8 +692,4 @@ kopiranje besedila
 
 printing document
 tiskanje dokumenta
-
-# Untranslated:
-#Formatting the book... %d pages
-#Loading file %s...
 

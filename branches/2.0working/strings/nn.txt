@@ -47,10 +47,10 @@ Neste side\t->
 Førre side\t<-
 
 &Print...\tCtrl+P
-Skriv &ut\tCtrl+P
+Skriv &ut...\tCtrl+P
 
 &Save As...\tCtrl+S
-Lagre &som\tCtrl+S
+Lagre &som...\tCtrl+S
 
 &Skip this version
 Hopp over denne versjonen
