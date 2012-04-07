@@ -88,6 +88,9 @@ Contributor: Umidjon Almasov (u.almasov@gmail.com)
 &Odd pages only
 &Faqat toq betlar
 
+&Open\tCtrl+O
+&Ochish\tCtrl+O
+
 &Open Document
 &Hujjatni ochish
 
@@ -98,7 +101,7 @@ Contributor: Umidjon Almasov (u.almasov@gmail.com)
 &Maxfiy so'z:
 
 &Pin Document
-&Hujjatni eslash
+&Hujjatni eslab qolish
 
 &Previous Page\tLeft Arrow
 &Oldingi bet\t<-
@@ -113,10 +116,10 @@ Contributor: Umidjon Almasov (u.almasov@gmail.com)
 &Bosib chiqarish... (rad etilgan)
 
 &Remember the password for this document
-&Ushbu hujjatning maxfiy so'zini eslash
+&Ushbu hujjatning maxfiy so'zini eslab qolish
 
 &Remember these settings for each document
-&Ushbu parametrlarni har qaysi hujjat uchun eslash
+&Ushbu parametrlarni har qaysi hujjat uchun eslab qolish
 
 &Remove Document
 &Hujjatni o'chirish
@@ -182,7 +185,7 @@ All supported documents
 Hamma qo'llanadigan hujjatlar
 
 Application:
-Ilova:
+Dastur:
 
 Associate with PDF files?
 PDF-fayllar bilan bog'lansinmi?
@@ -454,6 +457,9 @@ Keyingi bet
 No matches were found
 Mos kelmadi
 
+No result found around line %u in file %s
+%u satriga %s faylida mos natija topilmadi
+
 No synchronization file found
 Sinxronizatsiya fayli topilmadi
 
@@ -494,7 +500,7 @@ PDF Document
 PDF hujjati
 
 PDF Producer:
-PDF yaratuvchi:
+PDF yaratuvchisi:
 
 PDF Version:
 PDF versiyasi:
@@ -551,7 +557,7 @@ Printing problem.
 Bosib chiqarish muammosi.
 
 Remember &opened files
-&Ochilgan fayllarni eslash
+&Ochilgan fayllarni eslab qolish
 
 Remove from favorites
 Tanlanganlardan o'chirish
@@ -650,7 +656,7 @@ View
 Ko'rish
 
 Visit &Website
-&Veb sahifasiga o'tish
+&Veb sahifaga o'tish
 
 Warning
 Diqqat
@@ -684,8 +690,4 @@ matn nusxa olinmoqda
 
 printing document
 hujjat bosib chiqarilmoqda
-
-# Untranslated:
-#&Open\tCtrl+O
-#No result found around line %u in file %s
 
