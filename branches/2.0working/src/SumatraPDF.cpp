@@ -1325,12 +1325,20 @@ WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin,
         if (!win) {
             if ((1 == gWindows.Count()) && gWindows.At(0)->IsAboutWindow())
                 win = gWindows.At(0);
-        } else {
-            if (win->IsDocLoaded() && !forceReuse)
+        } else if (!win->IsAboutWindow() && !forceReuse) {
                 win = NULL;
         }
+        if (!win) {
+            // create a dummy window so taht we can return
+            // a non-NULL value to indicate loading success
+            win = CreateWindowInfo();
+        }
+        if (win->IsAboutWindow()) {
+            // don't crash if multiple Mobi files are opened at once
+            win->loadedFilePath = str::Dup(fullPath);
+        }
         LoadMobiAsync(fileName, SumatraWindow::Make(win));
-        return NULL;
+        return win;
     }
 
     bool isNewWindow = false;
