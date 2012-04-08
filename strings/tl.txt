@@ -83,8 +83,8 @@ Hindi
 &Odd pages only
 Mga odd na pahina lamang
 
-&Open...\tCtrl+O
-Buksan...\tCtrl+O
+&Open\tCtrl+O
+Buksan\tCtrl+O
 
 &Options...
 Mga Pagpipilian
@@ -380,9 +380,6 @@ Buksan sa Adobe Reader
 Open in &Foxit Reader
 Buksan sa Foxit Reader
 
-Open in Microsoft HTML Help
-Buksan sa Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Buksan sa Microsoft XPS-Viewer
 
@@ -573,7 +570,6 @@ ipini-print ang dokumento
 #EPUB ebooks
 #Error loading %s
 #F&avorites
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fonts:
@@ -591,10 +587,8 @@ ipini-print ang dokumento
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Show Favorites

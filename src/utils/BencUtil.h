@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef BencUtil_h
@@ -17,6 +17,7 @@
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include "Vec.h"
 
 enum BencType { BT_STRING, BT_INT, BT_ARRAY, BT_DICT };
 

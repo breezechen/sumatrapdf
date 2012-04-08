@@ -1,8 +1,9 @@
 /* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "HtmlPullParser.h"
+#include "Allocator.h"
+#include "StrUtil.h"
 
 /* TODO: We could extend the parser to allow navigating the tree (go to a prev/next sibling, go
 to a parent) without explicitly building a tree in memory. I think all we need to do is to extend
@@ -119,10 +120,12 @@ bool SkipNonWs(const char* & s, const char *end)
     return start != s;
 }
 
-static int IsNameChar(char c)
+static int IsNameChar(int c)
 {
     return c == '.' || c == '-' || c == '_' || c == ':' ||
-           str::IsDigit(c) || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+        (c >= '0' && c <= '9') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z');
 }
 
 // skip all html tag or attribute characters
@@ -149,32 +152,16 @@ void MemAppend(char *& dst, const char *s, size_t len)
 }
 
 // if "&foo;" was the entity, s points at the char
-// after '&' and len is the maximum lenght of the string
-// (4 in case of "foo;")
-// returns a pointer to the first character after the entity
-static const char *ResolveHtmlEntity(const char *s, size_t len, int& rune)
+// after '&' and len is lenght of the string (3 in case of "foo")
+// the caller must ensure that there is terminating ';'
+static int ResolveHtmlEntity(const char *s, size_t len)
 {
-    const char *entEnd = str::Parse(s, len, "#%d%?;", &rune);
-    if (entEnd)
-        return entEnd;
-    entEnd = str::Parse(s, len, "#x%x%?;", &rune);
-    if (entEnd)
-        return entEnd;
-
-    // go to the end of a potential named entity
-    for (entEnd = s; entEnd < s + len && isalnum(*entEnd); entEnd++);
-    if (entEnd != s) {
-        rune = HtmlEntityNameToRune(s, entEnd - s);
-        if (-1 == rune)
-            return NULL;
-        // skip the trailing colon - if there is one
-        if (entEnd < s + len && *entEnd == ';')
-            entEnd++;
-        return entEnd;
-    }
-
-    rune = -1;
-    return NULL;
+    int rune;
+    if (str::Parse(s, "#%d;", &rune))
+        return rune;
+    if (str::Parse(s, "#x%x;", &rune))
+        return rune;
+    return HtmlEntityNameToRune(s, len);
 }
 
 // if s doesn't contain html entities, we just return it
@@ -185,8 +172,9 @@ static const char *ResolveHtmlEntity(const char *s, size_t len, int& rune)
 const char *ResolveHtmlEntities(const char *s, const char *end, Allocator *alloc)
 {
     char *        res = NULL;
-    size_t        resLen = 0;
+    size_t        resLen;
     char *        dst;
+    const char *  colon;
 
     const char *curr = s;
     for (;;) {
@@ -207,17 +195,21 @@ const char *ResolveHtmlEntities(const char *s, const char *end, Allocator *alloc
             dst = res;
         }
         MemAppend(dst, s, curr - s);
-        // curr points at '&'
-        int rune = -1;
-        const char *entEnd = ResolveHtmlEntity(curr + 1, end - curr - 1, rune);
-        if (!entEnd) {
-            // unknown entity, just copy the '&'
-            MemAppend(dst, curr, 1);
-            curr++;
+        // curr points at '&'. Make sure there is ';' within source string
+        colon = curr;
+        found = SkipUntil(colon, end, ';');
+        if (!found) {
+            MemAppend(dst, curr, end - curr);
+            break;
+        }
+        int rune = ResolveHtmlEntity(curr+1, colon - curr - 1);
+        if (-1 == rune) {
+            // unknown entity, copy the string verbatim
+            MemAppend(dst, curr, colon - curr + 1);
         } else {
             str::Utf8Encode(dst, rune);
-            curr = entEnd;
         }
+        curr = colon + 1;
         s = curr;
     }
     *dst = 0;
@@ -225,18 +217,9 @@ const char *ResolveHtmlEntities(const char *s, const char *end, Allocator *alloc
     return (const char*)res;
 }
 
-// convenience function for the above that always allocates
-char *ResolveHtmlEntities(const char *s, size_t len)
-{
-    const char *tmp = ResolveHtmlEntities(s, s + len, NULL);
-    if (tmp == s)
-        return str::DupN(s, len);
-    return (char *)tmp;
-}
-
 static bool StrLenIs(const char *s, size_t len, const char *s2)
 {
-    return str::Len(s2) == len && str::StartsWithI(s, s2);
+    return str::Len(s2) == len && str::StartsWith(s, s2);
 }
 
 bool AttrInfo::NameIs(const char *s) const
@@ -266,7 +249,7 @@ void HtmlToken::SetError(ParsingError err, const char *errContext)
 
 bool HtmlToken::NameIs(const char *name) const
 {
-    return  (str::Len(name) == GetTagLen(this)) && str::StartsWithI(s, name);
+    return  (str::Len(name) == GetTagLen(this)) && str::StartsWith(s, name);
 }
 
 // reparse point is an address within html that we can
@@ -288,17 +271,6 @@ AttrInfo *HtmlToken::GetAttrByName(const char *name)
     nextAttr = NULL; // start from the beginning
     for (AttrInfo *a = NextAttr(); a; a = NextAttr()) {
         if (a->NameIs(name))
-            return a;
-    }
-    return NULL;
-}
-
-AttrInfo *HtmlToken::GetAttrByValue(const char *name)
-{
-    size_t len = str::Len(name);
-    nextAttr = NULL; // start from the beginning
-    for (AttrInfo *a = NextAttr(); a; a = NextAttr()) {
-        if (len == a->valLen && str::EqN(a->val, name, len))
             return a;
     }
     return NULL;
@@ -464,8 +436,8 @@ Next:
     }
 
     CrashIf('>' != *currPos);
-    if (currPos == start || currPos == start + 1 && *start == '/') {
-        // skip empty tags (<> and </>), because we're lenient
+    if (currPos == start) {
+        // skip empty tags (<>), because we're lenient
         ++currPos;
         goto Next;
     }

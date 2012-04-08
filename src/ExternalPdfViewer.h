@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef ExternalPdfViewer_h
@@ -17,8 +17,5 @@ bool ViewWithAcrobat(WindowInfo *win, TCHAR *args=NULL);
 
 bool CanViewWithXPSViewer(WindowInfo *win);
 bool ViewWithXPSViewer(WindowInfo *win, TCHAR *args=NULL);
-
-bool CanViewWithHtmlHelp(WindowInfo *win);
-bool ViewWithHtmlHelp(WindowInfo *win, TCHAR *args=NULL);
 
 #endif

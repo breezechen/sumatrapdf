@@ -88,11 +88,11 @@ Contributor: Umidjon Almasov (u.almasov@gmail.com)
 &Odd pages only
 &Faqat toq betlar
 
+&Open\tCtrl+O
+&Ochish\tCtrl+O
+
 &Open Document
 &Hujjatni ochish
-
-&Open...\tCtrl+O
-&Ochish...\tCtrl+O
 
 &Options...
 &Parametrlar...
@@ -340,9 +340,6 @@ To'liq &ekran\tCtrl+Shift+L
 Facing
 Ikkita betdan
 
-Failed to rename the file!
-Fayl nomini o'zgartirish muvaffaqiyatsiz tugadi
-
 Failed to save a file
 Faylni saqlash muvaffaqiyatsiz tugadi
 
@@ -487,9 +484,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 &Foxit Readerda ochish
 
-Open in Microsoft HTML Help
-Microsoft HTML Helpda ochish
-
 Open in Microsoft XPS-Viewer
 Microsoft XPS-Viewerda ochish
 
@@ -562,9 +556,6 @@ Printing page %d of %d...
 Printing problem.
 Bosib chiqarish muammosi.
 
-Re&name...\tF2
-&Nomini o'zgartirish...\tF2
-
 Remember &opened files
 &Ochilgan fayllarni eslab qolish
 
@@ -573,9 +564,6 @@ Tanlanganlardan o'chirish
 
 Remove page %s from favorites
 %s betni tanlanganlardan o'chirish
-
-Rename To
-Yangi nom
 
 Replace document &colors with Windows color scheme
 Hujjat &ranglarini Windows rangli sxemasiga o'zgartirish

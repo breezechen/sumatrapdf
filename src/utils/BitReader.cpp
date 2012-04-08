@@ -1,8 +1,8 @@
 /* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "BitReader.h"
+#include "BaseUtil.h"
 
 // Bit reader is a streaming reader of bits from underlying memory data
 

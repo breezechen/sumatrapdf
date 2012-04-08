@@ -1,8 +1,7 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
-#include "StressTesting.h"
 
 #include "AppTools.h"
 #include "EngineManager.h"
@@ -11,6 +10,7 @@
 #include "RenderCache.h"
 #include "SimpleLog.h"
 #include "SumatraPDF.h"
+#include "StressTesting.h"
 #include "Timer.h"
 #include "WindowInfo.h"
 #include "WinUtil.h"
@@ -213,14 +213,13 @@ static bool IsStressTestSupportedFile(const TCHAR *fileName, const TCHAR *filter
            DjVuEngine::IsSupportedFile(fileName) ||
            CbxEngine::IsSupportedFile(fileName)  ||
            ImageEngine::IsSupportedFile(fileName)||
-           PsEngine::IsSupportedFile(fileName)   ||
+           PsEngine::IsSupportedFile(fileName)||
 #ifdef ENABLE_EBOOK_ENGINES
-           EpubEngine::IsSupportedFile(fileName) && !gUseEbookUI ||
+           EpubEngine::IsSupportedFile(fileName) ||
            Fb2Engine::IsSupportedFile(fileName)  ||
-           MobiEngine::IsSupportedFile(fileName) && !gUseEbookUI ||
-           PdbEngine::IsSupportedFile(fileName)  ||
-           HtmlEngine::IsSupportedFile(fileName) ||
-           TxtEngine::IsSupportedFile(fileName)  ||
+#ifdef DISABLE_EBOOK_UI
+           MobiEngine::IsSupportedFile(fileName) ||
+#endif
 #endif
            ChmEngine::IsSupportedFile(fileName);
 }
@@ -308,7 +307,7 @@ static void MakeRandomSelection(DisplayModel *dm, int pageNo)
 a human advancing one page at a time. This is mostly to run through a large number
 of PDFs before a release to make sure we're crash proof. */
 
-class StressTest : public StressTestBase {
+class StressTest : public CallbackFunc {
     WindowInfo *      win;
     RenderCache *     renderCache;
     Timer             currPageRenderTime;
@@ -335,6 +334,7 @@ class StressTest : public StressTestBase {
     bool GoToNextPage();
     bool GoToNextFile();
 
+    void OnTimer();
     void TickTimer();
     void Finished(bool success);
 
@@ -344,10 +344,10 @@ public:
         filesCount(0), cycles(1), fileIndex(0)
         { }
 
+    void GetLogInfo(str::Str<char> *s);
     void Start(const TCHAR *path, const TCHAR *filter, const TCHAR *ranges, int cycles);
 
-    virtual void OnTimer();
-    virtual void GetLogInfo(str::Str<char> *s);
+    virtual void Callback() { OnTimer(); }
 };
 
 void StressTest::Start(const TCHAR *path, const TCHAR *filter, const TCHAR *ranges, int cycles)
@@ -453,8 +453,7 @@ bool StressTest::OpenFile(const TCHAR *fileName)
     bool reuse = rand() % 3 != 1;
     _tprintf(_T("%s\n"), fileName);
     fflush(stdout);
-    LoadArgs args(fileName, NULL, true /* show */, reuse, true /* suppressPwdUI */);
-    WindowInfo *w = LoadDocument(args);
+    WindowInfo *w = LoadDocument(fileName, NULL, true /* show */, reuse, true /* suppressPwdUI */);
     if (!w)
         return false;
 
@@ -605,6 +604,11 @@ void StressTest::GetLogInfo(str::Str<char> *s)
     s->AppendFmt(", stress test rendered %d files in ", filesCount);
     FormatTime(SecsSinceSystemTime(stressStartTime), s);
     s->AppendFmt(", currPage: %d", currPage);
+}
+
+void GetStressTestInfo(CallbackFunc *dst, str::Str<char> *s)
+{
+    static_cast<StressTest *>(dst)->GetLogInfo(s);
 }
 
 void StartStressTest(WindowInfo *win, const TCHAR *path, const TCHAR *filter,

@@ -4,11 +4,9 @@
 #ifndef EbookControls_h
 #define EbookControls_h
 
-#include "Doc.h"
+#include "BaseUtil.h"
 #include "Mui.h"
 
-class HtmlFormatter;
-class HtmlFormatterArgs;
 class PageControl;
 using namespace mui;
 
@@ -25,13 +23,13 @@ struct EbookControls {
 EbookControls * CreateEbookControls(HWND hwnd);
 void            DestroyEbookControls(EbookControls* controls);
 
-class HtmlPage;
+struct PageData;
 
 // control that shows a single ebook page
 // TODO: move to a separate file
 class PageControl : public Control
 {
-    HtmlPage *  page;
+    PageData *  page;
     int         cursorX, cursorY;
 
 public:
@@ -40,8 +38,8 @@ public:
     }
     virtual ~PageControl() { }
 
-    void      SetPage(HtmlPage *newPage);
-    HtmlPage* GetPage() const { return page; }
+    void      SetPage(PageData *newPage);
+    PageData* GetPage() const { return page; }
 
     Size GetDrawableSize();
 
@@ -49,7 +47,5 @@ public:
 
     virtual void NotifyMouseMove(int x, int y);
 };
-
-HtmlFormatter *CreateFormatter(HtmlFormatterArgs* args);
 
 #endif

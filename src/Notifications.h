@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Notifications_h
@@ -79,8 +79,8 @@ public:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     // ProgressUpdateUI methods
-    virtual void UpdateProgress(int current, int total);
-    virtual bool WasCanceled();
+    virtual bool UpdateProgress(int current, int total);
+
 };
 
 class Notifications : public NotificationWndCallback {

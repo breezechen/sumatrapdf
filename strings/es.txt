@@ -94,11 +94,11 @@ Página siguiente\t->
 &Odd pages only
 &Sólo páginas impares
 
+&Open\tCtrl+O
+&Abrir\tCtrl+O
+
 &Open Document
 &Abrir Documento
-
-&Open...\tCtrl+O
-&Abrir...\tCtrl+O
 
 &Options...
 &Opciones...
@@ -484,9 +484,6 @@ Abrir en &Adobe Reader
 Open in &Foxit Reader
 Abrir en &Foxit Reader
 
-Open in Microsoft HTML Help
-Abrir en Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Abrir en Microsoft XPS-Viewer
 
@@ -695,9 +692,6 @@ printing document
 imprimimendo documento
 
 # Untranslated:
-#Failed to rename the file!
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 

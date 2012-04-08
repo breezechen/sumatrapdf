@@ -1,13 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "PdfSync.h"
-
+#include "StrUtil.h"
 #include "FileUtil.h"
 #include "PdfEngine.h"
 
-#include "synctex_parser.h"
+#include <shlwapi.h>
+#include <time.h>
+#include <synctex_parser.h>
 
 // size of the mark highlighting the location calculated by forward-search
 #define MARK_SIZE               10

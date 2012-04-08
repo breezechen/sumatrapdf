@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
@@ -8,6 +8,7 @@
 using namespace Gdiplus;
 #include "GdiPlusUtil.h"
 #include "resource.h"
+#include "StrUtil.h"
 #include "SumatraPDF.h"
 #include "Translations.h"
 #include "WindowInfo.h"
@@ -45,7 +46,7 @@ static void CustomizeTocInfoTip(LPNMTVGETINFOTIP nmit)
     TreeView_GetItemRect(hTV, nmit->hItem, &rcLine, FALSE);
     TreeView_GetItemRect(hTV, nmit->hItem, &rcLabel, TRUE);
     if (rcLine.right + 2 < rcLabel.right) {
-        TCHAR buf[INFOTIPSIZE+1] = { 0 };  // +1 just in case
+        TCHAR buf[INFOTIPSIZE+1] = { 0 };
         TVITEM item;
         item.hItem = nmit->hItem;
         item.mask = TVIF_TEXT;
@@ -56,7 +57,7 @@ static void CustomizeTocInfoTip(LPNMTVGETINFOTIP nmit)
         infotip.Append(_T("\r\n"));
     }
 
-    if (tocItem->GetLink() && Dest_LaunchEmbedded == tocItem->GetLink()->GetDestType())
+    if (tocItem->GetLink() && str::Eq(tocItem->GetLink()->GetDestType(), "LaunchEmbedded"))
         path.Set(str::Format(_TR("Attachment: %s"), path));
 
     infotip.Append(path);
@@ -167,7 +168,7 @@ static void GoToTocLinkForTVItem(WindowInfo* win, HWND hTV, HTREEITEM hItem=NULL
     DocTocItem *tocItem = (DocTocItem *)item.lParam;
     if (!tocItem || !win->IsDocLoaded())
         return;
-    if ((allowExternal || tocItem->GetLink() && Dest_ScrollTo == tocItem->GetLink()->GetDestType()) || tocItem->pageNo) {
+    if ((allowExternal || tocItem->GetLink() && str::Eq(tocItem->GetLink()->GetDestType(), "ScrollTo")) || tocItem->pageNo) {
         // delay changing the page until the tree messages have been handled
         QueueWorkItem(new GoToTocLinkWorkItem(win, tocItem, hItem));
     }
@@ -500,7 +501,8 @@ static LRESULT CALLBACK WndProcTocBox(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
         case WM_NOTIFY:
             if (LOWORD(wParam) == IDC_TOC_TREE) {
-                LRESULT res = OnTocTreeNotify(win, (LPNMTREEVIEW)lParam);
+                LPNMTREEVIEW pnmtv = (LPNMTREEVIEW) lParam;
+                LRESULT res = OnTocTreeNotify(win, pnmtv);
                 if (res != -1)
                     return res;
             }

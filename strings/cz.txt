@@ -91,11 +91,11 @@ Další strá&nka\tŠipka vpravo
 &Odd pages only
 &Pouze liché stránky
 
+&Open\tCtrl+O
+&Otevřít...\tCtrl+O
+
 &Open Document
 &Otevřít dokument
-
-&Open...\tCtrl+O
-&Otevřít...\tCtrl+O
 
 &Options...
 &Možnosti...
@@ -475,9 +475,6 @@ Otevřít v programu &Adobe Reader
 Open in &Foxit Reader
 Otevřít v programu &Foxit Reader
 
-Open in Microsoft HTML Help
-Otevřít v programu Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Otevřít v programu Microsoft XPS-Viewer
 
@@ -684,11 +681,8 @@ tisk dokumentu
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

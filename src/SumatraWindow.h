@@ -1,7 +1,7 @@
 #ifndef SumatraWindow_h
 #define SumatraWindow_h
 
-class EbookWindow;
+class MobiWindow;
 class WindowInfo;
 
 // This is a wrapper that allows functions to work with both window types.
@@ -10,34 +10,24 @@ class WindowInfo;
 struct SumatraWindow {
 
     WindowInfo *AsWindowInfo() const { return (Info == type) ? winInfo : NULL; }
-    EbookWindow *AsEbookWindow() const { return (Ebook == type) ? winEbook : NULL; }
+    MobiWindow *AsMobiWindow() const { return (Mobi == type) ? winMobi : NULL; }
 
     static SumatraWindow Make(WindowInfo *win) {
         SumatraWindow w; w.type = Info; w.winInfo = win;
         return w;
     }
 
-    static SumatraWindow Make(EbookWindow *win) {
-        SumatraWindow w; w.type = Ebook; w.winEbook = win;
+    static SumatraWindow Make(MobiWindow *win) {
+        SumatraWindow w; w.type = Mobi; w.winMobi = win;
         return w;
     }
 
-#if 0
-    HWND HwndFrame() const {
-        if (Info == type)
-            return winInfo->hwndFrame;
-        if (Mobi == type)
-            return winMobi->hwndFrame;
-        return NULL;
-    }
-#endif
-
 private:
-    enum Type { Info, Ebook };
+    enum Type { Info, Mobi };
     Type type;
     union {
         WindowInfo *winInfo;
-        EbookWindow *winEbook;
+        MobiWindow *winMobi;
     };
 };
 

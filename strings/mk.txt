@@ -88,11 +88,11 @@ Contributor: Гоце Митевски (http://www.nicer2.com)
 &Odd pages only
 Само &непарни страници
 
+&Open\tCtrl+O
+&Отвори\tCtrl+O
+
 &Open Document
 Отвори документ
-
-&Open...\tCtrl+O
-&Отвори...\tCtrl+O
 
 &Options...
 &Опции...
@@ -484,9 +484,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Отвори со &Foxit Reader
 
-Open in Microsoft HTML Help
-Отвори со Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Отвори со Microsoft XPS-Viewer
 
@@ -693,9 +690,4 @@ copying text
 
 printing document
 печатам документ
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

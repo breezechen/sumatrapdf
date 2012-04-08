@@ -1,8 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef SimpleLog_h
 #define SimpleLog_h
+
+#include "Vec.h"
+#include "Scoped.h"
 
 namespace slog {
 

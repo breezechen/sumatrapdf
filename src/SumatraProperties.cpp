@@ -1,14 +1,15 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
-#include "SumatraProperties.h"
-
 #include "EbookController.h"
-#include "EbookWindow.h"
 #include "FileUtil.h"
+#include "MobiDoc.h"
+#include "MobiWindow.h"
 #include "resource.h"
+#include "Scoped.h"
 #include "SumatraPDF.h"
+#include "SumatraProperties.h"
 #include "Translations.h"
 #include "WindowInfo.h"
 #include "WinUtil.h"
@@ -316,7 +317,7 @@ Example xref->info ("Info") object:
  /Keywords <>
 >>
 */
-static void GetProps(BaseEngine *engine, EngineType engineType, PropertiesLayout *layoutData, DisplayModel *dm, bool extended=false)
+static void GetProps(BaseEngine *engine, EngineType engineType, PropertiesLayout *layoutData)
 {
     TCHAR *str = str::Dup(gPluginMode ? gPluginURL : engine->FileName());
     layoutData->AddProperty(_TR("File:"), str);
@@ -372,9 +373,27 @@ static void GetProps(BaseEngine *engine, EngineType engineType, PropertiesLayout
 
     str = str::Format(_T("%d"), engine->PageCount());
     layoutData->AddProperty(_TR("Number of Pages:"), str);
+}
 
-    if (dm && engineType != Engine_Chm) {
-        str = FormatPageSize(engine, dm->CurrentPageNo(), dm->Rotation());
+static void ShowProperties(WindowInfo& win, bool extended=false)
+{
+    TCHAR *str;
+    PropertiesLayout *layoutData = FindPropertyWindowByParent(win.hwndFrame);
+
+    if (layoutData) {
+        SetActiveWindow(layoutData->hwnd);
+        return;
+    }
+
+    if (!win.IsDocLoaded())
+        return;
+    BaseEngine *engine = win.dm->engine;
+    layoutData = new PropertiesLayout();
+    gPropertiesWindows.Append(layoutData);
+    GetProps(engine, win.dm->engineType, layoutData);
+
+    if (!win.IsChm()) {
+        str = FormatPageSize(engine, win.dm->CurrentPageNo(), win.dm->Rotation());
 #ifdef UNICODE
         if (IsUIRightToLeft() && WindowsVerVistaOrGreater()) {
             ScopedMem<TCHAR> tmp(str);
@@ -410,72 +429,37 @@ static void GetProps(BaseEngine *engine, EngineType engineType, PropertiesLayout
         layoutData->AddProperty(_TR("Fonts:"), str);
     }
 #endif
-}
-
-static void ShowProperties(WindowInfo& win, bool extended=false)
-{
-    PropertiesLayout *layoutData = FindPropertyWindowByParent(win.hwndFrame);
-    if (layoutData) {
-        SetActiveWindow(layoutData->hwnd);
-        return;
-    }
-
-    if (!win.IsDocLoaded())
-        return;
-    layoutData = new PropertiesLayout();
-    gPropertiesWindows.Append(layoutData);
-    GetProps(win.dm->engine, win.dm->engineType, layoutData, win.dm, extended);
 
     if (!CreatePropertiesWindow(win.hwndFrame, layoutData))
         delete layoutData;
 }
-
-static void GetProps(Doc doc, PropertiesLayout *layoutData)
+static void GetProps(MobiDoc *mobiDoc, PropertiesLayout *layoutData)
 {
-    CrashIf(!doc.IsEbook());
-
-    TCHAR *str = str::Dup(gPluginMode ? gPluginURL : doc.GetFilePath());
+    TCHAR *str = str::Dup(gPluginMode ? gPluginURL : mobiDoc->GetFileName());
     layoutData->AddProperty(_TR("File:"), str);
 
-    str = doc.GetProperty("Title");
-    layoutData->AddProperty(_TR("Title:"), str);
-
-    str = doc.GetProperty("Subject");
-    layoutData->AddProperty(_TR("Subject:"), str);
-
-    str = doc.GetProperty("Author");
-    layoutData->AddProperty(_TR("Author:"), str);
-
-    str = doc.GetProperty("Copyright");
-    layoutData->AddProperty(_TR("Copyright:"), str);
-
-    str = doc.GetProperty("CreationDate");
-    if (doc.AsEpub())
-        ConvDateToDisplay(&str, IsoDateParse);
-    layoutData->AddProperty(_TR("Created:"), str);
-
-    size_t fileSize = file::GetSize(doc.GetFilePath());
+    size_t fileSize = file::GetSize(mobiDoc->GetFileName());
     if (fileSize != INVALID_FILE_SIZE) {
         str = FormatFileSize(fileSize);
         layoutData->AddProperty(_TR("File Size:"), str);
     }
+
 }
 
-static void ShowProperties(EbookWindow *win)
+static void ShowProperties(MobiWindow *win)
 {
     PropertiesLayout *layoutData = FindPropertyWindowByParent(win->hwndFrame);
     if (layoutData) {
         SetActiveWindow(layoutData->hwnd);
         return;
     }
-
-    Doc doc = win->ebookController->GetDoc();
-    if (!doc.IsEbook())
+    MobiDoc *mobiDoc = win->ebookController->GetMobiDoc();
+    if (!mobiDoc)
         return;
     layoutData = new PropertiesLayout();
     gPropertiesWindows.Append(layoutData);
-    GetProps(doc, layoutData);
-
+    GetProps(mobiDoc, layoutData);
+    // TODO: show properties
     if (!CreatePropertiesWindow(win->hwndFrame, layoutData))
         delete layoutData;
 }
@@ -484,8 +468,8 @@ void OnMenuProperties(SumatraWindow& win)
 {
     if (win.AsWindowInfo())
         ShowProperties(*win.AsWindowInfo());
-    else if (win.AsEbookWindow())
-        ShowProperties(win.AsEbookWindow());
+    else if (win.AsMobiWindow())
+        ShowProperties(win.AsMobiWindow());
 }
 
 static void DrawProperties(HWND hwnd, HDC hdc)

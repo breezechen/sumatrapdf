@@ -1,7 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// include BaseUtil.h instead of including directly
+#ifndef Scoped_h
+#define Scoped_h
+
+#include "BaseUtil.h"
 
 // auto-free memory for arbitrary malloc()ed memory of type T*
 template <typename T>
@@ -11,9 +14,9 @@ class ScopedMem
 public:
     ScopedMem() : obj(NULL) {}
     explicit ScopedMem(T* obj) : obj(obj) {}
-    ~ScopedMem() { free(obj); }
+    ~ScopedMem() { free((void*)obj); }
     void Set(T *o) {
-        free(obj);
+        free((void*)obj);
         obj = o;
     }
     T *Get() const { return obj; }
@@ -131,3 +134,4 @@ public:
     }
 };
 
+#endif

@@ -1,19 +1,20 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "AppPrefs.h"
-
-#include "AppTools.h"
 #include "BencUtil.h"
-#include "DisplayState.h"
-#include "Favorites.h"
-#include "FileHistory.h"
-#include "FileTransactions.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
-#include "SumatraPDF.h"
+#include "FileTransactions.h"
+
+#include "AppPrefs.h"
+#include "DisplayState.h"
+#include "FileHistory.h"
+#include "Favorites.h"
 #include "Translations.h"
+
+#include "SumatraPDF.h"
 #include "WindowInfo.h"
+#include "AppTools.h"
 
 #define PREFS_FILE_NAME         _T("sumatrapdfprefs.dat")
 
@@ -304,9 +305,9 @@ static BencArray *SerializeFavorites(Favorites *favs)
     return res;
 }
 
-static char *SerializePrefs(SerializableGlobalPrefs& globalPrefs, FileHistory& root, Favorites *favs, size_t* lenOut)
+static const char *SerializePrefs(SerializableGlobalPrefs& globalPrefs, FileHistory& root, Favorites *favs, size_t* lenOut)
 {
-    char *data = NULL;
+    const char *data = NULL;
 
     BencDict *prefs = new BencDict();
     if (!prefs)
@@ -591,13 +592,13 @@ bool Save(TCHAR *filepath, SerializableGlobalPrefs& globalPrefs, FileHistory& fi
         return false;
 
     size_t dataLen;
-    ScopedMem<char> data(SerializePrefs(globalPrefs, fileHistory, favs, &dataLen));
+    ScopedMem<const char> data(SerializePrefs(globalPrefs, fileHistory, favs, &dataLen));
     if (!data)
         return false;
 
     assert(dataLen > 0);
     FileTransaction trans;
-    bool ok = trans.WriteAll(filepath, data, dataLen) && trans.Commit();
+    bool ok = trans.WriteAll(filepath, (void *)data.Get(), dataLen) && trans.Commit();
     if (ok)
         globalPrefs.lastPrefUpdate = file::GetModificationTime(filepath);
     return ok;
@@ -682,8 +683,8 @@ bool SavePrefs()
         UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(gWindows.At(i)));
     }
 
-    for (size_t i = 0; i < gEbookWindows.Count(); i++) {
-        UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(gEbookWindows.At(i)));
+    for (size_t i = 0; i < gMobiWindows.Count(); i++) {
+        UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(gMobiWindows.At(i)));
     }
 
     // don't save preferences without the proper permission

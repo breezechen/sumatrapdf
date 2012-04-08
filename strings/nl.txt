@@ -97,11 +97,11 @@ Volgende pagina\t->
 &Odd pages only
 Alleen &Oneven pagina's
 
+&Open\tCtrl+O
+&Openen\tCtrl+O
+
 &Open Document
 Document &Openen
-
-&Open...\tCtrl+O
-&Openen...\tCtrl+O
 
 &Options...
 &Opties...
@@ -493,9 +493,6 @@ Openen met &Adobe Reader
 Open in &Foxit Reader
 Openen met &Foxit Reader
 
-Open in Microsoft HTML Help
-Openen met Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Openen met Microsoft XPS-Viewer
 
@@ -702,9 +699,4 @@ tekst kopiëren
 
 printing document
 Document afdrukken
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

@@ -1,8 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef Touch_h
 #define Touch_h
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #ifndef _QWORD_DEFINED
 #define _QWORD_DEFINED

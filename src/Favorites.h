@@ -1,8 +1,12 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Favorites_h
 #define Favorites_h
+
+#include "BaseUtil.h"
+#include "StrUtil.h"
+#include "Vec.h"
 
 class WindowInfo;
 

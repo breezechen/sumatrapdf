@@ -1,16 +1,16 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 // hack to prevent libdjvu from being built as an export/import library
 #define DDJVUAPI /**/
 #define MINILISPAPI /**/
 
-#include "BaseUtil.h"
-#include "DjVuEngine.h"
 #include <ddjvuapi.h>
 #include <miniexp.h>
-
+#include "DjVuEngine.h"
 #include "FileUtil.h"
+#include "Vec.h"
+#include "Scoped.h"
 
 // TODO: libdjvu leaks memory - among others
 //       DjVuPort::corpse_lock, DjVuPort::corpse_head, pcaster,
@@ -58,23 +58,23 @@ class DjVuDestination : public PageDestination {
     char *link;
 
     bool IsPageLink(const char *link) const {
-        return link[0] == '#' && (str::IsDigit(link[1]) || link[1] == ' ' && str::IsDigit(link[2]));
+        return link[0] == '#' && (ChrIsDigit(link[1]) || link[1] == ' ' && ChrIsDigit(link[2]));
     }
 
 public:
     DjVuDestination(const char *link) : link(str::Dup(link)) { }
     ~DjVuDestination() { free(link); }
 
-    virtual PageDestType GetDestType() const {
+    virtual const char *GetDestType() const {
         if (IsPageLink(link))
-            return Dest_ScrollTo;
+            return "ScrollTo";
         if (str::Eq(link, "#+1"))
-            return Dest_NextPage;
+            return "NextPage";
         if (str::Eq(link, "#-1"))
-            return Dest_PrevPage;
+            return "PrevPage";
         if (str::StartsWithI(link, "http:") || str::StartsWithI(link, "https:") || str::StartsWithI(link, "mailto:"))
-            return Dest_LaunchURL;
-        return Dest_None;
+            return "LaunchURL";
+        return NULL;
     }
     virtual int GetDestPageNo() const {
         if (IsPageLink(link))
@@ -85,7 +85,7 @@ public:
         return RectD(DEST_USE_DEFAULT, DEST_USE_DEFAULT, DEST_USE_DEFAULT, DEST_USE_DEFAULT);
     }
     virtual TCHAR *GetDestValue() const {
-        if (Dest_LaunchURL == GetDestType())
+        if (str::Eq(GetDestType(), "LaunchURL"))
             return str::conv::FromUtf8(link);
         return NULL;
     }
@@ -115,7 +115,7 @@ public:
     virtual TCHAR *GetValue() const {
         if (value)
             return str::Dup(value);
-        if (Dest_LaunchURL == dest->GetDestType())
+        if (str::Eq(dest->GetDestType(), "LaunchURL"))
             return dest->GetDestValue();
         return NULL;
     }
@@ -233,7 +233,7 @@ public:
     virtual DocTocItem *GetTocTree();
 
 protected:
-    TCHAR *fileName;
+    const TCHAR *fileName;
 
     int pageCount;
     RectD *mediaboxes;
@@ -262,7 +262,7 @@ DjVuEngineImpl::~DjVuEngineImpl()
     ScopedCritSec scope(&gDjVuContext.lock);
 
     delete[] mediaboxes;
-    free(fileName);
+    free((void *)fileName);
 
     if (annos) {
         for (int i = 0; i < pageCount; i++)

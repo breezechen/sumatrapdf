@@ -1,27 +1,29 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
-#include "AppTools.h"
-
-#include "CmdLineParser.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
-#include "Translations.h"
-#include "Version.h"
 #include "WinUtil.h"
+#include "Translations.h"
+#include "AppTools.h"
+#include "CmdLineParser.h"
+#include "Version.h"
+#include <shlobj.h>
+#include <shlwapi.h>
 
 // the only valid chars are 0-9, . and newlines.
 // a valid version has to match the regex /^\d+(\.\d+)*(\r?\n)?$/
 // Return false if it contains anything else.
 bool IsValidProgramVersion(char *txt)
 {
-    if (!str::IsDigit(*txt))
+    if (!ChrIsDigit(*txt))
         return false;
 
     for (; *txt; txt++) {
-        if (str::IsDigit(*txt))
+        if (ChrIsDigit(*txt))
             continue;
-        if (*txt == '.' && str::IsDigit(*(txt + 1)))
+        if (*txt == '.' && ChrIsDigit(*(txt + 1)))
             continue;
         if (*txt == '\r' && *(txt + 1) == '\n')
             continue;
@@ -138,29 +140,27 @@ TCHAR *AppGenDataFilename(TCHAR *fileName)
 
 // Updates the drive letter for a path that could have been on a removable drive,
 // if that same path can be found on a different removable drive
-// returns true if the path has been changed
-bool AdjustVariableDriveLetter(TCHAR *path)
+void AdjustRemovableDriveLetter(TCHAR *path)
 {
     // Don't bother if the file path is still valid
     if (file::Exists(path))
-        return false;
+        return;
     // Don't bother for files on non-removable drives
-    if (!path::HasVariableDriveLetter(path))
-        return false;
+    if (!path::IsOnRemovableDrive(path))
+        return;
 
     // Iterate through all (other) removable drives and try to find the file there
     TCHAR szDrive[] = _T("A:\\");
     TCHAR origDrive = path[0];
     for (DWORD driveMask = GetLogicalDrives(); driveMask; driveMask >>= 1) {
-        if ((driveMask & 1) && szDrive[0] != origDrive && path::HasVariableDriveLetter(szDrive)) {
+        if ((driveMask & 1) && szDrive[0] != origDrive && path::IsOnRemovableDrive(szDrive)) {
             path[0] = szDrive[0];
             if (file::Exists(path))
-                return true;
+                return;
         }
         szDrive[0]++;
     }
     path[0] = origDrive;
-    return false;
 }
 
 

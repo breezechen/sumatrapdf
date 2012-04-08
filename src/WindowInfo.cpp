@@ -1,20 +1,17 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "WindowInfo.h"
-
+#include "SumatraPDF.h"
 #include "FileUtil.h"
+#include "WinUtil.h"
+#include "WindowInfo.h"
+#include "PdfSync.h"
+#include "Resource.h"
 #include "FileWatch.h"
 #include "Notifications.h"
-#include "PdfSync.h"
 #include "Print.h"
-#include "Resource.h"
 #include "Selection.h"
-#include "StressTesting.h"
-#include "SumatraPDF.h"
 #include "Translations.h"
-#include "WinUtil.h"
 
 WindowInfo::WindowInfo(HWND hwnd) :
     dm(NULL), menu(NULL), hwndFrame(hwnd),
@@ -202,16 +199,14 @@ void LinkHandler::GotoLink(PageDestination *link)
 
     DisplayModel *dm = owner->dm;
     ScopedMem<TCHAR> path(link->GetDestValue());
-    PageDestType type = link->GetDestType();
-    if (Dest_ScrollTo == type) {
+    const char *type = link->GetDestType();
+    if (str::Eq(type, "ScrollTo")) {
         // TODO: respect link->ld.gotor.new_window for PDF documents ?
         ScrollTo(link);
     }
-    else if (Dest_LaunchURL == type) {
-        if (!path)
-            /* ignore missing URLs */;
-        else if (!str::FindChar(path, ':')) {
-            // treat relative URIs as file paths
+    else if (str::Eq(type, "LaunchURL") && path) {
+        // treat relative URIs as file paths
+        if (!str::FindChar(path, ':')) {
             // LaunchFile will reject unsupported file types
             LaunchFile(path, NULL);
         }
@@ -220,14 +215,12 @@ void LinkHandler::GotoLink(PageDestination *link)
             LaunchBrowser(path);
         }
     }
-    else if (Dest_LaunchEmbedded == type) {
+    else if (str::Eq(type, "LaunchEmbedded")) {
         // open embedded PDF documents in a new window
         if (path && str::StartsWith(path.Get(), dm->FileName())) {
             WindowInfo *newWin = FindWindowInfoByFile(path);
-            if (!newWin) {
-                LoadArgs args(path, owner);
-                newWin = LoadDocument(args);
-            }
+            if (!newWin)
+                newWin = LoadDocument(path, owner);
             if (newWin)
                 newWin->Focus();
         }
@@ -235,41 +228,37 @@ void LinkHandler::GotoLink(PageDestination *link)
         else
             link->SaveEmbedded(LinkSaver(*owner, path));
     }
-    else if (Dest_LaunchFile == type) {
-        if (path) {
-            // LaunchFile only opens files inside SumatraPDF
-            // (except for allowed perceived file types)
-            LaunchFile(path, link);
-        }
+    else if (str::Eq(type, "LaunchFile") && path) {
+        // LaunchFile only opens files inside SumatraPDF
+        // (except for allowed perceived file types)
+        LaunchFile(path, link);
     }
     // predefined named actions
-    else if (Dest_NextPage == type)
+    else if (str::Eq(type, "NextPage"))
         dm->GoToNextPage(0);
-    else if (Dest_PrevPage == type)
+    else if (str::Eq(type, "PrevPage"))
         dm->GoToPrevPage(0);
-    else if (Dest_FirstPage == type)
+    else if (str::Eq(type, "FirstPage"))
         dm->GoToFirstPage();
-    else if (Dest_LastPage == type)
+    else if (str::Eq(type, "LastPage"))
         dm->GoToLastPage();
     // Adobe Reader extensions to the spec, cf. http://www.tug.org/applications/hyperref/manual.html
-    else if (Dest_FindDialog == type)
+    else if (str::Eq(type, "Find"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_FIND_FIRST, 0);
-    else if (Dest_FullScreen == type)
+    else if (str::Eq(type, "FullScreen"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_VIEW_PRESENTATION_MODE, 0);
-    else if (Dest_GoBack == type)
+    else if (str::Eq(type, "GoBack"))
         dm->Navigate(-1);
-    else if (Dest_GoForward == type)
+    else if (str::Eq(type, "GoForward"))
         dm->Navigate(1);
-    else if (Dest_GoToPageDialog == type)
+    else if (str::Eq(type, "GoToPage"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_GOTO_PAGE, 0);
-    else if (Dest_PrintDialog == type)
+    else if (str::Eq(type, "Print"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_PRINT, 0);
-    else if (Dest_SaveAsDialog == type)
+    else if (str::Eq(type, "SaveAs"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_SAVEAS, 0);
-    else if (Dest_ZoomToDialog == type)
+    else if (str::Eq(type, "ZoomTo"))
         PostMessage(owner->hwndFrame, WM_COMMAND, IDM_ZOOM_CUSTOM, 0);
-    else
-        CrashIf(Dest_None != type);
 }
 
 void LinkHandler::ScrollTo(PageDestination *dest)
@@ -347,8 +336,7 @@ void LinkHandler::LaunchFile(const TCHAR *path, PageDestination *link)
     WindowInfo *newWin = FindWindowInfoByFile(fullPath);
     // TODO: don't show window until it's certain that there was no error
     if (!newWin) {
-        LoadArgs args(fullPath, owner);
-        newWin = LoadDocument(args);
+        newWin = LoadDocument(fullPath, owner);
         if (!newWin)
             return;
     }

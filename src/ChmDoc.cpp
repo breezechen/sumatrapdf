@@ -1,9 +1,8 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "ChmDoc.h"
-
+#include "StrUtil.h"
 #include "FileUtil.h"
 #include "TrivialHtmlParser.h"
 
@@ -37,7 +36,7 @@ bool ChmDoc::HasData(const char *fileName)
 
 unsigned char *ChmDoc::GetData(const char *fileName, size_t *lenOut)
 {
-    ScopedMem<char> fileNameTmp;
+    ScopedMem<const char> fileNameTmp;
     if (!str::StartsWith(fileName, "/")) {
         fileNameTmp.Set(str::Join("/", fileName));
         fileName = fileNameTmp;
@@ -66,21 +65,6 @@ unsigned char *ChmDoc::GetData(const char *fileName, size_t *lenOut)
     if (lenOut)
         *lenOut = len;
     return data.StealData();
-}
-
-char *ChmDoc::ToUtf8(const unsigned char *text)
-{
-    const char *s = (char *)text;
-    if (str::StartsWith(s, UTF8_BOM))
-        return str::Dup(s + 3);
-    if (CP_UTF8 == codepage)
-        return str::Dup(s);
-    return str::ToMultiByte(s, codepage, CP_UTF8);
-}
-
-TCHAR *ChmDoc::ToStr(const char *text)
-{
-    return str::conv::FromCodePage(text, codepage);
 }
 
 inline DWORD GetDWord(const unsigned char *data, size_t offset)
@@ -185,7 +169,7 @@ bool ChmDoc::ParseSystemData()
     return true;
 }
 
-static UINT GetChmCodepage(const TCHAR *fileName)
+UINT GetChmCodepage(const TCHAR *fileName)
 {
     // cf. http://msdn.microsoft.com/en-us/library/bb165625(v=VS.90).aspx
     static struct {
@@ -254,44 +238,27 @@ TCHAR *ChmDoc::GetProperty(const char *name)
     return result.StealData();
 }
 
-const char *ChmDoc::GetIndexPath()
+char *ChmDoc::GetHomepage()
 {
-    return homePath;
+    return (char *)GetData(homePath, NULL);
 }
 
-static int ChmEnumerateEntry(struct chmFile *chmHandle, struct chmUnitInfo *info, void *data)
+char *ChmDoc::ToUtf8(const unsigned char *text)
 {
-    if (info->path) {
-        Vec<char *> *paths = (Vec<char *> *)data;
-        paths->Append(str::Dup(info->path));
-    }
-    return CHM_ENUMERATOR_CONTINUE;
+    const char *s = (char *)text;
+    if (str::StartsWith(s, "\xEF\xBB\xBF"))
+        return str::Dup(s + 3);
+    if (CP_UTF8 == codepage)
+        return str::Dup(s);
+    return str::ToMultiByte(s, codepage, CP_UTF8);
 }
 
-Vec<char *> *ChmDoc::GetAllPaths()
-{
-    Vec<char *> *paths = new Vec<char *>();
-    chm_enumerate(chmHandle, CHM_ENUMERATE_FILES | CHM_ENUMERATE_NORMAL, ChmEnumerateEntry, paths);
-    return paths;
-}
-
-bool ChmDoc::HasToc() const
+bool ChmDoc::HasToc()
 {
     return tocPath != NULL;
 }
 
-/* The html looks like:
-<li>
-  <object type="text/sitemap">
-    <param name="Name" value="Main Page">
-    <param name="Local" value="0789729717_main.html">
-    <param name="ImageNumber" value="12">
-  </object>
-  <ul> ... children ... </ul>
-<li>
-  ... siblings ...
-*/
-static bool VisitChmTocItem(EbookTocVisitor *visitor, HtmlElement *el, UINT cp, int level)
+static bool VisitChmTocItem(ChmTocVisitor *visitor, HtmlElement *el, UINT cp, int level)
 {
     assert(str::Eq("li", el->name));
     el = el->GetChildByName("object");
@@ -328,7 +295,7 @@ static bool VisitChmTocItem(EbookTocVisitor *visitor, HtmlElement *el, UINT cp, 
     return true;
 }
 
-static void WalkChmToc(EbookTocVisitor *visitor, HtmlElement *list, UINT cp, int level=1)
+static void WalkChmToc(ChmTocVisitor *visitor, HtmlElement *list, UINT cp, int level=1)
 {
     assert(str::Eq("ul", list->name));
 
@@ -351,7 +318,7 @@ static void WalkChmToc(EbookTocVisitor *visitor, HtmlElement *list, UINT cp, int
     }
 }
 
-bool ChmDoc::ParseToc(EbookTocVisitor *visitor)
+bool ChmDoc::ParseToc(ChmTocVisitor *visitor)
 {
     if (!tocPath)
         return false;
@@ -363,7 +330,7 @@ bool ChmDoc::ParseToc(EbookTocVisitor *visitor)
     HtmlParser p;
     UINT cp = codepage;
     // detect UTF-8 content by BOM
-    if (str::StartsWith(html, UTF8_BOM)) {
+    if (str::StartsWith(html, "\xEF\xBB\xBF")) {
         html += 3;
         cp = CP_UTF8;
     }

@@ -7,10 +7,9 @@
    can be used from crash handler.
 */
 
-#include "BaseUtil.h"
 #include "DbgHelpDyn.h"
-
 #include "FileUtil.h"
+#include "StrUtil.h"
 #include "WinUtil.h"
 
 /* Hard won wisdom: changing symbol path with SymSetSearchPath() after modules
@@ -221,6 +220,7 @@ static bool SetupSymbolPath()
     }
 
     _SymRefreshModuleList(GetCurrentProcess());
+    free((void*)path);
     return ok;
 }
 #endif

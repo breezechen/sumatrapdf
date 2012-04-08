@@ -1,7 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// note: include BaseUtil.h instead of including directly
+#ifndef GeomUtil_h
+#define GeomUtil_h
+
+#include "BaseUtil.h"
+#include <math.h>
 
 template <typename T>
 class PointT
@@ -218,3 +222,4 @@ inline RectI MapRectToWindow(RectI rect, HWND hwndFrom, HWND hwndTo)
 
 #endif
 
+#endif

@@ -88,11 +88,11 @@ Sljedeća stranica\t->
 &Odd pages only
 Samo &neparne stranice
 
+&Open\tCtrl+O
+&Otvori\tCtrl+O
+
 &Open Document
 &Otvori dokument
-
-&Open...\tCtrl+O
-&Otvori...\tCtrl+O
 
 &Options...
 Opcije...
@@ -472,9 +472,6 @@ Otvori u &Adobe Readeru
 Open in &Foxit Reader
 Otvori u &Foxit Readeru
 
-Open in Microsoft HTML Help
-Otvori u Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Otvori u Microsoft XPS-Viewer
 
@@ -681,11 +678,8 @@ printing document
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

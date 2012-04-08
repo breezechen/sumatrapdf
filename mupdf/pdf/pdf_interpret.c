@@ -995,11 +995,7 @@ pdf_new_csi(pdf_document *xref, fz_device *dev, fz_matrix ctm, char *event, fz_c
 		csi->top_ctm = ctm;
 		pdf_init_gstate(ctx, &csi->gstate[0], ctm);
 		if (gstate)
-		{
-			/* SumatraPDF: fix memory leak */
-			fz_drop_stroke_state(ctx, csi->gstate[0].stroke_state);
 			copy_state(ctx, &csi->gstate[0], gstate);
-		}
 		csi->gtop = 0;
 
 		csi->cookie = cookie;
@@ -1165,9 +1161,12 @@ pdf_set_color(pdf_csi *csi, int what, float *v)
 	{
 	case PDF_MAT_PATTERN:
 	case PDF_MAT_COLOR:
-		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1879 */
-		if (!strcmp(mat->colorspace->name, "Indexed"))
-			v[0] = v[0] / 255;
+		if (!strcmp(mat->colorspace->name, "Lab"))
+		{
+			mat->v[0] = v[0] / 100;
+			mat->v[1] = (v[1] + 100) / 200;
+			mat->v[2] = (v[2] + 100) / 200;
+		}
 		for (i = 0; i < mat->colorspace->n; i++)
 			mat->v[i] = v[i];
 		break;

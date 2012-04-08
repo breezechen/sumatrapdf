@@ -1,7 +1,8 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
+#include "Scoped.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
 #include "WinUtil.h"
 
@@ -69,25 +70,6 @@ static TCHAR *GetXPSViewerPath()
             return exePath.StealData();
     }
 #endif
-    return NULL;
-}
-
-static TCHAR *GetHtmlHelpPath()
-{
-    // the Html Help viewer seems to be installed either into %WINDIR% or %WINDIR%\system32
-    TCHAR buffer[MAX_PATH];
-    UINT res = GetWindowsDirectory(buffer, dimof(buffer));
-    if (!res || res >= dimof(buffer))
-        return NULL;
-    ScopedMem<TCHAR> exePath(path::Join(buffer, _T("hh.exe")));
-    if (file::Exists(exePath))
-        return exePath.StealData();
-    res = GetSystemDirectory(buffer, dimof(buffer));
-    if (!res || res >= dimof(buffer))
-        return NULL;
-    exePath.Set(path::Join(buffer, _T("hh.exe")));
-    if (file::Exists(exePath))
-        return exePath.StealData();
     return NULL;
 }
 
@@ -219,41 +201,6 @@ bool ViewWithXPSViewer(WindowInfo *win, TCHAR *args)
         return false;
 
     ScopedMem<TCHAR> exePath(GetXPSViewerPath());
-    if (!exePath)
-        return false;
-
-    if (!args)
-        args = _T("");
-
-    ScopedMem<TCHAR> params;
-    if (win->IsDocLoaded())
-        params.Set(str::Format(_T("%s \"%s\""), args, win->dm->FileName()));
-    else
-        params.Set(str::Format(_T("%s \"%s\""), args, win->loadedFilePath));
-    return LaunchFile(exePath, params);
-}
-
-bool CanViewWithHtmlHelp(WindowInfo *win)
-{
-    // Requirements: a valid filename and a valid path to HTML Help
-    if (!win || win->IsAboutWindow() || !CanViewExternally(win))
-        return false;
-    // allow viewing with HTML Help, if either an CHM document is loaded...
-    if (win->IsDocLoaded() && win->dm->engineType != Engine_Chm && win->dm->engineType != Engine_Chm2)
-        return false;
-    // or a file ending in .chm has failed to be loaded
-    if (!win->IsDocLoaded() && !str::EndsWithI(win->loadedFilePath, _T(".chm")))
-        return false;
-    ScopedMem<TCHAR> path(GetHtmlHelpPath());
-    return path != NULL;
-}
-
-bool ViewWithHtmlHelp(WindowInfo *win, TCHAR *args)
-{
-    if (!CanViewWithHtmlHelp(win))
-        return false;
-
-    ScopedMem<TCHAR> exePath(GetHtmlHelpPath());
     if (!exePath)
         return false;
 

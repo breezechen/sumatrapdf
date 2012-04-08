@@ -87,11 +87,11 @@ Contributor: Jegatheesan Veeramalai (vjegatheesh@gmail.com)
 &Odd pages only
 ஒற்றைபடை பக்கங்கள் மட்டும்
 
+&Open\tCtrl+O
+திற\tCtrl+O
+
 &Open Document
 கோப்பை திற
-
-&Open...\tCtrl+O
-திற...\tCtrl+O
 
 &Options...
 விருப்ப பேரம்
@@ -378,9 +378,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 &Foxit Reader இல் திற
 
-Open in Microsoft HTML Help
-Microsoft HTML Help இல் திற
-
 Open in Microsoft XPS-Viewer
 Microsoft XPS-Viewer இல் திற
 
@@ -537,7 +534,6 @@ printing document
 #Enter the command-line to invoke when you double-click on the PDF document:
 #Error loading %s
 #F&avorites
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fit &Content\tCtrl+3
@@ -564,10 +560,8 @@ printing document
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Select &All

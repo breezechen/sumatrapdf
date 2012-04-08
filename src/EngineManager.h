@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef EngineManager_h
@@ -16,7 +16,10 @@ enum EngineType {
     Engine_PDF, Engine_XPS,
     Engine_PS,
     Engine_Chm,
-    Engine_Epub, Engine_Fb2, Engine_Mobi, Engine_Pdb, Engine_Chm2, Engine_Html, Engine_Txt,
+    Engine_Epub,
+    Engine_Fb2,
+    Engine_Mobi,
+    Engine_Chm2,
 };
 
 #include "BaseEngine.h"
@@ -71,18 +74,9 @@ RetrySniffing:
         } else if (MobiEngine::IsSupportedFile(filePath, sniff) && engineType != Engine_Mobi) {
             engine = MobiEngine::CreateFromFile(filePath);
             engineType = Engine_Mobi;
-        } else if (PdbEngine::IsSupportedFile(filePath, sniff) && engineType != Engine_Pdb) {
-            engine = PdbEngine::CreateFromFile(filePath);
-            engineType = Engine_Pdb;
         } else if (Chm2Engine::IsSupportedFile(filePath, sniff) && engineType != Engine_Chm2) {
             engine = Chm2Engine::CreateFromFile(filePath);
-            engineType = Engine_Chm2;
-        } else if (HtmlEngine::IsSupportedFile(filePath, sniff) && engineType != Engine_Html) {
-            engine = HtmlEngine::CreateFromFile(filePath);
-            engineType = Engine_Html;
-        } else if (TxtEngine::IsSupportedFile(filePath, sniff) && engineType != Engine_Txt) {
-            engine = TxtEngine::CreateFromFile(filePath);
-            engineType = Engine_Txt;
+            engineType = Engine_Mobi;
 #endif
         }
 

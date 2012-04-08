@@ -89,11 +89,11 @@ Pàgina &següent\t->
 &Odd pages only
 Només les pàgines senars
 
+&Open\tCtrl+O
+&Obri\tCtrl+O
+
 &Open Document
 &Obri el document
-
-&Open...\tCtrl+O
-&Obri...\tCtrl+O
 
 &Options...
 &Opcions...
@@ -470,9 +470,6 @@ Obri amb l'&Adobe Reader
 Open in &Foxit Reader
 Obri amb el &Foxit Reader
 
-Open in Microsoft HTML Help
-Obri amb el Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Obri amb el Microsoft XPS-Viewer
 
@@ -677,12 +674,9 @@ s'està imprimint el document
 # Untranslated:
 #Copy &Image
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 #Sorry, that shouldn't have happened!\n\nPlease press 'Cancel', if you want to help us fix the cause of this crash.
 

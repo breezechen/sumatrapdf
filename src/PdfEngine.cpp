@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 extern "C" {
@@ -7,10 +7,10 @@ __pragma(warning(push))
 __pragma(warning(pop))
 }
 
-#include "BaseUtil.h"
 #include "PdfEngine.h"
-
+#include "StrUtil.h"
 #include "FileUtil.h"
+#include "Scoped.h"
 
 // maximum size of a file that's entirely loaded into memory before parsed
 // and displayed; larger files will be kept open while they're displayed
@@ -102,16 +102,27 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
     int h = pixmap->h;
     int rows8 = ((w + 3) / 4) * 4;
 
+    /* BGRA is a GDI compatible format */
+    fz_pixmap *bgrPixmap;
+    fz_try(ctx) {
+        fz_colorspace *colorspace = fz_find_device_colorspace(ctx, "DeviceBGR");
+        bgrPixmap = fz_new_pixmap_with_bbox(ctx, colorspace, fz_pixmap_bbox(ctx, pixmap));
+        fz_convert_pixmap(ctx, bgrPixmap, pixmap);
+    }
+    fz_catch(ctx) {
+        return;
+    }
+
+    assert(bgrPixmap->n == 4);
+
     BITMAPINFO *bmi = (BITMAPINFO *)calloc(1, sizeof(BITMAPINFOHEADER) + 256 * sizeof(RGBQUAD));
 
     // always try to produce an 8-bit palette for saving some memory
     unsigned char *bmpData = (unsigned char *)calloc(rows8, h);
-    fz_pixmap *bgrPixmap = NULL;
-    if (bmpData && pixmap->n == 4 &&
-        pixmap->colorspace == fz_find_device_colorspace(ctx, "DeviceRGB"))
+    if (bmpData)
     {
         unsigned char *dest = bmpData;
-        unsigned char *source = pixmap->samples;
+        unsigned char *source = bgrPixmap->samples;
 
         for (int j = 0; j < h; j++)
         {
@@ -119,9 +130,9 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
             {
                 RGBQUAD c = { 0 };
 
-                c.rgbRed = *source++;
-                c.rgbGreen = *source++;
                 c.rgbBlue = *source++;
+                c.rgbGreen = *source++;
+                c.rgbRed = *source++;
                 source++;
 
                 /* find this color in the palette */
@@ -145,19 +156,6 @@ RenderedFitzBitmap::RenderedFitzBitmap(fz_context *ctx, fz_pixmap *pixmap) :
 ProducingPaletteDone:
         hasPalette = paletteSize < 256;
     }
-    if (!hasPalette) {
-        free(bmpData);
-        /* BGRA is a GDI compatible format */
-        fz_try(ctx) {
-            fz_colorspace *colorspace = fz_find_device_colorspace(ctx, "DeviceBGR");
-            bgrPixmap = fz_new_pixmap_with_bbox(ctx, colorspace, fz_pixmap_bbox(ctx, pixmap));
-            fz_convert_pixmap(ctx, bgrPixmap, pixmap);
-        }
-        fz_catch(ctx) {
-            free(bmi);
-            return;
-        }
-    }
 
     bmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi->bmiHeader.biWidth = w;
@@ -173,11 +171,9 @@ ProducingPaletteDone:
         hasPalette ? bmpData : bgrPixmap->samples, bmi, DIB_RGB_COLORS);
     ReleaseDC(NULL, hDC);
 
-    if (hasPalette)
-        free(bmpData);
-    else
-        fz_drop_pixmap(ctx, bgrPixmap);
+    fz_drop_pixmap(ctx, bgrPixmap);
     free(bmi);
+    free(bmpData);
 }
 
 fz_stream *fz_open_file2(fz_context *ctx, const TCHAR *filePath)
@@ -454,7 +450,7 @@ static TCHAR *LinkifyMultilineText(LinkRectList *list, TCHAR *pageText, TCHAR *s
 // cf. http://weblogs.mozillazine.org/gerv/archives/2011/05/html5_email_address_regexp.html
 inline bool IsEmailUsernameChar(TCHAR c)
 {
-    return _istalnum(c) || c && str::FindChar(_T(".!#$%&'*+-=?^`{|}~"), c);
+    return _istalnum(c) || str::FindChar(_T(".!#$%&'*+-/=?^`{|}~"), c);
 }
 inline bool IsEmailDomainChar(TCHAR c)
 {
@@ -514,7 +510,7 @@ static LinkRectList *LinkifyText(TCHAR *pageText, RectI *coords)
             multiline = LinkifyCheckMultiline(pageText, end, coords);
             protocol = _T("http://");
             // ignore www. links without a top-level domain
-            if (end - start <= 4 || !multiline && (!_tcschr(start + 5, '.') || _tcschr(start + 5, '.') >= end))
+            if (end - start <= 4 || !multiline && (!_tcschr(start + 5, '.') || _tcschr(start + 5, '.') > end))
                 end = NULL;
         }
         else if ('m' == *start && str::StartsWith(start, _T("mailto:"))) {
@@ -570,7 +566,7 @@ class SimpleDest : public PageDestination {
 public:
     SimpleDest(int pageNo, RectD rect) : pageNo(pageNo), rect(rect) { }
 
-    virtual PageDestType GetDestType() const { return Dest_ScrollTo; }
+    virtual const char *GetDestType() const { return NULL; }
     virtual int GetDestPageNo() const { return pageNo; }
     virtual RectD GetDestRect() const { return rect; }
 };
@@ -900,7 +896,7 @@ public:
                                     RenderTarget target=Target_View);
     virtual bool HasClipOptimizations(int pageNo);
     virtual PageLayoutType PreferredLayout();
-    virtual TCHAR *GetProperty(const char *name);
+    virtual TCHAR *GetProperty(char *name);
 
     virtual bool IsPrintingAllowed() {
         return pdf_has_permission(_doc, PDF_PERM_PRINT);
@@ -931,7 +927,7 @@ public:
     virtual char *GetDecryptionKey() const;
 
 protected:
-    TCHAR *_fileName;
+    const TCHAR *_fileName;
     char *_decryptionKey;
     bool isProtected;
 
@@ -1012,7 +1008,7 @@ public:
     virtual TCHAR *GetValue() const;
     virtual PageDestination *AsLink() { return this; }
 
-    virtual PageDestType GetDestType() const;
+    virtual const char *GetDestType() const;
     virtual int GetDestPageNo() const;
     virtual RectD GetDestRect() const;
     virtual TCHAR *GetDestValue() const { return GetValue(); }
@@ -1096,25 +1092,28 @@ PdfEngineImpl::~PdfEngineImpl()
         free(_pages);
     }
 
-    fz_free_outline(ctx, outline);
-    fz_free_outline(ctx, attachments);
-    pdf_drop_obj(_info);
+    if (outline)
+        fz_free_outline(ctx, outline);
+    if (attachments)
+        fz_free_outline(ctx, attachments);
+    if (_info)
+        pdf_drop_obj(_info);
 
     if (pageComments) {
-        for (int i = 0; i < PageCount(); i++) {
+        for (int i = 0; i < PageCount(); i++)
             free(pageComments[i]);
-        }
         free(pageComments);
     }
     if (imageRects) {
-        for (int i = 0; i < PageCount(); i++) {
+        for (int i = 0; i < PageCount(); i++)
             free(imageRects[i]);
-        }
         free(imageRects);
     }
 
-    pdf_close_document(_doc);
-    _doc = NULL;
+    if (_doc) {
+        pdf_close_document(_doc);
+        _doc = NULL;
+    }
 
     while (runCache.Count() > 0) {
         assert(runCache.Last()->refs == 1);
@@ -1123,7 +1122,7 @@ PdfEngineImpl::~PdfEngineImpl()
 
     delete[] _mediaboxes;
     delete _pagelabels;
-    free(_fileName);
+    free((void*)_fileName);
     free(_decryptionKey);
 
     fz_free_context(ctx);
@@ -1183,12 +1182,12 @@ static const TCHAR *findEmbedMarks(const TCHAR *fileName)
     int colonCount = 0;
     for (const TCHAR *c = fileName + str::Len(fileName) - 1; c > fileName; c--) {
         if (*c == ':') {
-            if (!str::IsDigit(*(c + 1)))
+            if (!ChrIsDigit(*(c + 1)))
                 break;
             if (++colonCount % 2 == 0)
                 embedMarks = c;
         }
-        else if (!str::IsDigit(*c))
+        else if (!ChrIsDigit(*c))
             break;
     }
 
@@ -2192,7 +2191,7 @@ TCHAR *PdfEngineImpl::ExtractFontList()
     return fonts.Join(_T("\n"));
 }
 
-TCHAR *PdfEngineImpl::GetProperty(const char *name)
+TCHAR *PdfEngineImpl::GetProperty(char *name)
 {
     if (!_doc)
         return NULL;
@@ -2208,7 +2207,7 @@ TCHAR *PdfEngineImpl::GetProperty(const char *name)
 
     // _info is guaranteed not to contain any indirect references,
     // so no need for ctxAccess
-    pdf_obj *obj = pdf_dict_gets(_info, (char *)name);
+    pdf_obj *obj = pdf_dict_gets(_info, name);
     if (!obj)
         return NULL;
 
@@ -2382,52 +2381,21 @@ TCHAR *PdfLink::GetValue() const
     return path;
 }
 
-static PageDestType DestTypeFromName(const char *name)
-{
-    // named actions are converted either to Dest_Name or Dest_NameDialog
-#define HandleType(type) if (str::Eq(name, #type)) return Dest_ ## type
-#define HandleTypeDialog(type) if (str::Eq(name, #type)) return Dest_ ## type ## Dialog
-    // predefined named actions
-    HandleType(NextPage);
-    HandleType(PrevPage);
-    HandleType(FirstPage);
-    HandleType(LastPage);
-    // Adobe Reader extensions to the spec
-    // cf. http://www.tug.org/applications/hyperref/manual.html
-    HandleTypeDialog(Find);
-    HandleType(FullScreen);
-    HandleType(GoBack);
-    HandleType(GoForward);
-    HandleTypeDialog(GoToPage);
-    HandleTypeDialog(Print);
-    HandleTypeDialog(SaveAs);
-    HandleTypeDialog(ZoomTo);
-#undef HandleType
-#undef HandleTypeDialog
-    // named action that we don't support (or invalid action name)
-    return Dest_None;
-}
-
-PageDestType PdfLink::GetDestType() const
+const char *PdfLink::GetDestType() const
 {
     if (!link)
-        return Dest_None;
+        return NULL;
 
     switch (link->kind) {
-    case FZ_LINK_GOTO:
-        return Dest_ScrollTo;
-    case FZ_LINK_URI:
-        return Dest_LaunchURL;
-    case FZ_LINK_NAMED:
-        return DestTypeFromName(link->ld.named.named);
+    case FZ_LINK_GOTO: return "ScrollTo";
+    case FZ_LINK_URI: return "LaunchURL";
+    case FZ_LINK_NAMED: return link->ld.named.named;
     case FZ_LINK_LAUNCH:
         if (link->ld.launch.embedded_num)
-            return Dest_LaunchEmbedded;
-        return Dest_LaunchFile;
-    case FZ_LINK_GOTOR:
-        return Dest_LaunchFile;
-    default:
-        return Dest_None; // unsupported action
+            return "LaunchEmbedded";
+        return "LaunchFile";
+    case FZ_LINK_GOTOR: return "LaunchFile";
+    default: return NULL; // unsupported action
     }
 }
 
@@ -2577,7 +2545,7 @@ public:
         return ExtractPageText(GetXpsPage(pageNo), lineSep, coords_out);
     }
     virtual bool HasClipOptimizations(int pageNo);
-    virtual TCHAR *GetProperty(const char *name);
+    virtual TCHAR *GetProperty(char *name);
 
     virtual float GetFileDPI() const { return 72.0f; }
     virtual const TCHAR *GetDefaultFileExt() const { return _T(".xps"); }
@@ -2594,7 +2562,7 @@ public:
     fz_rect FindDestRect(const char *target);
 
 protected:
-    TCHAR *_fileName;
+    const TCHAR *_fileName;
 
     // make sure to never ask for _pagesAccess in an ctxAccess
     // protected critical section in order to avoid deadlocks
@@ -2664,14 +2632,14 @@ public:
     }
     virtual PageDestination *AsLink() { return this; }
 
-    virtual PageDestType GetDestType() const {
+    virtual const char *GetDestType() const {
         if (!link)
-            return Dest_None;
+            return NULL;
         if (FZ_LINK_GOTO == link->kind)
-            return Dest_ScrollTo;
+            return "ScrollTo";
         if (FZ_LINK_URI == link->kind)
-            return Dest_LaunchURL;
-        return Dest_None;
+            return "LaunchURL";
+        return NULL;
     }
     virtual int GetDestPageNo() const {
         if (!link || link->kind != FZ_LINK_GOTO)
@@ -2759,7 +2727,7 @@ XpsEngineImpl::~XpsEngineImpl()
         DropPageRun(runCache.Last(), true);
     }
 
-    free(_fileName);
+    free((void*)_fileName);
 
     fz_free_context(ctx);
 
@@ -3304,7 +3272,7 @@ TCHAR *XpsEngineImpl::ExtractFontList()
     return fonts.Join(_T("\n"));
 }
 
-TCHAR *XpsEngineImpl::GetProperty(const char *name)
+TCHAR *XpsEngineImpl::GetProperty(char *name)
 {
     for (xps_doc_prop *prop = _info; prop; prop = prop->next) {
         if (str::Eq(prop->name, name) && !str::IsEmpty(prop->value))

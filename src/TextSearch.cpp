@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "TextSearch.h"
+#include "StrUtil.h"
+#include <shlwapi.h>
 
 enum { SEARCH_PAGE, SKIP_PAGE };
 
@@ -11,8 +12,7 @@ enum { SEARCH_PAGE, SKIP_PAGE };
 // cf. http://code.google.com/p/sumatrapdf/issues/detail?id=959
 #define isnoncjkwordchar(c) (iswordchar(c) && (unsigned short)(c) < 0x2E80)
 
-TextSearch::TextSearch(BaseEngine *engine, PageTextCache *textCache) :
-    TextSelection(engine, textCache),
+TextSearch::TextSearch(BaseEngine *engine) : TextSelection(engine),
     findText(NULL), anchor(NULL), pageText(NULL),
     caseSensitive(false), forward(true),
     matchWordStart(false), matchWordEnd(false),
@@ -97,9 +97,9 @@ void TextSearch::SetDirection(TextSearchDirection direction)
 
 // try to match "findText" from "start" with whitespace tolerance
 // (ignore all whitespace except after alphanumeric characters)
-int TextSearch::MatchLen(const TCHAR *start)
+int TextSearch::MatchLen(TCHAR *start)
 {
-    const TCHAR *match = findText, *end = start;
+    TCHAR *match = findText, *end = start;
 
     if (matchWordStart && start > pageText && iswordchar(start[-1]) && iswordchar(start[0]))
         return -1;
@@ -145,9 +145,9 @@ int TextSearch::MatchLen(const TCHAR *start)
     return (int)(end - start);
 }
 
-static const TCHAR *GetNextIndex(const TCHAR *base, int offset, bool forward)
+static TCHAR *GetNextIndex(TCHAR *base, int offset, bool forward)
 {
-    const TCHAR *c = base + offset + (forward ? 0 : -1);
+    TCHAR *c = base + offset + (forward ? 0 : -1);
     if (c < base || !*c)
         return NULL;
     return c;
@@ -161,7 +161,7 @@ bool TextSearch::FindTextInPage(int pageNo)
         pageNo = findPage;
     findPage = pageNo;
 
-    const TCHAR *found;
+    TCHAR *found;
     int length;
     do {
         if (!anchor)
@@ -194,10 +194,8 @@ bool TextSearch::FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker)
         return false;
 
     int total = engine->PageCount();
-    while (1 <= pageNo && pageNo <= total && (!tracker || !tracker->WasCanceled())) {
-        if (tracker)
-            tracker->UpdateProgress(pageNo, total);
-
+    while (1 <= pageNo && pageNo <= total &&
+           (!tracker || tracker->UpdateProgress(pageNo, total))) {
         if (SKIP_PAGE == findCache[pageNo - 1]) {
             pageNo += forward ? 1 : -1;
             continue;
@@ -205,10 +203,14 @@ bool TextSearch::FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker)
 
         Reset();
 
-        pageText = textCache->GetData(pageNo, &findIndex);
+        // make sure that the page text has been cached
+        if (!text[pageNo - 1])
+            FindClosestGlyph(pageNo, 0, 0);
+
+        pageText = text[pageNo - 1];
+        findIndex = forward ? 0 : lens[pageNo - 1];
+
         if (pageText) {
-            if (forward)
-                findIndex = 0;
             if (FindTextInPage(pageNo))
                 return true;
             findCache[pageNo - 1] = SKIP_PAGE;
@@ -234,15 +236,11 @@ TextSel *TextSearch::FindFirst(int page, TCHAR *text, ProgressUpdateUI *tracker)
 
 TextSel *TextSearch::FindNext(ProgressUpdateUI *tracker)
 {
-    CrashIf(!findText);
+    assert(findText);
     if (!findText)
         return NULL;
-
-    if (tracker) {
-        if (tracker->WasCanceled())
-            return NULL;
-        tracker->UpdateProgress(findPage, engine->PageCount());
-    }
+    if (tracker && !tracker->UpdateProgress(findPage, engine->PageCount()))
+        return NULL;
 
     if (FindTextInPage())
         return &result;

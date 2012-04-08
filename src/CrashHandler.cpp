@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD */
 
 #include "BaseUtil.h"
@@ -9,8 +9,10 @@
 #include "DbgHelpDyn.h"
 #include "FileUtil.h"
 #include "Http.h"
+#include "StrUtil.h"
 #include "SumatraPDF.h"
 #include "Translations.h"
+#include "Vec.h"
 #include "Version.h"
 #include "WinUtil.h"
 #include "ZipUtil.h"
@@ -94,7 +96,6 @@ static TCHAR *  gSumatraPdfPdbPath = NULL;
 static TCHAR *  gInstallerPdbPath = NULL;
 static char *   gSystemInfo = NULL;
 static char *   gModulesInfo = NULL;
-static str::Str<char> *gAdditionalInfo = NULL;
 static HANDLE   gDumpEvent = NULL;
 static HANDLE   gDumpThread = NULL;
 static ExeType  gExeType = ExeSumatraStatic;
@@ -139,9 +140,6 @@ static char *BuildCrashInfoText()
     s.Append("\r\n");
 #endif
     s.Append(gModulesInfo);
-
-    s.Append("\r\n");
-    s.Append(gAdditionalInfo->LendData());
 
     return s.StealData();
 }
@@ -506,7 +504,7 @@ static void BuildSystemInfo()
     gSystemInfo = s.StealData();
 }
 
-static bool StoreCrashDumpPaths(const TCHAR *symDir)
+static bool BuilCrashDumpPaths(const TCHAR *symDir)
 {
     if (!symDir)
         return false;
@@ -595,22 +593,14 @@ static ExeType DetectExeType()
     return exeType;
 }
 
-void CrashLogFmt(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    char *s = str::FmtV(fmt, args);
-    gAdditionalInfo->AppendAndFree(s);
-    va_end(args);
-}
-
 void InstallCrashHandler(const TCHAR *crashDumpPath, const TCHAR *symDir)
 {
     assert(!gDumpEvent && !gDumpThread);
 
     if (!crashDumpPath)
         return;
-    if (!StoreCrashDumpPaths(symDir))
+#ifndef HAS_NO_SYMBOLS
+    if (!BuilCrashDumpPaths(symDir))
         return;
     if (!BuildSymbolPath())
         return;
@@ -624,8 +614,9 @@ void InstallCrashHandler(const TCHAR *crashDumpPath, const TCHAR *symDir)
     // when crash handler is invoked. It's ok to use standard
     // allocation functions here.
     gCrashHandlerAllocator = new CrashHandlerAllocator();
+#endif
     gCrashDumpPath = str::Dup(crashDumpPath);
-    gAdditionalInfo = new str::Str<char>(4096);
+
     gDumpEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!gDumpEvent)
         return;
@@ -650,7 +641,6 @@ void UninstallCrashHandler()
     free(gSumatraPdfPdbPath);
     free(gInstallerPdbPath);
 
-    delete gAdditionalInfo;
     free(gSymbolPathW);
     free(gSystemInfo);
     free(gModulesInfo);

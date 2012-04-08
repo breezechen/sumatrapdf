@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 /* The most basic things, including string handling functions */
-#include "BaseUtil.h"
+#include "Scoped.h"
+#include "StrUtil.h"
 
 void CrashMe()
 {
@@ -72,18 +73,6 @@ bool EqN(const WCHAR *s1, const WCHAR *s2, size_t len)
 {
     EntryCheck(s1, s2);
     return 0 == wcsncmp(s1, s2, len);
-}
-
-bool EqNI(const char *s1, const char *s2, size_t len)
-{
-    EntryCheck(s1, s2);
-    return 0 == _strnicmp(s1, s2, len);
-}
-
-bool EqNI(const WCHAR *s1, const WCHAR *s2, size_t len)
-{
-    EntryCheck(s1, s2);
-    return 0 == _wcsnicmp(s1, s2, len);
 }
 
 /* return true if 'str' starts with 'txt', NOT case-sensitive */
@@ -372,18 +361,6 @@ Next:
     return -1;
 }
 
-// format string to a buffer profided by the caller
-// the hope here is to avoid allocating memory (assuming vsnprintf
-// doesn't allocate)
-bool BufFmtV(char *buf, size_t bufCchSize, const char *fmt, va_list args)
-{
-    int count = vsnprintf(buf, bufCchSize, fmt, args);
-    buf[bufCchSize-1] = 0;
-    if ((count >= 0) && ((size_t)count < bufCchSize))
-        return true;
-    return false;
-}
-
 char *FmtV(const char *fmt, va_list args)
 {
     char    message[256];
@@ -420,15 +397,6 @@ char *Format(const char *fmt, ...)
     char *res = FmtV(fmt, args);
     va_end(args);
     return res;
-}
-
-bool BufFmtV(WCHAR *buf, size_t bufCchSize, const WCHAR *fmt, va_list args)
-{
-    int count = _vsnwprintf(buf, bufCchSize, fmt, args);
-    buf[bufCchSize-1] = 0;
-    if ((count >= 0) && ((size_t)count < bufCchSize))
-        return true;
-    return false;
 }
 
 WCHAR *FmtV(const WCHAR *fmt, va_list args)
@@ -595,12 +563,12 @@ size_t BufSet(char *dst, size_t dstCchSize, const char *src)
     CrashAlwaysIf(0 == dstCchSize);
 
     size_t srcCchSize = str::Len(src);
-    size_t toCopy = min(dstCchSize - 1, srcCchSize);
+    size_t size = min(dstCchSize - 1, srcCchSize);
 
-    strncpy(dst, src, toCopy);
-    dst[toCopy] = 0;
+    strncpy(dst, src, size + 1);
+    dst[size] = '\0';
 
-    return toCopy;
+    return size;
 }
 
 size_t BufSet(WCHAR *dst, size_t dstCchSize, const WCHAR *src)
@@ -608,40 +576,12 @@ size_t BufSet(WCHAR *dst, size_t dstCchSize, const WCHAR *src)
     CrashAlwaysIf(0 == dstCchSize);
 
     size_t srcCchSize = str::Len(src);
-    size_t toCopy = min(dstCchSize - 1, srcCchSize);
+    size_t size = min(dstCchSize - 1, srcCchSize);
 
-    wcsncpy(dst, src, toCopy);
-    dst[toCopy] = 0;
+    wcsncpy(dst, src, size + 1);
+    dst[size] = '\0';
 
-    return toCopy;
-}
-
-// append as much of s at the end of dst (which must be properly null-terminated)
-// as will fit. 
-size_t  BufAppend(char *dst, size_t dstCchSize, const char *s)
-{
-    size_t srcCchSize = str::Len(s);
-    size_t currDstCchLen = str::Len(dst);
-    if (currDstCchLen + 1 >= dstCchSize)
-        return 0;
-    size_t left = dstCchSize - currDstCchLen - 1;
-    size_t toCopy = min(left, srcCchSize);
-    strncpy(dst + currDstCchLen, s, toCopy);
-    dst[currDstCchLen + toCopy] = 0;
-    return toCopy;
-}
-
-size_t  BufAppend(WCHAR *dst, size_t dstCchSize, const WCHAR *s)
-{
-    size_t srcCchSize = str::Len(s);
-    size_t currDstCchLen = str::Len(dst);
-    if (currDstCchLen + 1 >= dstCchSize)
-        return 0;
-    size_t left = dstCchSize - currDstCchLen - 1;
-    size_t toCopy = min(left, srcCchSize);
-    wcsncpy(dst + currDstCchLen, s, toCopy);
-    dst[currDstCchLen + toCopy] = 0;
-    return toCopy;
+    return size;
 }
 
 /* Convert binary data in <buf> of size <len> to a hex-encoded string */
@@ -766,16 +706,16 @@ int CmpNatural(const TCHAR *a, const TCHAR *b)
         // whitespace, compare them traditionally for a stable sort order
         if (!*a && !*b)
             return _tcscmp(aStart, bStart);
-        if (str::IsDigit(*a) && str::IsDigit(*b)) {
+        if (ChrIsDigit(*a) && ChrIsDigit(*b)) {
             // ignore leading zeroes
             for (; '0' == *a; a++);
             for (; '0' == *b; b++);
             // compare the two numbers as (positive) integers
-            for (diff = 0; str::IsDigit(*a) || str::IsDigit(*b); a++, b++) {
+            for (diff = 0; ChrIsDigit(*a) || ChrIsDigit(*b); a++, b++) {
                 // if either *a or *b isn't a number, they differ in magnitude
-                if (!str::IsDigit(*a))
+                if (!ChrIsDigit(*a))
                     return -1;
-                if (!str::IsDigit(*b))
+                if (!ChrIsDigit(*b))
                     return 1;
                 // remember the difference for when the numbers are of the same magnitude
                 if (0 == diff)
@@ -908,7 +848,7 @@ static const char *ParseV(const char *str, const char *format, va_list args)
                 continue;
             end = (char *)str + 1;
         }
-        else if (str::IsDigit(*f))
+        else if (ChrIsDigit(*f))
             f = ParseLimitedNumber(str, f, &end, va_arg(args, void *)) - 1;
         if (!end || end == str)
             return NULL;
@@ -951,7 +891,7 @@ const char *Parse(const char *str, size_t len, const char *fmt, ...)
 
     if (s != buf)
         free(s);
-    return res ? str + (res - s) : NULL;
+    return res;
 }
 
 const WCHAR *Parse(const WCHAR *str, const WCHAR *format, ...)
@@ -988,12 +928,12 @@ const WCHAR *Parse(const WCHAR *str, const WCHAR *format, ...)
             continue; // don't fail, if we're indeed at the end of the string
         else if ('%' == *f && *f == *str)
             end = (WCHAR *)str + 1;
-        else if (' ' == *f && str::IsWs(*str))
+        else if (' ' == *f && iswspace(*str))
             end = (WCHAR *)str + 1;
         else if ('_' == *f) {
-            if (!str::IsWs(*str))
+            if (!iswspace(*str))
                 continue; // don't fail, if there's no whitespace at all
-            for (end = (WCHAR *)str + 1; str::IsWs(*end); end++);
+            for (end = (WCHAR *)str + 1; iswspace(*end); end++);
         }
         else if ('?' == *f && *(f + 1)) {
             // skip the next format character, advance the string,
@@ -1002,7 +942,7 @@ const WCHAR *Parse(const WCHAR *str, const WCHAR *format, ...)
                 continue;
             end = (WCHAR *)str + 1;
         }
-        else if (str::IsDigit(*f))
+        else if (ChrIsDigit(*f))
             f = ParseLimitedNumber(str, f, &end, va_arg(args, void *)) - 1;
         if (!end || end == str)
             goto Failure;

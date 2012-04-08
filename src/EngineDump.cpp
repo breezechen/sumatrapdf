@@ -1,16 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#ifndef ENABLE_EBOOK_ENGINES
 #define ENABLE_EBOOK_ENGINES
-#endif
-
-#include "BaseUtil.h"
-#include "CmdLineParser.h"
 #include "EngineManager.h"
 #include "FileUtil.h"
-#include "TgaReader.h"
+#include "CmdLineParser.h"
 #include "WinUtil.h"
+#include "Scoped.h"
+using namespace Gdiplus;
+#include "GdiPlusUtil.h"
 
 #define Out(msg, ...) printf(msg, __VA_ARGS__)
 
@@ -168,35 +166,7 @@ void DumpToc(BaseEngine *engine)
     delete root;
 }
 
-const char *PageDestToStr(PageDestType destType)
-{
-#define HandleType(type) if (destType == Dest_ ## type) return #type;
-#define HandleTypeDialog(type) if (destType == Dest_ ## type ## Dialog) return #type;
-    // common actions
-    HandleType(ScrollTo);
-    HandleType(LaunchURL);
-    HandleType(LaunchEmbedded);
-    HandleType(LaunchFile);
-    // named actions
-    HandleType(NextPage);
-    HandleType(PrevPage);
-    HandleType(FirstPage);
-    HandleType(LastPage);
-    HandleTypeDialog(Find);
-    HandleType(FullScreen);
-    HandleType(GoBack);
-    HandleType(GoForward);
-    HandleTypeDialog(GoToPage);
-    HandleTypeDialog(Print);
-    HandleTypeDialog(SaveAs);
-    HandleTypeDialog(ZoomTo);
-#undef HandleType
-#undef HandleTypeDialog
-    CrashIf(destType != Dest_None);
-    return NULL;
-}
-
-void DumpPageContent(BaseEngine *engine, int pageNo, bool fullDump)
+void DumpPageData(BaseEngine *engine, int pageNo, bool fullDump)
 {
     // ensure that the page is loaded
     engine->BenchLoadPage(pageNo);
@@ -229,8 +199,10 @@ void DumpPageContent(BaseEngine *engine, int pageNo, bool fullDump)
             Out("\t\t\t<Element\n\t\t\t\tRect=\"%.0f %.0f %.0f %.0f\"\n", rect.x, rect.y, rect.dx, rect.dy);
             PageDestination *dest = els->At(i)->AsLink();
             if (dest) {
-                if (dest->GetDestType() != Dest_None)
-                    Out("\t\t\t\tType=\"%s\"\n", PageDestToStr(dest->GetDestType()));
+                if (dest->GetDestType()) {
+                    ScopedMem<char> type(Escape(str::conv::FromAnsi(dest->GetDestType())));
+                    Out("\t\t\t\tType=\"%s\"\n", type.Get());
+                }
                 ScopedMem<char> value(Escape(dest->GetDestValue()));
                 if (value)
                     Out("\t\t\t\tTarget=\"%s\"\n", value.Get());
@@ -271,7 +243,7 @@ void DumpThumbnail(BaseEngine *engine)
     }
 
     size_t len;
-    ScopedMem<unsigned char> data(tga::SerializeBitmap(bmp->GetBitmap(), &len));
+    ScopedMem<unsigned char> data(SerializeRunLengthEncoded(bmp->GetBitmap(), &len));
     ScopedMem<char> hexData(data ? str::MemToHex(data, len) : NULL);
     if (hexData)
         Out("\t<Thumbnail>\n\t\t%s\n\t</Thumbnail>\n", hexData.Get());
@@ -283,13 +255,13 @@ void DumpThumbnail(BaseEngine *engine)
 
 void DumpData(BaseEngine *engine, bool fullDump)
 {
-    Out(UTF8_BOM);
+    Out("\xEF\xBB\xBF"); // UTF-8 BOM
     Out("<?xml version=\"1.0\"?>\n");
     Out("<EngineDump>\n");
     DumpProperties(engine);
     DumpToc(engine);
     for (int i = 1; i <= engine->PageCount(); i++)
-        DumpPageContent(engine, i, fullDump);
+        DumpPageData(engine, i, fullDump);
     if (fullDump)
         DumpThumbnail(engine);
     Out("</EngineDump>\n");
@@ -304,7 +276,7 @@ void RenderDocument(BaseEngine *engine, const TCHAR *renderPath)
         if (bmp && str::EndsWithI(renderPath, _T(".bmp")))
             data.Set(SerializeBitmap(bmp->GetBitmap(), &len));
         else if (bmp)
-            data.Set(tga::SerializeBitmap(bmp->GetBitmap(), &len));
+            data.Set(SerializeRunLengthEncoded(bmp->GetBitmap(), &len));
         ScopedMem<TCHAR> pageBmpPath(str::Format(renderPath, pageNo));
         file::WriteAll(pageBmpPath, data, len);
         delete bmp;
@@ -325,9 +297,6 @@ public:
 
 int main(int argc, char **argv)
 {
-    setlocale(LC_ALL, "C");
-    EnableNx();
-
     CmdLineParser argList(GetCommandLine());
     if (argList.Count() < 2) {
 Usage:

@@ -4,6 +4,10 @@
 #ifndef HtmlPullParser_h
 #define HtmlPullParser_h
 
+#include "Vec.h"
+
+class Allocator;
+
 // enums must match HTML_TAGS_STRINGS order
 enum HtmlTag {
     Tag_NotFound = -1,
@@ -137,7 +141,6 @@ struct HtmlToken {
 
     bool             NameIs(const char *name) const;
     AttrInfo *       GetAttrByName(const char *name);
-    AttrInfo *       GetAttrByValue(const char *name);
 
 protected:
     AttrInfo *       NextAttr();
@@ -188,6 +191,5 @@ AlignAttr   GetAlignAttrByName(const char *attr, size_t len);
 
 char *      PrettyPrintHtml(const char *s, size_t len, size_t& lenOut);
 const char *ResolveHtmlEntities(const char *s, const char *end, Allocator *alloc);
-char *      ResolveHtmlEntities(const char *s, size_t len);
 
 #endif

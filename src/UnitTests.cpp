@@ -1,13 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifdef DEBUG
 
 #include "BaseUtil.h"
-#include "AppTools.h"
+#include "StrUtil.h"
 #include "ParseCommandLine.h"
-#include "StressTesting.h"
 #include "WinUtil.h"
+#include "AppTools.h"
+#include "StressTesting.h"
 
 static void hexstrTest()
 {

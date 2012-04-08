@@ -129,9 +129,8 @@ append_char(fz_context *ctx, fz_text_span *span, int c, fz_rect bbox)
 {
 	if (span->len == span->cap)
 	{
-		int new_cap = MAX(64, span->cap * 2);
-		span->text = fz_resize_array(ctx, span->text, new_cap, sizeof(*span->text));
-		span->cap = new_cap;
+		span->cap = MAX(64, span->cap * 2);
+		span->text = fz_resize_array(ctx, span->text, span->cap, sizeof(*span->text));
 	}
 	span->bbox = fz_union_rect(span->bbox, bbox);
 	span->text[span->len].c = c;
@@ -155,9 +154,8 @@ append_span(fz_context *ctx, fz_text_line *line, fz_text_span *span)
 		return;
 	if (line->len == line->cap)
 	{
-		int new_cap = MAX(8, line->cap * 2);
-		line->spans = fz_resize_array(ctx, line->spans, new_cap, sizeof(*line->spans));
-		line->cap = new_cap;
+		line->cap = MAX(8, line->cap * 2);
+		line->spans = fz_resize_array(ctx, line->spans, line->cap, sizeof(*line->spans));
 	}
 	line->bbox = fz_union_rect(line->bbox, span->bbox);
 	line->spans[line->len++] = *span;
@@ -176,9 +174,8 @@ append_line(fz_context *ctx, fz_text_block *block, fz_text_line *line)
 {
 	if (block->len == block->cap)
 	{
-		int new_cap = MAX(16, block->cap * 2);
-		block->lines = fz_resize_array(ctx, block->lines, new_cap, sizeof *block->lines);
-		block->cap = new_cap;
+		block->cap = MAX(16, block->cap * 2);
+		block->lines = fz_resize_array(ctx, block->lines, block->cap, sizeof *block->lines);
 	}
 	block->bbox = fz_union_rect(block->bbox, line->bbox);
 	block->lines[block->len++] = *line;
@@ -208,9 +205,8 @@ lookup_block_for_line(fz_context *ctx, fz_text_page *page, fz_text_line *line)
 
 	if (page->len == page->cap)
 	{
-		int new_cap = MAX(16, page->cap * 2);
-		page->blocks = fz_resize_array(ctx, page->blocks, new_cap, sizeof(*page->blocks));
-		page->cap = new_cap;
+		page->cap = MAX(16, page->cap * 2);
+		page->blocks = fz_resize_array(ctx, page->blocks, page->cap, sizeof(*page->blocks));
 	}
 
 	page->blocks[page->len].bbox = fz_empty_rect;
@@ -407,7 +403,7 @@ calc_bbox_overlap(fz_rect bbox1, fz_rect bbox2)
 	return area3 / MAX(area1, area2);
 }
 
-static inline int
+static int
 is_same_c(fz_text_span *span, int i, fz_text_span *span2, int j)
 {
 	return i < span->len && j < span2->len && span->text[i].c == span2->text[j].c;
@@ -416,11 +412,11 @@ is_same_c(fz_text_span *span, int i, fz_text_span *span2, int j)
 static int
 do_glyphs_overlap(fz_text_span *span, int i, fz_text_span *span2, int j, int start)
 {
+	// if only a single glyph overlaps, require slightly more overlapping
+	int single_glyph = start && !is_same_c(span, i + 1, span2, j + 1);
 	return
 		is_same_c(span, i, span2, j) &&
-		(calc_bbox_overlap(span->text[i].bbox, span2->text[j].bbox) >
-		 // if only a single glyph overlaps, require slightly more overlapping
-		 (start && !is_same_c(span, i + 1, span2, j + 1) ? 0.8f : 0.7f) ||
+		(calc_bbox_overlap(span->text[i].bbox, span2->text[j].bbox) > (single_glyph ? 0.8f : 0.7f) ||
 		 // bboxes of slim glyphs sometimes don't overlap enough, so
 		 // check if the overlapping continues with the following two glyphs
 		 is_same_c(span, i + 1, span2, j + 1) &&
@@ -471,11 +467,8 @@ fixup_text_block(fz_context *ctx, fz_text_block *block)
 						span2 = (++line2)->spans;
 					}
 					for (; j < span2->len; j++)
-					{
-						int c = span->text[i].c;
-						if (c != 32 && c == span2->text[j].c && do_glyphs_overlap(span, i, span2, j, 1))
+						if (span->text[i].c != 32 && do_glyphs_overlap(span, i, span2, j, 1))
 							goto fixup_delete_duplicates;
-					}
 				}
 				continue;
 

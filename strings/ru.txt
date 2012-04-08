@@ -90,11 +90,11 @@ Contributor: Victor Kozyakin
 &Odd pages only
 Только нечётн&ые страницы
 
+&Open\tCtrl+O
+&Открыть\tCtrl+O
+
 &Open Document
 &Открыть документ
-
-&Open...\tCtrl+O
-&Открыть...\tCtrl+O
 
 &Options...
 &Параметры...
@@ -342,9 +342,6 @@ F&ullscreen\tCtrl+Shift+L
 Facing
 По две страницы
 
-Failed to rename the file!
-Ошибка переименования файла!
-
 Failed to save a file
 Ошибка сохранения файла
 
@@ -489,9 +486,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Отк&рыть в Foxit Reader
 
-Open in Microsoft HTML Help
-Открыть в Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Открыть в Microsoft XPS-Viewer
 
@@ -564,9 +558,6 @@ Printing page %d of %d...
 Printing problem.
 Ошибка при печати.
 
-Re&name...\tF2
-Пере&именовать...\tF2
-
 Remember &opened files
 Запоминать &открытые файлы
 
@@ -575,9 +566,6 @@ Remove from favorites
 
 Remove page %s from favorites
 Удалить стр. %s из избранного
-
-Rename To
-Переименовать в
 
 Replace document &colors with Windows color scheme
 Применить к документу цветовую схему Windows

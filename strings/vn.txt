@@ -89,11 +89,11 @@ Không, cảm ơn
 &Odd pages only
 Chỉ những trang chẵn
 
+&Open\tCtrl+O
+Mở tập tin\tCtrl+O
+
 &Open Document
 Mở tập tin
-
-&Open...\tCtrl+O
-Mở tập tin...\tCtrl+O
 
 &Options...
 Tuỳ chọn
@@ -485,9 +485,6 @@ Mở bằng Adobe Reader
 Open in &Foxit Reader
 Mở bằng Foxit Reader
 
-Open in Microsoft HTML Help
-Mở bằng Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Mở bằng Microsoft XPS-Viewer
 
@@ -694,9 +691,4 @@ copying text
 
 printing document
 đang in tập tin
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

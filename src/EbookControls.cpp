@@ -4,10 +4,10 @@
 #include "BaseUtil.h"
 #include "EbookControls.h"
 
-#include "DbgHelpDyn.h"
-#include "HtmlFormatter.h"
+#include "PageLayout.h"
 #include "SvgPath.h"
 
+#include "DbgHelpDyn.h"
 #include "DebugLog.h"
 
 static Style *   styleMainWnd = NULL;
@@ -26,7 +26,7 @@ static Rect RectForCircle(int x, int y, int r)
 {
     return Rect(x - r, y - r, r * 2, r * 2);
 }
-void PageControl::SetPage(HtmlPage *newPage)
+void PageControl::SetPage(PageData *newPage)
 {
     page = newPage;
     RequestRepaint(this);
@@ -91,7 +91,7 @@ void PageControl::Paint(Graphics *gfx, int offX, int offY)
 
     // TODO: support changing the text color to gRenderCache.colorRange[0]
     //       or GetSysColor(COLOR_WINDOWTEXT) if gGlobalPrefs.useSysColors
-    DrawHtmlPage(gfx, &page->instructions, (REAL)r.X, (REAL)r.Y, IsDebugPaint());
+    DrawPageLayout(gfx, &page->instructions, (REAL)r.X, (REAL)r.Y, IsDebugPaint());
     gfx->SetClip(&origClipRegion, CombineModeReplace);
 }
 

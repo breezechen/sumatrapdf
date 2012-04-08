@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef DisplayModel_h
@@ -136,7 +136,6 @@ public:
     BaseEngine *    engine;
     EngineType      engineType;
 
-    PageTextCache * textCache;
     TextSelection * textSelection;
     // access only from Search thread
     TextSearch *    textSearch;

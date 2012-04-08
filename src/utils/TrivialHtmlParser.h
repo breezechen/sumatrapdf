@@ -1,8 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef TrivialHtmlParser_h
 #define TrivialHtmlParser_h
+
+#include "Allocator.h"
 
 enum HtmlParseError {
     ErrParsingNoError,

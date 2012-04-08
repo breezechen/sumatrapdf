@@ -91,11 +91,11 @@ Contributor: XhmikosR
 &Odd pages only
 &Μόνο οι μονές σελίδες
 
+&Open\tCtrl+O
+Ά&νοιγμα\tCtrl+O
+
 &Open Document
 Ά&νοιγμα Εγγράφου
-
-&Open...\tCtrl+O
-Ά&νοιγμα...\tCtrl+O
 
 &Options...
 &Επιλογές...
@@ -343,9 +343,6 @@ F&ullscreen\tCtrl+Shift+L
 Facing
 Δύο σελίδες
 
-Failed to rename the file!
-Η μετονομασία του αρχείου απέτυχε!
-
 Failed to save a file
 Αποτυχία αποθήκευσης αρχείου
 
@@ -490,9 +487,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Άνοιγμα με &Foxit Reader
 
-Open in Microsoft HTML Help
-Άνοιγμα με Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Άνοιγμα με Microsoft XPS-Viewer
 
@@ -565,9 +559,6 @@ Printing page %d of %d...
 Printing problem.
 Πρόβλημα εκτύπωσης.
 
-Re&name...\tF2
-&Μετονομασία...\tF2
-
 Remember &opened files
 Απο&μνημόνευση προσφάτων αρχείων
 
@@ -576,9 +567,6 @@ Remove from favorites
 
 Remove page %s from favorites
 Αφαίρεση σελίδας %s από τα αγαπημένα
-
-Rename To
-Μετονομασία
 
 Replace document &colors with Windows color scheme
 Αντικατάσταση των &χρωμάτων του εγγράφου με το θέμα των Windows

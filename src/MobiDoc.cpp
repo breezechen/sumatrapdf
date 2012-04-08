@@ -1,11 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "MobiDoc.h"
+#include <time.h>
 
 #include "BitReader.h"
 #include "FileUtil.h"
+
+#include "StrUtil.h"
+
 using namespace Gdiplus;
 #include "GdiPlusUtil.h"
 
@@ -735,12 +738,12 @@ ImageData *MobiDoc::GetImage(size_t imgRecIndex) const
 ImageData *MobiDoc::GetCoverImage()
 {
     size_t coverImage = 0;
-    Size size;
+    Rect size;
     size_t maxImageNo = min(imagesCount, 2);
     for (size_t i = 0; i < maxImageNo; i++) {
         if (!images[i].data)
             continue;
-        Size s = BitmapSizeFromData(images[i].data, images[i].len);
+        Rect s = BitmapSizeFromData(images[i].data, images[i].len);
         int32 prevSize = size.Width * size.Height;
         int32 currSize = s.Width * s.Height;
         if (currSize > prevSize) {
@@ -748,7 +751,7 @@ ImageData *MobiDoc::GetCoverImage()
             size = s;
         }
     }
-    if (size.Empty())
+    if (size.IsEmptyArea())
         return NULL;
     return &images[coverImage];
 }
@@ -873,8 +876,7 @@ bool MobiDoc::LoadDocument()
         if (!LoadDocRecordIntoBuffer(i, *doc))
             return false;
     }
-    // in one PalmDOC file the value is off-by-one (counting the trailing zero?)
-    assert(docUncompressedSize == doc->Size() || docUncompressedSize == doc->Size() + 1);
+    assert(docUncompressedSize == doc->Size());
     if (textEncoding != CP_UTF8) {
         char *docUtf8 = str::ToMultiByte(doc->Get(), textEncoding, CP_UTF8);
         if (docUtf8) {
@@ -889,12 +891,6 @@ char *MobiDoc::GetBookHtmlData(size_t& lenOut) const
 {
     lenOut = doc->Size();
     return doc->Get();
-}
-
-bool MobiDoc::IsSupportedFile(const TCHAR *fileName, bool sniff)
-{
-    // TODO: also accept .prc and .azw as MobiEngine::IsSupportedFile ?
-    return str::EndsWithI(fileName, _T(".mobi"));
 }
 
 MobiDoc *MobiDoc::CreateFromFile(const TCHAR *fileName)

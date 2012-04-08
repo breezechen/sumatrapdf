@@ -56,8 +56,8 @@ Contributor: Drive DRKA (drka2003@mail.ru)
 &No, thanks
 Дзякуй, не
 
-&Open...\tCtrl+O
-Адчыніць...\tCtrl+O
+&Open\tCtrl+O
+Адчыніць\tCtrl+O
 
 &Options...
 &Параметры...
@@ -245,9 +245,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Адкрыць у &Foxit Reader
 
-Open in Microsoft HTML Help
-Адкрыць у Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Адкрыць у Microsoft XPS-Viewer
 
@@ -407,7 +404,6 @@ Zoom Out
 #Error loading %s
 #F&avorites
 #F&orward\tAlt+Right Arrow
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #File Size:
@@ -443,10 +439,8 @@ Zoom Out
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Select &All

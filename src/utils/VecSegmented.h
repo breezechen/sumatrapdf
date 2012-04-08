@@ -1,8 +1,12 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef VecSegmented_h
 #define VecSegmented_h
+
+#include "BaseUtil.h"
+#include "StrUtil.h"
+#include "Allocator.h"
 
 /* VecSegmented has (mostly) the same API as Vec but allocates
    using PoolAllocator. This means it's append only (we have no

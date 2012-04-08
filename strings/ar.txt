@@ -91,11 +91,11 @@ Contributor: Abu Abdullah (falcon.sheep@gmail.com)
 &Odd pages only
 &الصفحات الفردية فقط
 
+&Open\tCtrl+O
+&فتح\tCtrl+O
+
 &Open Document
 &فتح مستند
-
-&Open...\tCtrl+O
-&فتح...\tCtrl+O
 
 &Options...
 &خيارات...
@@ -475,9 +475,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 فتح الملف بـ Foxit Reader
 
-Open in Microsoft HTML Help
-فتح الملف بـ Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 فتح الملف بـ Microsoft XPS-Viewer
 
@@ -684,11 +681,8 @@ printing document
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

@@ -1,8 +1,12 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef DirIter_h
 #define DirIter_h
+
+#include "BaseUtil.h"
+#include "Vec.h"
+#include "Scoped.h"
 
 class DirIter
 {

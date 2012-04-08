@@ -1,7 +1,10 @@
 /* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// note: include BaseUtil.h instead of including directly
+#ifndef Allocator_h
+#define Allocator_h
+
+#include "BaseUtil.h"
 
 // Base class for allocators that can be provided to Vec class
 // (and potentially others). Needed because e.g. in crash handler
@@ -241,3 +244,4 @@ public:
     }
 };
 
+#endif

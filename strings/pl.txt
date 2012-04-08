@@ -89,11 +89,11 @@ Nie, &dziękuję
 &Odd pages only
 Strony &nieparzyste
 
+&Open\tCtrl+O
+&Otwórz…\tCtrl+O
+
 &Open Document
 &Otwórz dokument
-
-&Open...\tCtrl+O
-&Otwórz…\tCtrl+O
 
 &Options...
 &Opcje...
@@ -479,9 +479,6 @@ Otwórz w &Adobe Reader
 Open in &Foxit Reader
 Otwórz w &Foxit Reader
 
-Open in Microsoft HTML Help
-Otwórz w Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Otwórz w Microsoft XPS-Viewer
 
@@ -690,9 +687,6 @@ printing document
 drukowanie dokumentu
 
 # Untranslated:
-#Failed to rename the file!
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 

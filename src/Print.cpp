@@ -1,19 +1,23 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
+#include "StrUtil.h"
+#include "WinUtil.h"
+#include "FileUtil.h"
+#include <shlwapi.h>
+
 #include "Print.h"
 
-#include "AppTools.h"
-#include "EngineManager.h"
-#include "FileUtil.h"
-#include "Notifications.h"
-#include "Selection.h"
-#include "SumatraDialogs.h"
-#include "SumatraPDF.h"
 #include "Translations.h"
 #include "WindowInfo.h"
-#include "WinUtil.h"
+#include "AppTools.h"
+#include "EngineManager.h"
+
+#include "SumatraPDF.h"
+#include "Notifications.h"
+#include "SumatraDialogs.h"
+#include "Selection.h"
 
 static bool PrinterSupportsStretchDib(HWND hwndForMsgBox, HDC hdc)
 {
@@ -155,12 +159,9 @@ static void PrintToDevice(PrintData& pd, ProgressUpdateUI *progressUI=NULL)
             }
 
             current++;
-            if (progressUI) {
-                if (progressUI->WasCanceled()) {
-                    AbortDoc(hdc);
-                    return;
-                }
-                progressUI->UpdateProgress(current, total);
+            if (progressUI && !progressUI->UpdateProgress(current, total)) {
+                AbortDoc(hdc);
+                return;
             }
         }
 
@@ -251,12 +252,9 @@ static void PrintToDevice(PrintData& pd, ProgressUpdateUI *progressUI=NULL)
             }
 
             current++;
-            if (progressUI) {
-                if (progressUI->WasCanceled()) {
-                    AbortDoc(hdc);
-                    return;
-                }
-                progressUI->UpdateProgress(current, total);
+            if (progressUI && !progressUI->UpdateProgress(current, total)) {
+                AbortDoc(hdc);
+                return;
             }
         }
     }
@@ -298,12 +296,9 @@ public:
         RemoveNotification(wnd);
     }
 
-    virtual void UpdateProgress(int current, int total) {
+    virtual bool UpdateProgress(int current, int total) {
         QueueWorkItem(new PrintThreadUpdateWorkItem(win, wnd, current, total));
-    }
-
-    virtual bool WasCanceled() {
-        return isCanceled || !WindowInfoStillValid(win) || win->printCanceled;
+        return WindowInfoStillValid(win) && !win->printCanceled && !isCanceled;
     }
 
     // called when printing has been canceled

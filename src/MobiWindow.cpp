@@ -1,20 +1,15 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
-   License: GPLv3 */
-
-#include "BaseUtil.h"
-#include "EbookWindow.h"
+#include "MobiWindow.h"
 
 #include "AppTools.h"
 #include "BaseEngine.h"
 #include "EbookController.h"
 #include "EbookControls.h"
-#include "EpubDoc.h"
 #include "FileHistory.h"
 using namespace Gdiplus;
 #include "GdiPlusUtil.h"
-#include "HtmlFormatter.h"
 #include "Menu.h"
 #include "MobiDoc.h"
+#include "PageLayout.h"
 #include "Resource.h"
 #include "SumatraProperties.h"
 #include "SumatraAbout.h"
@@ -24,6 +19,40 @@ using namespace Gdiplus;
 #include "WindowInfo.h"
 #include "WinUtil.h"
 
+#ifdef SHOW_DEBUG_MENU_ITEMS
+// A sample text to display if we don't show an actual mobi file
+static const char *gSampleHtml =
+    "<html><p align=justify width=1em><b>ClearType</b>, is <b>dependent</b> "\
+    "on the <i>orientation &amp; ordering</i> of the LCD stripes and "\
+    "possibly some other things unknown.</p> "\
+    "<p align='right height=13pt'><em>Currently</em>, ClearType is implemented "\
+    "<hr><br/> only for vertical stripes that are ordered RGB.</p> "\
+    "<p align=center height=8pt>This might be a concern if you are using a "\
+    "<a href='http://en.wikipedia.org/wiki/Tablet_pc'>tablet PC</a>.</p>"\
+    "<p width='1em'>Where the display can be oriented in any direction, or if you"\
+    "are using a screen that can be turned from landscape to portrait. The "\
+    "<strike>following example</strike> draws text with two <u>different quality</u> "\
+    "settings.</p> "\
+    "<h2>Intermediary heading</h2>"\
+    "<p width=1em>This is a paragraph that should take at least two lines. "\
+    "With study and discreet inquiries, Abagnale picked up airline jargon "\
+    "and discovered that pilots could ride free anywhere in the world on any "\
+    "airline; and that hotels billed airlines direct and cashed checks issued "\
+    "by airline companies.</p><br><p width=1em>    And this is another paragraph "\
+    "tha we wrote today. Hiding out in a southern city, Abagnale learned that the "\
+    "state attorney general was seeking assistants. For nine months he practiced law, "\
+    "but when a real Harvard lawyer appeared on the scene, Abagnale figured it was "\
+    "time to move on.</p> "\
+    "On to the <b>next<mbp:pagebreak>page</b>"\
+    "<p>ThisIsAVeryVeryVeryLongWordThatShouldBeBrokenIntoMultiple lines</p>"\
+    "<h3>List</h3><ul><li>First item</li><li>Nested: "\
+    "<ol><li>Number one</li><li>Two</li></ol></li></ul>"\
+    "<ul><ul><ul><ul><ul><ul><ul><ul><ul><ul><ul><ul><ul><ul><ul>"\
+    "<li>VeryVeryVeryVeryDeeplyNestedListItem</li>"\
+    "</ul></ul></ul></ul></ul></ul></ul></ul></ul></ul></ul></ul></ul></ul></ul>"
+    "<mbp:pagebreak><hr><mbp:pagebreak>blah<br>Foodo.<p>And me</p></html>";
+#endif
+
 #define MOBI_FRAME_CLASS_NAME    _T("SUMATRA_MOBI_FRAME")
 
 #define WIN_DX    720
@@ -32,11 +61,9 @@ using namespace Gdiplus;
 static bool gShowTextBoundingBoxes = false;
 
 static MenuDef menuDefMobiFile[] = {
-    { _TRN("&Open...\tCtrl+O"),             IDM_OPEN,                   MF_REQ_DISK_ACCESS },
+    { _TRN("&Open\tCtrl+O"),                IDM_OPEN ,                  MF_REQ_DISK_ACCESS },
     { _TRN("&Close\tCtrl+W"),               IDM_CLOSE,                  MF_REQ_DISK_ACCESS },
     { SEP_ITEM,                             0,                          MF_REQ_DISK_ACCESS },
-    { _TRN("P&roperties\tCtrl+D"),          IDM_PROPERTIES,             0 },
-    { SEP_ITEM,                             0,                          0 },
     { _TRN("E&xit\tCtrl+Q"),                IDM_EXIT,                   0 }
 };
 
@@ -63,12 +90,12 @@ static MenuDef menuDefHelp[] = {
 #ifdef SHOW_DEBUG_MENU_ITEMS
 static MenuDef menuDefDebug[] = {
     { "Show bbox",                          IDM_DEBUG_SHOW_LINKS,       MF_NO_TRANSLATE },
-    { "Load mobi sample",                   IDM_LOAD_MOBI_SAMPLE,      MF_NO_TRANSLATE },
+    { "Test page layout",                   IDM_DEBUG_PAGE_LAYOUT,      MF_NO_TRANSLATE },
     { "Toggle ebook UI",                    IDM_DEBUG_EBOOK_UI,         MF_NO_TRANSLATE },
 };
 #endif
 
-static void RebuildFileMenuForEbookWindow(HMENU menu)
+static void RebuildFileMenuForMobiWindow(HMENU menu)
 {
     win::menu::Empty(menu);
     BuildMenuFromMenuDef(menuDefMobiFile, dimof(menuDefMobiFile), menu, false);
@@ -79,7 +106,7 @@ static HMENU BuildMobiMenu()
 {
     HMENU mainMenu = CreateMenu();
     HMENU m = CreateMenu();
-    RebuildFileMenuForEbookWindow(m);
+    RebuildFileMenuForMobiWindow(m);
 
     AppendMenu(mainMenu, MF_POPUP | MF_STRING, (UINT_PTR)m, _TR("&File"));
     m = BuildMenuFromMenuDef(menuDefMobiGoTo, dimof(menuDefMobiGoTo), CreateMenu(), false);
@@ -96,25 +123,25 @@ static HMENU BuildMobiMenu()
     return mainMenu;
 }
 
-const TCHAR *EbookWindow::LoadedFilePath() const
+TCHAR *MobiWindow::LoadedFilePath() const
 {
-    if (ebookController)
-        return ebookController->GetDoc().GetFilePath();
-    return NULL;
+    if (!ebookController || !ebookController->GetMobiDoc())
+        return NULL;
+    return ebookController->GetMobiDoc()->GetFileName();
 }
 
-static EbookWindow* FindEbookWindowByHwnd(HWND hwnd)
+static MobiWindow* FindMobiWindowByHwnd(HWND hwnd)
 {
-    for (EbookWindow **w = gEbookWindows.IterStart(); w; w = gEbookWindows.IterNext()) {
+    for (MobiWindow **w = gMobiWindows.IterStart(); w; w = gMobiWindows.IterNext()) {
         if ((*w)->hwndFrame == hwnd)
             return *w;
     }
     return NULL;
 }
 
-EbookWindow* FindEbookWindowByController(EbookController *controller)
+MobiWindow* FindMobiWindowByController(EbookController *controller)
 {
-    for (EbookWindow **w = gEbookWindows.IterStart(); w; w = gEbookWindows.IterNext()) {
+    for (MobiWindow **w = gMobiWindows.IterStart(); w; w = gMobiWindows.IterNext()) {
         if ((*w)->ebookController == controller)
             return *w;
     }
@@ -125,30 +152,29 @@ EbookWindow* FindEbookWindowByController(EbookController *controller)
 
 void RestartLayoutTimer(EbookController *controller)
 {
-    EbookWindow *win = FindEbookWindowByController(controller);
+    MobiWindow *win = FindMobiWindowByController(controller);
     KillTimer(win->hwndFrame, LAYOUT_TIMER_ID);
     SetTimer(win->hwndFrame,  LAYOUT_TIMER_ID, 600, NULL);
 }
 
-static void OnTimer(EbookWindow *win, WPARAM timerId)
+static void OnTimer(MobiWindow *win, WPARAM timerId)
 {
     CrashIf(timerId != LAYOUT_TIMER_ID);
     KillTimer(win->hwndFrame, LAYOUT_TIMER_ID);
     win->ebookController->OnLayoutTimer();
 }
 
-static void OnToggleBbox(EbookWindow *win)
+static void OnToggleBbox(MobiWindow *win)
 {
     gShowTextBoundingBoxes = !gShowTextBoundingBoxes;
     SetDebugPaint(gShowTextBoundingBoxes);
-    win->ebookControls->mainWnd->RequestRepaint();
-    InvalidateRect(win->hwndFrame, NULL, TRUE);
+    InvalidateRect(win->hwndFrame, NULL, FALSE);
     win::menu::SetChecked(GetMenu(win->hwndFrame), IDM_DEBUG_SHOW_LINKS, gShowTextBoundingBoxes);
 }
 
-// closes a physical window, deletes the EbookWindow object and removes it
+// closes a physical window, deletes the MobiWindow object and removes it
 // from the global list of windows
-void DeleteEbookWindow(EbookWindow *win, bool forceDelete)
+void DeleteMobiWindow(MobiWindow *win, bool forceDelete)
 {
     if (gPluginMode && !forceDelete)
         return;
@@ -158,10 +184,10 @@ void DeleteEbookWindow(EbookWindow *win, bool forceDelete)
     DeletePropertiesWindow(win->hwndFrame);
     delete win->ebookController;
     DestroyEbookControls(win->ebookControls);
-    gEbookWindows.Remove(win);
+    gMobiWindows.Remove(win);
     HWND toDestroy = win->hwndFrame;
     delete win;
-    // must be called after removing win from gEbookWindows so that window
+    // must be called after removing win from gMobiWindows so that window
     // message processing doesn't pick up a window being destroyed
     DestroyWindow(toDestroy);
 }
@@ -169,9 +195,9 @@ void DeleteEbookWindow(EbookWindow *win, bool forceDelete)
 // if forceClose is true, we force window deletion in plugin mode
 // if quitIfLast is true, we quit if we closed the last window, otherwise
 // we create an about window
-static void CloseEbookWindow(EbookWindow *win, bool quitIfLast, bool forceClose)
+static void CloseMobiWindow(MobiWindow *win, bool quitIfLast, bool forceClose)
 {
-    DeleteEbookWindow(win, forceClose);
+    DeleteMobiWindow(win, forceClose);
     if (TotalWindowsCount() > 0)
         return;
     if (quitIfLast) {
@@ -185,7 +211,7 @@ static void CloseEbookWindow(EbookWindow *win, bool quitIfLast, bool forceClose)
     }
 }
 
-static LRESULT OnKeyDown(EbookWindow *win, UINT msg, WPARAM key, LPARAM lParam)
+static LRESULT OnKeyDown(MobiWindow *win, UINT msg, WPARAM key, LPARAM lParam)
 {
     switch (key) {
     case VK_LEFT: case VK_PRIOR: case 'P':
@@ -209,11 +235,7 @@ static LRESULT OnKeyDown(EbookWindow *win, UINT msg, WPARAM key, LPARAM lParam)
         win->ebookController->GoToLastPage();
         break;
     case 'Q':
-        CloseEbookWindow(win, true, true);
-        break;
-    case VK_ESCAPE:
-        if (gGlobalPrefs.escToExit)
-            CloseEbookWindow(win, true, true);
+        CloseMobiWindow(win, true, true);
         break;
     default:
         return DefWindowProc(win->hwndFrame, msg, key, lParam);
@@ -221,7 +243,7 @@ static LRESULT OnKeyDown(EbookWindow *win, UINT msg, WPARAM key, LPARAM lParam)
     return 0;
 }
 
-static void RebuildMenuBarForEbookWindow(EbookWindow *win)
+static void RebuildMenuBarForMobiWindow(MobiWindow *win)
 {
     HMENU oldMenu = GetMenu(win->hwndFrame);
     HMENU newMenu = BuildMobiMenu();
@@ -233,21 +255,21 @@ static void RebuildMenuBarForEbookWindow(EbookWindow *win)
     DestroyMenu(oldMenu);
 }
 
-void UpdateMenuForEbookWindow(EbookWindow *win, HMENU m)
+void UpdateMenuForMobiWindow(MobiWindow *win, HMENU m)
 {
     UINT id = GetMenuItemID(m, 0);
     if (id == menuDefMobiFile[0].id)
-        RebuildFileMenuForEbookWindow( m);
+        RebuildFileMenuForMobiWindow( m);
 }
 
-void RebuildMenuBarForEbookWindows()
+void RebuildMenuBarForMobiWindows()
 {
-    for (size_t i = 0; i < gEbookWindows.Count(); i++) {
-        RebuildMenuBarForEbookWindow(gEbookWindows.At(i));
+    for (size_t i = 0; i < gMobiWindows.Count(); i++) {
+        RebuildMenuBarForMobiWindow(gMobiWindows.At(i));
     }
 }
 
-static LRESULT OnGesture(EbookWindow *win, UINT message, WPARAM wParam, LPARAM lParam)
+static LRESULT OnGesture(MobiWindow *win, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (!Touch::SupportsGestures())
         return DefWindowProc(win->hwndFrame, message, wParam, lParam);
@@ -308,21 +330,7 @@ static LRESULT OnGesture(EbookWindow *win, UINT message, WPARAM wParam, LPARAM l
     return 0;
 }
 
-#ifdef SHOW_DEBUG_MENU_ITEMS
-static void OnLoadMobiSample(EbookWindow *win)
-{
-    HRSRC resSrc = FindResource(ghinst, MAKEINTRESOURCE(IDD_SAMPLE_MOBI), RT_RCDATA);
-    CrashIf(!resSrc);
-    HGLOBAL res = LoadResource(NULL, resSrc);
-    CrashIf(!res);
-    MobiTestDoc *doc = new MobiTestDoc((const char *)LockResource(res), SizeofResource(NULL, resSrc));
-    CrashIf(!doc || 0 == doc->GetBookHtmlSize());
-    UnlockResource(res);
-    win->ebookController->SetDoc(Doc(doc));
-}
-#endif
-
-static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lParam)
+static LRESULT OnCommand(MobiWindow *win, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     int wmId = LOWORD(wParam);
 
@@ -332,7 +340,7 @@ static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lPara
     {
         DisplayState *state = gFileHistory.Get(wmId - IDM_FILE_HISTORY_FIRST);
         if (state && HasPermission(Perm_DiskAccess))
-            LoadDocument2(state->filePath, SumatraWindow::Make(win));
+            LoadDocument(state->filePath, SumatraWindow::Make(win));
         return 0;
     }
 
@@ -345,7 +353,7 @@ static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lPara
 
         case IDT_FILE_EXIT:
         case IDM_CLOSE:
-            CloseEbookWindow(win, false, false);
+            CloseMobiWindow(win, false, false);
             break;
 
         case IDM_EXIT:
@@ -397,8 +405,8 @@ static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lPara
             OnToggleBbox(win);
             break;
 
-        case IDM_LOAD_MOBI_SAMPLE:
-            OnLoadMobiSample(win);
+        case IDM_DEBUG_PAGE_LAYOUT:
+            win->ebookController->SetHtml(gSampleHtml);
             break;
 
         case IDM_DEBUG_EBOOK_UI:
@@ -433,7 +441,7 @@ static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lPara
 
 static LRESULT CALLBACK MobiWndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-    // messages that don't require EbookWindow
+    // messages that don't require MobiWindow
     switch (msg)
     {
         case WM_DROPFILES:
@@ -447,8 +455,8 @@ static LRESULT CALLBACK MobiWndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPA
             return 0;
     }
 
-    // messages that do require EbookWindow
-    EbookWindow *win = FindEbookWindowByHwnd(hwnd);
+    // messages that do require MobiWindow
+    MobiWindow *win = FindMobiWindowByHwnd(hwnd);
     if (!win)
         return DefWindowProc(hwnd, msg, wParam, lParam);
 
@@ -462,7 +470,7 @@ static LRESULT CALLBACK MobiWndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPA
         case WM_DESTROY:
             // called by windows if user clicks window's close button or if
             // we call DestroyWindow()
-            CloseEbookWindow(win, true, true);
+            CloseMobiWindow(win, true, true);
             break;
 
         case WM_PAINT:
@@ -477,7 +485,7 @@ static LRESULT CALLBACK MobiWndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPA
             break;
 
         case WM_INITMENUPOPUP:
-            UpdateMenuForEbookWindow(win, (HMENU)wParam);
+            UpdateMenuForMobiWindow(win, (HMENU)wParam);
             break;
 
         case WM_GESTURE:
@@ -494,43 +502,45 @@ static LRESULT CALLBACK MobiWndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPA
     return 0;
 }
 
-RenderedBitmap *RenderFirstDocPageToBitmap(Doc doc, SizeI pageSize, SizeI bmpSize, int border)
+RenderedBitmap *RenderFirstMobiPageToBitmap(MobiDoc *mobiDoc, SizeI pageSize, SizeI bmpSize)
 {
     PoolAllocator textAllocator;
-    HtmlFormatterArgs *args = CreateFormatterArgsDoc(doc, pageSize.dx - 2 * border, pageSize.dy - 2 * border, &textAllocator);
-    HtmlFormatter *formatter = CreateFormatter(args);
-    HtmlPage *pd = formatter->Next();
-    delete formatter;
-    delete args;
+    LayoutInfo *li = GetLayoutInfo(NULL, mobiDoc, pageSize.dx, pageSize.dy, &textAllocator);
+    MobiFormatter mf(li, mobiDoc);
+    PageData *pd = mf.Next();
     if (!pd)
         return NULL;
 
-    Bitmap pageBmp(pageSize.dx, pageSize.dy, PixelFormat24bppRGB);
-    Graphics g(&pageBmp);
+    Bitmap *pageBmp = ::new Bitmap(pageSize.dx, pageSize.dy, PixelFormat32bppARGB);
+    if (!pageBmp) {
+        delete pd;
+        return NULL;
+    }
+    Graphics g((Image*)pageBmp);
     Rect r(0, 0, pageSize.dx, pageSize.dy);
-    r.Inflate(1, 1);
+    r.Inflate(1,1);
     SolidBrush br(Color(255, 255, 255));
     g.FillRectangle(&br, r);
-
-    DrawHtmlPage(&g, &pd->instructions, (REAL)border, (REAL)border, false, &Color(Color::Black));
-    delete pd;
+    DrawPageLayout(&g, &pd->instructions, 0, 0, false, &Color(Color::Black));
 
     Bitmap res(bmpSize.dx, bmpSize.dy, PixelFormat24bppRGB);
     Graphics g2(&res);
     g2.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-    g2.DrawImage(&pageBmp, Rect(0, 0, bmpSize.dx, bmpSize.dy),
+    g2.DrawImage(pageBmp, Rect(0, 0, bmpSize.dx, bmpSize.dy),
                  0, 0, pageSize.dx, pageSize.dy, UnitPixel);
 
     HBITMAP hbmp;
     Status ok = res.GetHBITMAP(Color::White, &hbmp);
+    ::delete pageBmp;
+    delete pd;
     if (ok != Ok)
         return NULL;
     return new RenderedBitmap(hbmp, bmpSize);
 }
 
-static RenderedBitmap *ThumbFromCoverPage(Doc doc)
+static RenderedBitmap *ThumbFromCoverPage(MobiDoc *mobiDoc)
 {
-    ImageData *coverImage = doc.GetCoverImage();
+    ImageData *coverImage = mobiDoc->GetCoverImage();
     if (!coverImage)
         return NULL;
     Bitmap *coverBmp = BitmapFromData(coverImage->data, coverImage->len);
@@ -554,9 +564,9 @@ static RenderedBitmap *ThumbFromCoverPage(Doc doc)
     return NULL;
 }
 
-static void CreateThumbnailForDoc(Doc doc, DisplayState& ds)
+static void CreateThumbnailForMobiDoc(MobiDoc *mobiDoc, DisplayState& ds)
 {
-    CrashIf(!doc.AsMobi() && !doc.AsEpub());
+    CrashIf(!mobiDoc);
 
     if (!ShouldSaveThumbnail(ds))
         return;
@@ -564,29 +574,30 @@ static void CreateThumbnailForDoc(Doc doc, DisplayState& ds)
     // if there is cover image, we use it to generate thumbnail by scaling
     // image width to thumbnail dx, scaling height proportionally and using
     // as much of it as fits in thumbnail dy
-    RenderedBitmap *bmp = ThumbFromCoverPage(doc);
-    if (!bmp) {
+    RenderedBitmap *bmp = ThumbFromCoverPage(mobiDoc);
+    if (!bmp)
+    {
         // no cover image so generate thumbnail from first page
-        SizeI pageSize(THUMBNAIL_DX * 3, THUMBNAIL_DY * 3);
+        SizeI pageSize(THUMBNAIL_DX * 2, THUMBNAIL_DY * 2);
         SizeI dstSize(THUMBNAIL_DX, THUMBNAIL_DY);
-        bmp = RenderFirstDocPageToBitmap(doc, pageSize, dstSize, 10);
+        bmp = RenderFirstMobiPageToBitmap(mobiDoc, pageSize, dstSize);
     }
 
-    if (bmp && SaveThumbnailForFile(doc.GetFilePath(), bmp))
+    if (bmp && SaveThumbnailForFile(mobiDoc->GetFileName(), bmp))
         bmp = NULL;
     delete bmp;
 }
 
-void OpenMobiInWindow(Doc doc, SumatraWindow& winToReplace)
+void OpenMobiInWindow(MobiDoc *mobiDoc, SumatraWindow& winToReplace)
 {
-    const TCHAR *fullPath = doc.GetFilePath();
+    TCHAR *fullPath = mobiDoc->GetFileName();
     DisplayState *ds = gFileHistory.Find(fullPath);
 
     if (gGlobalPrefs.rememberOpenedFiles) {
         ds = gFileHistory.MarkFileLoaded(fullPath);
         if (gGlobalPrefs.showStartPage && ds) {
             // TODO: do it on a background thread?
-            CreateThumbnailForDoc(doc, *ds);
+            CreateThumbnailForMobiDoc(mobiDoc, *ds);
         }
         SavePrefs();
     }
@@ -600,13 +611,10 @@ void OpenMobiInWindow(Doc doc, SumatraWindow& winToReplace)
     if (HasPermission(Perm_DiskAccess) && !gPluginMode)
         SHAddToRecentDocs(SHARD_PATH, fullPath);
 
-    ScopedMem<TCHAR> winTitle(str::Format(_T("%s - %s"), path::GetBaseName(fullPath), SUMATRA_WINDOW_TITLE));
-
-    if (winToReplace.AsEbookWindow()) {
-        EbookWindow *mw = winToReplace.AsEbookWindow();
+    if (winToReplace.AsMobiWindow()) {
+        MobiWindow *mw = winToReplace.AsMobiWindow();
         CrashIf(!mw);
-        mw->ebookController->SetDoc(doc);
-        win::SetText(mw->hwndFrame, winTitle);
+        mw->ebookController->SetMobiDoc(mobiDoc);
         // TODO: if we have window position/last position for this file, restore it
         return;
     }
@@ -644,17 +652,15 @@ void OpenMobiInWindow(Doc doc, SumatraWindow& winToReplace)
         Touch::SetGestureConfig(hwnd, 0, 1, &gc, sizeof(GESTURECONFIG));
     }
 
-    EbookWindow *win = new EbookWindow();
+    MobiWindow *win = new MobiWindow();
     win->ebookControls = CreateEbookControls(hwnd);
     win->hwndWrapper = win->ebookControls->mainWnd;
     win->ebookController = new EbookController(win->ebookControls);
     win->hwndFrame = hwnd;
 
-    gEbookWindows.Append(win);
-    win::SetText(win->hwndFrame, winTitle);
-
+    gMobiWindows.Append(win);
     ShowWindow(hwnd, wasMaximized ? SW_SHOWMAXIMIZED : SW_SHOW);
-    win->ebookController->SetDoc(doc, startReparseIdx);
+    win->ebookController->SetMobiDoc(mobiDoc, startReparseIdx);
 }
 
 bool RegisterMobiWinClass(HINSTANCE hinst)
@@ -671,10 +677,4 @@ bool RegisterMobiWinClass(HINSTANCE hinst)
 
     ATOM atom = RegisterClassEx(&wcex);
     return atom != NULL;
-}
-
-bool IsEbookFile(const TCHAR *fileName)
-{
-    return MobiDoc::IsSupportedFile(fileName) ||
-           EpubDoc::IsSupportedFile(fileName);
 }

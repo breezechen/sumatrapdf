@@ -1,19 +1,16 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "Menu.h"
-
 #include "DisplayModel.h"
-#include "EbookWindow.h"
 #include "ExternalPdfViewer.h"
 #include "Favorites.h"
 #include "FileUtil.h"
 #include "FileHistory.h"
+#include "MobiWindow.h"
 #include "Selection.h"
 #include "SumatraAbout.h"
 #include "SumatraDialogs.h"
-#include "SumatraPDF.h"
 #include "Translations.h"
 #include "WindowInfo.h"
 #include "WinUtil.h"
@@ -41,21 +38,17 @@ void MenuUpdateDisplayMode(WindowInfo* win)
 }
 
 static MenuDef menuDefFile[] = {
-    { _TRN("&Open...\tCtrl+O"),             IDM_OPEN ,                  MF_REQ_DISK_ACCESS },
+    { _TRN("&Open\tCtrl+O"),                IDM_OPEN ,                  MF_REQ_DISK_ACCESS },
     { _TRN("&Close\tCtrl+W"),               IDM_CLOSE,                  MF_REQ_DISK_ACCESS },
     { _TRN("&Save As...\tCtrl+S"),          IDM_SAVEAS,                 MF_REQ_DISK_ACCESS },
-#ifdef ENABLE_SAVE_SHORTCUT
-    { _TRN("Save S&hortcut...\tCtrl+Shift+S"), IDM_SAVEAS_BOOKMARK,     MF_REQ_DISK_ACCESS | MF_NOT_FOR_CHM },
-#endif
-    { _TRN("Re&name...\tF2"),               IDM_RENAME_FILE,            MF_REQ_DISK_ACCESS },
     { _TRN("&Print...\tCtrl+P"),            IDM_PRINT,                  MF_REQ_PRINTER_ACCESS },
     { SEP_ITEM,                             0,                          MF_REQ_DISK_ACCESS },
-    // PDF/XPS/CHM specific items are dynamically removed in RebuildFileMenu
+    { _TRN("Save S&hortcut...\tCtrl+Shift+S"), IDM_SAVEAS_BOOKMARK,     MF_REQ_DISK_ACCESS | MF_NOT_FOR_CHM },
+    // PDF/XPS specific items are dynamically removed in RebuildFileMenu
     { _TRN("Open in &Adobe Reader"),        IDM_VIEW_WITH_ACROBAT,      MF_REQ_DISK_ACCESS },
     { _TRN("Open in &Foxit Reader"),        IDM_VIEW_WITH_FOXIT,        MF_REQ_DISK_ACCESS },
     { _TRN("Open in PDF-XChange"),          IDM_VIEW_WITH_PDF_XCHANGE,  MF_REQ_DISK_ACCESS },
     { _TRN("Open in Microsoft XPS-Viewer"), IDM_VIEW_WITH_XPS_VIEWER,   MF_REQ_DISK_ACCESS },
-    { _TRN("Open in Microsoft HTML Help"),  IDM_VIEW_WITH_HTML_HELP,    MF_REQ_DISK_ACCESS },
     { _TRN("Send by &E-mail..."),           IDM_SEND_BY_EMAIL,          MF_REQ_DISK_ACCESS },
     { SEP_ITEM,                             0,                          MF_REQ_DISK_ACCESS },
     { _TRN("P&roperties\tCtrl+D"),          IDM_PROPERTIES,             0 },
@@ -185,7 +178,6 @@ static void AddFileMenuItem(HMENU menuFile, const TCHAR *filePath, UINT index)
 HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuLen, HMENU menu, bool forChm)
 {
     assert(menu);
-    bool wasSeparator = true;
 
     for (int i = 0; i < menuLen; i++) {
         MenuDef md = menuDefs[i];
@@ -198,23 +190,16 @@ HMENU BuildMenuFromMenuDef(MenuDef menuDefs[], int menuLen, HMENU menu, bool for
             continue;
 
         if (str::Eq(title, SEP_ITEM)) {
-            // prevent two consecutive separators
-            if (!wasSeparator)
-                AppendMenu(menu, MF_SEPARATOR, 0, NULL);
-            wasSeparator = true;
+            AppendMenu(menu, MF_SEPARATOR, 0, NULL);
         } else if (MF_NO_TRANSLATE == (md.flags & MF_NO_TRANSLATE)) {
             ScopedMem<TCHAR> tmp(str::conv::FromUtf8(title));
             AppendMenu(menu, MF_STRING, (UINT_PTR)md.id, tmp);
-            wasSeparator = false;
         } else {
             const TCHAR *tmp = Trans::GetTranslation(title);
             AppendMenu(menu, MF_STRING, (UINT_PTR)md.id, tmp);
-            wasSeparator = false;
         }
     }
 
-    // TODO: remove trailing separator if there ever is one
-    CrashIf(wasSeparator);
     return menu;
 }
 
@@ -321,7 +306,7 @@ void MenuUpdatePrintItem(WindowInfo* win, HMENU menu, bool disableOnly=false) {
 
 bool IsFileCloseMenuEnabled()
 {
-    if (gEbookWindows.Count() > 0)
+    if (gMobiWindows.Count() > 0)
         return true;
     for (size_t i = 0; i < gWindows.Count(); i++) {
         if (!gWindows.At(i)->IsAboutWindow())
@@ -338,10 +323,8 @@ void MenuUpdateStateForWindow(WindowInfo* win) {
         IDM_GOTO_PAGE, IDM_FIND_FIRST, IDM_SAVEAS, IDM_SAVEAS_BOOKMARK, IDM_SEND_BY_EMAIL,
         IDM_SELECT_ALL, IDM_COPY_SELECTION, IDM_PROPERTIES, IDM_VIEW_PRESENTATION_MODE,
         IDM_VIEW_WITH_ACROBAT, IDM_VIEW_WITH_FOXIT, IDM_VIEW_WITH_PDF_XCHANGE,
-        IDM_RENAME_FILE,
-        // IDM_VIEW_WITH_XPS_VIEWER and IDM_VIEW_WITH_HTML_HELP
-        // are removed instead of disabled (and can remain enabled
-        // for broken XPS/CHM documents)
+        // IDM_VIEW_WITH_XPS_VIEWER is removed instead of disabled
+        // (and can remain enabled for broken XPS documents)
     };
     static UINT menusToDisableIfDirectory[] = {
         IDM_SAVEAS, IDM_SEND_BY_EMAIL
@@ -394,10 +377,6 @@ void MenuUpdateStateForWindow(WindowInfo* win) {
     if (win->dm && win->dm->engine)
         win::menu::SetEnabled(win->menu, IDM_FIND_FIRST, !win->dm->engine->IsImageCollection());
 
-    // TODO: is this check too expensive?
-    if (win->IsDocLoaded() && !file::Exists(win->dm->FileName()))
-        win::menu::SetEnabled(win->menu, IDM_RENAME_FILE, false);
-
 #ifdef SHOW_DEBUG_MENU_ITEMS
     win::menu::SetChecked(win->menu, IDM_DEBUG_SHOW_LINKS, gDebugShowLinks);
     win::menu::SetChecked(win->menu, IDM_DEBUG_GDI_RENDERER, gUseGdiRenderer);
@@ -427,10 +406,7 @@ void OnAboutContextMenu(WindowInfo* win, int x, int y)
                              pt.x, pt.y, 0, win->hwndFrame, NULL);
     switch (cmd) {
     case IDM_OPEN_SELECTED_DOCUMENT:
-        {
-            LoadArgs args(filePath, win);
-            LoadDocument(args);
-        }
+        LoadDocument(filePath, win);
         break;
 
     case IDM_PIN_SELECTED_DOCUMENT:
@@ -549,8 +525,6 @@ static void RebuildFileMenu(WindowInfo *win, HMENU menu)
         win::menu::Remove(menu, IDM_VIEW_WITH_PDF_XCHANGE);
     if (!CanViewWithXPSViewer(win))
         win::menu::Remove(menu, IDM_VIEW_WITH_XPS_VIEWER);
-    if (!CanViewWithHtmlHelp(win))
-        win::menu::Remove(menu, IDM_VIEW_WITH_HTML_HELP);
 }
 
 HMENU BuildMenu(WindowInfo *win)

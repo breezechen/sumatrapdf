@@ -1,24 +1,30 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "ImagesEngine.h"
-
+#include "StrUtil.h"
 #include "FileUtil.h"
-using namespace Gdiplus;
-#include "GdiPlusUtil.h"
-#include "HtmlPullParser.h"
-#include "JsonParser.h"
 #include "WinUtil.h"
+#include "Vec.h"
+#include "Scoped.h"
 #include "ZipUtil.h"
 
 #include "../ext/unrar/dll.hpp"
+
+using namespace Gdiplus;
+#include "GdiPlusUtil.h"
 
 // disable warning C4250 which is wrongly issued due to a compiler bug; cf.
 // http://connect.microsoft.com/VisualStudio/feedback/details/101259/disable-warning-c4250-class1-inherits-class2-member-via-dominance-when-weak-member-is-a-pure-virtual-function
 #pragma warning( disable: 4250 ) /* 'class1' : inherits 'class2::member' via dominance */
 
 ///// Helper methods for handling image files of the most common types /////
+
+RectI SizeFromData(char *data, size_t len)
+{
+    Rect rect = BitmapSizeFromData(data, len);
+    return RectI(rect.X, rect.Y, rect.Width, rect.Height);
+}
 
 RenderedBitmap *LoadRenderedBitmap(const TCHAR *filePath)
 {
@@ -116,7 +122,7 @@ public:
     ImagesEngine() : fileName(NULL), fileExt(NULL) { }
     virtual ~ImagesEngine() {
         DeleteVecMembers(pages);
-        free(fileName);
+        free((void *)fileName);
     }
 
     virtual const TCHAR *FileName() const { return fileName; };
@@ -151,7 +157,7 @@ public:
     virtual bool BenchLoadPage(int pageNo) { return LoadImage(pageNo) != NULL; }
 
 protected:
-    TCHAR *fileName;
+    const TCHAR *fileName;
     const TCHAR *fileExt;
     ScopedComPtr<IStream> fileStream;
 
@@ -272,12 +278,8 @@ public:
 
 Vec<PageElement *> *ImagesEngine::GetElements(int pageNo)
 {
-    Bitmap *bmp = LoadImage(pageNo);
-    if (!bmp)
-        return NULL;
-
     Vec<PageElement *> *els = new Vec<PageElement *>();
-    els->Append(new ImageElement(pageNo, bmp));
+    els->Append(new ImageElement(pageNo, LoadImage(pageNo)));
     return els;
 }
 
@@ -285,10 +287,7 @@ PageElement *ImagesEngine::GetElementAtPos(int pageNo, PointD pt)
 {
     if (!PageMediabox(pageNo).Contains(pt))
         return NULL;
-    Bitmap *bmp = LoadImage(pageNo);
-    if (!bmp)
-        return NULL;
-    return new ImageElement(pageNo, bmp);
+    return new ImageElement(pageNo, LoadImage(pageNo));
 }
 
 unsigned char *ImagesEngine::GetFileData(size_t *cbCount)
@@ -325,11 +324,11 @@ ImageEngine *ImageEngineImpl::Clone()
         return NULL;
 
     ImageEngineImpl *clone = new ImageEngineImpl();
+    clone->pages.Append(bmp);
     clone->fileName = fileName ? str::Dup(fileName) : NULL;
     clone->fileExt = fileExt;
     if (fileStream)
         fileStream->Clone(&clone->fileStream);
-    clone->FinishLoading(bmp);
 
     return clone;
 }
@@ -340,15 +339,9 @@ bool ImageEngineImpl::LoadSingleFile(const TCHAR *file)
         return false;
     fileName = str::Dup(file);
 
-    char header[18];
+    char header[8];
     if (file::ReadAll(file, header, sizeof(header)))
         fileExt = GfxFileExtFromData(header, sizeof(header));
-
-    if (str::Eq(fileExt, _T(".tga"))) {
-        size_t len;
-        ScopedMem<char> data(file::ReadAll(file, &len));
-        return FinishLoading(BitmapFromData(data, len));
-    }
 
     Bitmap *bmp = Bitmap::FromFile(AsWStrQ(file));
     return FinishLoading(bmp);
@@ -361,15 +354,9 @@ bool ImageEngineImpl::LoadFromStream(IStream *stream)
     fileStream = stream;
     fileStream->AddRef();
 
-    char header[18];
+    char header[8];
     if (ReadDataFromStream(stream, header, sizeof(header)))
         fileExt = GfxFileExtFromData(header, sizeof(header));
-
-    if (str::Eq(fileExt, _T(".tga"))) {
-        size_t len;
-        ScopedMem<char> data((char *)GetDataFromStream(stream, &len));
-        return FinishLoading(BitmapFromData(data, len));
-    }
 
     Bitmap *bmp = Bitmap::FromStream(stream);
     return FinishLoading(bmp);
@@ -377,22 +364,10 @@ bool ImageEngineImpl::LoadFromStream(IStream *stream)
 
 bool ImageEngineImpl::FinishLoading(Bitmap *bmp)
 {
-    if (!bmp || bmp->GetLastStatus() != Ok)
+    if (!bmp)
         return false;
     pages.Append(bmp);
     assert(pages.Count() == 1);
-
-    if (str::Eq(fileExt, _T(".tif"))) {
-        // extract all frames from multi-page TIFFs
-        UINT frames = bmp->GetFrameCount(&FrameDimensionPage);
-        for (UINT i = 1; i < frames; i++) {
-            Bitmap *frame = bmp->Clone(0, 0, bmp->GetWidth(), bmp->GetHeight(), PixelFormat32bppARGB);
-            if (!frame)
-                continue;
-            frame->SelectActiveFrame(&FrameDimensionPage, i);
-            pages.Append(frame);
-        }
-    }
 
     assert(fileExt);
     return fileExt != NULL;
@@ -410,8 +385,7 @@ bool ImageEngine::IsSupportedFile(const TCHAR *fileName, bool sniff)
            str::EndsWithI(fileName, _T(".jpg")) || str::EndsWithI(fileName, _T(".jpeg")) ||
            str::EndsWithI(fileName, _T(".gif")) ||
            str::EndsWithI(fileName, _T(".tif")) || str::EndsWithI(fileName, _T(".tiff")) ||
-           str::EndsWithI(fileName, _T(".bmp")) ||
-           str::EndsWithI(fileName, _T(".tga"));
+           str::EndsWithI(fileName, _T(".bmp"));
 }
 
 ImageEngine *ImageEngine::CreateFromFile(const TCHAR *fileName)
@@ -502,8 +476,8 @@ RectD ImageDirEngineImpl::PageMediabox(int pageNo)
     size_t len;
     ScopedMem<char> bmpData(file::ReadAll(pageFileNames.At(pageNo - 1), &len));
     if (bmpData) {
-        Size size = BitmapSizeFromData(bmpData, len);
-        mediaboxes.At(pageNo - 1) = RectD(0, 0, size.Width, size.Height);
+        RectI rect = SizeFromData(bmpData, len);
+        mediaboxes.At(pageNo - 1) = rect.Convert<double>();
     }
     return mediaboxes.At(pageNo - 1);
 }
@@ -554,11 +528,8 @@ public:
 DocTocItem *ImageDirEngineImpl::GetTocTree()
 {
     DocTocItem *root = new ImageDirTocItem(GetPageLabel(1), 1);
-    root->id = 1;
     for (int i = 2; i <= PageCount(); i++) {
-        DocTocItem *item = new ImageDirTocItem(GetPageLabel(i), i);
-        item->id = i;
-        root->AddSibling(item);
+        root->AddSibling(new ImageDirTocItem(GetPageLabel(i), i));
     }
     return root;
 }
@@ -582,7 +553,7 @@ ImageDirEngine *ImageDirEngine::CreateFromFile(const TCHAR *fileName)
 
 ///// CbxEngine handles comic book files (either .cbz or .cbr) /////
 
-class CbxEngineImpl : public ImagesEngine, public CbxEngine, public json::ValueObserver {
+class CbxEngineImpl : public ImagesEngine, public CbxEngine {
     friend CbxEngine;
 
 public:
@@ -604,32 +575,16 @@ public:
     }
     virtual RectD PageMediabox(int pageNo);
 
-    virtual TCHAR *GetProperty(const char *name);
-
-    // json::ValueObserver
-    virtual bool observe(const char *path, const char *value, json::DataType type);
-
 protected:
     bool LoadCbzFile(const TCHAR *fileName);
     bool LoadCbzStream(IStream *stream);
     bool FinishLoadingCbz();
-    void ParseComicInfoXml(const char *xmlData);
     bool LoadCbrFile(const TCHAR *fileName);
 
     virtual Bitmap *LoadImage(int pageNo);
     char *GetImageData(int pageNo, size_t& len);
 
     Vec<RectD> mediaboxes;
-
-    // extracted metadata
-    ScopedMem<TCHAR> propTitle;
-    StrVec propAuthors;
-    ScopedMem<TCHAR> propDate;
-    ScopedMem<TCHAR> propModDate;
-    ScopedMem<TCHAR> propCreator;
-    ScopedMem<TCHAR> propSummary;
-    // temporary state needed for extracting metadata
-    ScopedMem<TCHAR> propAuthorTmp;
 
     // used for lazily loading page images (only supported for .cbz files)
     CRITICAL_SECTION fileAccess;
@@ -659,8 +614,8 @@ RectD CbxEngineImpl::PageMediabox(int pageNo)
     size_t len;
     ScopedMem<char> bmpData(GetImageData(pageNo, len));
     if (bmpData) {
-        Size size = BitmapSizeFromData(bmpData, len);
-        mediaboxes.At(pageNo - 1) = RectD(0, 0, size.Width, size.Height);
+        RectI rect = SizeFromData(bmpData, len);
+        mediaboxes.At(pageNo - 1) = rect.Convert<double>();
     }
     return mediaboxes.At(pageNo - 1);
 }
@@ -729,14 +684,7 @@ bool CbxEngineImpl::FinishLoadingCbz()
     }
     assert(allFileNames.Count() == cbzFile->GetFileCount());
 
-    // cf. http://comicrack.cyolito.com/downloads/comicrack/ComicRack/Support-Files/ComicInfoSchema.zip/
-    ScopedMem<char> metadata(cbzFile->GetFileData(_T("ComicInfo.xml")));
-    if (metadata)
-        ParseComicInfoXml(metadata);
-    // cf. http://code.google.com/p/comicbookinfo/
-    metadata.Set(cbzFile->GetComment());
-    if (metadata)
-        json::Parse(metadata, this);
+    // TODO: any meta-information available?
 
     Vec<const TCHAR *> pageFileNames;
     for (const TCHAR **fn = allFileNames.IterStart(); fn; fn = allFileNames.IterNext()) {
@@ -757,98 +705,18 @@ bool CbxEngineImpl::FinishLoadingCbz()
     return true;
 }
 
-// extract ComicInfo.xml metadata
-void CbxEngineImpl::ParseComicInfoXml(const char *xmlData)
-{
-    PoolAllocator allocator;
-    HtmlPullParser parser(xmlData, str::Len(xmlData));
-    HtmlToken *tok;
-    while ((tok = parser.Next()) && !tok->IsError()) {
-        if (tok->IsStartTag() && tok->NameIs("Title") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/ComicBookInfo/1.0/title", value, json::Type_String);
-        }
-        else if (tok->IsStartTag() && tok->NameIs("Year") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/ComicBookInfo/1.0/publicationYear", value, json::Type_Number);
-        }
-        else if (tok->IsStartTag() && tok->NameIs("Month") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/ComicBookInfo/1.0/publicationMonth", value, json::Type_Number);
-        }
-        if (tok->IsStartTag() && tok->NameIs("Summary") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/X-summary", value, json::Type_String);
-        }
-        else if (tok->IsStartTag() && tok->NameIs("Writer") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/ComicBookInfo/1.0/credits[0]/person", value, json::Type_String);
-            observe("/ComicBookInfo/1.0/credits[0]/primary", "true", json::Type_Bool);
-        }
-        else if (tok->IsStartTag() && tok->NameIs("Penciller") && (tok = parser.Next()) && tok->IsText()) {
-            ScopedMem<char> value(ResolveHtmlEntities(tok->s, tok->sLen));
-            observe("/ComicBookInfo/1.0/credits[1]/person", value, json::Type_String);
-            observe("/ComicBookInfo/1.0/credits[1]/primary", "true", json::Type_Bool);
-        }
-    }
-}
-
-// extract ComicBookInfo metadata
-bool CbxEngineImpl::observe(const char *path, const char *value, json::DataType type)
-{
-    if (json::Type_String == type && str::Eq(path, "/ComicBookInfo/1.0/title"))
-        propTitle.Set(str::conv::FromUtf8(value));
-    else if (json::Type_Number == type && str::Eq(path, "/ComicBookInfo/1.0/publicationYear"))
-        propDate.Set(str::Format(_T("%s/%d"), propDate ? propDate : _T(""), atoi(value)));
-    else if (json::Type_Number == type && str::Eq(path, "/ComicBookInfo/1.0/publicationMonth"))
-        propDate.Set(str::Format(_T("%d%s"), atoi(value), propDate ? propDate : _T("")));
-    else if (json::Type_String == type && str::Eq(path, "/appID"))
-        propCreator.Set(str::conv::FromUtf8(value));
-    else if (json::Type_String == type && str::Eq(path, "/lastModified"))
-        propModDate.Set(str::conv::FromUtf8(value));
-    else if (json::Type_String == type && str::Eq(path, "/X-summary"))
-        propSummary.Set(str::conv::FromUtf8(value));
-    else if (str::StartsWith(path, "/ComicBookInfo/1.0/credits[")) {
-        int idx = -1;
-        const char *prop = str::Parse(path, "/ComicBookInfo/1.0/credits[%d]/", &idx);
-        if (prop) {
-            if (json::Type_String == type && str::Eq(prop, "person"))
-                propAuthorTmp.Set(str::conv::FromUtf8(value));
-            else if (json::Type_Bool == type && str::Eq(prop, "primary") && propAuthorTmp)
-                propAuthors.Append(propAuthorTmp.StealData());
-        }
-        return true;
-    }
-    // stop parsing once we have all desired information
-    return !propTitle || propAuthors.Count() == 0 || !propCreator ||
-           !propDate || str::FindChar(propDate, '/') <= propDate;
-}
-
-TCHAR *CbxEngineImpl::GetProperty(const char *name)
-{
-    if (str::Eq(name, "Title"))
-        return propTitle ? str::Dup(propTitle) : NULL;
-    if (str::Eq(name, "Author"))
-        return propAuthors.Count() ? propAuthors.Join(_T(", ")) : NULL;
-    if (str::Eq(name, "CreationDate"))
-        return propDate ? str::Dup(propDate) : NULL;
-    if (str::Eq(name, "ModDate"))
-        return propModDate ? str::Dup(propModDate) : NULL;
-    if (str::Eq(name, "Creator"))
-        return propCreator ? str::Dup(propCreator) : NULL;
-    if (str::Eq(name, "Subject"))
-        return propSummary ? str::Dup(propSummary) : NULL;
-    return NULL;
-}
-
 class ImagesPage {
 public:
-    ScopedMem<TCHAR>fileName; // for sorting image files
+    const TCHAR *   fileName; // for sorting image files
     Bitmap *        bmp;
 
-    ImagesPage(const TCHAR *fileName, Bitmap *bmp) : bmp(bmp),
-        fileName(str::Dup(fileName)) { }
-    ~ImagesPage() { delete bmp; }
+    ImagesPage(const TCHAR *fileName, Bitmap *bmp) : bmp(bmp) {
+        this->fileName = str::Dup(fileName);
+    }
+    ~ImagesPage() {
+        free((void *)fileName);
+        delete bmp;
+    }
 
     static int cmpPageByName(const void *o1, const void *o2) {
         ImagesPage *p1 = *(ImagesPage **)o1;

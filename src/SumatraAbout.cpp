@@ -1,17 +1,13 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "SumatraAbout.h"
-
-#include "AppTools.h"
-#include "FileHistory.h"
-#include "FileUtil.h"
 #include "SumatraPDF.h"
+#include "WindowInfo.h"
+#include "SumatraAbout.h"
 #include "Translations.h"
 #include "Version.h"
-#include "WindowInfo.h"
 #include "WinUtil.h"
+#include "Scoped.h"
 
 #define ABOUT_LINE_OUTER_SIZE       2
 #define ABOUT_LINE_SEP_SIZE         1
@@ -510,6 +506,10 @@ void DrawAboutPage(WindowInfo& win, HDC hdc)
 
 /* alternate static page to display when no document is loaded */
 
+#include "FileUtil.h"
+#include "AppTools.h"
+#include "FileHistory.h"
+
 #define DOCLIST_SEPARATOR_DY        2
 #define DOCLIST_THUMBNAIL_BORDER_W  1
 #define DOCLIST_MARGIN_LEFT        40
@@ -682,7 +682,7 @@ static TCHAR *GetThumbnailPath(const TCHAR *filePath)
     // content), but that's too expensive for files on slow drives
     unsigned char digest[16];
     ScopedMem<char> pathU(str::conv::ToUtf8(filePath));
-    if (path::HasVariableDriveLetter(filePath))
+    if (path::IsOnRemovableDrive(filePath))
         pathU[0] = '?'; // ignore the drive letter, if it might change
     CalcMD5Digest((unsigned char *)pathU.Get(), str::Len(pathU), digest);
     ScopedMem<char> fingerPrint(str::MemToHex(digest, 16));

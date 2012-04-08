@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
+#include "Scoped.h"
 #include "BencUtil.h"
+#include "StrUtil.h"
 
 BencObj *BencObj::Decode(const char *bytes, size_t *lenOut)
 {
@@ -32,11 +33,11 @@ static const char *ParseBencInt(const char *bytes, int64_t& value)
     bool negative = *bytes == '-';
     if (negative)
         bytes++;
-    if (!str::IsDigit(*bytes) || *bytes == '0' && str::IsDigit(*(bytes + 1)))
+    if (!ChrIsDigit(*bytes) || *bytes == '0' && ChrIsDigit(*(bytes + 1)))
         return NULL;
 
     value = 0;
-    for (; str::IsDigit(*bytes); bytes++) {
+    for (; ChrIsDigit(*bytes); bytes++) {
         value = value * 10 + (*bytes - '0');
         if (value - (negative ? 1 : 0) < 0)
             return NULL;
@@ -73,7 +74,7 @@ char *BencString::Encode() const
 
 BencString *BencString::Decode(const char *bytes, size_t *lenOut)
 {
-    if (!bytes || !str::IsDigit(*bytes))
+    if (!bytes || !ChrIsDigit(*bytes))
         return NULL;
 
     int64_t len;

@@ -1,14 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
+#include "SumatraPDF.h"
 #include "BaseUtil.h"
-#include "ParseCommandLine.h"
-
+#include "StrUtil.h"
+#include "WinUtil.h"
 #include "AppPrefs.h"
+#include "ParseCommandLine.h"
 #include "CmdLineParser.h"
 #include "StressTesting.h"
-#include "SumatraPDF.h"
-#include "WinUtil.h"
 
 #ifdef DEBUG
 static void EnumeratePrinters()
@@ -221,7 +221,7 @@ void CommandLineInfo::ParseCommandLine(TCHAR *cmdLine)
         }
         else if (is_arg_with_param("-plugin")) {
             // -plugin [<URL>] <parent HWND>
-            if (!str::IsDigit(*param) && has_additional_param())
+            if (!ChrIsDigit(*param) && has_additional_param())
                 str::ReplacePtr(&pluginURL, argList.At(++n));
             // the argument is a (numeric) window handle to
             // become the parent of a frameless SumatraPDF

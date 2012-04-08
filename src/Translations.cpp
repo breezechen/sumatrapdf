@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
 #include "Translations.h"
+#include "StrUtil.h"
 
 namespace Trans {
 

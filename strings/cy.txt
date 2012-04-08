@@ -80,8 +80,8 @@ Tudalen Nesaf\t->
 &Odd pages only
 Tudalennau &odrif yn unig
 
-&Open...\tCtrl+O
-&Agor...\tCtrl+O
+&Open\tCtrl+O
+&Agor\tCtrl+O
 
 &Options...
 &Dewisiadau...
@@ -374,9 +374,6 @@ Agor yn &Adobe Reader
 Open in &Foxit Reader
 Agor yn &Foxit Reader
 
-Open in Microsoft HTML Help
-Agor yn Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Agor yn Microsoft XPS-Viewer
 
@@ -564,7 +561,6 @@ argraffu dogfen
 #Enter the command-line to invoke when you double-click on the PDF document:
 #Error loading %s
 #F&avorites
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fonts:
@@ -582,10 +578,8 @@ argraffu dogfen
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Select &All

@@ -1,18 +1,26 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2010-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Installer_h
 #define Installer_h
 
+#include "BaseUtil.h"
+
+#include <shlobj.h>
 #include <Tlhelp32.h>
+#include <Shlwapi.h>
 #include <objidl.h>
 #include <io.h>
 
+#include "CmdLineParser.h"
 #include "FileTransactions.h"
 #include "FileUtil.h"
 
 #include "Resource.h"
+#include "Scoped.h"
+#include "StrUtil.h"
 #include "Timer.h"
+#include "Vec.h"
 #include "Version.h"
 #include "WinUtil.h"
 

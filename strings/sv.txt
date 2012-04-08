@@ -94,11 +94,11 @@ Nästa sida\t->
 &Odd pages only
 Endast &udda sidor
 
+&Open\tCtrl+O
+&Öppna...\tCtrl+O
+
 &Open Document
 &Öppna dokument
-
-&Open...\tCtrl+O
-&Öppna...\tCtrl+O
 
 &Options...
 &Inställningar...
@@ -454,9 +454,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Öppna i Foxit Reader
 
-Open in Microsoft HTML Help
-Öppna i Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Öppna i Microsoft XPS-Viewer
 
@@ -670,12 +667,9 @@ skriver ut dokumentet
 #Copy &Image
 #Copyright:
 #Could not obtain Printer properties
-#Failed to rename the file!
 #File %s not found
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

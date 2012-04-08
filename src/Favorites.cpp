@@ -1,12 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
-
-#include "BaseUtil.h"
-#include "Favorites.h"
 
 #include "AppTools.h"
 using namespace Gdiplus;
 #include "GdiPlusUtil.h"
+#include "Favorites.h"
 #include "FileHistory.h"
 #include "FileUtil.h"
 #include "Menu.h"
@@ -416,8 +414,7 @@ static void GoToFavorite(WindowInfo *win, FileFavs *f, FavName *fn)
         pageNo = -1;
     }
 
-    LoadArgs args(f->filePath, win);
-    win = LoadDocument(args);
+    win = LoadDocument(f->filePath, win);
     if (win)
         QueueWorkItem(new GoToFavoriteWorkItem(win, pageNo));
 }

@@ -91,11 +91,11 @@ Contributor: Peter Bartik
 &Odd pages only
 &Tlačiť iba nepárne strany
 
+&Open\tCtrl+O
+&Otvoriť\tCtrl+O
+
 &Open Document
 &Otvoriť dokument
-
-&Open...\tCtrl+O
-&Otvoriť...\tCtrl+O
 
 &Options...
 &Možnosti...
@@ -475,9 +475,6 @@ Otvoriť v programe &Adobe Reader
 Open in &Foxit Reader
 Otvoriť v programe &Foxit Reader
 
-Open in Microsoft HTML Help
-Otvoriť v programe Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Otvoriť v programe Microsoft XPS-Viewer
 
@@ -684,11 +681,8 @@ prebieha tlač dokumentu
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

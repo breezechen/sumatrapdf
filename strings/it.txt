@@ -96,11 +96,11 @@ Pagi&na successiva\t<Freccia destra>
 &Odd pages only
 S&olo pagine dispari
 
+&Open\tCtrl+O
+&Apri\tCtrl+O
+
 &Open Document
 &Apri documento
-
-&Open...\tCtrl+O
-&Apri...\tCtrl+O
 
 &Options...
 &Opzioni...
@@ -348,9 +348,6 @@ S&chermo intero\t<Ctrl>+<Maiusc>+L
 Facing
 Pagine affiancate
 
-Failed to rename the file!
-Impossibile rinominare il file
-
 Failed to save a file
 Salvataggio file non riuscito
 
@@ -495,9 +492,6 @@ Apri con &Adobe Reader
 Open in &Foxit Reader
 Apri con &Foxit Reader
 
-Open in Microsoft HTML Help
-Apri con Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Apri con Microsoft XPS-Viewer
 
@@ -570,9 +564,6 @@ Stampa pagina %d di %d...
 Printing problem.
 Problemi di stampa.
 
-Re&name...\tF2
-Ri&nomina...\tF2
-
 Remember &opened files
 Ric&orda file aperti
 
@@ -581,9 +572,6 @@ Rimuovi dai Preferiti
 
 Remove page %s from favorites
 Rimuovi la pagina %s dai Preferiti
-
-Rename To
-Rinomina in
 
 Replace document &colors with Windows color scheme
 Sostituisci &colori documento con schema colore di Windows

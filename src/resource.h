@@ -71,7 +71,6 @@
 #define IDM_VIEW_WITH_FOXIT             471
 #define IDM_VIEW_WITH_PDF_XCHANGE       472
 #define IDM_VIEW_WITH_XPS_VIEWER        473
-#define IDM_VIEW_WITH_HTML_HELP         474
 #define IDM_OPEN_SELECTED_DOCUMENT      480
 #define IDM_PIN_SELECTED_DOCUMENT       481
 #define IDM_FORGET_SELECTED_DOCUMENT    482
@@ -89,11 +88,10 @@
 #define IDM_FAV_ADD                     560
 #define IDM_FAV_DEL                     561
 #define IDM_FAV_TOGGLE                  562
-#define IDM_RENAME_FILE                 580
 #define IDM_DEBUG_SHOW_LINKS            590
 #define IDM_DEBUG_GDI_RENDERER          591
 #define IDM_DEBUG_CRASH_ME              592
-#define IDM_LOAD_MOBI_SAMPLE            593
+#define IDM_DEBUG_PAGE_LAYOUT           593
 #define IDM_DEBUG_EBOOK_UI              594
 #define IDM_FAV_FIRST                   600
 #define IDM_FAV_LAST                    800
@@ -181,7 +179,6 @@
 #define IDT_FILE_ADDTOFAV               3025
 #define IDT_VIEW_FIT_WIDTH              3026
 #define IDT_VIEW_FIT_PAGE               3027
-#define IDD_SAMPLE_MOBI                 3050
 #define IDC_SUMATRAPDF                  4000
 #define IDI_SMALL                       4001
 #define IDC_STATIC                      -1

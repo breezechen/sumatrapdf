@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 /* How to think of display logic: physical screen of size
@@ -43,7 +43,6 @@
   those pages to a bitmap and display those bitmaps.
 */
 
-#include "BaseUtil.h"
 #include "DisplayModel.h"
 
 // Note: adding chm handling to DisplayModel is a hack, because DisplayModel
@@ -206,7 +205,6 @@ DisplayModel::DisplayModel(DisplayModelCallback *cb)
     engine = NULL;
     engineType = Engine_None;
 
-    textCache = NULL;
     textSelection = NULL;
     textSearch = NULL;
     pagesInfo = NULL;
@@ -225,7 +223,6 @@ DisplayModel::~DisplayModel()
 
     delete textSearch;
     delete textSelection;
-    delete textCache;
     delete engine;
     free(pagesInfo);
 }
@@ -283,9 +280,8 @@ bool DisplayModel::Load(const TCHAR *fileName, PasswordUI *pwdUI)
     if (AsChmEngine())
         AsChmEngine()->SetNavigationCalback(dmCb);
 
-    textCache = new PageTextCache(engine);
-    textSelection = new TextSelection(engine, textCache);
-    textSearch = new TextSearch(engine, textCache);
+    textSelection = new TextSelection(engine);
+    textSearch = new TextSearch(engine);
     return true;
 }
 
@@ -879,7 +875,6 @@ PageElement *DisplayModel::GetElementAtPos(PointI pt)
     return engine->GetElementAtPos(pageNo, pos);
 }
 
-// note: returns false for pages that haven't been rendered yet
 bool DisplayModel::IsOverText(PointI pt)
 {
     int pageNo = GetPageNoByPoint(pt);
@@ -887,8 +882,6 @@ bool DisplayModel::IsOverText(PointI pt)
         return false;
     // only return visible elements (for cursor interaction)
     if (!RectI(PointI(), viewPort.Size()).Contains(pt))
-        return false;
-    if (!textCache->HasData(pageNo))
         return false;
 
     PointD pos = CvtFromScreen(pt, pageNo);
@@ -1427,24 +1420,35 @@ void DisplayModel::RotateBy(int newRotation)
 TCHAR *DisplayModel::GetTextInRegion(int pageNo, RectD region)
 {
     RectI *coords;
-    const TCHAR *pageText = textCache->GetData(pageNo, NULL, &coords);
-    if (str::IsEmpty(pageText))
+    TCHAR *pageText = engine->ExtractPageText(pageNo, _T("\r\n"), &coords);
+    if (!pageText)
         return NULL;
 
-    str::Str<TCHAR> result;
     RectI regionI = region.Round();
-    for (const TCHAR *src = pageText; *src; src++) {
-        if (*src != '\n') {
+    TCHAR *result = SAZA(TCHAR, str::Len(pageText) + 1);
+    if (!result)
+        return NULL;
+    TCHAR *dest = result;
+    for (TCHAR *src = pageText; *src; src++) {
+        if (*src != '\r' && *src != '\n') {
             RectI rect = coords[src - pageText];
             RectI isect = regionI.Intersect(rect);
-            if (!isect.IsEmpty() && 1.0 * isect.dx * isect.dy / (rect.dx * rect.dy) >= 0.3)
-                result.Append(*src);
+            if (!isect.IsEmpty() && 1.0 * isect.dx * isect.dy / (rect.dx * rect.dy) >= 0.3) {
+                *dest++ = *src;
+                //lf("Char: %c : %d; ushort: %hu", (char)c, (int)c, (unsigned short)c);
+                //lf("Found char: %c : %hu; real %c : %hu", c, (unsigned short)(unsigned char) c, ln->text[i].c, ln->text[i].c);
+            }
+        } else if (dest > result && *(dest - 1) != '\n') {
+            *dest++ = *src;
+            //lf("Char: %c : %d; ushort: %hu", (char)buf[p], (int)(unsigned char)buf[p], buf[p]);
         }
-        else if (result.Count() > 0 && result.Last() != '\n')
-            result.Append(_T("\r\n"), 2);
     }
+    *dest = '\0';
 
-    return result.StealData();
+    delete[] coords;
+    free(pageText);
+
+    return result;
 }
 
 // returns true if it was necessary to scroll the display (horizontally or vertically)

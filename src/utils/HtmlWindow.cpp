@@ -1,15 +1,19 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "HtmlWindow.h"
+
 #include <mshtml.h>
 #include <mshtmhst.h>
 #include <oaidl.h>
 #include <exdispid.h>
 #include <wininet.h>
 
+#include "GeomUtil.h"
+#include "Scoped.h"
+#include "StrUtil.h"
 #include "Timer.h"
+#include "Vec.h"
 #include "WinUtil.h"
 
 #pragma comment(lib, "urlmon")

@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef BaseUtil_h
@@ -13,14 +13,11 @@
 
 #include <windows.h>
 #include <unknwn.h>
-#include <shlwapi.h>
-#include <shlobj.h>
 #include <gdiplus.h>
 
 #ifdef DEBUG
 #define _CRTDBG_MAP_ALLOC
 #endif
-
 #include <stdlib.h>
 #ifdef DEBUG
 #include <crtdbg.h>
@@ -28,25 +25,21 @@
 #define new DEBUG_NEW
 #endif
 
-#ifndef UNICODE
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
 #include <tchar.h>
-#include <wchar.h>
-#include <string.h>
 
 /* Few most common includes for C stdlib */
 #include <assert.h>
-#include <float.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 #include <locale.h>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
+#ifndef UNICODE
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+#include <wchar.h>
+#include <string.h>
 
 /* Ugly name, but the whole point is to make things shorter.
    SAZA = Struct Allocate and Zero memory for Array
@@ -106,22 +99,20 @@ void CrashMe(); // in StrUtil.cpp
 // in some builds, so it shouldn't contain the actual logic of the code
 #if defined(SVN_PRE_RELEASE_VER) || defined(DEBUG)
 #define CrashIf(exp) \
-    { if (exp) \
-        CrashMe(); }
+    if (exp) \
+        CrashMe(); \
+    /* prevent CrashIf(...) else ... from compiling accidentally */ \
+    else \
+        NoOp()
 #else
 #define CrashIf(exp) NoOp()
 #endif
 
 #define CrashAlwaysIf(exp) \
-    { if (exp) \
-        CrashMe(); }
-
-// AssertCrash is like assert() but crashes like CrashIf()
-// It's meant to make converting assert() easier (converting to
-// CrashIf() requires inverting the condition, which can introduce bugs)
-#define AssertCrash(exp) \
-    { if (!(exp)) \
-        CrashMe(); }
+    if (exp) \
+        CrashMe(); \
+    else \
+        NoOp()
 
 template <typename T>
 inline void swap(T& one, T&two)
@@ -152,11 +143,10 @@ inline bool memeq(const void *s1, const void *s2, size_t len)
     return 0 == memcmp(s1, s2, len);
 }
 
-#include "Allocator.h"
-#include "GeomUtil.h"
-#include "RefCounted.h"
-#include "Scoped.h"
-#include "StrUtil.h"
-#include "Vec.h"
+class CallbackFunc {
+public:
+    virtual ~CallbackFunc() { }
+    virtual void Callback() = 0;
+};
 
 #endif

@@ -1,9 +1,13 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 // PDF-source synchronizer based on .pdfsync file
 
 #ifndef PdfSync_h
 #define PdfSync_h
+
+#include "Scoped.h"
+#include "GeomUtil.h"
+#include "Vec.h"
 
 // Error codes returned by the synchronization functions
 enum {

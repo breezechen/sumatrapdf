@@ -1,12 +1,17 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "BaseUtil.h"
 #include "FileUtil.h"
+#include "StrUtil.h"
+#include "Vec.h"
 #include "WinUtil.h"
+#include "Scoped.h"
+
+#include <shlwapi.h>
+#include <shlobj.h>
 #include <io.h>
 #include <fcntl.h>
-#include <mlang.h>
 
 #include "DebugLog.h"
 
@@ -94,21 +99,6 @@ void LogLastError(DWORD err)
     LocalFree(msgBuf);
 }
 
-// return true if a given registry key (path) exists
-bool RegKeyExists(HKEY keySub, const TCHAR *keyName)
-{
-    HKEY hKey;
-    LONG res = RegOpenKey(keySub, keyName, &hKey);
-    if (ERROR_SUCCESS == res) {
-        RegCloseKey(hKey);
-        return true;
-    }
-
-    // return true for key that exists even if it's not
-    // accessible by us
-    return ERROR_ACCESS_DENIED == res;
-}
-
 // called needs to free() the result
 TCHAR *ReadRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName)
 {
@@ -162,25 +152,21 @@ bool CreateRegKey(HKEY keySub, const TCHAR *keyName)
     return true;
 }
 
-// try to remove any access restrictions on the key
-// by granting everybody all access to this key (NULL DACL)
-static void ResetRegKeyAcl(HKEY keySub, const TCHAR *keyName)
-{
-    HKEY hKey;
-    LONG res = RegOpenKeyEx(keySub, keyName, 0, WRITE_DAC, &hKey);
-    if (ERROR_SUCCESS != res)
-        return;
-    SECURITY_DESCRIPTOR secdesc;
-    InitializeSecurityDescriptor(&secdesc, SECURITY_DESCRIPTOR_REVISION);
-    SetSecurityDescriptorDacl(&secdesc, TRUE, NULL, TRUE);
-    RegSetKeySecurity(hKey, DACL_SECURITY_INFORMATION, &secdesc);
-    RegCloseKey(hKey);
-}
-
 bool DeleteRegKey(HKEY keySub, const TCHAR *keyName, bool resetACLFirst)
 {
-    if (resetACLFirst)
-        ResetRegKeyAcl(keySub, keyName);
+    if (resetACLFirst) {
+        // try to remove any access restrictions on the key to delete
+        // by first granting everybody all access to this key (NULL DACL)
+        HKEY hKey;
+        LONG res = RegOpenKeyEx(keySub, keyName, 0, WRITE_DAC, &hKey);
+        if (ERROR_SUCCESS == res) {
+            SECURITY_DESCRIPTOR secdesc;
+            InitializeSecurityDescriptor(&secdesc, SECURITY_DESCRIPTOR_REVISION);
+            SetSecurityDescriptorDacl(&secdesc, TRUE, NULL, TRUE);
+            RegSetKeySecurity(hKey, DACL_SECURITY_INFORMATION, &secdesc);
+            RegCloseKey(hKey);
+        }
+    }
 
     LSTATUS res = SHDeleteKey(keySub, keyName);
     return ERROR_SUCCESS == res || ERROR_FILE_NOT_FOUND == res;
@@ -746,7 +732,7 @@ static HRESULT GetDataFromStream(IStream *stream, void **data, ULONG *len)
     // zero terminate the stream's content, so that it could be
     // used directly as either a char* or a WCHAR* string
     *len = stat.cbSize.LowPart;
-    *data = malloc(*len + sizeof(WCHAR));
+    *data = malloc(*len + 2);
     if (!*data)
         return E_OUTOFMEMORY;
 
@@ -791,25 +777,6 @@ bool ReadDataFromStream(IStream *stream, void *buffer, size_t len, size_t offset
     if (read < len)
         ((char *)buffer)[read] = '\0';
     return SUCCEEDED(res);
-}
-
-UINT GuessTextCodepage(const char *data, size_t len, UINT default)
-{
-    // try to guess the codepage
-    ScopedComPtr<IMultiLanguage2> pMLang;
-    HRESULT hr = CoCreateInstance(CLSID_CMultiLanguage, NULL, CLSCTX_ALL,
-                                  IID_IMultiLanguage2, (void **)&pMLang);
-    if (FAILED(hr))
-        return default;
-
-    int ilen = (int)min(len, INT_MAX);
-    int count = 1;
-    DetectEncodingInfo info = { 0 };
-    hr = pMLang->DetectInputCodepage(MLDETECTCP_NONE, CP_ACP, (char *)data,
-                                     &ilen, &info, &count);
-    if (FAILED(hr) || count != 1)
-        return default;
-    return info.nCodePage;
 }
 
 namespace win {

@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
 #include "RenderCache.h"
+#include "Scoped.h"
 #include "WinUtil.h"
 
 /* Define if you want to conserve memory by always freeing cached bitmaps
@@ -530,12 +531,6 @@ DWORD WINAPI RenderCache::RenderCacheThread(LPVOID data)
                 req.renderCb->Callback();
             continue;
         }
-
-        // make sure that we have extracted page text for
-        // all rendered pages to allow text selection and
-        // searching without any further delays
-        if (!req.dm->textCache->HasData(req.pageNo))
-            req.dm->textCache->GetData(req.pageNo);
 
         bmp = req.dm->engine->RenderBitmap(req.pageNo, req.zoom, req.rotation, &req.pageRect);
         if (req.abort) {

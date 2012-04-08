@@ -88,11 +88,11 @@ Contributor: Beqa Arabuli (arabulibeqa@yahoo.com)
 &Odd pages only
 მხოლოდ &კენტი გვერდები
 
+&Open\tCtrl+O
+&გახსნა\tCtrl+O
+
 &Open Document
 &დოკუმენტის გახსნა
-
-&Open...\tCtrl+O
-&გახსნა...\tCtrl+O
 
 &Options...
 &პარამეტრები...
@@ -466,9 +466,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 გახსნა &Foxit Reader-ში
 
-Open in Microsoft HTML Help
-გახსნა Microsoft HTML Help-ში
-
 Open in Microsoft XPS-Viewer
 გახსნა Microsoft XPS-Viewer-ში
 
@@ -676,12 +673,9 @@ printing document
 # Untranslated:
 #Copy &Image
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
 #No result found around line %u in file %s
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

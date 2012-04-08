@@ -1,11 +1,16 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "BaseUtil.h"
+#include "Allocator.h"
+#include "Scoped.h"
+#include "StrUtil.h"
+#include "WinUtil.h"
+#include "GeomUtil.h"
+#include "Vec.h"
+
 using namespace Gdiplus;
 #include "GdiPlusUtil.h"
-#include "TgaReader.h"
-#include "WinUtil.h"
 
 // Get width of each character and add them up.
 // Doesn't seem to be any different than MeasureTextAccurate() i.e. it still
@@ -220,19 +225,12 @@ const TCHAR *GfxFileExtFromData(char *data, size_t len)
         return _T(".gif");
     if (memeq(header, "MM\x00\x2A", 4) || memeq(header, "II\x2A\x00", 4))
         return _T(".tif");
-    if (tga::HasSignature(data, len))
-        return _T(".tga");
     return NULL;
 }
 
 // cf. http://stackoverflow.com/questions/4598872/creating-hbitmap-from-memory-buffer/4616394#4616394
 Bitmap *BitmapFromData(void *data, size_t len)
 {
-    if (!data)
-        return NULL;
-    if (tga::HasSignature((const char *)data, len))
-        return tga::ImageFromData((const char *)data, len);
-
     ScopedComPtr<IStream> stream(CreateStreamFromData(data, len));
     if (!stream)
         return NULL;
@@ -247,9 +245,9 @@ Bitmap *BitmapFromData(void *data, size_t len)
 }
 
 // adapted from http://cpansearch.perl.org/src/RJRAY/Image-Size-3.230/lib/Image/Size.pm
-Size BitmapSizeFromData(char *data, size_t len)
+Rect BitmapSizeFromData(char *data, size_t len)
 {
-    Size result;
+    Rect result;
     // too short to contain magic number and image dimensions
     if (len < 8) {
     }
@@ -259,7 +257,7 @@ Size BitmapSizeFromData(char *data, size_t len)
             BITMAPINFOHEADER *bmi = (BITMAPINFOHEADER *)(data + sizeof(BITMAPFILEHEADER));
             DWORD width = LEtoHl(bmi->biWidth);
             DWORD height = LEtoHl(bmi->biHeight);
-            result = Size(width, height);
+            result = Rect(0, 0, width, height);
         }
     }
     // PNG
@@ -267,7 +265,7 @@ Size BitmapSizeFromData(char *data, size_t len)
         if (len >= 24 && str::StartsWith(data + 12, "IHDR")) {
             DWORD width = BEtoHl(*(DWORD *)(data + 16));
             DWORD height = BEtoHl(*(DWORD *)(data + 20));
-            result = Size(width, height);
+            result = Rect(0, 0, width, height);
         }
     }
     // JPEG
@@ -277,7 +275,7 @@ Size BitmapSizeFromData(char *data, size_t len)
             if ('\xC0' <= data[ix + 1] && data[ix + 1] <= '\xC3') {
                 WORD width = BEtoHs(*(WORD *)(data + ix + 7));
                 WORD height = BEtoHs(*(WORD *)(data + ix + 5));
-                result = Size(width, height);
+                result = Rect(0, 0, width, height);
             }
             ix += BEtoHs(*(WORD *)(data + ix + 2)) + 2;
         }
@@ -295,7 +293,7 @@ Size BitmapSizeFromData(char *data, size_t len)
                 if (data[ix] == '\x2c') {
                     WORD width = LEtoHs(*(WORD *)(data + ix + 5));
                     WORD height = LEtoHs(*(WORD *)(data + ix + 7));
-                    result = Size(width, height);
+                    result = Rect(0, 0, width, height);
                     break;
                 }
                 else if (data[ix] == '\x21' && data[ix + 1] == '\xF9')
@@ -321,19 +319,80 @@ Size BitmapSizeFromData(char *data, size_t len)
     else if (memeq(data, "MM\x00\x2A", 4) || memeq(data, "II\x2A\x00", 4)) {
         // TODO: speed this up (if necessary)
     }
-    // TGA
-    else if (tga::HasSignature(data, len)) {
-        result = tga::GetImageSize(data, len);
-    }
 
-    if (result.Empty()) {
+    if (result.IsEmptyArea()) {
         // let GDI+ extract the image size if we've failed
         // (currently happens for animated GIFs and for all TIFFs)
         Bitmap *bmp = BitmapFromData(data, len);
         if (bmp)
-            result = Size(bmp->GetWidth(), bmp->GetHeight());
+            result = Rect(0, 0, bmp->GetWidth(), bmp->GetHeight());
         delete bmp;
     }
 
     return result;
+}
+
+// TGA images are fairly simple to create and compare and
+// yet offer an average compression ratio of 5:1
+// cf. http://en.wikipedia.org/wiki/Truevision_TGA
+
+#pragma pack(push)
+#pragma pack(1)
+struct TgaHeader {
+    uint8_t idLength;
+    uint8_t cmapType;
+    uint8_t imageType;
+    uint16_t cmapFirstEntry;
+    uint16_t cmapLength;
+    uint8_t cmapBitDepth;
+    uint16_t offsetX, offsetY;
+    uint16_t width, height;
+    uint8_t bitDepth;
+    uint8_t flags;
+};
+#pragma pack(pop)
+
+unsigned char *SerializeRunLengthEncoded(HBITMAP hbmp, size_t *bmpBytesOut)
+{
+    SizeI size = GetBitmapSize(hbmp);
+    int stride = ((size.dx * 3 + 3) / 4) * 4;
+    size_t bmpBytes;
+    ScopedMem<char> bmpData((char *)SerializeBitmap(hbmp, &bmpBytes));
+    if (!bmpData)
+        return NULL;
+
+    str::Str<char> tgaData;
+
+    TgaHeader header = { 0 };
+    header.imageType = 10; // true color, run-length encoded
+    header.width = size.dx;
+    header.height = size.dy;
+    header.bitDepth = 24;
+    tgaData.Append((char *)&header, sizeof(header));
+
+    for (int k = 0; k < size.dy; k++) {
+        char *line = bmpData + sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFO) + k * stride;
+        for (int i = 0, j = 1; i < size.dx; i += j, j = 1) {
+            // determine the length of a run of identical pixels
+            while (i + j < size.dx && j < 128 && memeq(line + i * 3, line + (i + j) * 3, 3)) {
+                j++;
+            }
+            if (j > 1) {
+                tgaData.Append(j - 1 + 128);
+                tgaData.Append(line + i * 3, 3);
+            } else {
+                // determine the length of a run of different pixels
+                while (i + j < size.dx && j < 128 && !memeq(line + (i + j - 1) * 3, line + (i + j) * 3, 3)) {
+                    j++;
+                }
+                tgaData.Append(j - 1);
+                tgaData.Append(line + i * 3, j * 3);
+            }
+        }
+    }
+    tgaData.Append("\0\0\0\0\0\0\0\0TRUEVISION-XFILE.\0", 26);
+
+    if (bmpBytesOut)
+        *bmpBytesOut = tgaData.Size();
+    return (unsigned char *)tgaData.StealData();
 }

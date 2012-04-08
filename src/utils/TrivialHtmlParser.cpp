@@ -1,10 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "TrivialHtmlParser.h"
 
 #include "HtmlPullParser.h"
+#include "Scoped.h"
+#include "StrUtil.h"
 
 // define to use HtmlPullParser for parsing
 // TODO: always parse using HtmlPullParser
@@ -26,10 +27,12 @@ struct HtmlAttr {
 
 #ifndef USE_PULL_PARSER
 
-static int IsName(char c)
+static int IsName(int c)
 {
     return c == '.' || c == '-' || c == '_' || c == ':' ||
-           str::IsDigit(c) || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+        (c >= '0' && c <= '9') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z');
 }
 
 static void SkipWs(char **sPtr)

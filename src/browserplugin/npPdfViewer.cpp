@@ -1,16 +1,17 @@
-﻿/* (Minimal) SumatraPDF Browser Plugin - Copyright © 2012  Simon Bünzli */
+﻿/* (Minimal) SumatraPDF Browser Plugin - Copyright © 2010-2012  Simon Bünzli */
 
 #include "BaseUtil.h"
-
-#include "CmdLineParser.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
 #include "WinUtil.h"
+#include "CmdLineParser.h"
+#include "SimpleLog.h"
+#include <shlwapi.h>
+
 #ifndef _WINDOWS
 #define _WINDOWS
 #endif
 #include "npapi/npfunctions.h"
-
-#include "DebugLog.h"
 
 #undef NP_END_MACRO
 #define NP_END_MACRO } __pragma(warning(push)) __pragma(warning(disable:4127)) while (0) __pragma(warning(pop))
@@ -30,7 +31,14 @@
 #pragma comment(linker, "/EXPORT:DllUnregisterServer=_DllUnregisterServer@0,PRIVATE")
 #endif
 
-#if NOLOG == 0
+/* Allow logging plugin activity with OutputDebugString(). This can be viewed
+   with DebugView http://technet.microsoft.com/en-us/sysinternals/bb896647
+   In debug output sp: stands for "Sumatra Plugin" (so that we can distinguish
+   our logs from other apps logs) */
+#if 0
+slog::DebugLogger gLogger;
+#define dbg(msg, ...) gLogger.LogFmt(_T(msg), __VA_ARGS__)
+
 const TCHAR *DllMainReason(DWORD reason)
 {
     if (DLL_PROCESS_ATTACH == reason)
@@ -43,6 +51,8 @@ const TCHAR *DllMainReason(DWORD reason)
         return _T("DLL_THREAD_DETACH");
     return _T("UNKNOWN");
 }
+#else
+#define dbg(format, ...) NoOp()
 #endif
 
 NPNetscapeFuncs gNPNFuncs;
@@ -58,7 +68,7 @@ const TCHAR *g_lpRegKey = _T("Software\\MozillaPlugins\\@mozilla.zeniko.ch/Sumat
 
 BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
-    plogf("sp: DllMain() reason: %d (%s)", dwReason, DllMainReason(dwReason));
+    dbg("sp: DllMain() reason: %d (%s)", dwReason, DllMainReason(dwReason));
 
     g_hInstance = hInstance;
     return TRUE;
@@ -66,7 +76,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
 DLLEXPORT NPError WINAPI NP_GetEntryPoints(NPPluginFuncs *pFuncs)
 {
-    plogf("sp: NP_GetEntryPoints()");
+    dbg("sp: NP_GetEntryPoints()");
     if (!pFuncs || pFuncs->size < sizeof(NPPluginFuncs))
         return NPERR_INVALID_FUNCTABLE_ERROR;
     
@@ -92,16 +102,16 @@ DLLEXPORT NPError WINAPI NP_GetEntryPoints(NPPluginFuncs *pFuncs)
 
 DLLEXPORT NPError WINAPI NP_Initialize(NPNetscapeFuncs *pFuncs)
 {
-    plogf("sp: NP_Initialize()");
+    dbg("sp: NP_Initialize()");
 
     if (!pFuncs || pFuncs->size < sizeof(NPNetscapeFuncs))
     {
-        plogf("sp: NP_Initialize() error: NPERR_INVALID_FUNCTABLE_ERROR");
+        dbg("sp: NP_Initialize() error: NPERR_INVALID_FUNCTABLE_ERROR");
         return NPERR_INVALID_FUNCTABLE_ERROR;
     }
     if (HIBYTE(pFuncs->version) > NP_VERSION_MAJOR)
     {
-        plogf("sp: NP_Initialize() error: NPERR_INCOMPATIBLE_VERSION_ERROR");
+        dbg("sp: NP_Initialize() error: NPERR_INCOMPATIBLE_VERSION_ERROR");
         return NPERR_INCOMPATIBLE_VERSION_ERROR;
     }
     
@@ -112,7 +122,7 @@ DLLEXPORT NPError WINAPI NP_Initialize(NPNetscapeFuncs *pFuncs)
 
 DLLEXPORT NPError WINAPI NP_Shutdown(void)
 {
-    plogf("sp: NP_Shutdown()");
+    dbg("sp: NP_Shutdown()");
     return NPERR_NO_ERROR;
 }
 
@@ -211,21 +221,29 @@ bool GetExePath(LPTSTR lpPath, int len)
     return true;
 }
 
-HANDLE CreateTempFile(TCHAR *filePathBufOut, size_t bufSize)
+// filePathBuf must be MAX_PATH in size
+HANDLE CreateTempFile(TCHAR *filePathBufOut)
 {
-    ScopedMem<TCHAR> tmpPath(path::GetTempPath(_T("nPV")));
-    if (!tmpPath)
+    TCHAR pathBuf[MAX_PATH];
+    DWORD ret = GetTempPath(dimof(pathBuf), pathBuf);
+    if (0 == ret || ret > dimof(pathBuf))
     {
-        plogf("sp: CreateTempFile(): GetTempPath() failed");
+        dbg("sp: CreateTempFile(): GetTempPath() failed");
         return NULL;
     }
-    str::BufSet(filePathBufOut, bufSize, tmpPath);
+
+    UINT uret = GetTempFileName(pathBuf, _T("SPT"), 0, filePathBufOut);
+    if (0 == uret)
+    {
+        dbg("sp: CreateTempFile(): GetTempFileName() failed");
+        return NULL;
+    }
 
     HANDLE hFile = CreateFile(filePathBufOut, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                              FILE_ATTRIBUTE_NORMAL, NULL);
+                            FILE_ATTRIBUTE_NORMAL, NULL);
     if (INVALID_HANDLE_VALUE == hFile)
     {
-        plogf("sp: CreateTempFile(): CreateFile() failed");
+        dbg("sp: CreateTempFile(): CreateFile() failed");
         return NULL;
     }
     return hFile;
@@ -361,18 +379,18 @@ NPError NP_LOADDS NPP_New(NPMIMEType pluginType, NPP instance, uint16_t mode, in
 {
     InstanceData *data;
 
-    plogf("sp: NPP_New() mode=%d ", mode);
+    dbg("sp: NPP_New() mode=%d ", mode);
 
     if (!instance)
     {
-        plogf("error: NPERR_INVALID_INSTANCE_ERROR");
+        dbg("error: NPERR_INVALID_INSTANCE_ERROR");
         return NPERR_INVALID_INSTANCE_ERROR;
     }
 
     if (pluginType)
-        plogf("sp:   pluginType: %s ", ScopedMem<TCHAR>(str::conv::FromAnsi(pluginType)));
+        dbg("sp:   pluginType: %s ", ScopedMem<TCHAR>(str::conv::FromAnsi(pluginType)));
     if (saved)
-        plogf("sp:   SavedData: len=%d", saved->len);
+        dbg("sp:   SavedData: len=%d", saved->len);
 
     instance->pdata = calloc(1, sizeof(InstanceData));
     data = (InstanceData *)instance->pdata;
@@ -392,11 +410,11 @@ NPError NP_LOADDS NPP_SetWindow(NPP instance, NPWindow *npwin)
 
     if (!instance)
     {
-        plogf("sp: NPP_SetWindow() errro: NPERR_INVALID_INSTANCE_ERROR");
+        dbg("sp: NPP_SetWindow() errro: NPERR_INVALID_INSTANCE_ERROR");
         return NPERR_INVALID_INSTANCE_ERROR;
     }
 
-    plogf("sp: NPP_SetWindow()");
+    dbg("sp: NPP_SetWindow()");
 
     data = (InstanceData *)instance->pdata;
     if (!npwin)
@@ -448,11 +466,11 @@ NPError NP_LOADDS NPP_NewStream(NPP instance, NPMIMEType type, NPStream* stream,
 
     if (!*data->exepath)
     {
-        plogf("sp: NPP_NewStream() error: NPERR_FILE_NOT_FOUND");
+        dbg("sp: NPP_NewStream() error: NPERR_FILE_NOT_FOUND");
         return NPERR_FILE_NOT_FOUND;
     }
 
-    plogf("sp: NPP_NewStream() end=%d", stream->end);
+    dbg("sp: NPP_NewStream() end=%d", stream->end);
 
     // default to asking the browser to create the temporary file for us
     *stype = NP_ASFILE;
@@ -473,10 +491,10 @@ NPError NP_LOADDS NPP_NewStream(NPP instance, NPMIMEType type, NPStream* stream,
         str::StartsWith(userAgent, "Opera/") ||
         str::Find(userAgent, "QupZilla/"))
     {
-        data->hFile = CreateTempFile(data->filepath, dimof(data->filepath));
+        data->hFile = CreateTempFile(data->filepath);
         if (data->hFile)
         {
-            plogf("sp: using temporary file: %s", data->filepath);
+            dbg("sp: using temporary file: %s", data->filepath);
             *stype = NP_NORMAL;
         }
     }
@@ -492,7 +510,7 @@ NPError NP_LOADDS NPP_NewStream(NPP instance, NPMIMEType type, NPStream* stream,
 int32_t NP_LOADDS NPP_WriteReady(NPP instance, NPStream* stream)
 {
     int32_t res = stream->end > 0 ? stream->end : INT_MAX;
-    plogf("sp: NPP_WriteReady() res=%d", res);
+    dbg("sp: NPP_WriteReady() res=%d", res);
     return res;
 }
 
@@ -501,7 +519,7 @@ int32_t NP_LOADDS NPP_Write(NPP instance, NPStream* stream, int32_t offset, int3
     InstanceData *data = (InstanceData *)instance->pdata;
     DWORD bytesWritten = len;
 
-    plogf("sp: NPP_Write() off=%d, len=%d", offset, len);
+    dbg("sp: NPP_Write() off=%d, len=%d", offset, len);
 
     if (data->hFile)
     {
@@ -510,7 +528,7 @@ int32_t NP_LOADDS NPP_Write(NPP instance, NPStream* stream, int32_t offset, int3
         BOOL ok = WriteFile(data->hFile, buffer, (DWORD)len, &bytesWritten, NULL);
         if (!ok)
         {
-            plogf("sp: NPP_Write() failed to write %d bytes at offset %d", len, offset);
+            dbg("sp: NPP_Write() failed to write %d bytes at offset %d", len, offset);
             return -1;
         }
     }
@@ -525,7 +543,7 @@ int32_t NP_LOADDS NPP_Write(NPP instance, NPStream* stream, int32_t offset, int3
 static void LaunchWithSumatra(InstanceData *data, const char *url_utf8)
 {
     if (!file::Exists(data->filepath))
-        plogf("sp: NPP_StreamAsFile() error: file doesn't exist");
+        dbg("sp: NPP_StreamAsFile() error: file doesn't exist");
 
     ScopedMem<TCHAR> url(str::conv::FromUtf8(url_utf8));
     ScopedMem<TCHAR> cmdLine(str::Format(_T("\"%s\" -plugin \"%s\" %d \"%s\""),
@@ -534,7 +552,7 @@ static void LaunchWithSumatra(InstanceData *data, const char *url_utf8)
     data->hProcess = LaunchProcess(cmdLine);
     if (!data->hProcess)
     {
-        plogf("sp: NPP_StreamAsFile() error: couldn't run SumatraPDF!");
+        dbg("sp: NPP_StreamAsFile() error: couldn't run SumatraPDF!");
         data->message = _T("Error: Couldn't run SumatraPDF!");
     }
 }
@@ -545,15 +563,17 @@ void NP_LOADDS NPP_StreamAsFile(NPP instance, NPStream* stream, const char* fnam
 
     if (!fname)
     {
-        plogf("sp: NPP_StreamAsFile() error: fname is NULL");
+        dbg("sp: NPP_StreamAsFile() error: fname is NULL");
         data->message = _T("Error: The document couldn't be downloaded!");
         goto Exit;
     }
 
-    plogf("sp: NPP_StreamAsFile() fname=%s", ScopedMem<TCHAR>(str::conv::FromAnsi(fname)));
+    dbg("sp: NPP_StreamAsFile() fname=%s", ScopedMem<TCHAR>(str::conv::FromAnsi(fname)));
 
     if (data->hFile)
-        plogf("sp: NPP_StreamAsFile() error: data->hFile is != NULL (should be NULL)");
+    {
+        dbg("sp: NPP_StreamAsFile() error: data->hFile is != NULL (should be NULL)");
+    }
 
     data->progress = 1.0f;
     data->prevProgress = 0.0f; // force update
@@ -580,24 +600,24 @@ NPError NP_LOADDS NPP_DestroyStream(NPP instance, NPStream* stream, NPReason rea
 {
     InstanceData *data;
 
-    plogf("sp: NPP_DestroyStream() reason: %d", reason);
+    dbg("sp: NPP_DestroyStream() reason: %d", reason);
     if (stream)
     {
         if (stream->url)
-            plogf("sp:   url: %s", ScopedMem<TCHAR>(str::conv::FromUtf8(stream->url)));
-        plogf("sp:   end: %d", stream->end);
+            dbg("sp:   url: %s", ScopedMem<TCHAR>(str::conv::FromUtf8(stream->url)));
+        dbg("sp:   end: %d", stream->end);
     }
 
     if (!instance)
     {
-        plogf("sp: NPP_DestroyStream() error: NPERR_INVALID_INSTANCE_ERROR");
+        dbg("sp: NPP_DestroyStream() error: NPERR_INVALID_INSTANCE_ERROR");
         return NPERR_INVALID_INSTANCE_ERROR;
     }
 
     data = (InstanceData *)instance->pdata;
     if (!data)
     {
-        plogf("sp: NPP_DestroyStream() error: instance->pdata is NULL");
+        dbg("sp: NPP_DestroyStream() error: instance->pdata is NULL");
         return NPERR_NO_ERROR;
     }
 
@@ -624,22 +644,22 @@ NPError NP_LOADDS NPP_Destroy(NPP instance, NPSavedData** save)
     
     if (!instance)
     {
-        plogf("sp: NPP_Destroy() error: NPERR_INVALID_INSTANCE_ERROR");
+        dbg("sp: NPP_Destroy() error: NPERR_INVALID_INSTANCE_ERROR");
         return NPERR_INVALID_INSTANCE_ERROR;
     }
 
-    plogf("sp: NPP_Destroy()");
+    dbg("sp: NPP_Destroy()");
     data = (InstanceData *)instance->pdata;
     if (data->hProcess)
     {
-        plogf("sp: NPP_Destroy(): waiting for Sumatra to exit");
+        dbg("sp: NPP_Destroy(): waiting for Sumatra to exit");
         TerminateProcess(data->hProcess, 99);
         WaitForSingleObject(data->hProcess, INFINITE);
         CloseHandle(data->hProcess);
     }
     if (data->hFile)
     {
-        plogf("sp: NPP_Destroy(): deleting internal temporary file %s", data->filepath);
+        dbg("sp: NPP_Destroy(): deleting internal temporary file %s", data->filepath);
         DeleteFile(data->filepath);
         *data->filepath = '\0';
     }
@@ -650,7 +670,7 @@ NPError NP_LOADDS NPP_Destroy(NPP instance, NPSavedData** save)
         DWORD len = GetTempPath(MAX_PATH, tempDir);
         if (0 < len && len < MAX_PATH && str::StartsWithI(data->filepath, tempDir))
         {
-            plogf("sp: NPP_Destroy(): deleting browser temporary file %s", data->filepath);
+            dbg("sp: NPP_Destroy(): deleting browser temporary file %s", data->filepath);
             DeleteFile(data->filepath);
         }
     }
@@ -669,13 +689,13 @@ void NP_LOADDS NPP_Print(NPP instance, NPPrint* platformPrint)
 {
     if (!platformPrint)
     {
-        plogf("sp: NPP_Print(), platformPrint is NULL");
+        dbg("sp: NPP_Print(), platformPrint is NULL");
         return;
     }
 
     if (NP_FULL != platformPrint->mode)
     {
-        plogf("sp: NPP_Print(), platformPrint->mode is %d (!= NP_FULL)", platformPrint->mode);
+        dbg("sp: NPP_Print(), platformPrint->mode is %d (!= NP_FULL)", platformPrint->mode);
     }
     else
     {

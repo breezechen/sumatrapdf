@@ -782,7 +782,7 @@
     <ClCompile Include="src\MobiDoc.cpp">
       <Filter>sumatra\ebook</Filter>
     </ClCompile>
-    <ClCompile Include="src\EbookWindow.cpp">
+    <ClCompile Include="src\MobiWindow.cpp">
       <Filter>sumatra\ebook</Filter>
     </ClCompile>
     <ClCompile Include="src\EbookController.cpp">
@@ -800,7 +800,7 @@
     <ClCompile Include="src\utils\ThreadUtil.cpp">
       <Filter>utils</Filter>
     </ClCompile>
-    <ClCompile Include="src\HtmlFormatter.cpp">
+    <ClCompile Include="src\PageLayout.cpp">
       <Filter>sumatra\ebook</Filter>
     </ClCompile>
     <ClCompile Include="src\mui\Mui.cpp">
@@ -1177,7 +1177,7 @@
     <ClInclude Include="src\MobiDoc.h">
       <Filter>sumatra\ebook</Filter>
     </ClInclude>
-    <ClInclude Include="src\EbookWindow.h">
+    <ClInclude Include="src\MobiWindow.h">
       <Filter>sumatra\ebook</Filter>
     </ClInclude>
     <ClInclude Include="src\EbookController.h">
@@ -1195,7 +1195,7 @@
     <ClInclude Include="src\utils\ThreadUtil.h">
       <Filter>utils</Filter>
     </ClInclude>
-    <ClInclude Include="src\HtmlFormatter.h">
+    <ClInclude Include="src\PageLayout.h">
       <Filter>sumatra\ebook</Filter>
     </ClInclude>
     <ClInclude Include="src\mui\Mui.h">

@@ -1,15 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "SumatraPDF.h"
+#include <shlobj.h>
 #include <wininet.h>
 
 #include "AppPrefs.h"
 #include "AppTools.h"
 #include "CrashHandler.h"
 #include "EbookController.h"
-#include "EbookWindow.h"
 #include "ExternalPdfViewer.h"
 #include "FileHistory.h"
 #include "Favorites.h"
@@ -21,6 +20,7 @@ using namespace Gdiplus;
 #include "HtmlWindow.h"
 #include "Menu.h"
 #include "Mui.h"
+#include "MobiWindow.h"
 #include "Notifications.h"
 #include "ParseCommandLine.h"
 #include "PdfSync.h"
@@ -73,7 +73,11 @@ bool             gUseEbookUI = false;
 // embedded (e.g. in a web browser)
 TCHAR *          gPluginURL = NULL; // owned by CommandLineInfo in WinMain
 
+#if defined(SVN_PRE_RELEASE_VER) && !defined(BLACK_ON_YELLOW)
+#define ABOUT_BG_COLOR          RGB(0xFF, 0, 0)
+#else
 #define ABOUT_BG_COLOR          RGB(0xFF, 0xF2, 0)
+#endif
 
 // Background color comparison:
 // Adobe Reader X   0x565656 without any frame border
@@ -106,10 +110,6 @@ TCHAR *          gPluginURL = NULL; // owned by CommandLineInfo in WinMain
 #define SPLITTER_DY         4
 #define TOC_MIN_DY          100
 
-// minimum size of the window
-#define MIN_WIN_DX 480
-#define MIN_WIN_DY 320
-
 #define REPAINT_TIMER_ID            1
 #define REPAINT_MESSAGE_DELAY_IN_MS 1000
 
@@ -134,11 +134,11 @@ HFONT                        gDefaultGuiFont;
 
 // TODO: combine into Vec<SumatraWindow> (after 2.0) ?
 Vec<WindowInfo*>             gWindows;
-Vec<EbookWindow*>            gEbookWindows;
+Vec<MobiWindow*>             gMobiWindows;
 FileHistory                  gFileHistory;
 Favorites *                  gFavorites;
 
-static bool                         gIsStressTesting = false;
+bool                         gIsStressTesting = false;
 
 static HCURSOR                      gCursorDrag;
 static HCURSOR                      gCursorScroll;
@@ -435,7 +435,7 @@ static void RememberDefaultWindowPosition(WindowInfo& win)
 
 // update global windowState for next default launch when either
 // no pdf is opened or a document without window dimension information
-static void RememberDefaultWindowPosition(EbookWindow *win)
+static void RememberDefaultWindowPosition(MobiWindow *win)
 {
     if (IsZoomed(win->hwndFrame))
         gGlobalPrefs.windowState = WIN_STATE_MAXIMIZED;
@@ -479,14 +479,14 @@ static void UpdateSidebarDisplayState(WindowInfo *win, DisplayState *ds)
         ds->tocState = new Vec<int>(win->tocState);
 }
 
-static void UpdateSidebarDisplayState(EbookWindow *win, DisplayState *ds)
+static void UpdateSidebarDisplayState(MobiWindow *win, DisplayState *ds)
 {
     ds->tocVisible = false;
     delete ds->tocState;
     ds->tocState = NULL;
 }
 
-static void DisplayStateFromEbookWindow(EbookWindow* win, DisplayState* ds)
+static void DisplayStateFromMobiWindow(MobiWindow* win, DisplayState* ds)
 {
     if (!ds->filePath || !str::EqI(ds->filePath, win->LoadedFilePath()))
         str::ReplacePtr(&ds->filePath, win->LoadedFilePath());
@@ -500,13 +500,13 @@ static void DisplayStateFromEbookWindow(EbookWindow* win, DisplayState* ds)
     ds->reparseIdx = win->ebookController->CurrPageReparseIdx();
 }
 
-static void UpdateCurrentFileDisplayStateForWinMobi(EbookWindow* win)
+static void UpdateCurrentFileDisplayStateForWinMobi(MobiWindow* win)
 {
     RememberDefaultWindowPosition(win);
     DisplayState *ds = gFileHistory.Find(win->LoadedFilePath());
     if (!ds)
         return;
-    DisplayStateFromEbookWindow(win, ds);
+    DisplayStateFromMobiWindow(win, ds);
     ds->useGlobalValues = gGlobalPrefs.globalPrefsOnly;
     ds->windowState = gGlobalPrefs.windowState;
     ds->windowPos   = gGlobalPrefs.windowPos;
@@ -531,8 +531,8 @@ void UpdateCurrentFileDisplayStateForWin(SumatraWindow& win)
 {
     if (win.AsWindowInfo())
         UpdateCurrentFileDisplayStateForWinInfo(win.AsWindowInfo());
-    else if (win.AsEbookWindow())
-        UpdateCurrentFileDisplayStateForWinMobi(win.AsEbookWindow());
+    else if (win.AsMobiWindow())
+        UpdateCurrentFileDisplayStateForWinMobi(win.AsMobiWindow());
 }
 
 bool IsUIRightToLeft()
@@ -670,7 +670,7 @@ bool SaveThumbnailForFile(const TCHAR *filePath, RenderedBitmap *bmp)
 
 class ThumbnailRenderingWorkItem : public UIThreadWorkItem, public RenderingCallback
 {
-    ScopedMem<TCHAR> filePath;
+    const TCHAR *filePath;
     RenderedBitmap *bmp;
 
 public:
@@ -679,6 +679,7 @@ public:
     }
 
     ~ThumbnailRenderingWorkItem() {
+        free((void *)filePath);
         delete bmp;
     }
 
@@ -787,7 +788,7 @@ static void RebuildMenuBarForAllWindows()
     for (size_t i = 0; i < gWindows.Count(); i++) {
         RebuildMenuBarForWindow(gWindows.At(i));
     }
-    RebuildMenuBarForEbookWindows();
+    RebuildMenuBarForMobiWindows();
 }
 
 // When displaying CHM document we subclass hwndCanvas. UnsubclassCanvas() reverts that.
@@ -804,19 +805,20 @@ static void UnsubclassCanvas(HWND hwnd)
 // placeWindow : if true then the Window will be moved/sized according
 //   to the 'state' information even if the window was already placed
 //   before (isNewWindow=false)
-static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI,
-    DisplayState *state, bool isNewWindow, bool allowFailure, bool placeWindow)
+static bool LoadDocIntoWindow(TCHAR *fileName, WindowInfo& win, PasswordUI *pwdUI,
+    DisplayState *state, bool isNewWindow, bool allowFailure,
+    bool showWin, bool placeWindow)
 {
     ScopedMem<TCHAR> title;
-    WindowInfo *win = args.win;
 
     // Never load settings from a preexisting state if the user doesn't wish to
     // (unless we're just refreshing the document, i.e. only if placeWindow == true)
     if (placeWindow && (gGlobalPrefs.globalPrefsOnly || state && state->useGlobalValues)) {
         state = NULL;
     } else if (NULL == state) {
-        state = gFileHistory.Find(args.fileName);
+        state = gFileHistory.Find(fileName);
         if (state) {
+            AdjustRemovableDriveLetter(fileName);
             if (state->windowPos.IsEmpty())
                 state->windowPos = gGlobalPrefs.windowPos;
             EnsureAreaVisibility(state->windowPos);
@@ -844,31 +846,31 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI,
         tocVisible = state->tocVisible;
     }
 
-    DisplayModel *prevModel = win->dm;
-    AbortFinding(args.win);
-    delete win->pdfsync;
-    win->pdfsync = NULL;
+    DisplayModel *prevModel = win.dm;
+    AbortFinding(&win);
+    delete win.pdfsync;
+    win.pdfsync = NULL;
 
-    str::ReplacePtr(&win->loadedFilePath, args.fileName);
-    win->dm = DisplayModel::CreateFromFile(args.fileName, win, pwdUI);
+    str::ReplacePtr(&win.loadedFilePath, fileName);
+    win.dm = DisplayModel::CreateFromFile(fileName, &win, pwdUI);
 
     // make sure that MSHTML can't be used as a potential exploit
     // vector through another browser and our plugin (which doesn't
     // advertise itself for Chm documents but could be tricked into
     // loading one nonetheless)
-    if (gPluginMode && win->dm && win->dm->AsChmEngine() && IsUntrustedFile(args.fileName, gPluginURL)) {
-        delete win->dm;
-        win->dm = NULL;
+    if (gPluginMode && win.dm && win.dm->AsChmEngine() && IsUntrustedFile(fileName, gPluginURL)) {
+        delete win.dm;
+        win.dm = NULL;
     }
 
-    bool needRefresh = !win->dm;
+    bool needrefresh = !win.dm;
 
     // ToC items might hold a reference to an Engine, so make sure to
     // delete them before destroying the whole DisplayModel
-    if (win->dm || allowFailure)
-        ClearTocBox(win);
+    if (win.dm || allowFailure)
+        ClearTocBox(&win);
 
-    assert(!win->IsAboutWindow() && win->IsDocLoaded() == (win->dm != NULL));
+    assert(!win.IsAboutWindow() && win.IsDocLoaded() == (win.dm != NULL));
     /* see http://code.google.com/p/sumatrapdf/issues/detail?id=1570
     if (!win.dm) {
         // TODO: this should be "Error opening %s". Change after 1.7 is released
@@ -880,68 +882,68 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI,
         str::ReplacePtr(&win.loadedFilePath, NULL);
     }
     */
-    if (win->dm) {
-        win->dm->SetInitialViewSettings(displayMode, startPage, win->GetViewPortSize(), win->dpi);
-        if (prevModel && str::Eq(win->dm->FileName(), prevModel->FileName())) {
-            gRenderCache.KeepForDisplayModel(prevModel, win->dm);
-            win->dm->CopyNavHistory(*prevModel);
+    if (win.dm) {
+        win.dm->SetInitialViewSettings(displayMode, startPage, win.GetViewPortSize(), win.dpi);
+        if (prevModel && str::Eq(win.dm->FileName(), prevModel->FileName())) {
+            gRenderCache.KeepForDisplayModel(prevModel, win.dm);
+            win.dm->CopyNavHistory(*prevModel);
         }
         delete prevModel;
-        ChmEngine *chmEngine = win->dm->AsChmEngine();
+        ChmEngine *chmEngine = win.dm->AsChmEngine();
         if (chmEngine)
-            chmEngine->SetParentHwnd(win->hwndCanvas);
+            chmEngine->SetParentHwnd(win.hwndCanvas);
     } else if (allowFailure) {
         delete prevModel;
-        ScopedMem<TCHAR> title2(str::Format(_T("%s - %s"), path::GetBaseName(args.fileName), SUMATRA_WINDOW_TITLE));
-        win::SetText(win->hwndFrame, title2);
+        ScopedMem<TCHAR> title2(str::Format(_T("%s - %s"), path::GetBaseName(fileName), SUMATRA_WINDOW_TITLE));
+        win::SetText(win.hwndFrame, title2);
         goto Error;
     } else {
         // if there is an error while reading the document and a repair is not requested
         // then fallback to the previous state
-        win->dm = prevModel;
+        win.dm = prevModel;
     }
 
     float zoomVirtual = gGlobalPrefs.defaultZoom;
     int rotation = 0;
 
     if (state) {
-        if (win->dm->ValidPageNo(startPage)) {
+        if (win.dm->ValidPageNo(startPage)) {
             ss.page = startPage;
             if (ZOOM_FIT_CONTENT != state->zoomVirtual) {
                 ss.x = state->scrollPos.x;
                 ss.y = state->scrollPos.y;
             }
             // else let win.dm->Relayout() scroll to fit the page (again)
-        } else if (startPage > win->dm->PageCount()) {
-            ss.page = win->dm->PageCount();
+        } else if (startPage > win.dm->PageCount()) {
+            ss.page = win.dm->PageCount();
         }
         zoomVirtual = state->zoomVirtual;
         rotation = state->rotation;
 
-        win->tocState.Reset();
+        win.tocState.Reset();
         if (state->tocState)
-            win->tocState = *state->tocState;
+            win.tocState = *state->tocState;
     }
 
-    win->dm->Relayout(zoomVirtual, rotation);
+    win.dm->Relayout(zoomVirtual, rotation);
 
     if (!isNewWindow) {
-        win->RedrawAll();
-        OnMenuFindMatchCase(win);
+        win.RedrawAll();
+        OnMenuFindMatchCase(&win);
     }
-    UpdateFindbox(win);
+    UpdateFindbox(&win);
 
     // menu for chm docs is different, so we have to re-create it
-    RebuildMenuBarForWindow(win);
+    RebuildMenuBarForWindow(&win);
 
-    int pageCount = win->dm->PageCount();
+    int pageCount = win.dm->PageCount();
     if (pageCount > 0) {
-        UpdateToolbarPageText(win, pageCount);
-        UpdateToolbarFindText(win);
+        UpdateToolbarPageText(&win, pageCount);
+        UpdateToolbarFindText(&win);
     }
 
-    const TCHAR *baseName = path::GetBaseName(win->dm->FileName());
-    TCHAR *docTitle = win->dm->engine ? win->dm->engine->GetProperty("Title") : NULL;
+    const TCHAR *baseName = path::GetBaseName(win.dm->FileName());
+    TCHAR *docTitle = win.dm->engine ? win.dm->engine->GetProperty("Title") : NULL;
     if (docTitle) {
         str::NormalizeWS(docTitle);
         if (!str::IsEmpty(docTitle)) {
@@ -958,13 +960,13 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI,
     }
 #endif
     free(docTitle);
-    if (needRefresh)
+    if (needrefresh)
         title.Set(str::Format(_TR("[Changes detected; refreshing] %s"), title));
-    win::SetText(win->hwndFrame, title);
+    win::SetText(win.hwndFrame, title);
 
-    if (HasPermission(Perm_DiskAccess) && Engine_PDF == win->dm->engineType) {
-        int res = Synchronizer::Create(args.fileName,
-            static_cast<PdfEngine *>(win->dm->engine), &win->pdfsync);
+    if (HasPermission(Perm_DiskAccess) && Engine_PDF == win.dm->engineType) {
+        int res = Synchronizer::Create(fileName,
+            static_cast<PdfEngine *>(win.dm->engine), &win.pdfsync);
         // expose SyncTeX in the UI
         if (PDFSYNCERR_SUCCESS == res)
             gGlobalPrefs.enableTeXEnhancements = true;
@@ -977,45 +979,45 @@ Error:
             RectI rect = ShiftRectToWorkArea(state->windowPos);
             // This shouldn't happen until !win.IsAboutWindow(), so that we don't
             // accidentally update gGlobalState with this window's dimensions
-            MoveWindow(win->hwndFrame, rect);
+            MoveWindow(win.hwndFrame, rect);
         }
 
-        if (args.showWin)
-            ShowWindow(win->hwndFrame, showType);
+        if (showWin)
+            ShowWindow(win.hwndFrame, showType);
 
-        UpdateWindow(win->hwndFrame);
+        UpdateWindow(win.hwndFrame);
     }
-    if (win->IsDocLoaded()) {
-        bool enable = !win->dm->engine || !win->dm->engine->HasPageLabels();
-        ToggleWindowStyle(win->hwndPageBox, ES_NUMBER, enable);
+    if (win.IsDocLoaded()) {
+        bool enable = !win.dm->engine || !win.dm->engine->HasPageLabels();
+        ToggleWindowStyle(win.hwndPageBox, ES_NUMBER, enable);
         // if the window isn't shown and win.canvasRc is still empty, zoom
         // has not been determined yet
-        assert(!args.showWin || !win->canvasRc.IsEmpty() || win->IsChm());
-        if (args.showWin || ss.page != 1)
-            win->dm->SetScrollState(ss);
-        UpdateToolbarState(win);
+        assert(!showWin || !win.canvasRc.IsEmpty() || win.IsChm());
+        if (showWin || ss.page != 1)
+            win.dm->SetScrollState(ss);
+        UpdateToolbarState(&win);
         // Note: this is a hack. Somewhere between r4593 and r4629
         // restoring zoom for chm files from history regressed and
         // I'm too lazy to figure out where and why. This forces
         // setting zoom level after a page has been displayed
         // (indirectly triggered via UpdateToolbarState()).
-        if (win->IsChm())
-            win->dm->Relayout(zoomVirtual, rotation);
+        if (win.IsChm())
+            win.dm->Relayout(zoomVirtual, rotation);
     }
 
-    SetSidebarVisibility(win, tocVisible, gGlobalPrefs.favVisible);
-    win->RedrawAll(true);
+    SetSidebarVisibility(&win, tocVisible, gGlobalPrefs.favVisible);
+    win.RedrawAll(true);
 
-    UpdateToolbarAndScrollbarState(*win);
-    if (!win->IsDocLoaded()) {
-        win->RedrawAll();
+    UpdateToolbarAndScrollbarState(win);
+    if (!win.IsDocLoaded()) {
+        win.RedrawAll();
         return false;
     }
     // This should only happen after everything else is ready
-    if ((isNewWindow || placeWindow) && args.showWin && showAsFullScreen)
-        EnterFullscreen(*win);
-    if (!isNewWindow && win->presentation && win->dm)
-        win->dm->SetPresentationMode(true);
+    if ((isNewWindow || placeWindow) && showWin && showAsFullScreen)
+        EnterFullscreen(win);
+    if (!isNewWindow && win.presentation && win.dm)
+        win.dm->SetPresentationMode(true);
 
     return true;
 }
@@ -1028,10 +1030,8 @@ void ReloadDocument(WindowInfo *win, bool autorefresh)
     DisplayState ds;
     ds.useGlobalValues = gGlobalPrefs.globalPrefsOnly;
     if (!win->IsDocLoaded()) {
-        if (!autorefresh && win->loadedFilePath) {
-            LoadArgs args(win->loadedFilePath, win);
-            LoadDocument(args);
-        }
+        if (!autorefresh && win->loadedFilePath)
+            LoadDocument(win->loadedFilePath, win);
         return;
     }
     win->dm->DisplayStateFromModel(&ds);
@@ -1053,9 +1053,7 @@ void ReloadDocument(WindowInfo *win, bool autorefresh)
     bool placeWindow = false;
     ScopedMem<TCHAR> path(str::Dup(win->loadedFilePath));
     HwndPasswordUI pwdUI(win->hwndFrame, false);
-    LoadArgs args(path, win);
-    args.showWin = showWin;
-    if (!LoadDocIntoWindow(args, &pwdUI, &ds, isNewWindow, allowFailure, placeWindow))
+    if (!LoadDocIntoWindow(path, *win, &pwdUI, &ds, isNewWindow, allowFailure, showWin, placeWindow))
         return;
 
     if (gGlobalPrefs.showStartPage) {
@@ -1078,11 +1076,12 @@ void ReloadDocument(WindowInfo *win, bool autorefresh)
 static void UpdateToolbarAndScrollbarState(WindowInfo& win)
 {
     ToolbarUpdateStateForWindow(&win, true);
-    if (win.IsDocLoaded())
-        return;
-    ShowScrollBar(win.hwndCanvas, SB_BOTH, FALSE);
-    if (win.IsAboutWindow())
-        win::SetText(win.hwndFrame, SUMATRA_WINDOW_TITLE);
+
+    if (!win.IsDocLoaded()) {
+        ShowScrollBar(win.hwndCanvas, SB_BOTH, FALSE);
+        if (win.IsAboutWindow())
+            win::SetText(win.hwndFrame, SUMATRA_WINDOW_TITLE);
+    }
 }
 
 static void CreateSidebar(WindowInfo* win)
@@ -1203,12 +1202,12 @@ static void DeleteWindowInfo(WindowInfo *win)
     delete win;
 }
 
-class FileChangeCallback : public UIThreadWorkItem, public FileChangeObserver
+class FileChangeCallback : public UIThreadWorkItem, public CallbackFunc
 {
 public:
     FileChangeCallback(WindowInfo *win) : UIThreadWorkItem(win) { }
 
-    virtual void OnFileChanged() {
+    virtual void Callback() {
         // We cannot call win->Reload directly as it could cause race conditions
         // between the watching thread and the main thread (and only pass a copy of this
         // callback to the UIThreadMarshaller, as the object will be deleted after use)
@@ -1233,59 +1232,30 @@ static void RefreshUpdatedFiles() {
 }
 #endif
 
-static void RenameFileInHistory(const TCHAR *oldPath, const TCHAR *newPath)
-{
-    DisplayState *ds = gFileHistory.Find(newPath);
-    bool oldIsPinned = false;
-    int oldOpenCount = 0;
-    if (ds) {
-        oldIsPinned = ds->isPinned;
-        oldOpenCount = ds->openCount;
-        gFileHistory.Remove(ds);
-        delete ds;
-    }
-    ds = gFileHistory.Find(oldPath);
-    if (ds) {
-        str::ReplacePtr(&ds->filePath, newPath);
-        // merge Frequently Read data, so that a file
-        // doesn't accidentally vanish from there
-        ds->isPinned = ds->isPinned || oldIsPinned;
-        ds->openCount += oldOpenCount;
-        // the thumbnail is recreated by LoadDocument
-        delete ds->thumbnail;
-        ds->thumbnail = NULL;
-    }
-
-    FileFavs *oldFav = gFavorites->GetFavByFilePath(oldPath);
-    if (oldFav) {
-        // move all favorites of the old file over the the new one
-        for (size_t i = 0; i < oldFav->favNames.Count(); i++) {
-            FavName *fn = oldFav->favNames.At(i);
-            gFavorites->AddOrReplace(newPath, fn->pageNo, fn->name);
-        }
-        gFavorites->RemoveAllForFile(oldPath);
-    }
-}
-
 // called when a background thread finishes loading mobi file
 static void HandleFinishedMobiLoadingMsg(FinishedMobiLoadingData *finishedMobiLoading)
 {
-    Doc doc(*finishedMobiLoading->doc);
-    if (!doc.generic) {
+    if (!finishedMobiLoading->mobiDoc) {
         // TODO: show notification that loading failed
         // TODO: remove from file history
         return;
     }
-    OpenMobiInWindow(doc, finishedMobiLoading->win);
+    OpenMobiInWindow(finishedMobiLoading->mobiDoc, finishedMobiLoading->win);
+}
+
+static bool IsMobiFile(const TCHAR *fileName)
+{
+    return str::EndsWithI(fileName, _T(".mobi"));
 }
 
 // Start loading a mobi file in the background
-static void LoadEbookAsync(const TCHAR *fileName, SumatraWindow& win)
+static void LoadMobiAsync(const TCHAR *fileName, SumatraWindow& win)
 {
-    ThreadLoadEbook *loadThread = new ThreadLoadEbook(fileName, NULL, win);
+    // note: ThreadLoadMobi object will get automatically deleted, so no
+    // need to keep it around
+    ThreadLoadMobi *loadThread = new ThreadLoadMobi(fileName, NULL, win);
     loadThread->Start();
-    // make the thread delete itself at the end of processing
-    loadThread->Release();
+    
     // when loading is done, we'll call HandleFinishedMobiLoadingMsg()
 
     // TODO: we should show a notification in the window user is looking at
@@ -1307,27 +1277,18 @@ static bool DocumentPathExists(const TCHAR *path)
     return false;
 }
 
-void LoadDocument2(const TCHAR *fileName, SumatraWindow& win)
+void LoadDocument(const TCHAR *fileName, SumatraWindow& win)
 {
     // TODO: opening non-mobi files from mobi window doesn't work exactly
-    // the same as opening them from non-mobi window
+    // as opening them from non-mobi window
     if (win.AsWindowInfo()) {
-        LoadArgs args(fileName, win.AsWindowInfo());
-        LoadDocument(args);
+        LoadDocument(fileName, win.AsWindowInfo());
         return;
     }
-    CrashIf(!win.AsEbookWindow());
-    // TODO: LoadDocument() needs to handle EbookWindow, for now
+    CrashIf(!win.AsMobiWindow());
+    // TODO: LoadDocument() needs to handle MobiWindow, for now
     // we force opening in a new window
-    LoadArgs args(fileName, NULL);
-    LoadDocument(args);
-}
-
-static WindowInfo* LoadDocumentNew(LoadArgs& args)
-{
-    // TODO: write me
-    CrashIf(true);
-    return NULL;
+    LoadDocument(fileName, NULL);
 }
 
 // TODO: eventually I would like to move all loading to be async. To achieve that
@@ -1335,29 +1296,17 @@ static WindowInfo* LoadDocumentNew(LoadArgs& args)
 // file (and showing progress/load failures in topmost window) and placing
 // the loaded document in the window (either by replacing document in existing
 // window or creating a new window for the document)
-static WindowInfo* LoadDocumentOld(LoadArgs& args)
+WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win, bool showWin, 
+                         bool forceReuse, bool suppressPwdUI)
 {
     if (gCrashOnOpen)
         CrashMe();
 
-    ScopedMem<TCHAR> fullPath(path::Normalize(args.fileName));
-    WindowInfo *win = args.win;
-
-    bool failEarly = win && !args.forceReuse && !DocumentPathExists(fullPath);
-    // try to find inexistent files with history data
-    // on a different removable drive before failing
-    if (failEarly && gFileHistory.Find(fullPath)) {
-        ScopedMem<TCHAR> adjPath(str::Dup(fullPath));
-        if (AdjustVariableDriveLetter(adjPath)) {
-            RenameFileInHistory(fullPath, adjPath);
-            fullPath.Set(adjPath.StealData());
-            failEarly = false;
-        }
-    }
+    ScopedMem<TCHAR> fullPath(path::Normalize(fileName));
 
     // fail with a notification if the file doesn't exist and
     // there is a window the user has just been interacting with
-    if (failEarly) {
+    if (win && !forceReuse && !DocumentPathExists(fullPath)) {
         ScopedMem<TCHAR> msg(str::Format(_TR("File %s not found"), fullPath));
         ShowNotification(win, msg, true /* autoDismiss */, true /* highlight */);
         // display the notification ASAP (SavePrefs() can introduce a notable delay)
@@ -1372,14 +1321,15 @@ static WindowInfo* LoadDocumentOld(LoadArgs& args)
         return NULL;
     }
 
-    if (gUseEbookUI && IsEbookFile(fullPath)) {
+    if (gUseEbookUI && IsMobiFile(fileName)) {
         if (!win) {
             if ((1 == gWindows.Count()) && gWindows.At(0)->IsAboutWindow())
                 win = gWindows.At(0);
-        } else if (!win->IsAboutWindow() && !args.forceReuse)
-            win = NULL;
+        } else if (!win->IsAboutWindow() && !forceReuse) {
+                win = NULL;
+        }
         if (!win) {
-            // create a dummy window so that we can return
+            // create a dummy window so taht we can return
             // a non-NULL value to indicate loading success
             win = CreateWindowInfo();
         }
@@ -1387,20 +1337,18 @@ static WindowInfo* LoadDocumentOld(LoadArgs& args)
             // don't crash if multiple Mobi files are opened at once
             win->loadedFilePath = str::Dup(fullPath);
         }
-        LoadEbookAsync(fullPath, SumatraWindow::Make(win));
+        LoadMobiAsync(fileName, SumatraWindow::Make(win));
         return win;
     }
 
     bool isNewWindow = false;
     if (!win && 1 == gWindows.Count() && gWindows.At(0)->IsAboutWindow()) {
         win = gWindows.At(0);
-        args.win = win;
-    } else if (!win || win->IsDocLoaded() && !args.forceReuse) {
+    } else if (!win || win->IsDocLoaded() && !forceReuse) {
         WindowInfo *currWin = win;
         win = CreateWindowInfo();
         if (!win)
             return NULL;
-        args.win = win;
         isNewWindow = true;
         if (currWin) {
             RememberFavTreeExpansionState(currWin);
@@ -1413,10 +1361,9 @@ static WindowInfo* LoadDocumentOld(LoadArgs& args)
     win->notifications->RemoveAllInGroup(NG_RESPONSE_TO_ACTION);
     win->notifications->RemoveAllInGroup(NG_PAGE_INFO_HELPER);
 
-    HwndPasswordUI pwdUI(win->hwndFrame, args.suppressPwdUI);
-    args.fileName = fullPath;
-    bool loaded = LoadDocIntoWindow(args, &pwdUI, NULL, isNewWindow, 
-        true /* allowFailure */, true /* placeWindow */);
+    HwndPasswordUI pwdUI(win->hwndFrame, suppressPwdUI);
+    bool loaded = LoadDocIntoWindow(fullPath, *win, &pwdUI, NULL, isNewWindow,
+                           true /* allowFailure */, showWin, true /* placeWindow */);
 
     if (!loaded) {
         if (gFileHistory.MarkFileInexistent(fullPath))
@@ -1445,15 +1392,6 @@ static WindowInfo* LoadDocumentOld(LoadArgs& args)
         SHAddToRecentDocs(SHARD_PATH, fullPath);
 
     return win;
-}
-
-WindowInfo* LoadDocument(LoadArgs& args)
-{
-#if 0
-    return LoadDocumentNew(args);
-#else
-    return LoadDocumentOld(args);
-#endif
 }
 
 // The current page edit box is updated with the current page number
@@ -1614,30 +1552,21 @@ static bool RegisterForPdfExtentions(HWND hwnd)
 
 void OnDropFiles(HDROP hDrop)
 {
-    TCHAR       filePath[MAX_PATH];
+    TCHAR       filename[MAX_PATH];
     const int   count = DragQueryFile(hDrop, DRAGQUERY_NUMFILES, 0, 0);
 
     for (int i = 0; i < count; i++)
     {
-        DragQueryFile(hDrop, i, filePath, dimof(filePath));
-        if (str::EndsWithI(filePath, _T(".lnk"))) {
-            ScopedMem<TCHAR> resolved(ResolveLnk(filePath));
+        DragQueryFile(hDrop, i, filename, dimof(filename));
+        if (str::EndsWithI(filename, _T(".lnk"))) {
+            ScopedMem<TCHAR> resolved(ResolveLnk(filename));
             if (resolved)
-                str::BufSet(filePath, dimof(filePath), resolved);
+                str::BufSet(filename, dimof(filename), resolved);
         }
         // The first dropped document may override the current window
-        LoadArgs args(filePath);
-        LoadDocument(args);
+        LoadDocument(filename);
     }
     DragFinish(hDrop);
-}
-
-static void MessageBoxWarning(HWND hwnd, const TCHAR *msg, const TCHAR *title = NULL)
-{
-    UINT type =  MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0);
-    if (!title)
-        title = _TR("Warning");
-    MessageBox(hwnd, msg, title, type);
 }
 
 static DWORD ShowAutoUpdateDialog(HWND hParent, HttpReq *ctx, bool silent)
@@ -1662,8 +1591,10 @@ static DWORD ShowAutoUpdateDialog(HWND hParent, HttpReq *ctx, bool silent)
     str::TransChars(verTxt, _T("\r\n"), _T("\0\0"));
     if (CompareVersion(verTxt, UPDATE_CHECK_VER) <= 0) {
         /* if automated => don't notify that there is no new version */
-        if (!silent)
-            MessageBoxWarning(hParent, _TR("You have the latest version."), _TR("SumatraPDF Update"));
+        if (!silent) {
+            UINT flags =  MB_ICONINFORMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0);
+            MessageBox(hParent, _TR("You have the latest version."), _TR("SumatraPDF Update"), flags);
+        }
         return 0;
     }
 
@@ -1697,7 +1628,8 @@ static void ProcessAutoUpdateCheckResult(HWND hwnd, HttpReq *req, bool autoCheck
 
     // notify the user about network error during a manual update check
     msg.Set(str::Format(_TR("Can't connect to the Internet (error %#x)."), error));
-    MessageBoxWarning(hwnd, msg, _TR("SumatraPDF Update"));
+    UINT flags = MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0);
+    MessageBox(hwnd, msg, _TR("SumatraPDF Update"), flags);
 Exit:
     delete req;
 }
@@ -2121,10 +2053,8 @@ static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
                 win.RedrawAll(true);
             } else if (!str::StartsWithI(url, _T("http:")) &&
                        !str::StartsWithI(url, _T("https:")) &&
-                       !str::StartsWithI(url, _T("mailto:"))) 
-            {
-                LoadArgs args(url, &win);
-                LoadDocument(args);
+                       !str::StartsWithI(url, _T("mailto:"))) {
+                LoadDocument(url, &win);
             } else
                 LaunchBrowser(url);
         }
@@ -2211,7 +2141,7 @@ static void OnMouseLeftButtonDblClk(WindowInfo& win, int x, int y, WPARAM key)
 
         DeleteOldSelectionInfo(&win, true);
         win.selectionOnPage = SelectionOnPage::FromRectangle(win.dm, rc);
-        win.showSelection = win.selectionOnPage != NULL;
+        win.showSelection = true;
         win.RepaintAsync();
     }
     delete pageEl;
@@ -2322,10 +2252,6 @@ static void OnPaint(WindowInfo& win)
         win.buffer->Flush(hdc);
     } else if (!win.IsDocLoaded()) {
         // TODO: replace with notifications as far as reasonably possible
-        // note: currently it's possible to easily reload the document
-        // and/or open it in an external viewer (e.g. Adobe Reader might
-        // be able to handle PDFs that are too broken for MuPDF),
-        // a notification would break this
         ScopedFont fontRightTxt(GetSimpleFont(hdc, _T("MS Shell Dlg"), 14));
         HGDIOBJ hPrevFont = SelectObject(hdc, fontRightTxt);
         SetBkMode(hdc, TRANSPARENT);
@@ -2386,14 +2312,14 @@ void GetStressTestInfo(str::Str<char>* s)
         char buf[256];
         str::conv::ToCodePageBuf(buf, dimof(buf), w->loadedFilePath, CP_UTF8);
         s->Append(buf);
-        w->stressTest->GetLogInfo(s);
+        GetStressTestInfo(w->stressTest, s);
         s->Append("\r\n");
     }
 }
 
 size_t TotalWindowsCount()
 {
-    return gWindows.Count() + gEbookWindows.Count();
+    return gWindows.Count() + gMobiWindows.Count();
 }
 
 // closes a document inside a WindowInfo and turns it into
@@ -2493,26 +2419,6 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
     }
 }
 
-static void AppendFileFilterForDoc(DisplayModel *dm, str::Str<TCHAR>& fileFilter)
-{
-    const TCHAR *defExt = dm->engine->GetDefaultFileExt();
-    switch (dm->engineType) {
-        case Engine_XPS:    fileFilter.Append(_TR("XPS documents")); break;
-        case Engine_DjVu:   fileFilter.Append(_TR("DjVu documents")); break;
-        case Engine_ComicBook: fileFilter.Append(_TR("Comic books")); break;
-        case Engine_Image:  fileFilter.AppendFmt(_TR("Image files (*.%s)"), defExt + 1); break;
-        case Engine_PS:     fileFilter.Append(_TR("Postscript documents")); break;
-        case Engine_Chm:    fileFilter.Append(_TR("CHM documents")); break;
-        case Engine_Epub:   fileFilter.Append(_TR("EPUB ebooks")); break;
-        case Engine_Mobi:   fileFilter.Append(_TR("Mobi documents")); break;
-        case Engine_Fb2:    fileFilter.Append(_T("FictionBooks")); break;
-        case Engine_Pdb:    fileFilter.Append(_T("PalmDOC")); break;
-        case Engine_Chm2:   fileFilter.Append(_TR("CHM documents")); break;
-        case Engine_Txt:    fileFilter.Append(_TR("Text documents")); break;
-        default:            fileFilter.Append(_TR("PDF documents")); break;
-    }
-}
-
 static void OnMenuSaveAs(WindowInfo& win)
 {
     if (!HasPermission(Perm_DiskAccess)) return;
@@ -2536,11 +2442,24 @@ static void OnMenuSaveAs(WindowInfo& win)
     bool canConvertToPDF = Engine_PS == win.dm->engineType;
 
     const TCHAR *defExt = win.dm->engine->GetDefaultFileExt();
+
     // Prepare the file filters (use \1 instead of \0 so that the
     // double-zero terminated string isn't cut by the string handling
     // methods too early on)
     str::Str<TCHAR> fileFilter(256);
-    AppendFileFilterForDoc(win.dm, fileFilter);
+    switch (win.dm->engineType) {
+    case Engine_XPS:    fileFilter.Append(_TR("XPS documents")); break;
+    case Engine_DjVu:   fileFilter.Append(_TR("DjVu documents")); break;
+    case Engine_ComicBook: fileFilter.Append(_TR("Comic books")); break;
+    case Engine_Image:  fileFilter.AppendFmt(_TR("Image files (*.%s)"), defExt + 1); break;
+    case Engine_PS:     fileFilter.Append(_TR("Postscript documents")); break;
+    case Engine_Chm:    fileFilter.Append(_TR("CHM documents")); break;
+    case Engine_Epub:   fileFilter.Append(_TR("EPUB ebooks")); break;
+    case Engine_Fb2:    fileFilter.Append(_T("FictionBooks")); break;
+    case Engine_Mobi:   fileFilter.Append(_TR("Mobi documents")); break;
+    case Engine_Chm2:   fileFilter.Append(_TR("CHM documents")); break;
+    default:            fileFilter.Append(_TR("PDF documents")); break;
+    }
     fileFilter.AppendFmt(_T("\1*%s\1"), defExt);
     if (hasCopyPerm) {
         fileFilter.Append(_TR("Text documents"));
@@ -2556,20 +2475,10 @@ static void OnMenuSaveAs(WindowInfo& win)
 
     TCHAR dstFileName[MAX_PATH];
     str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(srcFileName));
-    if (str::FindChar(dstFileName, ':')) {
-        // handle embed-marks (for embedded PDF documents):
-        // remove the container document's extension and include
-        // the embedding reference in the suggested filename
-        TCHAR *colon = (TCHAR *)str::FindChar(dstFileName, ':');
-        str::TransChars(colon, _T(":"), _T("_"));
-        TCHAR *ext;
-        for (ext = colon; ext > dstFileName && *ext != '.'; ext--);
-        if (ext == dstFileName)
-            ext = colon;
-        memmove(ext, colon, (str::Len(colon) + 1) * sizeof(TCHAR));
-    }
+    // TODO: fix saving embedded PDF documents
+    str::TransChars(dstFileName, _T(":"), _T("_"));
     // Remove the extension so that it can be re-added depending on the chosen filter
-    else if (str::EndsWithI(dstFileName, defExt))
+    if (str::EndsWithI(dstFileName, defExt))
         dstFileName[str::Len(dstFileName) - str::Len(defExt)] = '\0';
 
     OPENFILENAME ofn = { 0 };
@@ -2579,11 +2488,11 @@ static void OnMenuSaveAs(WindowInfo& win)
     ofn.nMaxFile = dimof(dstFileName);
     ofn.lpstrFilter = fileFilter.Get();
     ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
     ofn.lpstrDefExt = defExt + 1;
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
-    // note: explicitly not setting lpstrInitialDir so that the OS
-    // picks a reasonable default (in particular, we don't want this
-    // in plugin mode, which is likely the main reason for saving as...)
 
     bool ok = GetSaveFileName(&ofn);
     if (!ok)
@@ -2604,16 +2513,14 @@ static void OnMenuSaveAs(WindowInfo& win)
     // Extract all text when saving as a plain text file
     if (hasCopyPerm && str::EndsWithI(realDstFileName, _T(".txt"))) {
         str::Str<TCHAR> text(1024);
-        for (int pageNo = 1; pageNo <= win.dm->PageCount(); pageNo++) {
-            TCHAR *tmp = win.dm->engine->ExtractPageText(pageNo, _T("\r\n"), NULL, Target_Export);
-            text.AppendAndFree(tmp);
-        }
+        for (int pageNo = 1; pageNo <= win.dm->PageCount(); pageNo++)
+            text.AppendAndFree(win.dm->engine->ExtractPageText(pageNo, _T("\r\n"), NULL, Target_Export));
 
         ScopedMem<char> textUTF8(str::conv::ToUtf8(text.LendData()));
-        ScopedMem<char> textUTF8BOM(str::Join(UTF8_BOM, textUTF8));
+        ScopedMem<char> textUTF8BOM(str::Join("\xEF\xBB\xBF", textUTF8));
         ok = file::WriteAll(realDstFileName, textUTF8BOM, str::Len(textUTF8BOM));
         if (!ok)
-            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"), _TR("Warning"));
+            MessageBox(win.hwndFrame, _TR("Failed to save a file"), _TR("Warning"), MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0));
     }
     // Convert the Postscript file into a PDF one
     else if (canConvertToPDF && str::EndsWithI(realDstFileName, _T(".pdf"))) {
@@ -2621,7 +2528,7 @@ static void OnMenuSaveAs(WindowInfo& win)
         ScopedMem<unsigned char> data(static_cast<PsEngine *>(win.dm->engine)->GetPDFData(&dataLen));
         ok = data && file::WriteAll(realDstFileName, data, dataLen);
         if (!ok)
-            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"));
+            MessageBox(win.hwndFrame, _TR("Failed to save a file"), _TR("Warning"), MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0));
     }
     // Recreate inexistant files from memory...
     else if (!file::Exists(srcFileName)) {
@@ -2629,7 +2536,7 @@ static void OnMenuSaveAs(WindowInfo& win)
         ScopedMem<unsigned char> data(win.dm->engine->GetFileData(&dataLen));
         ok = data && file::WriteAll(realDstFileName, data, dataLen);
         if (!ok)
-            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"));
+            MessageBox(win.hwndFrame, _TR("Failed to save a file"), _TR("Warning"), MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0));
     }
     // ... else just copy the file
     else {
@@ -2648,7 +2555,7 @@ static void OnMenuSaveAs(WindowInfo& win)
             } else {
                 errorMsg = str::Dup(_TR("Failed to save a file"));
             }
-            MessageBoxWarning(win.hwndFrame, errorMsg);
+            MessageBox(win.hwndFrame, errorMsg, _TR("Warning"), MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0));
             free(errorMsg);
         }
     }
@@ -2692,84 +2599,16 @@ bool LinkSaver::SaveEmbedded(unsigned char *data, size_t len)
     return ok;
 }
 
-static void OnMenuRenameFile(WindowInfo &win)
-{
-    if (!HasPermission(Perm_DiskAccess)) return;
-    CrashIf(!win.dm);
-    if (!win.IsDocLoaded()) return;
-    if (gPluginMode) return;
-
-    const TCHAR *srcFileName = win.dm->FileName();
-    // this happens e.g. for embedded documents
-    if (!file::Exists(srcFileName))
-        return;
-
-    // Prepare the file filters (use \1 instead of \0 so that the
-    // double-zero terminated string isn't cut by the string handling
-    // methods too early on)
-    const TCHAR *defExt = win.dm->engine->GetDefaultFileExt();
-    str::Str<TCHAR> fileFilter(256);
-    AppendFileFilterForDoc(win.dm, fileFilter);
-    fileFilter.AppendFmt(_T("\1*%s\1"), defExt);
-    str::TransChars(fileFilter.Get(), _T("\1"), _T("\0"));
-
-    TCHAR dstFileName[MAX_PATH];
-    str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(srcFileName));
-    // Remove the extension so that it can be re-added depending on the chosen filter
-    if (str::EndsWithI(dstFileName, defExt))
-        dstFileName[str::Len(dstFileName) - str::Len(defExt)] = '\0';
-
-    ScopedMem<TCHAR> initDir(path::GetDir(srcFileName));
-
-    OPENFILENAME ofn = { 0 };
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = win.hwndFrame;
-    ofn.lpstrFile = dstFileName;
-    ofn.nMaxFile = dimof(dstFileName);
-    ofn.lpstrFilter = fileFilter.Get();
-    ofn.nFilterIndex = 1;
-    // note: the other two dialogs are named "Open" and "Save As"
-    ofn.lpstrTitle = _TR("Rename To");
-    ofn.lpstrInitialDir = initDir;
-    ofn.lpstrDefExt = defExt + 1;
-    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
-
-    bool ok = GetSaveFileName(&ofn);
-    if (!ok)
-        return;
-
-    UpdateCurrentFileDisplayStateForWinInfo(&win);
-    // note: srcFileName is deleted together with the DisplayModel
-    ScopedMem<TCHAR> srcFilePath(str::Dup(srcFileName));
-    CloseDocumentInWindow(&win);
-
-    DWORD flags = MOVEFILE_COPY_ALLOWED | MOVEFILE_REPLACE_EXISTING;
-    BOOL moveOk = MoveFileEx(srcFilePath.Get(), dstFileName, flags);
-    if (!moveOk) {
-        LogLastError();
-        LoadArgs args(srcFilePath, &win);
-        LoadDocument(args);
-        ShowNotification(&win, _TR("Failed to rename the file!"), false /* autoDismiss */, true /* highlight */);
-        return;
-    }
-
-    ScopedMem<TCHAR> newPath(path::Normalize(dstFileName));
-    RenameFileInHistory(srcFilePath, newPath);
-
-    LoadArgs args(dstFileName, &win);
-    LoadDocument(args);
-}
-
 static void OnMenuSaveBookmark(WindowInfo& win)
 {
     if (!HasPermission(Perm_DiskAccess) || gPluginMode) return;
-    CrashIf(!win.dm);
+    assert(win.dm);
     if (!win.IsDocLoaded()) return;
 
     const TCHAR *defExt = win.dm->engine->GetDefaultFileExt();
 
     TCHAR dstFileName[MAX_PATH];
-    // Remove the extension so that it can be replaced with .lnk
+    // Remove the extension so that it can be re-added depending on the chosen filter
     str::BufSet(dstFileName, dimof(dstFileName), path::GetBaseName(win.dm->FileName()));
     str::TransChars(dstFileName, _T(":"), _T("_"));
     if (str::EndsWithI(dstFileName, defExt))
@@ -2791,7 +2630,7 @@ static void OnMenuSaveBookmark(WindowInfo& win)
     ofn.lpstrDefExt = _T("lnk");
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
 
-    if (!GetSaveFileName(&ofn))
+    if (FALSE == GetSaveFileName(&ofn))
         return;
 
     ScopedMem<TCHAR> filename(str::Dup(dstFileName));
@@ -2853,8 +2692,8 @@ HWND GetSumatraWindowHwnd(const SumatraWindow& win)
     if (win.AsWindowInfo()) {
         return win.AsWindowInfo()->hwndFrame;
     } else {
-        CrashIf(!win.AsEbookWindow());
-        return win.AsEbookWindow()->hwndFrame;
+        CrashIf(!win.AsMobiWindow());
+        return win.AsMobiWindow()->hwndFrame;
     }
     return NULL;
 }
@@ -2878,11 +2717,9 @@ void OnMenuOpen(SumatraWindow& win)
         { _TR("Comic books"),           _T("*.cbz;*.cbr"),  true },
         { _TR("CHM documents"),         _T("*.chm"),        true },
         { _TR("Mobi documents"),        _T("*.mobi"),       true },
-        { _TR("EPUB ebooks"),           _T("*.epub"),       true },
 #ifdef ENABLE_EBOOK_ENGINES
-        { _T("FictionBooks"),           _T("*.fb2;*.fb2z;*.zfb2"), true },
-        { _T("PalmDOC"),                _T("*.pdb"),        true },
-        { _TR("Text documents"),        _T("*.txt;*.log;*.nfo;file_id.diz;read.me"), true },
+        { _TR("EPUB ebooks"),           _T("*.epub"),       true },
+        { _T("FictionBooks"),           _T("*.fb2"),        true },
 #endif
     };
     // Prepare the file filters (use \1 instead of \0 so that the
@@ -2916,6 +2753,9 @@ void OnMenuOpen(SumatraWindow& win)
 
     ofn.lpstrFilter = fileFilter.Get();
     ofn.nFilterIndex = 1;
+    ofn.lpstrFileTitle = NULL;
+    ofn.nMaxFileTitle = 0;
+    ofn.lpstrInitialDir = NULL;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY |
                 OFN_ALLOWMULTISELECT | OFN_EXPLORER;
 
@@ -2942,14 +2782,14 @@ void OnMenuOpen(SumatraWindow& win)
     TCHAR *fileName = ofn.lpstrFile + ofn.nFileOffset;
     if (*(fileName - 1)) {
         // special case: single filename without NULL separator
-        LoadDocument2(ofn.lpstrFile, win);
+        LoadDocument(ofn.lpstrFile, win);
         return;
     }
 
     while (*fileName) {
         ScopedMem<TCHAR> filePath(path::Join(ofn.lpstrFile, fileName));
         if (filePath)
-            LoadDocument2(filePath, win);
+            LoadDocument(filePath, win);
         fileName += str::Len(fileName) + 1;
     }
 }
@@ -2983,8 +2823,7 @@ static void BrowseFolder(WindowInfo& win, bool forward)
         index = (int)(index + files.Count() - 1) % files.Count();
 
     UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(&win));
-    LoadArgs args(files.At(index), &win, true, true);
-    LoadDocument(args);
+    LoadDocument(files.At(index), &win, true, true);
 }
 
 static void OnVScroll(WindowInfo& win, WPARAM wParam)
@@ -4086,7 +3925,7 @@ static void OnTimer(WindowInfo& win, HWND hwnd, WPARAM timerId)
         break;
 
     case DIR_STRESS_TIMER_ID:
-        win.stressTest->OnTimer();
+        win.stressTest->Callback();
         break;
     }
 }
@@ -4419,10 +4258,8 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
     if ((wmId >= IDM_FILE_HISTORY_FIRST) && (wmId <= IDM_FILE_HISTORY_LAST))
     {
         DisplayState *state = gFileHistory.Get(wmId - IDM_FILE_HISTORY_FIRST);
-        if (state && HasPermission(Perm_DiskAccess)) {
-            LoadArgs args(state->filePath, win);
-            LoadDocument(args);
-        }
+        if (state && HasPermission(Perm_DiskAccess))
+            LoadDocument(state->filePath, win);
         return 0;
     }
 
@@ -4445,10 +4282,6 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
             break;
         case IDM_SAVEAS:
             OnMenuSaveAs(*win);
-            break;
-
-        case IDM_RENAME_FILE:
-            OnMenuRenameFile(*win);
             break;
 
         case IDT_FILE_PRINT:
@@ -4644,10 +4477,6 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
             ViewWithXPSViewer(win);
             break;
 
-        case IDM_VIEW_WITH_HTML_HELP:
-            ViewWithHtmlHelp(win);
-            break;
-
         case IDM_SEND_BY_EMAIL:
             SendAsEmailAttachment(win);
             break;
@@ -4731,13 +4560,6 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
     return 0;
 }
 
-static LRESULT OnFrameGetMinMaxInfo(MINMAXINFO *info)
-{
-    info->ptMinTrackSize.x = MIN_WIN_DX;
-    info->ptMinTrackSize.y = MIN_WIN_DY;
-    return 0;
-}
-
 static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     WindowInfo *    win;
@@ -4761,9 +4583,6 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 FrameOnSize(win, dx, dy);
             }
             break;
-
-        case WM_GETMINMAXINFO:
-            return OnFrameGetMinMaxInfo((MINMAXINFO*)lParam);
 
         case WM_MOVE:
             if (win) {
@@ -4904,7 +4723,7 @@ static void DispatchUiMsg(UiMsg *msg)
     if (UiMsg::FinishedMobiLoading == msg->type) {
         HandleFinishedMobiLoadingMsg(&msg->finishedMobiLoading);
     } else if (UiMsg::MobiLayout == msg->type) {
-        EbookWindow *win = FindEbookWindowByController(msg->mobiLayout.controller);
+        MobiWindow *win = FindMobiWindowByController(msg->mobiLayout.controller);
         if (win)
             win->ebookController->HandleMobiLayoutMsg(&msg->mobiLayout);
     } else {
@@ -4927,51 +4746,41 @@ static void DrainUiMsgQueue()
     }
 }
 
-static HACCEL gAccelTable;
-
-// return true if should exit
-static bool ProcessAllMessages()
+int RunMessageLoop()
 {
     MSG msg = { 0 };
+
     WindowInfo *win = NULL;
+    HACCEL hAccelTable = LoadAccelerators(ghinst, MAKEINTRESOURCE(IDC_SUMATRAPDF));
 
-    while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-        if (msg.message == WM_QUIT)
-            return true;
-
-#ifndef THREAD_BASED_FILEWATCH
-        if (NULL == msg.hwnd && WM_TIMER == msg.message && timerID == msg.wParam) {
-            RefreshUpdatedFiles();
-            continue;
-        }
-#endif
-        // dispatch the accelerator to the correct window
-        win = FindWindowInfoByHwnd(msg.hwnd);
-        HWND accHwnd = win ? win->hwndFrame : msg.hwnd;
-        if (TranslateAccelerator(accHwnd, gAccelTable, &msg))
-            continue;
-
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-    return false;
-}
-
-static int RunMessageLoop()
-{
-    gAccelTable = LoadAccelerators(ghinst, MAKEINTRESOURCE(IDC_SUMATRAPDF));
     for (;;) {
+        DWORD res = WAIT_TIMEOUT;
         HANDLE handles[MAXIMUM_WAIT_OBJECTS];
         DWORD handleCount = 0;
         handles[handleCount++] = uimsg::GetQueueEvent();
         CrashIf(handleCount >= MAXIMUM_WAIT_OBJECTS);
-        DWORD res = MsgWaitForMultipleObjects(handleCount, handles, FALSE, INFINITE, QS_ALLINPUT);
-        if (res == WAIT_OBJECT_0) {
+        res = MsgWaitForMultipleObjects(handleCount, handles, FALSE, INFINITE, QS_ALLINPUT);
+        if (res == WAIT_OBJECT_0)
             DispatchUiMessages();
-        } else {
-            bool shouldExit = ProcessAllMessages();
-            if (shouldExit)
-                return 0;
+
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT)
+                return (int)msg.wParam;
+
+#ifndef THREAD_BASED_FILEWATCH
+            if (NULL == msg.hwnd && WM_TIMER == msg.message && timerID == msg.wParam) {
+                RefreshUpdatedFiles();
+                continue;
+            }
+#endif
+            // Dispatch the accelerator to the correct window
+            win = FindWindowInfoByHwnd(msg.hwnd);
+            HWND accHwnd = win ? win->hwndFrame : msg.hwnd;
+            if (TranslateAccelerator(accHwnd, hAccelTable, &msg))
+                continue;
+
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
         // process these messages here so that we don't have to add this
         // handling to every WndProc that might receive those messages
@@ -4980,7 +4789,7 @@ static int RunMessageLoop()
         gUIThreadMarshaller.Execute();
         DispatchUiMessages();
     }
-    return 0;
+    return (int)msg.wParam;
 }
 
 void GetProgramInfo(str::Str<char>& s)

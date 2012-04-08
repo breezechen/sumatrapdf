@@ -280,10 +280,8 @@ cleanup1:
         if (code < 0) goto cleanup2;
 	    }
 	    if (ID >= SBNUMSYMS) {
-		/* SumatraPDF: fix memory leak */
-		code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
+		return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
                     "symbol id out of range! (%d/%d)", ID, SBNUMSYMS);
-		goto cleanup2;
 	    }
 
 	    /* (3c.v) / 6.4.11 - look up the symbol bitmap IB */
@@ -858,7 +856,6 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     {
         code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
             "couldn't allocate text region image data");
-        jbig2_image_release(ctx, image);
         goto cleanup3;
     }
 
@@ -876,7 +873,6 @@ jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data
     {
         code = jbig2_error(ctx, JBIG2_SEVERITY_FATAL, segment->number,
             "couldn't allocate text region image data");
-        jbig2_image_release(ctx, image);
         goto cleanup4;
     }
     }

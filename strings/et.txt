@@ -88,11 +88,11 @@ K&asutusjuhend
 &Odd pages only
 Vaid &paaritud leheküljed
 
+&Open\tCtrl+O
+&Ava\tCtrl+O
+
 &Open Document
 &Ava dokument
-
-&Open...\tCtrl+O
-&Ava...\tCtrl+O
 
 &Options...
 &Sätted...
@@ -472,9 +472,6 @@ Ava &Adobe Readeris
 Open in &Foxit Reader
 Ava &Foxit Readeris
 
-Open in Microsoft HTML Help
-Ava Microsoft HTML Helpga
-
 Open in Microsoft XPS-Viewer
 Ava Microsoft XPS-Viewerga
 
@@ -681,11 +678,8 @@ dokumendi printimine
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

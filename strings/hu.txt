@@ -91,11 +91,11 @@ Köszönöm,&nem
 &Odd pages only
 Csak a páratlan oldalak
 
+&Open\tCtrl+O
+Megny&itás\tCtrl+O
+
 &Open Document
 &Fájl Megnyitása
-
-&Open...\tCtrl+O
-Megny&itás...\tCtrl+O
 
 &Options...
 &Beállítások
@@ -469,9 +469,6 @@ Megnyitás &Adobe Acrobat-ban
 Open in &Foxit Reader
 Megnyitás &Foxit Readerben
 
-Open in Microsoft HTML Help
-Megnyitás Microsoft HTML Helpben
-
 Open in Microsoft XPS-Viewer
 Megnyitás Microsoft XPS-Viewerben
 
@@ -679,12 +676,9 @@ Nyomtatás
 # Untranslated:
 #Copy &Image
 #Copyright:
-#Failed to rename the file!
 #File %s not found
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

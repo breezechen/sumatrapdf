@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef FileUtil_h
@@ -15,10 +15,8 @@ TCHAR *      Join(const TCHAR *path, const TCHAR *filename);
 TCHAR *      Normalize(const TCHAR *path);
 TCHAR *      ShortPath(const TCHAR *path);
 bool         IsSame(const TCHAR *path1, const TCHAR *path2);
-bool         HasVariableDriveLetter(const TCHAR *path);
+bool         IsOnRemovableDrive(const TCHAR *path);
 bool         Match(const TCHAR *path, const TCHAR *filter);
-
-TCHAR *      GetTempPath(const TCHAR *filePrefix=NULL);
 
 }
 

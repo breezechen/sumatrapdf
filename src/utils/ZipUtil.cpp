@@ -1,9 +1,8 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#include "BaseUtil.h"
 #include "ZipUtil.h"
-
+#include "StrUtil.h"
 #include "FileUtil.h"
 
 // mini(un)zip
@@ -13,7 +12,7 @@
 
 ZipFile::ZipFile(const TCHAR *path, Allocator *allocator) :
     filenames(0, allocator), fileinfo(0, allocator),
-    filepos(0, allocator), allocator(allocator), commentLen(0)
+    filepos(0, allocator), allocator(allocator)
 {
     zlib_filefunc64_def ffunc;
     fill_win32_filefunc64(&ffunc);
@@ -24,7 +23,7 @@ ZipFile::ZipFile(const TCHAR *path, Allocator *allocator) :
 
 ZipFile::ZipFile(IStream *stream, Allocator *allocator) :
     filenames(0, allocator), fileinfo(0, allocator),
-    filepos(0, allocator), allocator(allocator), commentLen(0)
+    filepos(0, allocator), allocator(allocator)
 {
     zlib_filefunc64_def ffunc;
     fill_win32s_filefunc64(&ffunc);
@@ -38,8 +37,8 @@ ZipFile::~ZipFile()
     if (!uf)
         return;
     unzClose(uf);
-    for (TCHAR **fn = filenames.IterStart(); fn; fn = filenames.IterNext()) {
-        Allocator::Free(allocator, *fn);
+    for (const TCHAR **fn = filenames.IterStart(); fn; fn = filenames.IterNext()) {
+        Allocator::Free(allocator, (TCHAR *)*fn);
     }
 }
 
@@ -67,7 +66,7 @@ void ZipFile::ExtractFilenames()
             TCHAR fileNameT[MAX_PATH];
             UINT cp = (finfo.flag & (1 << 11)) ? CP_UTF8 : CP_ZIP;
             str::conv::FromCodePageBuf(fileNameT, dimof(fileNameT), fileName, cp);
-            filenames.Append((TCHAR *)Allocator::Dup(allocator, fileNameT,
+            filenames.Append((const TCHAR *)Allocator::Dup(allocator, fileNameT,
                 (str::Len(fileNameT) + 1) * sizeof(TCHAR)));
             fileinfo.Append(finfo);
 
@@ -79,7 +78,6 @@ void ZipFile::ExtractFilenames()
         }
         err = unzGoToNextFile(uf);
     }
-    commentLen = ginfo.size_comment;
 }
 
 size_t ZipFile::GetFileIndex(const TCHAR *filename)
@@ -137,11 +135,11 @@ char *ZipFile::GetFileData(size_t fileindex, size_t *len)
         return NULL;
     }
 
-    char *result = (char *)Allocator::Alloc(allocator, len2 + sizeof(WCHAR));
+    char *result = (char *)Allocator::Alloc(allocator, len2 + 1);
     if (result) {
         unsigned int readBytes = unzReadCurrentFile(uf, result, (unsigned int)len2);
         // zero-terminate for convenience
-        result[len2] = result[len2 + 1] = '\0';
+        result[len2] = '\0';
         if (readBytes != len2) {
             Allocator::Free(allocator, result);
             result = NULL;
@@ -176,19 +174,6 @@ FILETIME ZipFile::GetFileTime(size_t fileindex)
         LocalFileTimeToFileTime(&ftLocal, &ft);
     }
     return ft;
-}
-
-char *ZipFile::GetComment(size_t *len)
-{
-    ScopedMem<char> comment(SAZA(char, commentLen + 1));
-    if (!comment || !uf)
-        return NULL;
-    int read = unzGetGlobalComment(uf, comment, commentLen);
-    if (read <= 0)
-        return NULL;
-    if (len)
-        *len = commentLen;
-    return comment.StealData();
 }
 
 bool ZipFile::UnzipFile(const TCHAR *filename, const TCHAR *dir, const TCHAR *unzippedName)

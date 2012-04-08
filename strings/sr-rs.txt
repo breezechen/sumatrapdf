@@ -90,11 +90,11 @@ Contributor: Милан Гашић
 &Odd pages only
 Само полеђине страница
 
+&Open\tCtrl+O
+Отвори\tCtrl+O
+
 &Open Document
 Отвори документ
-
-&Open...\tCtrl+O
-Отвори...\tCtrl+O
 
 &Options...
 Опције
@@ -486,9 +486,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 Отвори у програму Foxit Reader
 
-Open in Microsoft HTML Help
-Отвори у програму Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Отвори у програму Microsoft XPS-Viewer
 
@@ -695,9 +692,4 @@ copying text
 
 printing document
 штампање документа
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

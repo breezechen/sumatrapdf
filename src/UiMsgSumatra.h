@@ -15,7 +15,7 @@ public:
     Type type;
     union {
         FinishedMobiLoadingData finishedMobiLoading;
-        EbookFormattingData          mobiLayout;
+        MobiLayoutData          mobiLayout;
     };
 
     UiMsg(Type type) : type(type) {

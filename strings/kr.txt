@@ -91,11 +91,11 @@ Contributor: 4Li
 &Odd pages only
 홀수 페이지만(&O)
 
+&Open\tCtrl+O
+열기(&O)\tCtrl+O
+
 &Open Document
 문서 열기(&O)
-
-&Open...\tCtrl+O
-열기(&O)...\tCtrl+O
 
 &Options...
 옵션(&O)...
@@ -343,9 +343,6 @@ F&ullscreen\tCtrl+Shift+L
 Facing
 두 페이지씩
 
-Failed to rename the file!
-파일 이름 바꾸기 실패!
-
 Failed to save a file
 파일을 저장하지 못했습니다.
 
@@ -490,9 +487,6 @@ Adobe Reader에서 열기(&A)
 Open in &Foxit Reader
 Foxit Reader에서 열기(&F)
 
-Open in Microsoft HTML Help
-Microsoft HTML Help에서 열기
-
 Open in Microsoft XPS-Viewer
 Microsoft XPS-Viewer에서 열기
 
@@ -565,9 +559,6 @@ Printing page %d of %d...
 Printing problem.
 인쇄 중 문제 발생.
 
-Re&name...\tF2
-이름 바꾸기(&N)...\tF2
-
 Remember &opened files
 열었던 파일들 기억(&O)
 
@@ -576,9 +567,6 @@ Remove from favorites
 
 Remove page %s from favorites
 책갈피에서 %s 페이지 제거
-
-Rename To
-바꿀 이름
 
 Replace document &colors with Windows color scheme
 Windows 색 구성표처럼 문서 색 교체(&C)

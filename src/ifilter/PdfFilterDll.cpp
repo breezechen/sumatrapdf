@@ -1,8 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
 #include "WinUtil.h"
+#include "Scoped.h"
 
 #include "CPdfFilter.h"
 #ifdef BUILD_TEX_IFILTER

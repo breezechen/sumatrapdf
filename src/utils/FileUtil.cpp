@@ -1,8 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "BaseUtil.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
+#include "Scoped.h"
 
 namespace path {
 
@@ -152,7 +154,8 @@ bool IsSame(const TCHAR *path1, const TCHAR *path2)
     return str::EqI(npath1, npath2);
 }
 
-bool HasVariableDriveLetter(const TCHAR *path)
+// returns true if the drive letter for this path might be variable
+bool IsOnRemovableDrive(const TCHAR *path)
 {
     TCHAR root[] = _T("?:\\");
     root[0] = _totupper(path[0]);
@@ -199,22 +202,6 @@ bool Match(const TCHAR *path, const TCHAR *filter)
         filter = str::FindChar(filter, ';') + 1;
     }
     return MatchWildcardsRec(path, filter);
-}
-
-// returns the path to either the %TEMP% directory or a
-// non-existing file inside whose name starts with filePrefix
-TCHAR *GetTempPath(const TCHAR *filePrefix)
-{
-    TCHAR tempDir[MAX_PATH - 14];
-    DWORD res = ::GetTempPath(dimof(tempDir), tempDir);
-    if (!res || res >= dimof(tempDir))
-        return NULL;
-    if (!filePrefix)
-        return str::Dup(tempDir);
-    TCHAR path[MAX_PATH];
-    if (!GetTempFileName(tempDir, filePrefix, 0, path))
-        return NULL;
-    return str::Dup(path);
 }
 
 }
@@ -267,8 +254,8 @@ char *ReadAll(const TCHAR *filePath, size_t *fileSizeOut)
 
     /* allocate one byte more and 0-terminate just in case it's a text
        file we'll want to treat as C string. Doesn't hurt for binary
-       files (note: two byte terminator for UTF-16 files) */
-    char *data = SAZA(char, size + sizeof(WCHAR));
+       files */
+    char *data = SAZA(char, size + 1);
     if (!data)
         return NULL;
 

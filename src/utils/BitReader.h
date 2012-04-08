@@ -4,6 +4,8 @@
 #ifndef BitReader_h
 #define BitReader_h
 
+#include <stdint.h>
+
 class BitReader
 {
     uint8_t GetByte(size_t pos) {

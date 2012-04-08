@@ -92,11 +92,11 @@ Seiten in Druckbereich &einpassen
 &Odd pages only
 Nur &ungerade Seiten
 
+&Open\tCtrl+O
+Ö&ffnen…\tStrg+O
+
 &Open Document
 Ö&ffnen
-
-&Open...\tCtrl+O
-Ö&ffnen…\tStrg+O
 
 &Options...
 &Optionen…
@@ -344,9 +344,6 @@ F&ullscreen\tCtrl+Shift+L
 Facing
 Doppelseite
 
-Failed to rename the file!
-Die Datei konnte nicht umbenannt werden!
-
 Failed to save a file
 Die Datei konnte nicht neu gespeichert werden!
 
@@ -491,9 +488,6 @@ Mit &Adobe Reader öffnen
 Open in &Foxit Reader
 Mit F&oxit Reader öffnen
 
-Open in Microsoft HTML Help
-Mit Microsoft HTML Hilfe öffnen
-
 Open in Microsoft XPS-Viewer
 Mit Microsoft XPS-Viewer öffnen
 
@@ -566,9 +560,6 @@ Drucke Seite %d von %d…
 Printing problem.
 Druckerproblem
 
-Re&name...\tF2
-Umbe&nennen…\tF2
-
 Remember &opened files
 Liste der &zuletzt geöffneten Dokumente anlegen
 
@@ -577,9 +568,6 @@ Aus Favoriten entfernen
 
 Remove page %s from favorites
 Seite %s aus Favoriten entfernen
-
-Rename To
-Umbenennen zu
 
 Replace document &colors with Windows color scheme
 Dokumenten&farben durch Windows-Farbschema ersetzen

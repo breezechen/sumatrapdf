@@ -4,6 +4,9 @@
 #include "BaseUtil.h"
 #include "UiMsg.h"
 
+#include "Scoped.h"
+#include "Vec.h"
+
 namespace uimsg {
 
 static Vec<UiMsg*> *        gUiMsgQueue;

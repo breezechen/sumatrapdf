@@ -1,12 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "PsEngine.h"
-
-#include "FileUtil.h"
 #include "PdfEngine.h"
+#include "FileUtil.h"
 #include "WinUtil.h"
+#include "Scoped.h"
 
 #include <zlib.h>
 extern "C" gzFile ZEXPORT gzwopen(const wchar_t *path, const char *mode);
@@ -94,11 +93,21 @@ public:
     }
 };
 
+// caller must free() the result
+static TCHAR *GetTempFilePath(const TCHAR *prefix=_T("PsE"))
+{
+    TCHAR path[MAX_PATH], tempDir[MAX_PATH - 14];
+    DWORD res = GetTempPath(dimof(tempDir), tempDir);
+    if (!res || res >= dimof(tempDir) || !GetTempFileName(tempDir, prefix, 0, path))
+        return NULL;
+    return str::Dup(path);
+}
+
 static PdfEngine *ps2pdf(const TCHAR *fileName)
 {
     // TODO: read from gswin32c's stdout instead of using a TEMP file
     ScopedMem<TCHAR> shortPath(path::ShortPath(fileName));
-    ScopedMem<TCHAR> tmpFile(path::GetTempPath(_T("PsE")));
+    ScopedMem<TCHAR> tmpFile(GetTempFilePath());
     ScopedFile tmpFileScope(tmpFile);
     ScopedMem<TCHAR> gswin32c(GetGhostscriptPath());
     if (!shortPath || !tmpFile || !gswin32c)
@@ -147,7 +156,7 @@ inline bool isgzipped(const TCHAR *fileName)
 
 static PdfEngine *psgz2pdf(const TCHAR *fileName)
 {
-    ScopedMem<TCHAR> tmpFile(path::GetTempPath(_T("PsE")));
+    ScopedMem<TCHAR> tmpFile(GetTempFilePath());
     ScopedFile tmpFileScope(tmpFile);
     if (!tmpFile)
         return NULL;
@@ -186,7 +195,7 @@ class PsEngineImpl : public PsEngine {
 public:
     PsEngineImpl() : fileName(NULL), pdfEngine(NULL) { }
     virtual ~PsEngineImpl() {
-        free(fileName);
+        free((void *)fileName);
         delete pdfEngine;
     }
     virtual PsEngineImpl *Clone() {
@@ -238,7 +247,7 @@ public:
     virtual PageLayoutType PreferredLayout() {
         return pdfEngine ? pdfEngine->PreferredLayout() : Layout_Single;
     }
-    virtual TCHAR *GetProperty(const char *name) { return NULL; }
+    virtual TCHAR *GetProperty(char *name) { return NULL; }
 
     virtual bool IsPrintingAllowed() {
         return pdfEngine ? pdfEngine->IsPrintingAllowed() : true;
@@ -284,7 +293,7 @@ public:
     }
 
 protected:
-    TCHAR *fileName;
+    const TCHAR *fileName;
     PdfEngine *pdfEngine;
 
     bool Load(const TCHAR *fileName) {

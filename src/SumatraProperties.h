@@ -1,10 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef SumatraProperties_h
 #define SumatraProperties_h
 
-#include "SumatraWindow.h"
+#include "Vec.h"
 
 #define PROPERTIES_CLASS_NAME   _T("SUMATRA_PDF_PROPERTIES")
 

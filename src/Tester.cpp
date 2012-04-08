@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 /* A driver for various tests. The idea is that instead of having a separate
@@ -6,20 +6,23 @@
    driver which dispatches desired test based on cmd-line arguments.
    Currently it only does one test: mobi file parsing. */
 
-#include "BaseUtil.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "DirIter.h"
+#include "DebugLog.h"
 #include "FileUtil.h"
-using namespace Gdiplus;
-#include "GdiPlusUtil.h"
-#include "HtmlFormatter.h"
 #include "HtmlPrettyPrint.h"
 #include "MobiDoc.h"
 #include "Mui.h"
 #include "NoFreeAllocator.h"
+#include "PageLayout.h"
+#include "Scoped.h"
 #include "Timer.h"
 #include "WinUtil.h"
 
-#include "DebugLog.h"
+using namespace Gdiplus;
+#include "GdiPlusUtil.h"
 
 // if true, we'll save html content of a mobi ebook as well
 // as pretty-printed html to MOBI_SAVE_DIR. The name will be
@@ -73,6 +76,8 @@ static void MobiSaveImage(const TCHAR *filePathBase, size_t imgNo, ImageData *im
 
 static void MobiSaveImages(const TCHAR *filePathBase, MobiDoc *mb)
 {
+    if (!gSaveImages)
+        return;
     for (size_t i = 0; i < mb->imagesCount; i++) {
         MobiSaveImage(filePathBase, i, mb->GetImage(i+1));
     }
@@ -83,17 +88,17 @@ static void MobiLayout(MobiDoc *mobiDoc)
 {
     PoolAllocator textAllocator;
 
-    HtmlFormatterArgs args;
-    args.pageDx = 640;
-    args.pageDy = 480;
-    args.fontName = L"Tahoma";
-    args.fontSize = 12;
-    args.htmlStr = mobiDoc->GetBookHtmlData(args.htmlStrLen);
-    args.textAllocator = &textAllocator;
+    LayoutInfo li;
+    li.pageDx = 640;
+    li.pageDy = 480;
+    li.fontName = L"Tahoma";
+    li.fontSize = 12;
+    li.htmlStr = mobiDoc->GetBookHtmlData(li.htmlStrLen);
+    li.textAllocator = &textAllocator;
 
-    MobiFormatter mf(&args, mobiDoc);
-    Vec<HtmlPage*> *pages = mf.FormatAllPages();
-    DeleteVecMembers<HtmlPage*>(*pages);
+    MobiFormatter mf(&li, mobiDoc);
+    Vec<PageData*> *pages = mf.FormatAllPages();
+    DeleteVecMembers<PageData*>(*pages);
     delete pages;
 }
 
@@ -112,23 +117,24 @@ static void MobiTestFile(const TCHAR *filePath)
         _tprintf(_T("Spent %.2f ms laying out %s\n"), t.GetTimeInMs(), filePath);
     }
 
-    if (gSaveHtml || gSaveImages) {
-        // Given the name of the name of source mobi file "${srcdir}/${file}.mobi"
-        // construct a base name for extracted html/image files in the form
-        // "${MOBI_SAVE_DIR}/${file}" i.e. change dir to MOBI_SAVE_DIR and
-        // remove the file extension
-        TCHAR *dir = MOBI_SAVE_DIR;
-        dir::CreateAll(dir);
-        ScopedMem<TCHAR> fileName(str::Dup(path::GetBaseName(filePath)));
-        ScopedMem<TCHAR> filePathBase(path::Join(dir, fileName));
-        TCHAR *ext = (TCHAR*)str::FindCharLast(filePathBase.Get(), '.');
-        *ext = 0;
-
-        if (gSaveHtml)
-            MobiSaveHtml(filePathBase, mobiDoc);
-        if (gSaveImages)
-            MobiSaveImages(filePathBase, mobiDoc);
+    if (!gSaveHtml) {
+        delete mobiDoc;
+        return;
     }
+
+    // Given the name of the name of source mobi file "${srcdir}/${file}.mobi"
+    // construct a base name for extracted html/image files in the form
+    // "${MOBI_SAVE_DIR}/${file}" i.e. change dir to MOBI_SAVE_DIR and
+    // remove the file extension
+    TCHAR *dir = MOBI_SAVE_DIR;
+    dir::CreateAll(dir);
+    ScopedMem<TCHAR> fileName(str::Dup(path::GetBaseName(filePath)));
+    ScopedMem<TCHAR> filePathBase(path::Join(dir, fileName));
+    TCHAR *ext = (TCHAR*)str::FindCharLast(filePathBase.Get(), '.');
+    *ext = 0;
+
+    MobiSaveHtml(filePathBase, mobiDoc);
+    MobiSaveImages(filePathBase, mobiDoc);
 
     delete mobiDoc;
 }

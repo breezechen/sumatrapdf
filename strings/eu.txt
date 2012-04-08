@@ -89,11 +89,11 @@ A&zken Orrialdea\tAmaiera
 &Odd pages only
 &Orrialde bikoitiak bakarrik
 
+&Open\tCtrl+O
+&Ireki\tKtrl+O
+
 &Open Document
 &Ireki Agiria
-
-&Open...\tCtrl+O
-&Ireki...\tKtrl+O
 
 &Options...
 A&ukerak...
@@ -485,9 +485,6 @@ Ireki &Adobe Readerren
 Open in &Foxit Reader
 Ireki &Foxit Readerren
 
-Open in Microsoft HTML Help
-Ireki Microsoft HTML Laguntzan
-
 Open in Microsoft XPS-Viewer
 Ireki Microsoft XPS-Ikusgailuan
 
@@ -694,9 +691,4 @@ idazkia kopiatzen
 
 printing document
 agiria irarkitzen
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

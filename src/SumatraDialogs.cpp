@@ -1,15 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "SumatraDialogs.h"
-
-#include "AppTools.h"
-#include "DialogSizer.h"
-#include "Resource.h"
 #include "SumatraPDF.h"
-#include "Translations.h"
+#include "SumatraDialogs.h"
+#include "AppTools.h"
+#include "Resource.h"
+
 #include "WinUtil.h"
+#include "DialogSizer.h"
+#include "Translations.h"
 
 // cf. http://msdn.microsoft.com/en-us/library/ms645398(v=VS.85).aspx
 struct DLGTEMPLATEEX {
@@ -121,7 +120,7 @@ TCHAR *Dialog_GetPassword(HWND hwndParent, const TCHAR *fileName, bool *remember
     INT_PTR res = CreateDialogBox(IDD_DIALOG_GET_PASSWORD, hwndParent,
                                   Dialog_GetPassword_Proc, (LPARAM)&data);
     if (IDOK != res) {
-        free(data.pwdOut);
+        free((void*)data.pwdOut);
         return NULL;
     }
     return data.pwdOut;
@@ -462,7 +461,7 @@ static INT_PTR CALLBACK Dialog_NewVersion_Proc(HWND hDlg, UINT msg, WPARAM wPara
 
         txt = str::Format(_TR("You have version %s"), data->currVersion);
         SetDlgItemText(hDlg, IDC_YOU_HAVE, txt);
-        free(txt);
+        free((void*)txt);
 
         txt = str::Format(_TR("New version %s is available. Download new version?"), data->newVersion);
         SetDlgItemText(hDlg, IDC_NEW_AVAILABLE, txt);

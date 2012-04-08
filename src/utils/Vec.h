@@ -1,7 +1,12 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-// note: include BaseUtil.h instead of including directly
+#ifndef Vec_h
+#define Vec_h
+
+#include "BaseUtil.h"
+#include "StrUtil.h"
+#include "Allocator.h"
 
 /* Simple but also optimized for small sizes vector/array class that can
 store pointer types or POD types
@@ -20,37 +25,11 @@ protected:
 
     size_t      len;
     size_t      cap;
-    size_t      capacityHint;
+    size_t      initialCap;
     T *         els;
     T           buf[INTERNAL_BUF_SIZE];
     Allocator * allocator;
-
-    // state of the IterStart()/IterNext() iterator
     T *         iterCurr;
-
-    void EnsureCap(size_t needed) {
-        if (cap >= needed)
-            return;
-
-        size_t newCap = cap * 2;
-        if (needed > newCap)
-            newCap = needed;
-        if (newCap < capacityHint)
-            newCap = capacityHint;
-
-        size_t newElCount = newCap + PADDING;
-        CrashAlwaysIf(newElCount >= SIZE_MAX / sizeof(T));
-
-        size_t allocSize = newElCount * sizeof(T);
-        size_t newPadding = allocSize - len * sizeof(T);
-        if (buf == els)
-            els = (T *)Allocator::Dup(allocator, buf, len * sizeof(T), newPadding);
-        else
-            els = (T *)Allocator::Realloc(allocator, els, allocSize);
-        CrashAlwaysIf(!els);
-        memset(els + len, 0, newPadding);
-        cap = newCap;
-    }
 
     T* MakeSpaceAt(size_t idx, size_t count) {
         EnsureCap(len + count);
@@ -60,7 +39,7 @@ protected:
             T* dst = els + idx + count;
             memmove(dst, src, (len - idx) * sizeof(T));
         }
-        len += count;
+        IncreaseLen(count);
         return res;
     }
 
@@ -71,8 +50,8 @@ protected:
 
 public:
     // allocator is not owned by Vec and must outlive it
-    Vec(size_t capHint=0, Allocator *allocator=NULL)
-        : capacityHint(capHint), allocator(allocator)
+    Vec(size_t initCap=0, Allocator *allocator=NULL)
+        : initialCap(initCap), allocator(allocator)
     {
         els = buf;
         Reset();
@@ -84,7 +63,7 @@ public:
 
     // ensure that a Vec never shares its els buffer with another after a clone/copy
     Vec(const Vec& orig) {
-        capacityHint = 0;
+        initialCap = 0;
         els = buf;
         // note: we don't inherit allocator as it's not needed for
         // our use cases
@@ -113,15 +92,52 @@ public:
         memset(buf, 0, sizeof(buf));
     }
 
+    void EnsureCap(size_t needed) {
+        if (cap >= needed)
+            return;
+
+        size_t newCap = cap * 2;
+        if (needed > newCap)
+            newCap = needed;
+        if (initialCap > newCap)
+            newCap = initialCap;
+
+        size_t newElCount = newCap + PADDING;
+        CrashAlwaysIf(newElCount >= SIZE_MAX / sizeof(T));
+
+        size_t allocSize = newElCount * sizeof(T);
+        size_t newPadding = allocSize - len * sizeof(T);
+        if (buf == els)
+            els = (T *)Allocator::Dup(allocator, buf, len * sizeof(T), newPadding);
+        else
+            els = (T *)Allocator::Realloc(allocator, els, allocSize);
+        CrashAlwaysIf(!els);
+        memset(els + len, 0, newPadding);
+        cap = newCap;
+    }
+
+    // ensures empty space at the end of the list where items can
+    // be appended through ReadFile or memcpy (don't forget to call
+    // IncreaseLen once you know how many items have been added)
+    // and returns a pointer to the first empty spot
+    // Note: use AppendBlanks if you know the number of items in advance
+    T *EnsureEndPadding(size_t count) {
+        EnsureCap(len + count);
+        return &els[len];
+    }
+
+    void IncreaseLen(size_t count) {
+        len += count;
+    }
+
     // use &At() if you need a pointer to the element (e.g. if T is a struct)
     T& At(size_t idx) const {
         CrashIf(idx >= len);
         return els[idx];
     }
 
-    T *AtPtr(size_t idx) const {
+    T* AtPtr(size_t idx) const {
         CrashIf(idx >= len);
-        CrashIf(&els[idx] != &At(idx));
         return &els[idx];
     }
 
@@ -144,11 +160,12 @@ public:
     void Append(const T* src, size_t count) {
         if (0 == count)
             return;
-        T* dst = MakeSpaceAt(len, count);
+        T* dst = AppendBlanks(count);
         memcpy(dst, src, count * sizeof(T));
     }
 
-    // appends count blank (i.e. zeroed-out) elements at the end
+    // TODO: bad name, it doesn't append anything; AllocateAtEnd()?
+    // like EnsureEndPadding() but also increases the length
     T* AppendBlanks(size_t count) {
         return MakeSpaceAt(len, count);
     }
@@ -183,11 +200,13 @@ public:
         Append(el);
     }
 
-    T Pop() {
+    // TODO: this doesn't preserve 0-padding at the end. Should zero out the memory
+    // for the last element
+    T& Pop() {
         CrashIf(0 == len);
-        T el = At(len - 1);
-        RemoveAt(len - 1);
-        return el;
+        T *el = AtPtr(len - 1);
+        len--;
+        return *el;
     }
 
     T& Last() const {
@@ -254,13 +273,6 @@ public:
         ++iterCurr;
         return res;
     }
-
-    // return the index of the item returned by last IterStart()/IterNext()
-    size_t IterIdx() {
-        size_t idx = iterCurr - els;
-        CrashIf(0 == idx);
-        return idx - 1;
-    }
 };
 
 // only suitable for T that are pointers that were malloc()ed
@@ -288,11 +300,11 @@ template <typename T>
 
 class Str : public Vec<T> {
 public:
-    Str(size_t capHint=0, Allocator *allocator=NULL) : Vec(capHint, allocator) { }
+    Str(size_t initCap=0, Allocator *allocator=NULL) : Vec(initCap, allocator) { }
 
     void Append(T c)
     {
-        InsertAt(len, c);
+        AppendBlanks(1)[0] = c;
     }
 
     void Append(const T* src, size_t size=-1)
@@ -381,15 +393,6 @@ public:
         return -1;
     }
 
-    int FindI(const TCHAR *string, size_t startAt=0) const {
-        for (size_t i = startAt; i < len; i++) {
-            TCHAR *item = At(i);
-            if (str::EqI(string, item))
-                return (int)i;
-        }
-        return -1;
-    }
-
     /* splits a string into several substrings, separated by the separator
        (optionally collapsing several consecutive separators into one);
        e.g. splitting "a,b,,c," by "," results in the list "a", "b", "", "c", ""
@@ -422,3 +425,4 @@ private:
     }
 };
 
+#endif

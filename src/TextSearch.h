@@ -1,10 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef TextSearch_h
 #define TextSearch_h
 
 #include <windows.h>
+#include "BaseEngine.h"
 #include "TextSelection.h"
 
 enum TextSearchDirection {
@@ -15,14 +16,17 @@ enum TextSearchDirection {
 class ProgressUpdateUI
 {
 public:
-    virtual void UpdateProgress(int current, int total) = 0;
-    virtual bool WasCanceled() = 0;
+    // TODO: it seems wrong that it is used to both show the progress
+    // visually as well as check if the operation has been cancelled by the user
+    // It's certainly not reflected in the name and it's questionable those
+    // belong together
+    virtual bool UpdateProgress(int current, int total) = 0;
 };
 
 class TextSearch : public TextSelection
 {
 public:
-    TextSearch(BaseEngine *engine, PageTextCache *textCache);
+    TextSearch(BaseEngine *engine);
     ~TextSearch();
 
     void SetSensitive(bool sensitive);
@@ -48,7 +52,7 @@ protected:
     void SetText(TCHAR *text);
     bool FindTextInPage(int pageNo = 0);
     bool FindStartingAtPage(int pageNo, ProgressUpdateUI *tracker);
-    int MatchLen(const TCHAR *start);
+    int MatchLen(TCHAR *start);
 
     void Clear()
     {
@@ -60,7 +64,7 @@ protected:
     void Reset();
 
 private:
-    const TCHAR *pageText;
+    TCHAR *pageText;
     int findIndex;
 
     TCHAR *lastText;

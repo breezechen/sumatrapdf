@@ -89,11 +89,11 @@ Pagina următoare\t->
 &Odd pages only
 Doar paginile impare
 
+&Open\tCtrl+O
+&Deschidere\tCtrl+O
+
 &Open Document
 Deschide d&ocument
-
-&Open...\tCtrl+O
-&Deschidere...\tCtrl+O
 
 &Options...
 &Opțiuni...
@@ -467,9 +467,6 @@ Deschide în &Adobe Reader
 Open in &Foxit Reader
 Deschide în &Foxit Reader
 
-Open in Microsoft HTML Help
-Deschide în Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Deschide în Microsoft XPS-Viewer
 
@@ -677,12 +674,9 @@ se imprimă documentul
 # Untranslated:
 #Copy &Image
 #Copyright:
-#Failed to rename the file!
 #File %s not found
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

@@ -93,11 +93,11 @@ Contributor: داود فخیم
 &Odd pages only
 فقط صفحات فرد
 
+&Open\tCtrl+O
+&باز کردن\tCtrl+O
+
 &Open Document
 باز کردن سند
-
-&Open...\tCtrl+O
-&باز کردن...\tCtrl+O
 
 &Options...
 &گزینه ها
@@ -489,9 +489,6 @@ Adobe Reader باز کردن در
 Open in &Foxit Reader
 Foxit Reader باز کردن در
 
-Open in Microsoft HTML Help
-Microsoft HTML Help باز کردن در
-
 Open in Microsoft XPS-Viewer
 Microsoft XPS-Viewer باز کردن در
 
@@ -698,9 +695,4 @@ copying text
 
 printing document
 در حل چاپ سند
-
-# Untranslated:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 

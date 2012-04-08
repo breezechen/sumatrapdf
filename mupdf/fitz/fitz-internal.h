@@ -66,6 +66,22 @@ void fz_synchronize_end();
  * Basic runtime and utility functions
  */
 
+/*
+	fz_malloc_struct: Allocate storage for a structure (with scavenging),
+	clear it, and (in Memento builds) tag the pointer as belonging to a
+	struct of this type.
+
+	CTX: The context.
+
+	STRUCT: The structure type.
+
+	Returns a pointer to allocated (and cleared) structure. Throws
+	exception on failure to allocate.
+*/
+/* alloc and zero a struct, and tag it for memento */
+#define fz_malloc_struct(CTX, STRUCT) \
+	Memento_label(fz_calloc(CTX,1,sizeof(STRUCT)), #STRUCT)
+
 /* Range checking atof */
 float fz_atof(const char *s);
 
@@ -541,11 +557,7 @@ fz_stream *fz_open_faxd(fz_stream *chain,
 fz_stream *fz_open_flated(fz_stream *chain);
 fz_stream *fz_open_lzwd(fz_stream *chain, int early_change);
 fz_stream *fz_open_predict(fz_stream *chain, int predictor, int columns, int colors, int bpc);
-/* SumatraPDF: reuse JBIG2Globals */
-typedef struct fz_jbig2_globals_s fz_jbig2_globals;
-fz_jbig2_globals *fz_load_jbig2_globals(fz_context *ctx, unsigned char *data, int size);
-void fz_free_jbig2_globals_imp(fz_context *ctx, fz_storable *globals);
-fz_stream *fz_open_jbig2d(fz_stream *chain, fz_jbig2_globals *globals);
+fz_stream *fz_open_jbig2d(fz_stream *chain, fz_buffer *global);
 
 /*
  * Resources and other graphics related objects.

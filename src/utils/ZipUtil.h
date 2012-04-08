@@ -1,18 +1,19 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef ZipUtil_h
 #define ZipUtil_h
 
+#include "BaseUtil.h"
+#include "Vec.h"
 #include <unzip.h>
 
 class ZipFile {
     unzFile uf;
     Allocator *allocator;
-    Vec<TCHAR *> filenames;
+    Vec<const TCHAR *> filenames;
     Vec<unz_file_info64> fileinfo;
     Vec<unz64_file_pos> filepos;
-    uLong commentLen;
 
 public:
     ZipFile(const TCHAR *path, Allocator *allocator=NULL);
@@ -31,8 +32,6 @@ public:
 
     FILETIME GetFileTime(const TCHAR *filename);
     FILETIME GetFileTime(size_t fileindex);
-
-    char *GetComment(size_t *len=NULL);
 
     bool UnzipFile(const TCHAR *filename, const TCHAR *dir, const TCHAR *unzippedName=NULL);
 

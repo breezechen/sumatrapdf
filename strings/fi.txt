@@ -90,11 +90,11 @@ Sama kirjainkoko
 &Odd pages only
 Vain &parittomat sivut
 
+&Open\tCtrl+O
+&Avaa\tCtrl+O
+
 &Open Document
 &Avaa asiakirja
-
-&Open...\tCtrl+O
-&Avaa...\tCtrl+O
 
 &Options...
 &Asetukset...
@@ -483,9 +483,6 @@ Avaa &Adobe Readerissa
 Open in &Foxit Reader
 Avaa &Foxit Readerissa
 
-Open in Microsoft HTML Help
-Avaa Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Avaa Microsoft XPS-Viewer
 
@@ -692,8 +689,5 @@ tulostetaan asiakirjaa
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

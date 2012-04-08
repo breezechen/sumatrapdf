@@ -90,11 +90,11 @@ Pàgina &següent\t->
 &Odd pages only
 Només les pàgines senars
 
+&Open\tCtrl+O
+&Obre\tCtrl+O
+
 &Open Document
 &Obre el document
-
-&Open...\tCtrl+O
-&Obre...\tCtrl+O
 
 &Options...
 &Opcions...
@@ -471,9 +471,6 @@ Obre amb l'&Adobe Reader
 Open in &Foxit Reader
 Obre amb el &Foxit Reader
 
-Open in Microsoft HTML Help
-Obre amb el Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Obre amb el Microsoft XPS-Viewer
 
@@ -681,11 +678,8 @@ s'està imprimint el document
 # Untranslated:
 #Copy &Image
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

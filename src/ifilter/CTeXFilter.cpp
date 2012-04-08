@@ -1,7 +1,8 @@
-﻿/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+﻿/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #include "BaseUtil.h"
+#include "StrUtil.h"
 #include "WinUtil.h"
 #include "CTeXFilter.h"
 

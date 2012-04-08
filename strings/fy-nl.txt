@@ -67,8 +67,8 @@ Folgjende side\t->
 &No, thanks
 &Nee, tankewol
 
-&Open...\tCtrl+O
-&Iepenje...\tCtrl+O
+&Open\tCtrl+O
+&Iepenje\tCtrl+O
 
 &Options...
 &Opsjes...
@@ -319,9 +319,6 @@ Iepenje mei &Adobe Reader
 Open in &Foxit Reader
 Iepenje mei &Foxit Reader
 
-Open in Microsoft HTML Help
-Iepenje mei Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Iepenje mei Microsoft XPS-Viewer
 
@@ -498,7 +495,6 @@ Zoomfaktor
 #Enter the command-line to invoke when you double-click on the PDF document:
 #Error loading %s
 #F&avorites
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fit &Content\tCtrl+3
@@ -524,10 +520,8 @@ Zoomfaktor
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Select &All

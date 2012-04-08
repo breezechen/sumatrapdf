@@ -1,23 +1,18 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef BaseEngine_h
 #define BaseEngine_h
+
+#include "BaseUtil.h"
+#include "GeomUtil.h"
+#include "Vec.h"
 
 /* certain OCGs will only be rendered for some of these (e.g. watermarks) */
 enum RenderTarget { Target_View, Target_Print, Target_Export };
 
 enum PageLayoutType { Layout_Single = 0, Layout_Facing = 1, Layout_Book = 2,
                       Layout_R2L = 16, Layout_NonContinuous = 32 };
-
-enum PageElementType { Element_Link, Element_Comment, Element_Image };
-
-enum PageDestType { Dest_None,
-    Dest_ScrollTo, Dest_LaunchURL, Dest_LaunchEmbedded, Dest_LaunchFile,
-    Dest_NextPage, Dest_PrevPage, Dest_FirstPage, Dest_LastPage,
-    Dest_FindDialog, Dest_FullScreen, Dest_GoBack, Dest_GoForward,
-    Dest_GoToPageDialog, Dest_PrintDialog, Dest_SaveAsDialog, Dest_ZoomToDialog,
-};
 
 class RenderedBitmap {
 protected:
@@ -63,8 +58,9 @@ public:
 class PageDestination {
 public:
     virtual ~PageDestination() { }
-    // type of the destination (most common are Dest_ScrollTo and Dest_LaunchURL)
-    virtual PageDestType GetDestType() const = 0;
+    // type of the destination (see LinkHandler::GotoLink in WindowInfo.cpp for
+    // the supported values; the most common values are "ScrollTo" and "LaunchURL")
+    virtual const char *GetDestType() const = 0;
     // page the destination points to (0 for external destinations such as URLs)
     virtual int GetDestPageNo() const = 0;
     // rectangle of the destination on the above returned page
@@ -85,6 +81,12 @@ public:
 
 // use in PageDestination::GetDestRect for values that don't matter
 #define DEST_USE_DEFAULT    -999.9
+
+enum PageElementType {
+    Element_Link,
+    Element_Comment,
+    Element_Image,
+};
 
 // hoverable (and maybe interactable) element on a single page
 class PageElement {
@@ -206,7 +208,7 @@ public:
     virtual bool IsImageCollection() { return false; }
 
     // access to various document properties (such as Author, Title, etc.)
-    virtual TCHAR *GetProperty(const char *name) { return NULL; }
+    virtual TCHAR *GetProperty(char *name) { return NULL; }
 
     // TODO: needs a more general interface
     // whether it is allowed to print the current document

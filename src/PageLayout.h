@@ -1,12 +1,14 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
-#ifndef HtmlFormatter_h
-#define HtmlFormatter_h
+#ifndef PageLayout_h
+#define PageLayout_h
 
-#include "Doc.h"
-#include "EbookBase.h"
+#include "BaseUtil.h"
 #include "HtmlPullParser.h"
+#include "MobiDoc.h"
+#include "Scoped.h"
+#include "Vec.h"
 
 using namespace Gdiplus;
 
@@ -60,32 +62,20 @@ struct DrawInstr {
     static DrawInstr Anchor(const char *s, size_t len, RectF bbox);
 };
 
-struct DrawStyle {
-    Font *font;
-    AlignAttr align;
-};
-
-class HtmlPage {
-public:
-    HtmlPage() : reparseIdx(0), listDepth(0), preFormatted(false) { }
-
-    Vec<DrawInstr>  instructions;
+struct PageData {
+    PageData() : reparseIdx(NULL)
+    {}
     // if we start parsing html again from reparseIdx, we should
     // get the same instructions. reparseIdx is an offset within
     // html data
     int             reparseIdx;
-    // a copy of the current style stack, so that styling
-    // doesn't change on a relayout from reparseIdx
-    Vec<DrawStyle>  styleStack;
-    // further information that is required for reliable relayouting
-    int listDepth;
-    bool preFormatted;
+    Vec<DrawInstr>  instructions;
 };
 
 // just to pack args to HtmlFormatter
-class HtmlFormatterArgs {
+class LayoutInfo {
 public:
-    HtmlFormatterArgs() :
+    LayoutInfo() :
       pageDx(0), pageDy(0), fontName(NULL), fontSize(0),
       textAllocator(NULL), htmlStr(0), htmlStrLen(0),
       reparseIdx(0)
@@ -103,11 +93,10 @@ public:
        used to allocate this text. */
     Allocator *     textAllocator;
 
-    Doc             doc;
     const char *    htmlStr;
     size_t          htmlStrLen;
 
-    // we start parsing from htmlStr + reparseIdx
+    // we stat parsing from htmlStr + reparseIdx
     int             reparseIdx;
 };
 
@@ -121,7 +110,6 @@ protected:
     bool HandleTagA(HtmlToken *t, const char *linkAttr="href");
     void HandleTagHx(HtmlToken *t);
     void HandleTagList(HtmlToken *t);
-    void HandleTagPre(HtmlToken *t);
     void HandleHtmlTag(HtmlToken *t);
     void HandleText(HtmlToken *t);
 
@@ -132,7 +120,7 @@ protected:
     void  JustifyLineBoth();
     void  JustifyCurrLine(AlignAttr align);
     bool  FlushCurrLine(bool isParagraphBreak);
-    void  UpdateLinkBboxes(HtmlPage *page);
+    void  UpdateLinkBboxes(PageData *page);
 
     void  EmitImage(ImageData *img);
     void  EmitHr();
@@ -140,24 +128,19 @@ protected:
     void  EmitElasticSpace();
     void  EmitParagraph(float indent);
     void  EmitEmptyLine(float lineDy);
-    void  EmitNewPage();
     void  ForceNewPage();
     bool  EnsureDx(float dx);
 
-    DrawStyle *CurrStyle() { return &styleStack.Last(); }
-    Font *CurrFont() { return CurrStyle()->font; }
-    void  SetFont(const WCHAR *fontName, FontStyle fs, float fontSize=-1);
-    void  SetFont(Font *origFont, FontStyle fs, float fontSize=-1);
+    void  SetCurrentFont(FontStyle fs, float fontSize);
     void  ChangeFontStyle(FontStyle fs, bool isStart);
-    void  SetAlignment(AlignAttr align);
-    void  RevertStyleChange();
+    void  ChangeFontSize(float fontSize);
 
     void  AppendInstr(DrawInstr di);
     bool  IsCurrLineEmpty();
     bool  IgnoreText();
 
     // constant during layout process
-    HtmlFormatterArgs * args;
+    LayoutInfo *        layoutInfo;
     float               pageDx;
     float               pageDy;
     float               lineSpacing;
@@ -167,7 +150,12 @@ protected:
     float               defaultFontSize;
     Allocator *         textAllocator;
 
-    Vec<DrawStyle>      styleStack;
+    // temporary state during layout process
+    FontStyle           currFontStyle;
+    float               currFontSize;
+    Font *              currFont;
+
+    AlignAttr           currJustification;
     // current position in a page
     float               currX, currY;
     // remembered when we start a new line, used when we actually
@@ -175,14 +163,12 @@ protected:
     float               currLineTopPadding;
     // number of nested lists for indenting whole paragraphs
     int                 listDepth;
-    // set if newlines are not to be ignored
-    bool                preFormatted;
 
     // isntructions for the current line
     Vec<DrawInstr>      currLineInstr;
     // reparse point of the first instructions in a current line
     int                 currLineReparseIdx;
-    HtmlPage *          currPage;
+    PageData *          currPage;
 
     // for tracking whether we're currently inside <a> tag
     size_t              currLinkIdx;
@@ -193,59 +179,39 @@ protected:
     HtmlPullParser *    htmlParser;
 
     // list of pages that we've created but haven't yet sent to client
-    Vec<HtmlPage*>      pagesToSend;
-
-    bool                finishedParsing;
-    // number of pages generated so far, approximate. Only used
-    // for detection of cover image duplicates in mobi formatting
-    int                 pageCount;
+    Vec<PageData*>      pagesToSend;
 
     WCHAR               buf[512];
 
 public:
-    HtmlFormatter(HtmlFormatterArgs *args);
-    virtual ~HtmlFormatter();
-
-    virtual HtmlPage *Next() { CrashIf(true); return NULL; }
+    HtmlFormatter(LayoutInfo *li);
+    ~HtmlFormatter();
 };
 
 class MobiFormatter : public HtmlFormatter {
     // accessor to images (and other format-specific data)
-    // it can be NULL (enables testing by feeding raw html)
     MobiDoc *           doc;
     // remember cover image if we've generated one, so that we
     // can avoid adding the same image twice if it's early in
     // the book
     ImageData *         coverImage;
+    // number of pages generated so far, approximate. Only used
+    // for detection of cover image duplicates
+    int                 pageCount;
+
+    bool                finishedParsing;
 
     void HandleSpacing_Mobi(HtmlToken *t);
     void HandleTagImg_Mobi(HtmlToken *t);
     void HandleHtmlTag_Mobi(HtmlToken *t);
 
 public:
-    MobiFormatter(HtmlFormatterArgs *args, MobiDoc *doc);
+    MobiFormatter(LayoutInfo *li, MobiDoc *doc);
 
-    virtual HtmlPage *Next();
-    Vec<HtmlPage*> *FormatAllPages();
+    PageData *Next();
+    Vec<PageData*> *FormatAllPages();
 };
 
-/* formatting extensions for EPUB */
-
-class EpubFormatter : public HtmlFormatter {
-protected:
-    void HandleTagImg_Epub(HtmlToken *t);
-    void HandleHtmlTag_Epub(HtmlToken *t);
-
-    EpubDoc *epubDoc;
-    ScopedMem<char> pagePath;
-
-public:
-    EpubFormatter(HtmlFormatterArgs *args, EpubDoc *doc) : HtmlFormatter(args), epubDoc(doc) { }
-
-    virtual HtmlPage *Next();
-    Vec<HtmlPage*> *FormatAllPages();
-};
-
-void DrawHtmlPage(Graphics *g, Vec<DrawInstr> *drawInstructions, REAL offX, REAL offY, bool showBbox, Color *textColor=NULL);
+void DrawPageLayout(Graphics *g, Vec<DrawInstr> *drawInstructions, REAL offX, REAL offY, bool showBbox, Color *textColor=NULL);
 
 #endif

@@ -90,11 +90,11 @@ Página &seguinte\t->
 &Odd pages only
 Apenas páginas í&mpares
 
+&Open\tCtrl+O
+&Abrir\tCtrl+O
+
 &Open Document
 &Abrir documento
-
-&Open...\tCtrl+O
-&Abrir...\tCtrl+O
 
 &Options...
 &Opções...
@@ -342,9 +342,6 @@ Ecrã co&mpleto\tCtrl+Shift+L
 Facing
 Duas páginas
 
-Failed to rename the file!
-Falha ao mudar o nome do ficheiro!
-
 Failed to save a file
 Erro ao gravar o ficheiro
 
@@ -489,9 +486,6 @@ Abrir no Adobe &Reader
 Open in &Foxit Reader
 Abrir &no Foxit Reader
 
-Open in Microsoft HTML Help
-Abrir no Microsoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Abrir no Microsoft XPS-Viewer
 
@@ -564,9 +558,6 @@ A imprimir página %d de %d...
 Printing problem.
 Erro de impressão.
 
-Re&name...\tF2
-Mudar &nome...\tF2
-
 Remember &opened files
 Lembrar ficheiros abert&os
 
@@ -575,9 +566,6 @@ Remover dos favoritos
 
 Remove page %s from favorites
 Remover página %s dos favoritos
-
-Rename To
-Mudar nome para
 
 Replace document &colors with Windows color scheme
 Substituir &cores do documento pelas cores Windows

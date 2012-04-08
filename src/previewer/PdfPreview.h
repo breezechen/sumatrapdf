@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2011-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef PdfPreview_h
@@ -15,8 +15,11 @@
 #define SZ_EPUB_PREVIEW_CLSID   _T("{80C4E4B1-2B0F-40d5-95AF-BE7B57FEA4F9}")
 #endif
 
+#include "BaseUtil.h"
+#include "Scoped.h"
 #include "BaseEngine.h"
 
+#include <shlwapi.h>
 #include <Thumbcache.h>
 
 class PageRenderer;

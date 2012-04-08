@@ -1,8 +1,12 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef AppTools_h
 #define AppTools_h
+
+#include "Vec.h"
+#include "Scoped.h"
+#include "GeomUtil.h"
 
 class WindowInfo;
 
@@ -58,7 +62,7 @@ int CompareVersion(TCHAR *txt1, TCHAR *txt2);
 
 bool IsRunningInPortableMode();
 TCHAR *AppGenDataFilename(TCHAR *pFilename);
-bool AdjustVariableDriveLetter(TCHAR *path);
+void AdjustRemovableDriveLetter(TCHAR *path);
 
 void DoAssociateExeWithPdfExtension(HKEY hkey);
 bool IsExeAssociatedWithPdfExtension();

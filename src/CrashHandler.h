@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD */
 
 #ifndef CrashHandler_h
@@ -7,6 +7,5 @@
 void InstallCrashHandler(const TCHAR *crashDumpPath, const TCHAR *symDir);
 void SubmitCrashInfo();
 void UninstallCrashHandler();
-void CrashLogFmt(const char *fmt, ...);
 
 #endif

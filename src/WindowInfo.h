@@ -1,9 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef WindowInfo_h
 #define WindowInfo_h
 
+#include <shlobj.h>
+#include "GeomUtil.h"
 #include "DisplayModel.h"
 
 class FileWatcher;
@@ -12,7 +14,6 @@ class DoubleBuffer;
 class SelectionOnPage;
 class LinkHandler;
 class Notifications;
-class StressTestBase;
 
 /* Describes actions which can be performed by mouse */
 enum MouseAction {
@@ -185,7 +186,7 @@ public:
         int hideStep;       // value used to gradually hide the markers
     } fwdSearchMark;
 
-    StressTestBase *stressTest;
+    CallbackFunc *  stressTest;
 
     TouchState touchState;
 

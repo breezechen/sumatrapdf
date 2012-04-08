@@ -100,13 +100,11 @@ fz_bound_text(fz_context *ctx, fz_text *text, fz_matrix ctm)
 static void
 fz_grow_text(fz_context *ctx, fz_text *text, int n)
 {
-	int new_cap = text->cap;
-	if (text->len + n < new_cap)
+	if (text->len + n < text->cap)
 		return;
-	while (text->len + n > new_cap)
-		new_cap = new_cap + 36;
-	text->items = fz_resize_array(ctx, text->items, new_cap, sizeof(fz_text_item));
-	text->cap = new_cap;
+	while (text->len + n > text->cap)
+		text->cap = text->cap + 36;
+	text->items = fz_resize_array(ctx, text->items, text->cap, sizeof(fz_text_item));
 }
 
 void

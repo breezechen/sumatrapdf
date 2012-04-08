@@ -1,8 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef Http_h
 #define Http_h
+
+#include "Vec.h"
 
 bool  HttpPost(const TCHAR *server, const TCHAR *url, str::Str<char> *headers, str::Str<char> *data);
 DWORD HttpGet(const TCHAR *url, str::Str<char> *dataOut);

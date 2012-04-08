@@ -1,10 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef ParseCommandLine_h
 #define ParseCommandLine_h
 
 #include "DisplayState.h"
+#include "Vec.h"
 
 class CommandLineInfo {
 public:

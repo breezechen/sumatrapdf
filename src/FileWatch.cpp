@@ -1,9 +1,9 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
 #include "FileWatch.h"
-
+#include "Scoped.h"
+#include "StrUtil.h"
 #include "FileUtil.h"
 
 // TODO: a hack for VS 2011 compilation. 1600 is VS 2010
@@ -152,8 +152,8 @@ bool FileWatcher::NotifyChange()
     // Note: the ReadDirectoryChangesW API fills the buffer with WCHAR strings.
     for (;;) {
         ScopedMem<WCHAR> filenameW(str::DupN(pFileNotify->FileName, pFileNotify->FileNameLength / sizeof(WCHAR)));
-        ScopedMem<TCHAR> notifyFilename(str::conv::FromWStr(filenameW));
-        bool isWatchedFile = str::EqI(notifyFilename, path::GetBaseName(filePath));
+        ScopedMem<TCHAR> ptNotifyFilename(str::conv::FromWStr(filenameW));
+        bool isWatchedFile = str::EqI(ptNotifyFilename, path::GetBaseName(filePath));
 
         // is it the file that is being watched?
         if (isWatchedFile && pFileNotify->Action == FILE_ACTION_MODIFIED) {
@@ -161,8 +161,8 @@ bool FileWatcher::NotifyChange()
             // because the time granularity is so big that this can cause genuine
             // file notifications to be ignored. (This happens for instance for
             // PDF files produced by pdftex from small.tex document)
-            if (observer)
-                observer->OnFileChanged();
+            if (pCallback)
+                pCallback->Callback();
             return true;
         }
 

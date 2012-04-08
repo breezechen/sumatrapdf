@@ -79,8 +79,8 @@ Contributor: Hasitha Jayasooriya (hasithakj@gmail.com)
 &Odd pages only
 &ඔත්තෙ පිටු පමණි
 
-&Open...\tCtrl+O
-&විවෘත කරන්න... (O)\tCtrl+O
+&Open\tCtrl+O
+&විවෘත කරන්න (O)\tCtrl+O
 
 &Options...
 &විකල්ප... (O)
@@ -361,9 +361,6 @@ Open in &Adobe Reader
 Open in &Foxit Reader
 &Foxit කියවනය මගින් විවෘතකරන්න
 
-Open in Microsoft HTML Help
-Microsoft HTML Help කියවනය මගින් විවෘතකරන්න
-
 Open in Microsoft XPS-Viewer
 Microsoft XPS-Viewer කියවනය මගින් විවෘතකරන්න
 
@@ -532,7 +529,6 @@ printing document
 #EPUB ebooks
 #Error loading %s
 #F&avorites
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fonts:
@@ -555,10 +551,8 @@ printing document
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Select &All

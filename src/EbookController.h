@@ -4,62 +4,65 @@
 #ifndef EbookController_h
 #define EbookController_h
 
-#include "Doc.h"
+#include "BaseUtil.h"
 #include "Mui.h"
-#include "HtmlFormatter.h"
+#include "PageLayout.h"
 #include "SumatraWindow.h"
 #include "ThreadUtil.h"
+#include "Vec.h"
 
 using namespace mui;
 
 struct  EbookControls;
 class   EbookController;
-class   HtmlPage;
+struct  PageData;
 class   PoolAllocator;
-class   EbookFormattingThread;
+class   MobiDoc;
+class   ThreadLayoutMobi;
 
 struct FinishedMobiLoadingData {
     TCHAR *         fileName;
-    Doc *           doc;
+    MobiDoc *       mobiDoc;
     SumatraWindow   win;
     double          loadingTimeMs;
 
     void Free() {
         free(fileName);
-        delete doc;
     }
 };
 
-struct EbookFormattingData {
+struct MobiLayoutData {
     enum { MAX_PAGES = 32 };
-    HtmlPage *         pages[MAX_PAGES];
+    PageData *         pages[MAX_PAGES];
     size_t             pageCount;
     bool               fromBeginning;
     bool               finished;
     EbookController *  controller;
+    ThreadLayoutMobi * thread;
     int                threadNo;
 };
 
 // data used on the ui thread side when handling UiMsg::MobiLayout
 // it's in its own struct for clarity
-struct FormattingTemp {
+struct LayoutTemp {
     // if we're doing layout that starts from the beginning, this is 0
     // otherwise it's the reparse point of the page we were showing when
     // we started the layout
     int             reparseIdx;
-    Vec<HtmlPage *> pagesFromPage;
-    Vec<HtmlPage *> pagesFromBeginning;
+    Vec<PageData *> pagesFromPage;
+    Vec<PageData *> pagesFromBeginning;
 
     void            DeletePages();
 };
 
-HtmlFormatterArgs *CreateFormatterArgsDoc(Doc doc, int dx, int dy, PoolAllocator *textAllocator);
+LayoutInfo *GetLayoutInfo(const char *html, MobiDoc *mobiDoc, int dx, int dy, PoolAllocator *textAllocator);
 
-class EbookController : public sigslot::has_slots
+class EbookController : public IClicked, ISizeChanged
 {
     EbookControls * ctrls;
 
-    Doc             doc;
+    MobiDoc *       mobiDoc;
+    const char *    html;
 
     // only set while we load the file on a background thread, used in UpdateStatus()
     TCHAR *         fileBeingLoaded;
@@ -74,8 +77,8 @@ class EbookController : public sigslot::has_slots
     //    (caused by resizing a window while displaying that page)
     // 3. like 2. but layout process is still in progress and we're waiting
     //    for more pages
-    Vec<HtmlPage*>* pagesFromBeginning;
-    Vec<HtmlPage*>* pagesFromPage;
+    Vec<PageData*>* pagesFromBeginning;
+    Vec<PageData*>* pagesFromPage;
 
     // currPageNo is in range 1..$numberOfPages. It's always a page number
     // as if the pages were formatted from the begginging. We don't always
@@ -85,57 +88,58 @@ class EbookController : public sigslot::has_slots
     size_t          currPageNo;
 
     // page that we're currently showing. It can come from pagesFromBeginning,
-    // pagesFromPage or from formattingTemp during layout or it can be a page that
+    // pagesFromPage or from layoutTemp during layout or it can be a page that
     // we took from previous pagesFromBeginning/pagesFromPage when we started
     // new layout process
-    HtmlPage *      pageShown;
+    PageData *      pageShown;
     // if true, we need to delete pageShown if we no longer need it
     bool            deletePageShown;
 
      // size of the page for which pages were generated
     int             pageDx, pageDy;
 
-    EbookFormattingThread *formattingThread;
-    int               formattingThreadNo;
-    FormattingTemp        formattingTemp;
+    ThreadLayoutMobi *layoutThread;
+    int               layoutThreadNo;
+    LayoutTemp        layoutTemp;
 
     // when loading a new mobiDoc, this indicates the page we should
     // show after loading. -1 indicates no action needed
     int               startReparseIdx;
 
-    Vec<HtmlPage*> *GetPagesFromBeginning();
-    HtmlPage*   PreserveTempPageShown();
+    Vec<PageData*> *GetPagesFromBeginning();
+    PageData*   PreserveTempPageShown();
     void        UpdateStatus();
-    void        DeletePages(Vec<HtmlPage*>** pages);
+    void        DeletePages(Vec<PageData*>** pages);
     void        DeletePageShown();
-    void        ShowPage(HtmlPage *pd, bool deleteWhenDone);
-    void        UpdateCurrPageNoForPage(HtmlPage *pd);
-    void        TriggerBookFormatting();
-    bool        FormattingInProgress() const { return formattingThread != NULL; }
-    bool        GoOnePageForward(Vec<HtmlPage*> *pages);
+    void        ShowPage(PageData *pd, bool deleteWhenDone);
+    void        UpdateCurrPageNoForPage(PageData *pd);
+    void        TriggerLayout();
+    bool        LayoutInProgress() const { return layoutThread != NULL; }
+    bool        GoOnePageForward(Vec<PageData*> *pages);
     void        GoOnePageForward();
     size_t      GetMaxPageCount();
-    void        StopFormattingThread(bool forceTerminate);
+    void        StopLayoutThread(bool forceTerminate);
     void        CloseCurrentDocument();
 
-    // event handlers
-    void        ClickedNext(Control *c, int x, int y);
-    void        ClickedPrev(Control *c, int x, int y);
-    void        ClickedProgress(Control *c, int x, int y);
-    void        SizeChangedPage(Control *c, int dx, int dy);
+    // IClickHandler
+    virtual void Clicked(Control *c, int x, int y);
+
+    // ISizeChanged
+    virtual void SizeChanged(Control *c, int dx, int dy);
 
 public:
     EbookController(EbookControls *ctrls);
     virtual ~EbookController();
 
-    void SetDoc(Doc newDoc, int startReparseIdxArg = -1);
+    void SetHtml(const char *html);
+    void SetMobiDoc(MobiDoc *newMobiDoc, int startReparseIdxArg = -1);
     void HandleFinishedMobiLoadingMsg(FinishedMobiLoadingData *finishedMobiLoading);
-    void HandleMobiLayoutMsg(EbookFormattingData *mobiLayout);
+    void HandleMobiLayoutMsg(MobiLayoutData *mobiLayout);
     void OnLayoutTimer();
     void AdvancePage(int dist);
     void GoToPage(int newPageNo);
     void GoToLastPage();
-    Doc  GetDoc() const { return doc; }
+    MobiDoc *GetMobiDoc() const { return mobiDoc; }
     int  CurrPageReparseIdx() const;
 };
 

@@ -86,11 +86,11 @@ For&mhéadú:
 &Odd pages only
 &Corr-leathanaigh amháin
 
+&Open\tCtrl+O
+&Oscail\tCtrl+O
+
 &Open Document
 &Oscail Cáipéis
-
-&Open...\tCtrl+O
-&Oscail...\tCtrl+O
 
 &Options...
 &Roghanna...
@@ -470,9 +470,6 @@ Oscail in Adobe Reader
 Open in &Foxit Reader
 Oscail i bhFoxit Reader
 
-Open in Microsoft HTML Help
-Oscail i bMicrosoft HTML Help
-
 Open in Microsoft XPS-Viewer
 Oscail i bMicrosoft XPS-Viewer
 
@@ -679,11 +676,8 @@ ag clóbhualadh an cháipéis
 
 # Untranslated:
 #Copyright:
-#Failed to rename the file!
 #Fonts:
 #Formatting the book... %d pages
 #Loading file %s...
-#Re&name...\tF2
-#Rename To
 #Replace document &colors with Windows color scheme
 

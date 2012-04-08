@@ -1,8 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Selection_h
 #define Selection_h
+
+#include "Vec.h"
 
 #define SMOOTHSCROLL_TIMER_ID       2
 #define SMOOTHSCROLL_DELAY_IN_MS    20

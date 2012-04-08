@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Version_h
@@ -6,10 +6,10 @@
 
 // CURR_VERSION can be over-written externally (via makefile)
 #ifndef CURR_VERSION
-#define CURR_VERSION 2.1
+#define CURR_VERSION 2.0.1
 #endif
 #ifndef CURR_VERSION_COMMA
-#define CURR_VERSION_COMMA 2,1,0
+#define CURR_VERSION_COMMA 2,0,1
 #endif
 
 #define APP_NAME_STR       _T("SumatraPDF")

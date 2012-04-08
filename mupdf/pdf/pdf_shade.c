@@ -15,19 +15,16 @@ struct vertex
 static void
 pdf_grow_mesh(fz_context *ctx, fz_shade *shade, int amount)
 {
-	int cap = shade->mesh_cap;
-
-	if (shade->mesh_len + amount < cap)
+	if (shade->mesh_len + amount < shade->mesh_cap)
 		return;
 
-	if (cap == 0)
-		cap = 1024;
+	if (shade->mesh_cap == 0)
+		shade->mesh_cap = 1024;
 
-	while (shade->mesh_len + amount > cap)
-		cap = (cap * 3) / 2;
+	while (shade->mesh_len + amount > shade->mesh_cap)
+		shade->mesh_cap = (shade->mesh_cap * 3) / 2;
 
-	shade->mesh = fz_resize_array(ctx, shade->mesh, cap, sizeof(float));
-	shade->mesh_cap = cap;
+	shade->mesh = fz_resize_array(ctx, shade->mesh, shade->mesh_cap, sizeof(float));
 }
 
 static void

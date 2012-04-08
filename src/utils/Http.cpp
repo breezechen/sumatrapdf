@@ -1,10 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #include "BaseUtil.h"
 #include <Wininet.h>
-#include "Http.h"
 
+#include "Http.h"
 #include "FileUtil.h"
 #include "WinUtil.h"
 
@@ -28,10 +28,10 @@ DWORD HttpGet(const TCHAR *url, str::Str<char> *dataOut)
 
     DWORD dwRead;
     do {
-        char buf[1024];
-        if (!InternetReadFile(hFile, buf, sizeof(buf), &dwRead))
+        char *buf = dataOut->EnsureEndPadding(1024);
+        if (!InternetReadFile(hFile, buf, 1024, &dwRead))
             goto Error;
-        dataOut->Append(buf, dwRead);
+        dataOut->IncreaseLen(dwRead);
     } while (dwRead > 0);
 
 Exit:
@@ -144,10 +144,10 @@ bool HttpPost(const TCHAR *server, const TCHAR *url, str::Str<char> *headers, st
 
     DWORD dwRead;
     do {
-        char buf[1024];
-        if (!InternetReadFile(hReq, buf, sizeof(buf), &dwRead))
+        char *buf = resp.EnsureEndPadding(1024);
+        if (!InternetReadFile(hReq, buf, 1024, &dwRead))
             goto Exit;
-        resp.Append(buf, dwRead);
+        resp.IncreaseLen(dwRead);
     } while (dwRead > 0);
 
 #if 0

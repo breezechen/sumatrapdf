@@ -1,8 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef Search_h
 #define Search_h
+
+#include "Vec.h"
 
 #define PDFSYNC_DDE_SERVICE   _T("SUMATRA")
 #define PDFSYNC_DDE_TOPIC     _T("control")

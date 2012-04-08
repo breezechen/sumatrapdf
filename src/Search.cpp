@@ -1,4 +1,4 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 /* Code related to:
@@ -7,18 +7,21 @@
 */
 
 #include "BaseUtil.h"
-#include "Search.h"
+#include "StrUtil.h"
+#include "WinUtil.h"
+#include "Scoped.h"
 
-#include "AppTools.h"
+#include "Search.h"
+#include "resource.h"
+#include "Translations.h"
+#include "SumatraPDF.h"
+#include "WindowInfo.h"
 #include "Notifications.h"
 #include "PdfSync.h"
-#include "resource.h"
 #include "Selection.h"
+
 #include "SumatraDialogs.h"
-#include "SumatraPDF.h"
-#include "Translations.h"
-#include "WindowInfo.h"
-#include "WinUtil.h"
+#include "AppTools.h"
 
 // don't show the Search UI for document types that don't
 // support extracting text and/or navigating to a specific
@@ -94,7 +97,7 @@ void OnMenuFind(WindowInfo *win)
 
 void OnMenuFindNext(WindowInfo *win)
 {
-    if (!win->IsDocLoaded() || !NeedsFindUI(win))
+    if (!NeedsFindUI(win))
         return;
     if (SendMessage(win->hwndToolbar, TB_ISBUTTONENABLED, IDM_FIND_NEXT, 0))
         FindTextOnThread(win, FIND_FORWARD);
@@ -102,7 +105,7 @@ void OnMenuFindNext(WindowInfo *win)
 
 void OnMenuFindPrev(WindowInfo *win)
 {
-    if (!win->IsDocLoaded() || !NeedsFindUI(win))
+    if (!NeedsFindUI(win))
         return;
     if (SendMessage(win->hwndToolbar, TB_ISBUTTONENABLED, IDM_FIND_PREV, 0))
         FindTextOnThread(win, FIND_BACKWARD);
@@ -110,7 +113,7 @@ void OnMenuFindPrev(WindowInfo *win)
 
 void OnMenuFindMatchCase(WindowInfo *win)
 {
-    if (!win->IsDocLoaded() || !NeedsFindUI(win))
+    if (!NeedsFindUI(win))
         return;
     WORD state = (WORD)SendMessage(win->hwndToolbar, TB_GETSTATE, IDM_FIND_MATCH, 0);
     win->dm->textSearch->SetSensitive((state & TBSTATE_CHECKED) != 0);
@@ -211,13 +214,14 @@ struct FindThreadData : public ProgressUpdateUI {
         }
     }
 
-    virtual void UpdateProgress(int current, int total) {
-        if (wnd && !WasCanceled())
+    virtual bool UpdateProgress(int current, int total) {
+        if (!WindowInfoStillValid(win) || win->findCanceled) {
+            return false;
+        }
+        if (wnd) {
             QueueWorkItem(new UpdateFindStatusWorkItem(win, wnd, current, total));
-    }
-
-    virtual bool WasCanceled() {
-        return !WindowInfoStillValid(win) || win->findCanceled;
+        }
+        return true;
     }
 };
 
@@ -515,20 +519,16 @@ static const TCHAR *HandleSyncCmd(const TCHAR *cmd, DDEACK& ack)
         // check if the PDF is already opened
         win = FindWindowInfoByFile(pdfFile);
         // if not then open it
-        if (newWindow || !win) {
-            LoadArgs args(pdfFile, !newWindow ? win : NULL);
-            win = LoadDocument(args);
-        } else if (win && !win->IsDocLoaded()) {
+        if (newWindow || !win)
+            win = LoadDocument(pdfFile, !newWindow ? win : NULL);
+        else if (win && !win->IsDocLoaded())
             ReloadDocument(win);
-        }
     }
     else {
         // check if any opened PDF has sync information for the source file
         win = FindWindowInfoBySyncFile(srcFile);
-        if (newWindow) {
-            LoadArgs args(win->loadedFilePath);
-            win = LoadDocument(args);
-        }
+        if (newWindow)
+            win = LoadDocument(win->loadedFilePath);
     }
 
     if (!win || !win->IsDocLoaded())
@@ -562,10 +562,9 @@ static const TCHAR *HandleOpenCmd(const TCHAR *cmd, DDEACK& ack)
         return NULL;
 
     WindowInfo *win = FindWindowInfoByFile(pdfFile);
-    if (newWindow || !win) {
-        LoadArgs args(pdfFile, !newWindow ? win : NULL);
-        win = LoadDocument(args);
-    } else if (win && !win->IsDocLoaded()) {
+    if (newWindow || !win)
+        win = LoadDocument(pdfFile, !newWindow ? win : NULL);
+    else if (win && !win->IsDocLoaded()) {
         ReloadDocument(win);
         forceRefresh = 0;
     }

@@ -4,9 +4,15 @@
 #ifndef ChmDoc_h
 #define ChmDoc_h
 
-#include "EbookBase.h"
+#include "BaseUtil.h"
+#include "Scoped.h"
 
 #define CP_CHM_DEFAULT 1252
+
+class ChmTocVisitor {
+public:
+    virtual void visit(const TCHAR *name, const TCHAR *url, int level) = 0;
+};
 
 class ChmDoc {
     struct chmFile *chmHandle;
@@ -30,19 +36,18 @@ public:
 
     bool HasData(const char *fileName);
     unsigned char *GetData(const char *fileName, size_t *lenOut);
-
-    char *ToUtf8(const unsigned char *text);
-    TCHAR *ToStr(const char *text);
-
     TCHAR *GetProperty(const char *name);
-    const char *GetIndexPath();
-    Vec<char *> *GetAllPaths();
 
-    bool HasToc() const;
-    bool ParseToc(EbookTocVisitor *visitor);
+    char *GetHomepage();
+    char *ToUtf8(const unsigned char *text);
+
+    bool HasToc();
+    bool ParseToc(ChmTocVisitor *visitor);
 
     static bool IsSupportedFile(const TCHAR *fileName, bool sniff=false);
     static ChmDoc *CreateFromFile(const TCHAR *fileName);
 };
+
+UINT GetChmCodepage(const TCHAR *fileName);
 
 #endif

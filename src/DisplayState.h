@@ -1,9 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef DisplayState_h
 #define DisplayState_h
 
+#include "BaseUtil.h"
+#include "GeomUtil.h"
 #include "BaseEngine.h"
 
 enum DisplayMode {

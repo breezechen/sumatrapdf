@@ -1,9 +1,10 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
 #ifndef SumatraPDF_h
 #define SumatraPDF_h
 
+#include "BaseUtil.h"
 #include "AppPrefs.h"
 #include "SumatraWindow.h"
 #include "TextSearch.h"
@@ -63,7 +64,7 @@ enum MenuToolbarFlags {
 #define ABOUT_BG_COLOR_DEFAULT  (RGB(0xff, 0xf2, 0) - 0x80000000)
 
 class WindowInfo;
-class EbookWindow;
+class MobiWindow;
 class Favorites;
 
 // all defined in SumatraPDF.cpp
@@ -71,6 +72,7 @@ extern HINSTANCE                ghinst;
 extern bool                     gDebugShowLinks;
 extern bool                     gUseGdiRenderer;
 extern bool                     gUseEbookUI;
+extern bool                     gIsStressTesting;
 extern HCURSOR                  gCursorHand;
 extern HCURSOR                  gCursorArrow;
 extern HCURSOR                  gCursorIBeam;
@@ -79,7 +81,7 @@ extern HBRUSH                   gBrushAboutBg;
 extern HFONT                    gDefaultGuiFont;
 extern TCHAR *                  gPluginURL;
 extern Vec<WindowInfo*>         gWindows;
-extern Vec<EbookWindow*>        gEbookWindows;
+extern Vec<MobiWindow*>         gMobiWindows;
 extern Favorites *              gFavorites;
 extern FileHistory              gFileHistory;
 extern WNDPROC                  DefWndProcCloseButton;
@@ -125,30 +127,9 @@ bool  SaveThumbnailForFile(const TCHAR *filePath, RenderedBitmap *bmp);
 WindowInfo* FindWindowInfoByFile(const TCHAR *file);
 WindowInfo* FindWindowInfoByHwnd(HWND hwnd);
 WindowInfo* FindWindowInfoBySyncFile(const TCHAR *file);
-
-// TODO: this is hopefully temporary
-// LoadDocument carries a lot of state, this holds them in
-// one place
-class LoadArgs
-{
-public:
-    LoadArgs(const TCHAR *fileName, WindowInfo *win=NULL, bool showWin=true, bool forceReuse=false, bool suppressPwdUI=false)
-    {
-        this->fileName = fileName;
-        this->win = win;
-        this->showWin = showWin;
-        this->forceReuse = forceReuse;
-        this->suppressPwdUI = suppressPwdUI;
-    }
-    const TCHAR *fileName;
-    WindowInfo *win;
-    bool showWin;
-    bool forceReuse;
-    bool suppressPwdUI;
-};
-
-WindowInfo* LoadDocument(LoadArgs& args);
-void        LoadDocument2(const TCHAR *fileName, SumatraWindow& win);
+WindowInfo* LoadDocument(const TCHAR *fileName, WindowInfo *win=NULL,
+                         bool showWin=true, bool forceReuse=false, bool suppressPwdUI=false);
+void        LoadDocument(const TCHAR *fileName, SumatraWindow& win);
 WindowInfo *CreateAndShowWindowInfo();
 
 #endif

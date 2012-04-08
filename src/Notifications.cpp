@@ -1,12 +1,15 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: GPLv3 */
 
-#include "BaseUtil.h"
-#include "Notifications.h"
+#include "Scoped.h"
+#include "StrUtil.h"
+#include "GeomUtil.h"
+#include "WinUtil.h"
+#include "Vec.h"
 
+#include "Notifications.h"
 #include "SumatraPDF.h"
 #include "WindowInfo.h"
-#include "WinUtil.h"
 
 #define NOTIFICATION_WND_CLASS_NAME _T("SUMATRA_PDF_NOTIFICATION_WINDOW")
 
@@ -68,9 +71,9 @@ void NotificationWnd::UpdateWindowPosition(const TCHAR *message, bool init)
     }
 }
 
-void NotificationWnd::UpdateProgress(int current, int total)
+bool NotificationWnd::UpdateProgress(int current, int total)
 {
-    CrashIf(total <= 0);
+    assert(total > 0);
     if (total <= 0)
         total = 1;
     progress = limitValue(100 * current / total, 0, 100);
@@ -78,10 +81,6 @@ void NotificationWnd::UpdateProgress(int current, int total)
         ScopedMem<TCHAR> message(str::Format(progressMsg, current, total));
         UpdateMessage(message);
     }
-}
-
-bool NotificationWnd::WasCanceled()
-{
     return isCanceled;
 }
 

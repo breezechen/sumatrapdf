@@ -77,8 +77,8 @@ Contributor: Muhammad Syawal bin Halimun www.sabily.org (syawal@sabily.org)
 &Odd pages only
 &Mukasurat ganjil sahaja
 
-&Open...\tCtrl+O
-&Buka...\tCtrl+O
+&Open\tCtrl+O
+&Buka\tCtrl+O
 
 &Options...
 &Pilihan...
@@ -382,7 +382,6 @@ mencetak dokumen
 #Error loading %s
 #F&avorites
 #F&orward\tAlt+Right Arrow
-#Failed to rename the file!
 #Favorites
 #File %s not found
 #Fit &Content\tCtrl+3
@@ -408,7 +407,6 @@ mencetak dokumen
 #Open a document...
 #Open in &Adobe Reader
 #Open in &Foxit Reader
-#Open in Microsoft HTML Help
 #Open in Microsoft XPS-Viewer
 #Open in PDF-XChange
 #P&roperties
@@ -425,11 +423,9 @@ mencetak dokumen
 #Printer with given name doesn't exist
 #Printing is still in progress. Abort and start over?
 #Printing page %d of %d...
-#Re&name...\tF2
 #Remember &opened files
 #Remove from favorites
 #Remove page %s from favorites
-#Rename To
 #Replace document &colors with Windows color scheme
 #Save S&hortcut...\tCtrl+Shift+S
 #Searching %d of %d...

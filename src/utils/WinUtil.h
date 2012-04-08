@@ -1,9 +1,11 @@
-/* Copyright 2012 the SumatraPDF project authors (see AUTHORS file).
+/* Copyright 2006-2012 the SumatraPDF project authors (see AUTHORS file).
    License: Simplified BSD (see COPYING.BSD) */
 
 #ifndef WinUtil_h
 #define WinUtil_h
 
+#include "BaseUtil.h"
+#include "GeomUtil.h"
 #include <WindowsX.h>
 #include <CommCtrl.h>
 
@@ -32,7 +34,6 @@ bool   IsRunningInWow64();
 inline bool WindowsVerVistaOrGreater() { return GetWindowsVersion() >= 0x0600; }
 
 void   LogLastError(DWORD err=0);
-bool   RegKeyExists(HKEY keySub, const TCHAR *keyName);
 TCHAR *ReadRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName);
 bool   WriteRegStr(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, const TCHAR *value);
 bool   WriteRegDWORD(HKEY keySub, const TCHAR *keyName, const TCHAR *valName, DWORD value);
@@ -85,7 +86,6 @@ void    ToggleWindowStyle(HWND hwnd, DWORD flag, bool enable, int type=GWL_STYLE
 IStream*CreateStreamFromData(void *data, size_t len);
 void  * GetDataFromStream(IStream *stream, size_t *len, HRESULT *res_opt=NULL);
 bool    ReadDataFromStream(IStream *stream, void *buffer, size_t len, size_t offset=0);
-UINT    GuessTextCodepage(const char *data, size_t len, UINT default=CP_ACP);
 
 namespace win {
 
