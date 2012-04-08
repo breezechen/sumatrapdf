@@ -277,6 +277,11 @@ static bool DownloadAndUnzipSymbols(const TCHAR *pdbZipPath, const TCHAR *symDir
 // get the callstacks etc. and submit to our server for analysis.
 void SubmitCrashInfo()
 {
+    if (!dir::Create(gSymbolsDir)) {
+        plog("SubmitCrashInfo(): couldn't create symbols dir");
+        return;
+    }
+
     lf("SubmitCrashInfo(): start");
     lf(L"SubmitCrashInfo(): gSymbolPathW: '%s'", gSymbolPathW);
     if (!CrashHandlerCanUseNet()) {
@@ -503,10 +508,6 @@ static bool BuilCrashDumpPaths(const TCHAR *symDir)
 {
     if (!symDir)
         return false;
-    if (!dir::Create(symDir)) {
-        plog("BuilCrashDumpPaths(): couldn't create symbols dir");
-        return false;
-    }
     gSymbolsDir = str::Dup(symDir);
     gPdbZipPath = path::Join(symDir, _T("symbols_tmp.zip"));
     gLibMupdfPdbPath = path::Join(symDir, _T("SumatraPDF.pdb"));
