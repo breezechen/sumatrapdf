@@ -151,7 +151,9 @@ char *ZipFile::GetFileData(size_t fileindex, size_t *len)
         return NULL;
 
     size_t len2 = (size_t)fileinfo.At(fileindex).uncompressed_size;
-    if (len2 != fileinfo.At(fileindex).uncompressed_size) { // overflow check
+    // overflow check
+    if (len2 != fileinfo.At(fileindex).uncompressed_size ||
+        len2 + sizeof(WCHAR) < sizeof(WCHAR)) {
         unzCloseCurrentFile(uf);
         return NULL;
     }

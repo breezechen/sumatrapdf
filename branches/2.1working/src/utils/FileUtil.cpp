@@ -265,6 +265,9 @@ char *ReadAll(const TCHAR *filePath, size_t *fileSizeOut)
     if (INVALID_FILE_SIZE == size)
         return NULL;
 
+    // overflow check
+    if (size + sizeof(WCHAR) < sizeof(WCHAR))
+        return NULL;
     /* allocate one byte more and 0-terminate just in case it's a text
        file we'll want to treat as C string. Doesn't hurt for binary
        files (note: two byte terminator for UTF-16 files) */
