@@ -980,7 +980,6 @@ static LRESULT CALLBACK WndProcParent(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
         // Note: not quite sure why I need this but if we don't swallow WM_MOUSEWHEEL
         // messages, we might get infinite recursion.
         case WM_MOUSEWHEEL:
-        case WM_MOUSEHWHEEL:
             return 0;
 
         case WM_PARENTNOTIFY:
@@ -1414,10 +1413,10 @@ bool InHtmlNestedMessagePump()
     return pumpNestCount > 0;
 }
 
-LRESULT HtmlWindow::SendMsg(UINT msg, WPARAM wp, LPARAM lp)
+void HtmlWindow::SendMsg(UINT msg, WPARAM wp, LPARAM lp)
 {
     HWND hwndBrowser = GetBrowserControlHwnd(hwndParent);
-    return SendMessage(hwndBrowser, msg, wp, lp);
+    SendMessage(hwndBrowser, msg, wp, lp);
 }
 
 static bool LoadedExpectedPage(const TCHAR *expectedUrl, const TCHAR *loadedUrl)

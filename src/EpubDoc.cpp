@@ -77,21 +77,25 @@ static UINT GetCodepageFromPI(const char *xmlPI)
 
 char *NormalizeURL(const char *url, const char *base)
 {
-    CrashIf(!url || !base);
     if (*url == '/' || str::FindChar(url, ':'))
         return str::Dup(url);
 
-    const char *baseEnd = str::FindCharLast(base, '/');
-    const char *hash = str::FindChar(base, '#');
-    if (baseEnd && hash && hash < baseEnd) {
-        for (baseEnd = hash - 1; baseEnd > base && *baseEnd != '/'; baseEnd--);
+    ScopedMem<char> norm;
+    if (base) {
+        const char *baseEnd = str::FindCharLast(base, '/');
+        const char *hash = str::FindChar(base, '#');
+        if (baseEnd && hash && hash < baseEnd) {
+            for (baseEnd = hash - 1; baseEnd > base && *baseEnd != '/'; baseEnd--);
+        }
+        if (baseEnd)
+            baseEnd++;
+        else
+            baseEnd = base;
+        ScopedMem<char> basePath(str::DupN(base, baseEnd - base));
+        norm.Set(str::Join(basePath, url));
+    } else {
+        norm.Set(str::Dup(url));
     }
-    if (baseEnd)
-        baseEnd++;
-    else
-        baseEnd = base;
-    ScopedMem<char> basePath(str::DupN(base, baseEnd - base));
-    ScopedMem<char> norm(str::Join(basePath, url));
 
     char *dst = norm;
     for (char *src = norm; *src; src++) {
@@ -164,16 +168,6 @@ static char *Base64Decode(const char *s, const char *end, size_t *len)
     if (len)
         *len = curr - result;
     return result;
-}
-
-static inline void AppendChar(str::Str<char>& htmlData, char c)
-{
-    switch (c) {
-    case '&': htmlData.Append("&amp;"); break;
-    case '<': htmlData.Append("&lt;"); break;
-    case '"': htmlData.Append("&quot;"); break;
-    default:  htmlData.Append(c); break;
-    }
 }
 
 /* ********** EPUB ********** */
@@ -354,32 +348,32 @@ size_t EpubDoc::GetTextDataSize()
     return htmlData.Size();
 }
 
+
 ImageData *EpubDoc::GetImageData(const char *id, const char *pagePath)
 {
-    if (!pagePath) {
-        // if we're reparsing, we might not have pagePath, which is needed to
-        // build the exact url so try to find a partial match
-        // TODO: the correct approach would be to extend reparseIdx into a
-        // struct ReparseData, which would include pagePath, and store it
-        // in every HtmlPage (same as styleStack, listDepth, preFormatted and
-        // later for FB2 section and titleCount), but this should work well
-        // enough for now. The worst that can happen is picking up the wrong image
-        for (size_t i = 0; i < images.Count(); i++) {
-            ImageData2 *img = &images.At(i);
-            if (str::EndsWithI(img->id, id)) {
-                if (!img->base.data)
-                    img->base.data = zip.GetFileData(img->idx, &img->base.len);
-                if (img->base.data)
-                    return &img->base;
-            }
+    ImageData2 *img;
+    ScopedMem<char> url(NormalizeURL(id, pagePath));
+
+    // try to find an image with the exact url
+    for (size_t i = 0; i < images.Count(); i++) {
+        img = images.AtPtr(i);
+        if (str::Eq(img->id, url)) {
+            if (!img->base.data)
+                img->base.data = zip.GetFileData(img->idx, &img->base.len);
+            if (img->base.data)
+                return &img->base;
         }
-        return NULL;
     }
 
-    ScopedMem<char> url(NormalizeURL(id, pagePath));
+    // if we're reparsing, we might not have pagePath, which is needed to
+    // build exact url so try to find a partial match
+    // note: a different approach would be to extend reparseIdx into a
+    // struct ReparseData, which would include pagePath, and store it
+    // in every HtmlPage, but this should work well enough. The worst that
+    // can happen is picking up the wrong image
     for (size_t i = 0; i < images.Count(); i++) {
-        ImageData2 *img = &images.At(i);
-        if (str::Eq(img->id, url)) {
+        img = images.AtPtr(i);
+        if (str::EndsWithI(img->id, url)) {
             if (!img->base.data)
                 img->base.data = zip.GetFileData(img->idx, &img->base.len);
             if (img->base.data)
@@ -1245,82 +1239,6 @@ PalmDoc *PalmDoc::CreateFromFile(const TCHAR *fileName)
     return doc;
 }
 
-/* ********** TCR (Text Compression for (Psion) Reader) ********** */
-
-// cf. http://www.cix.co.uk/~gidds/Software/TCR.html
-#define TCR_HEADER      "!!8-Bit!!"
-#define TCR_HEADER_LEN  strlen(TCR_HEADER)
-
-TcrDoc::TcrDoc(const TCHAR *fileName) : fileName(str::Dup(fileName)) { }
-TcrDoc::~TcrDoc() { }
-
-bool TcrDoc::Load()
-{
-    size_t dataLen;
-    ScopedMem<char> data(file::ReadAll(fileName, &dataLen));
-    if (!data)
-        return false;
-    if (dataLen < TCR_HEADER_LEN || !str::StartsWith(data.Get(), TCR_HEADER))
-        return false;
-
-    const char *curr = data + TCR_HEADER_LEN;
-    const char *end = data + dataLen;
-
-    const char *dict[256];
-    for (int n = 0; n < dimof(dict); n++) {
-        if (curr >= end)
-            return false;
-        dict[n] = curr;
-        curr += 1 + (uint8_t)*curr;
-    }
-
-    str::Str<char> text(dataLen * 2);
-    for (; curr < end; curr++) {
-        const char *entry = dict[(uint8_t)*curr];
-        text.Append(entry + 1, (uint8_t)*entry);
-    }
-
-    ScopedMem<char> textUtf8(DecodeTextToUtf8(text.Get()));
-    if (!textUtf8)
-        return false;
-    htmlData.Append("<pre>");
-    for (curr = textUtf8; *curr; curr++) {
-        AppendChar(htmlData, *curr);
-    }
-    htmlData.Append("</pre>");
-
-    return true;
-}
-
-const char *TcrDoc::GetTextData(size_t *lenOut)
-{
-    *lenOut = htmlData.Size();
-    return htmlData.Get();
-}
-
-const TCHAR *TcrDoc::GetFileName() const
-{
-    return fileName;
-}
-
-bool TcrDoc::IsSupportedFile(const TCHAR *fileName, bool sniff)
-{
-    if (sniff)
-        return file::StartsWith(fileName, TCR_HEADER);
-
-    return str::EndsWithI(fileName, _T(".tcr"));
-}
-
-TcrDoc *TcrDoc::CreateFromFile(const TCHAR *fileName)
-{
-    TcrDoc *doc = new TcrDoc(fileName);
-    if (!doc || !doc->Load()) {
-        delete doc;
-        return NULL;
-    }
-    return doc;
-}
-
 /* ********** Plain HTML ********** */
 
 HtmlDoc::HtmlDoc(const TCHAR *fileName) : fileName(str::Dup(fileName)) { }
@@ -1440,6 +1358,16 @@ HtmlDoc *HtmlDoc::CreateFromFile(const TCHAR *fileName)
 /* ********** Plain Text ********** */
 
 TxtDoc::TxtDoc(const TCHAR *fileName) : fileName(str::Dup(fileName)), isRFC(false) { }
+
+static inline void AppendChar(str::Str<char>& htmlData, char c)
+{
+    switch (c) {
+    case '&': htmlData.Append("&amp;"); break;
+    case '<': htmlData.Append("&lt;"); break;
+    case '"': htmlData.Append("&quot;"); break;
+    default:  htmlData.Append(c); break;
+    }
+}
 
 static char *TextFindLinkEnd(str::Str<char>& htmlData, char *curr, bool fromWww=false)
 {

@@ -48,13 +48,12 @@ ZipFile::~ZipFile()
 
 #define INVALID_ZIP_FILE_POS ((ZPOS64_T)-1)
 
-// variation of CRC-32 which deals with strings that are
-// mostly ASCII and should be treated case independently
-static uint32_t GetQuickHashI(const TCHAR *str)
+// variation of CRC-32 which deals with strings that are mostly ASCII
+static uint32_t GetQuickHash(const TCHAR *str)
 {
     uint32_t crc = 0;
     for (; *str; str++) {
-        uint32_t bits = (crc ^ ((_totlower((wint_t)*str) & 0xFF) << 24)) & 0xFF000000L;
+        uint32_t bits = (crc ^ ((*str & 0xFF) << 24)) & 0xFF000000L;
         for (int i = 0; i < 8; i++) {
             if ((bits & 0x80000000L))
                 bits = (bits << 1) ^ 0x04C11DB7L;
@@ -87,7 +86,7 @@ void ZipFile::ExtractFilenames()
             str::conv::FromCodePageBuf(fileNameT, dimof(fileNameT), fileName, cp);
             filenames.Append((TCHAR *)Allocator::Dup(allocator, fileNameT,
                 (str::Len(fileNameT) + 1) * sizeof(TCHAR)));
-            filenameHashes.Append(GetQuickHashI(fileNameT));
+            filenameHashes.Append(GetQuickHash(fileNameT));
             fileinfo.Append(finfo);
 
             unz64_file_pos fpos;
@@ -103,7 +102,7 @@ void ZipFile::ExtractFilenames()
 
 size_t ZipFile::GetFileIndex(const TCHAR *filename)
 {
-    uint32_t hash = GetQuickHashI(filename);
+    uint32_t hash = GetQuickHash(filename);
     for (int i = 0; (i = filenameHashes.Find(hash, i)) != -1; ) {
         if (str::EqI(filename, filenames.At(i)))
             return i;

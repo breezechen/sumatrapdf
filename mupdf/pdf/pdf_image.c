@@ -97,7 +97,7 @@ static fz_store_type pdf_image_store_type =
 };
 
 static fz_pixmap *
-decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int in_line, int indexed, int factor, int cache)
+decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int in_line, int indexed, int factor, int dont_cache)
 {
 	fz_pixmap *tile = NULL;
 	fz_pixmap *existing_tile;
@@ -192,7 +192,11 @@ decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int 
 		fz_rethrow(ctx);
 	}
 
-	if (!cache)
+	/* SumatraPDF: don't cache preloaded images */
+	/* TODO: in this case, the image keeps a reference to the pixmap and
+	 * the key for storing the pixmap keeps a reference to the image which
+	 * leads to a catch-22 and neither is ever evicted from the cache */
+	if (dont_cache)
 		return tile;
 
 	/* Now we try to cache the pixmap. Any failure here will just result
@@ -248,7 +252,8 @@ pdf_image_get_pixmap(fz_context *ctx, fz_image *image_, int w, int h)
 	pdf_image_key key;
 
 	/* Check for 'simple' images which are just pixmaps */
-	if (image->buffer == NULL)
+	/* SumatraPDF: don't produce additional tiles for preloaded images */
+	if (image->tile || !image->buffer)
 	{
 		tile = image->tile;
 		if (!tile)
@@ -284,7 +289,7 @@ pdf_image_get_pixmap(fz_context *ctx, fz_image *image_, int w, int h)
 	/* We need to make a new one. */
 	stm = pdf_open_image_decomp_stream(ctx, image->buffer, &image->params, &factor);
 
-	return decomp_image_from_stream(ctx, stm, image, 0, 0, factor, 1);
+	return decomp_image_from_stream(ctx, stm, image, 0, 0, factor, 0);
 }
 
 static pdf_image *
@@ -450,7 +455,7 @@ pdf_load_image_imp(pdf_document *xref, pdf_obj *rdb, pdf_obj *dict, fz_stream *c
 			/* RJW: "cannot open image data stream (%d 0 R)", pdf_to_num(dict) */
 		}
 
-		image->tile = decomp_image_from_stream(ctx, stm, image, cstm != NULL, indexed, 1, 0);
+		image->tile = decomp_image_from_stream(ctx, stm, image, cstm != NULL, indexed, 1, 1);
 	}
 	fz_catch(ctx)
 	{

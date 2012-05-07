@@ -120,9 +120,8 @@ int TextSelection::FindClosestGlyph(int pageNo, double x, double y)
 
 void TextSelection::FillResultRects(int pageNo, int glyph, int length, StrVec *lines)
 {
-    int len;
     RectI *coords;
-    const TCHAR *text = textCache->GetData(pageNo, &len, &coords);
+    const TCHAR *text = textCache->GetData(pageNo, NULL, &coords);
     RectI mediabox = engine->PageMediabox(pageNo).Round();
     RectI *c = &coords[glyph], *end = c + length;
     for (; c < end; c++) {
@@ -145,7 +144,7 @@ void TextSelection::FillResultRects(int pageNo, int glyph, int length, StrVec *l
         }
 
         // cut the right edge, if it overlaps the next character
-        if (c + 1 < coords + len && (c[1].x || c[1].dx) && bbox.x < c[1].x && bbox.x + bbox.dx > c[1].x)
+        if ((c[1].x || c[1].dx) && bbox.x < c[1].x && bbox.x + bbox.dx > c[1].x)
             bbox.dx = c[1].x - bbox.x;
 
         result.len++;

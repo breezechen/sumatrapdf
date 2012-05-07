@@ -609,39 +609,28 @@ fz_inspection_free(fz_device *dev)
     ((ListInspectionData *)dev->user)->images->Reverse();
 }
 
-static void fz_inspection_handle_text(fz_device *dev, fz_text *text)
-{
-    ((ListInspectionData *)dev->user)->req_t3_fonts = text->font->t3procs != NULL;
-}
-
-static void fz_inspection_handle_image(fz_device *dev, fz_image *image)
-{
-    int n = image->colorspace ? image->colorspace->n + 1 : 1;
-    ((ListInspectionData *)dev->user)->mem_estimate += image->w * image->h * n;
-}
-
 extern "C" static void
 fz_inspection_fill_text(fz_device *dev, fz_text *text, fz_matrix ctm, fz_colorspace *colorspace, float *color, float alpha)
 {
-    fz_inspection_handle_text(dev, text);
+    ((ListInspectionData *)dev->user)->req_t3_fonts = text->font->t3procs != NULL;
 }
 
 extern "C" static void
 fz_inspection_stroke_text(fz_device *dev, fz_text *text, fz_stroke_state *stroke, fz_matrix ctm, fz_colorspace *colorspace, float *color, float alpha)
 {
-    fz_inspection_handle_text(dev, text);
+    ((ListInspectionData *)dev->user)->req_t3_fonts = text->font->t3procs != NULL;
 }
 
 extern "C" static void
 fz_inspection_clip_text(fz_device *dev, fz_text *text, fz_matrix ctm, int accumulate)
 {
-    fz_inspection_handle_text(dev, text);
+    ((ListInspectionData *)dev->user)->req_t3_fonts = text->font->t3procs != NULL;
 }
 
 extern "C" static void
 fz_inspection_clip_stroke_text(fz_device *dev, fz_text *text, fz_stroke_state *stroke, fz_matrix ctm)
 {
-    fz_inspection_handle_text(dev, text);
+    ((ListInspectionData *)dev->user)->req_t3_fonts = text->font->t3procs != NULL;
 }
 
 extern "C" static void
@@ -653,7 +642,9 @@ fz_inspection_fill_shade(fz_device *dev, fz_shade *shade, fz_matrix ctm, float a
 extern "C" static void
 fz_inspection_fill_image(fz_device *dev, fz_image *image, fz_matrix ctm, float alpha)
 {
-    fz_inspection_handle_image(dev, image);
+    int n = image->colorspace ? image->colorspace->n + 1 : 1;
+    ((ListInspectionData *)dev->user)->mem_estimate += image->w * image->h * n;
+
     // extract rectangles for images a user might want to extract
     // TODO: try to better distinguish images a user might actually want to extract
     if (image->w < 16 || image->h < 16)
@@ -666,13 +657,15 @@ fz_inspection_fill_image(fz_device *dev, fz_image *image, fz_matrix ctm, float a
 extern "C" static void
 fz_inspection_fill_image_mask(fz_device *dev, fz_image *image, fz_matrix ctm, fz_colorspace *colorspace, float *color, float alpha)
 {
-    fz_inspection_handle_image(dev, image);
+    int n = image->colorspace ? image->colorspace->n + 1 : 1;
+    ((ListInspectionData *)dev->user)->mem_estimate += image->w * image->h * n;
 }
 
 extern "C" static void
 fz_inspection_clip_image_mask(fz_device *dev, fz_image *image, fz_rect *rect, fz_matrix ctm)
 {
-    fz_inspection_handle_image(dev, image);
+    int n = image->colorspace ? image->colorspace->n + 1 : 1;
+    ((ListInspectionData *)dev->user)->mem_estimate += image->w * image->h * n;
 }
 
 extern "C" static void
@@ -1127,10 +1120,16 @@ PdfEngineImpl::PdfEngineImpl() : _fileName(NULL), _doc(NULL),
     InitializeCriticalSection(&pagesAccess);
     InitializeCriticalSection(&ctxAccess);
 
+    // TODO: disabled for now as it deadlocks in pdf/deadlock.pdf, but we should figure out
+    // the root cause
+#if 0
     fz_locks_ctx.user = &ctxAccess;
     fz_locks_ctx.lock = fz_lock_context_cs;
     fz_locks_ctx.unlock = fz_unlock_context_cs;
     ctx = fz_new_context(NULL, &fz_locks_ctx, MAX_CONTEXT_MEMORY);
+#else
+    ctx = fz_new_context(NULL, NULL, MAX_CONTEXT_MEMORY);
+#endif
 }
 
 PdfEngineImpl::~PdfEngineImpl()

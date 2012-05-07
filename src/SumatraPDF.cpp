@@ -2524,7 +2524,6 @@ static void AppendFileFilterForDoc(DisplayModel *dm, str::Str<TCHAR>& fileFilter
         case Engine_Fb2:    fileFilter.Append(_T("FictionBooks")); break;
         case Engine_Pdb:    fileFilter.Append(_T("PalmDOC")); break;
         case Engine_Chm2:   fileFilter.Append(_TR("CHM documents")); break;
-        case Engine_Tcr:    fileFilter.Append(_T("TCR ebooks")); break;
         case Engine_Txt:    fileFilter.Append(_TR("Text documents")); break;
         default:            fileFilter.Append(_TR("PDF documents")); break;
     }
@@ -2898,7 +2897,6 @@ void OnMenuOpen(SumatraWindow& win)
         { _TR("EPUB ebooks"),           _T("*.epub"),       true },
         { _T("FictionBooks"),           _T("*.fb2;*.fb2z;*.zfb2"), !gUseEbookUI },
         { _T("PalmDOC"),                _T("*.pdb"),        !gUseEbookUI },
-        { _T("TCR ebooks"),             _T("*.tcr"),        !gUseEbookUI },
         { _TR("Text documents"),        _T("*.txt;*.log;*.nfo;file_id.diz;read.me"), !gUseEbookUI },
     };
     // Prepare the file filters (use \1 instead of \0 so that the
@@ -4207,37 +4205,6 @@ static LRESULT CanvasOnMouseWheel(WindowInfo& win, UINT message, WPARAM wParam, 
     return 0;
 }
 
-static LRESULT CanvasOnMouseHWheel(WindowInfo& win, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    if (!win.IsDocLoaded())
-        return 0;
-
-    // Scroll the ToC sidebar, if it's visible and the cursor is in it
-    if (win.tocVisible && IsCursorOverWindow(win.hwndTocTree) && !gWheelMsgRedirect) {
-        // Note: hwndTocTree's window procedure doesn't always handle
-        //       WM_MOUSEHWHEEL and when it's bubbling up, we'd return
-        //       here recursively - prevent that
-        gWheelMsgRedirect = true;
-        LRESULT res = SendMessage(win.hwndTocTree, message, wParam, lParam);
-        gWheelMsgRedirect = false;
-        return res;
-    }
-
-    short delta = GET_WHEEL_DELTA_WPARAM(wParam);
-    win.wheelAccumDelta += delta;
-
-    while (win.wheelAccumDelta >= gDeltaPerLine) {
-        SendMessage(win.hwndCanvas, WM_HSCROLL, SB_LINELEFT, 0);
-        win.wheelAccumDelta -= gDeltaPerLine;
-    }
-    while (win.wheelAccumDelta <= -gDeltaPerLine) {
-        SendMessage(win.hwndCanvas, WM_HSCROLL, SB_LINERIGHT, 0);
-        win.wheelAccumDelta += gDeltaPerLine;
-    }
-
-    return TRUE;
-}
-
 static LRESULT OnGesture(WindowInfo& win, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (!Touch::SupportsGestures())
@@ -4422,9 +4389,6 @@ static LRESULT CALLBACK WndProcCanvas(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
 
         case WM_MOUSEWHEEL:
             return CanvasOnMouseWheel(*win, msg, wParam, lParam);
-
-        case WM_MOUSEHWHEEL:
-            return CanvasOnMouseHWheel(*win, msg, wParam, lParam);
 
         case WM_GESTURE:
             return OnGesture(*win, msg, wParam, lParam);
@@ -4894,12 +4858,12 @@ InitMouseWheelInfo:
             break;
 
         case WM_MOUSEWHEEL:
-        case WM_MOUSEHWHEEL:
             if (!win)
                 break;
 
             if (win->IsChm()) {
-                return win->dm->AsChmEngine()->PassUIMsg(msg, wParam, lParam);
+                win->dm->AsChmEngine()->PassUIMsg(msg, wParam, lParam);
+                break;
             }
 
             // Pass the message to the canvas' window procedure
