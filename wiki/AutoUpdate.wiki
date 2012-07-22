@@ -4,4 +4,4 @@ You might have noticed that auto update doesn't get turned on immediately after 
 
 We wait about a week before activating the auto-update check.
 
-Why? Because that way if there is a problem with the release and we need to release an update, less people will have re-download the application.
+Why? Because that way if there is a problem with the release and we need to release an update, less people will have to re-download the application.
