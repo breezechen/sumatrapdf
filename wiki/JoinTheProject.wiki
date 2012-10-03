@@ -4,7 +4,22 @@
 
 SumatraPDF is an open-source, [http://www.ohloh.net/p/4623/contributors collaborative] project. We always welcome new developers who want to join the project, contribute code and new features.
 
-The process is simple:
+There are two ways to submit code for potential inclusion:
+ * using Github
+ * by attaching patches
+
+== Contribute by using Github ==
+
+ * fork the [https://github.com/kjk/sumatrapdf read-only Github mirror]
+ * create a new issue in the bug tracker. In this issue:
+  * describe what you plan to work on
+  * tell us the location of your fork
+ * work on the code
+ * we'll keep an eye on checkins and provide feedback on code
+ * when the code is ready, we'll merge it with svn
+
+== Contribute by using patches ==
+
  * write a patch against the latest sources
  * create a new bug in [http://code.google.com/p/sumatrapdf/issues/list issue tracker] and attach the patch.
  * make sure to describe what the patch is trying to do and why (not every change is good)
