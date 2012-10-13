@@ -1,4 +1,4 @@
-#summary Github workflow
+#summary Working with Sumatra code using !GitHub
 
 == Working with Sumatra code using GitHub ==
 
