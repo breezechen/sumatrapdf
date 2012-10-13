@@ -1,6 +1,6 @@
-#summary Working with Sumatra code using !GitHub
+#summary Working with Sumatra code using GitHub
 
-== Working with Sumatra code using GitHub ==
+== Working with Sumatra code using !GitHub ==
 
 Git is complicated. If you're a git pro, you don't need to read this.
 
