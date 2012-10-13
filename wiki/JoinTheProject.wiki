@@ -18,6 +18,8 @@ There are two ways to submit code for potential inclusion:
  * we'll keep an eye on checkins and provide feedback on code
  * when the code is ready, we'll merge it with svn
 
+For more detailed instructions read [GithubWorkflow GitHub workflow].
+
 == Contribute by using patches ==
 
  * write a patch against the latest sources
