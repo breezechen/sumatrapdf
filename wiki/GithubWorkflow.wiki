@@ -1,0 +1,96 @@
+#summary Github workflow
+
+== Working with Sumatra code using GitHub ==
+
+Git is complicated. If you're a git pro, you don't need to read this.
+
+If you're not a git pro, here are step-by-step instructions on how to use github to work on sumatra code with the intent of contributing those changes to main code base.
+
+The model I assume: your main (master, in git speak) branch is untouched and all work is done on feature branches. As a rule, the smaller the change, the easier and faster it'll be for us to merge the change back into main svn repository.
+
+== Local vs. remote branches ==
+
+It's important to understand the concept of local and remote branches.
+
+Local branches are branches created in your local repository (i.e. the one on your computer).
+
+Remote branch is the one that exists on github server.
+
+In our case, we'll connect local branch to a remote branch, but it's important to understand those branches can exist separately.
+
+== Step by step guide to making your first checkin ==
+
+1. Fork https://github.com/kjk/sumatrapdf in github UI (use the "Fork" button in upper right corner)
+
+This will create a new repository in your github account https://github.com/YOU/sumatrapdf
+
+2. Get the code to your local machine: 
+
+{{{
+$ git clone git@github.com:YOU/sumatrapdf.git
+$ cd sumatrapdf
+}}}
+
+3. Create a local branch for your changes (let's call it "foo")
+
+But first, see what local branches you currently have:
+
+{{{
+$ git branch
+* master
+}}}
+
+What it tells you that you have only one local branch (master) and it's the working branch (it's marked with *)
+
+Create your branch:
+{{{
+$ git branch foo
+}}}
+
+Now list the branches again:
+{{{
+$ git branch
+  foo
+* master
+}}}
+
+We have two branches: foo and master, but master is still the working branch. Switch the working branch to foo:
+{{{
+$ git checkout foo
+$ git branch
+* foo
+  master
+}}}
+
+Now every change you commit (with git commit) will end up in the local branch foo. But those changes are only present on your computer, not on github. We need to create a remote branch and push the changes from local branch to remote branch.
+
+But first, let's see what remote branches we already have:
+{{{
+$ git branch -r
+  origin/HEAD -> origin/master
+  origin/master
+}}}
+
+The name origin is how git refers to repository hosted on github (in this case, since we cloned github repository, that repository is our origin).
+
+Let's create a remote branch by pushing our local branch to the server:
+{{{
+$ git push origin foo
+$ git branch -r
+  origin/HEAD -> origin/master
+  origin/foo
+  origin/master
+}}}
+
+Now you start writing code and committing it to local branch (git commit -m "comment"). Use git push to upload changes from local branch to remote branch. You should see sth. like:
+
+{{{
+$ git push
+Counting objects: 3, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (2/2), 271 bytes, done.
+Total 2 (delta 1), reused 0 (delta 0)
+To git@github.com:YOU/sumatrapdf.git
+   4dcd7cd..e7fe49c  foo -> foo
+}}}
