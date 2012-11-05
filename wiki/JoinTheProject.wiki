@@ -33,7 +33,7 @@ There's plenty of things [http://code.google.com/p/sumatrapdf/issues/list to wor
 
 To get the latest sources, follow [http://code.google.com/p/sumatrapdf/source/checkout those instructions].
 
-You'll need Visual Studio 2012, 2010 or 2008 to build. A free [http://www.microsoft.com/visualstudio/en-us/products/2010-editions/express#2010-Visual-CPP Express Edition] for C++ will work.
+You'll need Visual Studio 2012, 2010 or 2008 to build. A free [http://www.microsoft.com/visualstudio/eng/products/visual-studio-express-for-windows-desktop Express Edition] for C++ will work.
 
 Open sumatrapdf-vc2010.sln, compile and run.
 
