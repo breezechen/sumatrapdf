@@ -2,7 +2,7 @@
 
 = How to submit bug reports =
 
-Did you find a bug in Sumatra? Please reate a bug report in our [http://code.google.com/p/sumatrapdf/issues/list bug tracker].
+Did you find a bug in Sumatra? Please create a bug report in our [http://code.google.com/p/sumatrapdf/issues/list bug tracker].
 
 Does it involve a specific PDF (or CHM or XPS or ...) file? 
 
