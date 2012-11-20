@@ -4,7 +4,7 @@ Sometimes people are unclear on how to remove/uninstall Sumatra. This guide trie
 
 == Are you using official Sumatra build? ==
 
-Did you download Sumatra from [http://blog.kowalczyk.info/software/sumatrapdf/download-free-pdf-viewer.html our website]?
+Did you download Sumatra from [http://blog.kowalczyk.info/software/sumatrapdf/download-free-pdf-viewer.html official Sumatra website]?
 
 If not, we can't help you because we didn't create the software you're using.
 
