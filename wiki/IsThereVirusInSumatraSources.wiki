@@ -2,7 +2,7 @@
 
 = Introduction =
 
-Some people complain that their anti-virus software complains about executables in bin directory of Sumatra sources.
+Some people report that their anti-virus software complains about executables in bin directory of Sumatra sources.
 
 Is there really a virus in them?
 
