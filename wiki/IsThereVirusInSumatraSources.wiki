@@ -1,4 +1,4 @@
-#summary Is there a virus in sumatra sources?.
+#summary Is there a virus in sumatra sources?
 
 = Introduction =
 
@@ -6,4 +6,4 @@ Some people complain that their anti-virus software complains about executables 
 
 Is there really a virus in them?
 
-No. It's a false positive. Anti-virus software is just being stupid.
+*No*. It's a false positive. Anti-virus software is just being stupid.
