@@ -271,17 +271,17 @@ void RedirectIOToConsole()
 
     // redirect unbuffered STDOUT to the console
     hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
-    *stdout = *_fdopen(hConHandle, "w");
+    *stdout = *(FILE *)_fdopen(hConHandle, "w");
     setvbuf(stdout, NULL, _IONBF, 0);
 
     // redirect unbuffered STDERR to the console
     hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_TEXT);
-    *stderr = *_fdopen(hConHandle, "w");
+    *stderr = *(FILE *)_fdopen(hConHandle, "w");
     setvbuf(stderr, NULL, _IONBF, 0);
 
     // redirect unbuffered STDIN to the console
     hConHandle = _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_TEXT);
-    *stdin = *_fdopen(hConHandle, "r");
+    *stdin = *(FILE *)_fdopen(hConHandle, "r");
     setvbuf(stdin, NULL, _IONBF, 0);
 }
 
@@ -1281,11 +1281,3 @@ void ResizeHwndToClientArea(HWND hwnd, int dx, int dy, bool hasMenu)
     int y = wi.rcWindow.top;
     MoveWindow(hwnd, x, y, dx, dy, TRUE);
 }
-
-void VariantInitBstr(VARIANT& urlVar, const WCHAR *s)
-{
-    VariantInit(&urlVar);
-    urlVar.vt = VT_BSTR;
-    urlVar.bstrVal = SysAllocString(s);
-}
-

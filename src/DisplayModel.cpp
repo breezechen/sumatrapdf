@@ -468,7 +468,7 @@ int DisplayModel::CurrentPageNo() const
 
 void DisplayModel::SetZoomVirtual(float newZoomVirtual)
 {
-    CrashIf(!IsValidZoom(newZoomVirtual));
+    assert(IsValidZoom(newZoomVirtual));
     zoomVirtual = newZoomVirtual;
 
     if (AsChmEngine()) {

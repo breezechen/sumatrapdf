@@ -6,7 +6,6 @@
 
 #include "AppTools.h"
 #include "BencUtil.h"
-#include "CrashHandler.h"
 #include "DisplayState.h"
 #include "Favorites.h"
 #include "FileHistory.h"
@@ -228,18 +227,6 @@ static BencDict *DisplayState_Serialize(DisplayState *ds, bool globalPrefsOnly)
     prefs->Add(TOC_VISIBLE_STR, ds->tocVisible);
     prefs->Add(SIDEBAR_DX_STR, ds->sidebarDx);
 
-    // BUG: 2140
-    if (!IsValidZoom(ds->zoomVirtual)) {
-        CrashLogFmt("Invalid ds->zoomVirtual: %.4f\n", ds->zoomVirtual);
-        const WCHAR *ext = str::FindCharLast(ds->filePath, L'.');
-        if (ext) {
-            ScopedMem<char> extA(str::conv::ToUtf8(ext));
-            CrashLogFmt("File type: %s\n", extA.Get());
-        }
-        CrashLogFmt("DisplayMode: %d\n", ds->displayMode);
-        CrashLogFmt("PageNo: %d\n", ds->pageNo);
-    }
-
     CrashIf(!IsValidZoom(ds->zoomVirtual));
     ScopedMem<char> zoom(str::Format("%.4f", ds->zoomVirtual));
     prefs->AddRaw(ZOOM_VIRTUAL_STR, zoom);
@@ -247,9 +234,8 @@ static BencDict *DisplayState_Serialize(DisplayState *ds, bool globalPrefsOnly)
     if (ds->tocState && ds->tocState->Count() > 0) {
         BencArray *tocState = new BencArray();
         if (tocState) {
-            for (size_t i = 0; i < ds->tocState->Count(); i++) {
+            for (size_t i = 0; i < ds->tocState->Count(); i++)
                 tocState->Add(ds->tocState->At(i));
-            }
             prefs->Add(TOC_STATE_STR, tocState);
         }
     }
@@ -423,23 +409,6 @@ static void Retrieve(BencDict *dict, const char *key, DisplayMode& value)
     }
 }
 
-static void DeserializeToc(BencDict *dict, DisplayState *ds)
-{
-    BencArray *tocState = dict->GetArray(TOC_STATE_STR);
-    if (!tocState)
-        return;
-    size_t len = tocState->Length();
-    ds->tocState = new Vec<int>(len);
-    if (!ds->tocState)
-        return;
-
-    for (size_t i = 0; i < len; i++) {
-        BencInt *intObj = tocState->GetInt(i);
-        if (intObj)
-            ds->tocState->Append((int)intObj->Value());
-    }
-}
-
 static DisplayState * DeserializeDisplayState(BencDict *dict, bool globalPrefsOnly)
 {
     DisplayState *ds = new DisplayState();
@@ -480,7 +449,18 @@ static DisplayState * DeserializeDisplayState(BencDict *dict, bool globalPrefsOn
     if (!IsValidZoom(ds->zoomVirtual))
         ds->zoomVirtual = 100.f;
 
-    DeserializeToc(dict, ds);
+    BencArray *tocState = dict->GetArray(TOC_STATE_STR);
+    if (tocState) {
+        size_t len = tocState->Length();
+        ds->tocState = new Vec<int>(len);
+        if (ds->tocState) {
+            for (size_t i = 0; i < len; i++) {
+                BencInt *intObj = tocState->GetInt(i);
+                if (intObj)
+                    ds->tocState->Append((int)intObj->Value());
+            }
+        }
+    }
 
     return ds;
 }
@@ -710,10 +690,6 @@ bool SavePrefs()
     if (gPluginMode)
         return false;
 
-    // don't save preferences without the proper permission
-    if (!HasPermission(Perm_SavePreferences))
-        return false;
-
     /* mark currently shown files as visible */
     for (size_t i = 0; i < gWindows.Count(); i++) {
         UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(gWindows.At(i)));
@@ -722,6 +698,10 @@ bool SavePrefs()
     for (size_t i = 0; i < gEbookWindows.Count(); i++) {
         UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(gEbookWindows.At(i)));
     }
+
+    // don't save preferences without the proper permission
+    if (!HasPermission(Perm_SavePreferences))
+        return false;
 
     ScopedMem<WCHAR> path(GetPrefsFileName());
     bool ok = Prefs::Save(path, gGlobalPrefs, gFileHistory, gFavorites);
