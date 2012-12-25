@@ -1,0 +1,26 @@
+#summary How to help us debug Sumatra if it crashes.
+
+If Sumatra crashes reliably on your machine but we can't reproduce it ourselves, you can help us by debugging it. Here's a tutorial on how to do it.
+
+First, vocabulary. `%ProgramFiles%` means the standard directory where Windows installs programs. It's `c:\Program Files` on 32-bit Windows and `c:\Program Files (x86)` on 64-bit Windows.
+
+1. Download WinDBG ("Debugging Tools for Windows") following instructions on [http://msdn.microsoft.com/en-us/windows/hardware/gg463009.aspx this page]. 
+
+2. Download Sumatra symbols. For release versions it's http://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-$ver.pdb.zip (eg. http://s3.amazonaws.com/kjkpub/sumatrapdf/rel/SumatraPDF-2.2.pdb.zip for 2.2 version).
+
+3. Copy symbols next to Sumatra's .exe. If it's installed version, copy libmupdf.pdb and SumatraPDF-no-MuPDF.pdb in the same directory where SumatraPDF.exe is (most likely `%ProgramFiles%\SumatraPDF`. If it's portable version, copy SumatraPDF.pdb to the same directory where SumatraPDF.exe is (only you know where that is).
+
+4. Start SumatraPDF.exe under the control of WinDBG
+
+4.1 start WinDBG.exe
+
+4.2 File/Open (Ctrl-E), find and open SumatraPDF.exe executable
+
+4.3 In WinDBG, type:
+
+4.3.1 `.sympath+ SRV*c:\symbols*http://msdl.microsoft.com/download/symbols`
+
+4.3.2 `g`
+
+4.4 When Sumatra crashes, type: `!analyze -v` and paste the result of that to the bug report
+
