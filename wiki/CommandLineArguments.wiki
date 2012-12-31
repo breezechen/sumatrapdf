@@ -90,7 +90,7 @@ All options start with a dash and have (where indicated) arguments that have to 
 
   * {{{-print-settings <settings-list>}}}
   
-  Used in combination with {{{-print-to}}} and {{{-print-to-default}}}. Allows to tweak some of the printing related settings without using the Print dialog. The settings-list is a comma separated list of page ranges and advanced options such as "even" or "odd" and "noscale", "shrink" and "fit".
+  Used in combination with {{{-print-to}}} and {{{-print-to-default}}}. Allows to tweak some of the printing related settings without using the Print dialog. The settings-list is a comma separated list of page ranges and advanced options such as "even" or "odd"; "noscale", "shrink" and "fit"; and "compat" (for printing as image).
   
   E.g.
   {{{
@@ -151,6 +151,10 @@ All options start with a dash and have (where indicated) arguments that have to 
   * {{{-scroll <x,y>}}}
   
   Scrolls to the given coordinates for the first indicated file.
+
+  * {{{-manga-mode <mode>}}}
+  
+  Enables or disables "Manga mode" for reading (mainly Japanese) comic books from right to left. Mode must be "true" or 1 for enabling and "false" or 0 for disabling this feature.
 
 == Developer options ==
 
