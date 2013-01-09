@@ -1,6 +1,6 @@
 #summary How to help us debug Sumatra if it crashes.
 
-If Sumatra crashes reliably on your machine but we can't reproduce it ourselves, you can help us by debugging it. Here's a tutorial on how to do it.
+If Sumatra crashes or hangs reliably on your machine but we can't reproduce it ourselves, you can help us by debugging it. Here's a tutorial on how to do it.
 
 First, vocabulary. `%ProgramFiles%` means the standard directory where Windows installs programs. It's `c:\Program Files` on 32-bit Windows and `c:\Program Files (x86)` on 64-bit Windows.
 
