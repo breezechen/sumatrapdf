@@ -10,6 +10,10 @@ First, vocabulary. `%ProgramFiles%` means the standard directory where Windows i
 
 3. Copy symbols next to Sumatra's .exe. If it's installed version, copy libmupdf.pdb and SumatraPDF-no-MuPDF.pdb in the same directory where SumatraPDF.exe is (most likely `%ProgramFiles%\SumatraPDF`. If it's portable version, copy SumatraPDF.pdb to the same directory where SumatraPDF.exe is (only you know where that is).
 
+== Debugging a crash ==
+
+Here are the steps to follow if Sumatra crashes
+
 4. Start SumatraPDF.exe under the control of WinDBG
 
 4.1 start WinDBG.exe
@@ -24,3 +28,20 @@ First, vocabulary. `%ProgramFiles%` means the standard directory where Windows i
 
 4.4 When Sumatra crashes, type: `!analyze -v` and paste the result of that to the bug report
 
+== Debugging a hang ==
+
+Here are the steps to follow if Sumatra hangs
+
+4. Start SumatraPDF.exe and get it to hang
+
+5. start WinDBG.exe
+
+6. use File/Attach to process (F6) and select SumatraPDF.exe from the 
+
+7. In WinDBG, type:
+
+7.1 `.sympath+ SRV*c:\symbols*http://msdl.microsoft.com/download/symbols`
+
+7.2 `~*kb`
+
+Attach the output to bug report
