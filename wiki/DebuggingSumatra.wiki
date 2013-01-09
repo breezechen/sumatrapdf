@@ -45,4 +45,5 @@ Here are the steps to follow if Sumatra hangs
 7.2 `~*kb`
 
 7.3 `lmf`
+
 Attach the output to bug report
