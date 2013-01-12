@@ -581,7 +581,8 @@ static void j2k_read_siz(opj_j2k_t *j2k) {
         opj_event_msg(j2k->cinfo, EVT_ERROR, "Out of memory\n");
         return;
     }
-	cp->tileno = (int*) opj_malloc(cp->tw * cp->th * sizeof(int));
+	/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=2152 */
+	cp->tileno = (int*) opj_calloc(cp->tw * cp->th, sizeof(int));
     if (cp->tileno == NULL)
     {
         opj_event_msg(j2k->cinfo, EVT_ERROR, "Out of memory\n");
@@ -1365,6 +1366,11 @@ static void j2k_read_sot(opj_j2k_t *j2k) {
 			i++;
 		}
 		if (status == 0) {
+			/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=2152 */
+			if (cp->tileno_size >= cp->tw * cp->th) {
+				opj_event_msg(j2k->cinfo, EVT_ERROR, "JPWL: too many tiles (max %d)\n", cp->tw * cp->th);
+				return;
+			}
 			cp->tileno[cp->tileno_size] = tileno;
 			cp->tileno_size++;
 		}
@@ -1553,6 +1559,8 @@ static void j2k_read_sod(opj_j2k_t *j2k) {
 		truncate = 1;		/* Case of a truncate codestream */
 	}	
 
+    /* cf. http://code.google.com/p/openjpeg/issues/detail?id=205 */
+    if (len >= 4)
    {/* chop padding bytes: */
     unsigned char *s, *e; 
 
@@ -1563,6 +1571,8 @@ static void j2k_read_sod(opj_j2k_t *j2k) {
 
   if(e[-2] == 0x00 && e[-1] == 0x00) /* padding bytes */
   {
+    /* cf. http://code.google.com/p/openjpeg/issues/detail?id=205 */
+    if ((s = memchr(s, 0xff, e - s - 1)) && *(s + 1) == 0xd9)
 	while(e > s)
  {
 	if(e[-2] == 0xff && e[-1] == 0xd9)	break;
