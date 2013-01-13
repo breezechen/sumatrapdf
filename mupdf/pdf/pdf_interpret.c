@@ -156,11 +156,6 @@ pdf_is_hidden_ocg(pdf_obj *ocg, pdf_csi *csi, pdf_obj *rdb)
 	pdf_obj *obj, *obj2;
 	char *type;
 	pdf_ocg_descriptor *desc = csi->xref->ocg;
-	fz_context *ctx = csi->dev->ctx;
-
-	/* Avoid infinite recursions */
-	if (pdf_obj_marked(ocg))
-		return 0;
 
 	/* If no ocg descriptor, everything is visible */
 	if (!desc)
@@ -286,41 +281,28 @@ pdf_is_hidden_ocg(pdf_obj *ocg, pdf_csi *csi, pdf_obj *rdb)
 			combine = 0;
 		}
 
-		if (pdf_obj_mark(ocg))
-			return 0; /* Should never happen */
-		fz_try(ctx)
-		{
-			obj = pdf_dict_gets(ocg, "OCGs");
-			on = combine & 1;
-			if (pdf_is_array(obj)) {
-				int i, len;
-				len = pdf_array_len(obj);
-				for (i = 0; i < len; i++)
-				{
-					int hidden;
-					hidden = pdf_is_hidden_ocg(pdf_array_get(obj, i), csi, rdb);
-					if ((combine & 1) == 0)
-						hidden = !hidden;
-					if (combine & 2)
-						on &= hidden;
-					else
-						on |= hidden;
-				}
-			}
-			else
+		obj = pdf_dict_gets(ocg, "OCGs");
+		on = combine & 1;
+		if (pdf_is_array(obj)) {
+			int i, len;
+			len = pdf_array_len(obj);
+			for (i = 0; i < len; i++)
 			{
-				on = pdf_is_hidden_ocg(obj, csi, rdb);
+				int hidden;
+				hidden = pdf_is_hidden_ocg(pdf_array_get(obj, i), csi, rdb);
 				if ((combine & 1) == 0)
-					on = !on;
+					hidden = !hidden;
+				if (combine & 2)
+					on &= hidden;
+				else
+					on |= hidden;
 			}
 		}
-		fz_always(ctx)
+		else
 		{
-			pdf_obj_unmark(ocg);
-		}
-		fz_catch(ctx)
-		{
-			fz_rethrow(ctx);
+			on = pdf_is_hidden_ocg(obj, csi, rdb);
+			if ((combine & 1) == 0)
+				on = !on;
 		}
 		return !on;
 	}
@@ -1499,7 +1481,7 @@ pdf_run_xobject(pdf_csi *csi, pdf_obj *resources, pdf_xobject *xobj, fz_matrix t
 	int popmask;
 
 	/* Avoid infinite recursion */
-	if (xobj == NULL || pdf_obj_mark(xobj->me))
+	if (xobj == NULL || pdf_dict_mark(xobj->me))
 		return;
 
 	fz_var(gstate);
@@ -1599,7 +1581,7 @@ pdf_run_xobject(pdf_csi *csi, pdf_obj *resources, pdf_xobject *xobj, fz_matrix t
 			pdf_grestore(csi);
 		}
 
-		pdf_obj_unmark(xobj->me);
+		pdf_dict_unmark(xobj->me);
 	}
 	fz_catch(ctx)
 	{
@@ -2730,7 +2712,7 @@ static void
 pdf_run_stream(pdf_csi *csi, pdf_obj *rdb, fz_stream *file, pdf_lexbuf *buf)
 {
 	fz_context *ctx = csi->dev->ctx;
-	pdf_token tok = PDF_TOK_ERROR;
+	int tok = PDF_TOK_ERROR;
 	int in_array;
 	int ignoring_errors = 0;
 
@@ -2809,11 +2791,9 @@ pdf_run_stream(pdf_csi *csi, pdf_obj *rdb, fz_stream *file, pdf_lexbuf *buf)
 				case PDF_TOK_OPEN_ARRAY:
 					if (!csi->in_text)
 					{
-						if (csi->obj)
-						{
-							pdf_drop_obj(csi->obj);
-							csi->obj = NULL;
-						}
+						/* SumatraPDF: fix memory leak */
+						pdf_drop_obj(csi->obj);
+						csi->obj = NULL;
 						csi->obj = pdf_parse_array(csi->xref, file, buf);
 					}
 					else
@@ -2823,11 +2803,9 @@ pdf_run_stream(pdf_csi *csi, pdf_obj *rdb, fz_stream *file, pdf_lexbuf *buf)
 					break;
 
 				case PDF_TOK_OPEN_DICT:
-					if (csi->obj)
-					{
-						pdf_drop_obj(csi->obj);
-						csi->obj = NULL;
-					}
+					/* SumatraPDF: fix memory leak */
+					pdf_drop_obj(csi->obj);
+					csi->obj = NULL;
 					csi->obj = pdf_parse_dict(csi->xref, file, buf);
 					break;
 
@@ -2861,11 +2839,9 @@ pdf_run_stream(pdf_csi *csi, pdf_obj *rdb, fz_stream *file, pdf_lexbuf *buf)
 					}
 					else
 					{
-						if (csi->obj)
-						{
-							pdf_drop_obj(csi->obj);
-							csi->obj = NULL;
-						}
+						/* SumatraPDF: fix memory leak */
+						pdf_drop_obj(csi->obj);
+						csi->obj = NULL;
 						csi->obj = pdf_new_string(ctx, buf->scratch, buf->len);
 					}
 					break;

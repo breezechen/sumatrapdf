@@ -21,10 +21,10 @@ public:
         return PointT<int>((int)floor(x + 0.5), (int)floor(y + 0.5));
     }
 
-    bool operator==(PointT<T>& other) const {
+    bool operator==(PointT<T>& other) {
         return this->x == other.x && this->y == other.y;
     }
-    bool operator!=(PointT<T>& other) const {
+    bool operator!=(PointT<T>& other) {
         return !this->operator==(other);
     }
 };
@@ -54,10 +54,10 @@ public :
         return dx == 0 || dy == 0;
     }
 
-    bool operator==(SizeT<T>& other) const {
+    bool operator==(SizeT<T>& other) {
         return this->dx == other.dx && this->dy == other.dy;
     }
-    bool operator!=(SizeT<T>& other) const {
+    bool operator!=(SizeT<T>& other) {
         return !this->operator==(other);
     }
 };
@@ -175,24 +175,13 @@ public:
     static RectT FromRECT(RECT& rect) {
         return FromXY(rect.left, rect.top, rect.right, rect.bottom);
     }
-
-#ifdef GDIPVER
-    Gdiplus::Rect ToGdipRect() const {
-        RectT<int> rect(this->Convert<int>());
-        return Gdiplus::Rect(rect.x, rect.y, rect.dx, rect.dy);
-    }
-    Gdiplus::RectF ToGdipRectF() const {
-        RectT<float> rectF(this->Convert<float>());
-        return Gdiplus::RectF(rectF.x, rectF.y, rectF.dx, rectF.dy);
-    }
-#endif
 #endif
 
-    bool operator==(RectT<T>& other) const {
+    bool operator==(RectT<T>& other) {
         return this->x == other.x && this->y == other.y &&
                this->dx == other.dx && this->dy == other.dy;
     }
-    bool operator!=(RectT<T>& other) const {
+    bool operator!=(RectT<T>& other) {
         return !this->operator==(other);
     }
 };

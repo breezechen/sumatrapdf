@@ -228,9 +228,6 @@ public:
     virtual unsigned char *GetFileData(size_t *cbCount) {
         return fileName ? (unsigned char *)file::ReadAll(fileName, cbCount) : NULL;
     }
-    virtual bool SaveFileAs(const WCHAR *copyFileName) {
-        return fileName ? CopyFile(fileName, copyFileName, FALSE) : false;
-    }
     virtual WCHAR * ExtractPageText(int pageNo, WCHAR *lineSep, RectI **coords_out=NULL,
                                     RenderTarget target=Target_View) {
         return pdfEngine ? pdfEngine->ExtractPageText(pageNo, lineSep, coords_out, target) : NULL;
@@ -241,27 +238,13 @@ public:
     virtual PageLayoutType PreferredLayout() {
         return pdfEngine ? pdfEngine->PreferredLayout() : Layout_Single;
     }
-    virtual WCHAR *GetProperty(DocumentProperty prop) {
-        // omit properties created by Ghostscript
-        if (!pdfEngine || Prop_CreationDate == prop || Prop_ModificationDate == prop ||
-            Prop_PdfVersion == prop || Prop_PdfProducer == prop || Prop_PdfFileStructure == prop) {
-            return NULL;
-        }
-        return pdfEngine->GetProperty(prop);
-    }
+    virtual WCHAR *GetProperty(DocumentProperty prop) { return NULL; }
 
-    virtual bool SupportsAnnotation(PageAnnotType type, bool forSaving=false) const {
-        return !forSaving && pdfEngine && pdfEngine->SupportsAnnotation(type);
+    virtual bool IsPrintingAllowed() {
+        return pdfEngine ? pdfEngine->IsPrintingAllowed() : true;
     }
-    virtual void UpdateUserAnnotations(Vec<PageAnnotation> *list) {
-        if (pdfEngine) pdfEngine->UpdateUserAnnotations(list);
-    }
-
-    virtual bool AllowsPrinting() const {
-        return pdfEngine ? pdfEngine->AllowsPrinting() : true;
-    }
-    virtual bool AllowsCopyingText() const {
-        return pdfEngine ? pdfEngine->AllowsCopyingText() : true;
+    virtual bool IsCopyingTextAllowed() {
+        return pdfEngine ? pdfEngine->IsCopyingTextAllowed() : true;
     }
 
     virtual float GetFileDPI() const {
@@ -296,8 +279,8 @@ public:
         return pdfEngine ? pdfEngine->GetDecryptionKey() : NULL;
     }
 
-    virtual bool SaveFileAsPDF(const WCHAR *copyFileName) {
-        return pdfEngine->SaveFileAs(copyFileName);
+    virtual unsigned char *GetPDFData(size_t *cbCount) {
+        return pdfEngine->GetFileData(cbCount);
     }
 
 protected:

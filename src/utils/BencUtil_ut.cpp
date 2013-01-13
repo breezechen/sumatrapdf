@@ -329,16 +329,16 @@ static void BencTestStress()
         } else if (n < 18) {
             if (stack.Count() > 0) {
                 n = rand() % 100;
-                stack.Pop();
-                BencObj *o = startDict;
+                BencObj *o = stack.Pop();
+                o = startDict;
                 if (stack.Count() > 0) {
                     o = stack.Last();
                 }
                 a = NULL; d = NULL;
                 if (BT_ARRAY == o->Type()) {
-                    a = static_cast<BencArray *>(o);
+                    a = (BencArray*)o;
                 } else {
-                    d = static_cast<BencDict *>(o);
+                    d = (BencDict*)o;
                 }
             }
         } else if (n < (18 + 24)) {

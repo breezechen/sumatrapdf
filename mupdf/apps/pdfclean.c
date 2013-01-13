@@ -162,14 +162,11 @@ int pdfclean_main(int argc, char **argv)
 	int subset;
 	fz_write_options opts;
 	int write_failed = 0;
-	int errors = 0;
 
 	opts.do_garbage = 0;
 	opts.do_expand = 0;
 	opts.do_ascii = 0;
 	opts.do_linear = 0;
-	opts.continue_on_error = 1;
-	opts.errors = &errors;
 
 	while ((c = fz_getopt(argc, argv, "adfgilp:")) != -1)
 	{
@@ -232,7 +229,5 @@ int pdfclean_main(int argc, char **argv)
 
 	fz_free_context(ctx);
 
-	if (errors)
-		write_failed = 1;
 	return write_failed ? 1 : 0;
 }

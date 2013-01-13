@@ -7,7 +7,6 @@
 #include "CmdLineParser.h"
 #include "Doc.h"
 #include "FileUtil.h"
-#include "ImagesEngine.h"
 #include "PdfEngine.h"
 #include "TgaReader.h"
 #include "WinUtil.h"
@@ -41,7 +40,7 @@ char *Escape(WCHAR *string, bool keepString=false)
     return str::conv::ToUtf8(escaped.Get());
 }
 
-void DumpProperties(BaseEngine *engine, bool fullDump)
+void DumpProperties(BaseEngine *engine)
 {
     Out("\t<Properties\n");
     ScopedMem<char> str;
@@ -70,16 +69,16 @@ void DumpProperties(BaseEngine *engine, bool fullDump)
         Out("\t\tCreator=\"%s\"\n", str.Get());
     str.Set(Escape(engine->GetProperty(Prop_PdfProducer)));
     if (str)
-        Out("\t\tPdfProducer=\"%s\"\n", str.Get());
+        Out("\t\tProducer=\"%s\"\n", str.Get());
     str.Set(Escape(engine->GetProperty(Prop_PdfVersion)));
     if (str)
         Out("\t\tPdfVersion=\"%s\"\n", str.Get());
     str.Set(Escape(engine->GetProperty(Prop_PdfFileStructure)));
     if (str)
         Out("\t\tPdfFileStructure=\"%s\"\n", str.Get());
-    if (!engine->AllowsPrinting())
+    if (!engine->IsPrintingAllowed())
         Out("\t\tPrintingAllowed=\"no\"\n");
-    if (!engine->AllowsCopyingText())
+    if (!engine->IsCopyingTextAllowed())
         Out("\t\tCopyingTextAllowed=\"no\"\n");
     if (engine->IsImageCollection())
         Out("\t\tImageCollection=\"yes\"\n");
@@ -87,14 +86,12 @@ void DumpProperties(BaseEngine *engine, bool fullDump)
         Out("\t\tPreferredLayout=\"%d\"\n", engine->PreferredLayout());
     Out("\t/>\n");
 
-    if (fullDump) {
-        ScopedMem<WCHAR> fontlist(engine->GetProperty(Prop_FontList));
-        if (fontlist) {
-            WStrVec fonts;
-            fonts.Split(fontlist, L"\n");
-            str.Set(Escape(fonts.Join(L"\n\t\t")));
-            Out("\t<FontList>\n\t\t%s\n\t</FontList>\n", str.Get());
-        }
+    ScopedMem<WCHAR> fontlist(engine->GetProperty(Prop_FontList));
+    if (fontlist) {
+        WStrVec fonts;
+        fonts.Split(fontlist, L"\n");
+        str.Set(Escape(fonts.Join(L"\n\t\t")));
+        Out("\t<FontList>\n\t\t%s\n\t</FontList>\n", str.Get());
     }
 }
 
@@ -173,16 +170,6 @@ void DumpToc(BaseEngine *engine)
     delete root;
 }
 
-const char *ElementTypeToStr(PageElement *el)
-{
-    switch (el->GetType()) {
-    case Element_Link: return "Link";
-    case Element_Image: return "Image";
-    case Element_Comment: return "Comment";
-    default: return "Unknown";
-    }
-}
-
 const char *PageDestToStr(PageDestType destType)
 {
 #define HandleType(type) if (destType == Dest_ ## type) return #type;
@@ -241,15 +228,14 @@ void DumpPageContent(BaseEngine *engine, int pageNo, bool fullDump)
         Out("\t\t<PageElements>\n");
         for (size_t i = 0; i < els->Count(); i++) {
             RectD rect = els->At(i)->GetRect();
-            Out("\t\t\t<Element Type=\"%s\"\n\t\t\t\tRect=\"%.0f %.0f %.0f %.0f\"\n",
-                ElementTypeToStr(els->At(i)), rect.x, rect.y, rect.dx, rect.dy);
+            Out("\t\t\t<Element\n\t\t\t\tRect=\"%.0f %.0f %.0f %.0f\"\n", rect.x, rect.y, rect.dx, rect.dy);
             PageDestination *dest = els->At(i)->AsLink();
             if (dest) {
                 if (dest->GetDestType() != Dest_None)
-                    Out("\t\t\t\tLinkType=\"%s\"\n", PageDestToStr(dest->GetDestType()));
+                    Out("\t\t\t\tType=\"%s\"\n", PageDestToStr(dest->GetDestType()));
                 ScopedMem<char> value(Escape(dest->GetDestValue()));
                 if (value)
-                    Out("\t\t\t\tLinkTarget=\"%s\"\n", value.Get());
+                    Out("\t\t\t\tTarget=\"%s\"\n", value.Get());
                 if (dest->GetDestPageNo())
                     Out("\t\t\t\tLinkedPage=\"%d\"\n", dest->GetDestPageNo());
                 ScopedMem<char> rectStr(DestRectToStr(engine, dest));
@@ -302,7 +288,7 @@ void DumpData(BaseEngine *engine, bool fullDump)
     Out(UTF8_BOM);
     Out("<?xml version=\"1.0\"?>\n");
     Out("<EngineDump>\n");
-    DumpProperties(engine, fullDump);
+    DumpProperties(engine);
     DumpToc(engine);
     for (int i = 1; i <= engine->PageCount(); i++)
         DumpPageContent(engine, i, fullDump);
@@ -315,15 +301,14 @@ void RenderDocument(BaseEngine *engine, const WCHAR *renderPath)
 {
     for (int pageNo = 1; pageNo <= engine->PageCount(); pageNo++) {
         RenderedBitmap *bmp = engine->RenderBitmap(pageNo, 1.0, 0);
-        if (!bmp)
-            continue;
+        size_t len = 0;
+        ScopedMem<unsigned char> data;
+        if (bmp && str::EndsWithI(renderPath, L".bmp"))
+            data.Set(SerializeBitmap(bmp->GetBitmap(), &len));
+        else if (bmp)
+            data.Set(tga::SerializeBitmap(bmp->GetBitmap(), &len));
         ScopedMem<WCHAR> pageBmpPath(str::Format(renderPath, pageNo));
-        if (!SaveRenderedBitmap(bmp, pageBmpPath)) {
-            size_t tgaDataLen;
-            ScopedMem<unsigned char> tgaData(tga::SerializeBitmap(bmp->GetBitmap(), &tgaDataLen));
-            if (tgaData)
-                file::WriteAll(pageBmpPath, tgaData.Get(), tgaDataLen);
-        }
+        file::WriteAll(pageBmpPath, data, len);
         delete bmp;
     }
 }
@@ -351,7 +336,7 @@ int main(int argc, char **argv)
 Usage:
         ErrOut("%s <filename> [-pwd <password>][-full][-alt][-render <path-%%d.tga>]\n",
             path::GetBaseName(argList.At(0)));
-        return 2;
+        return 0;
     }
 
     ScopedMem<WCHAR> filePath;

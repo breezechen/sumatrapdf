@@ -9,7 +9,6 @@
 #include "AppPrefs.h"
 #include "AppTools.h"
 #include "CrashHandler.h"
-#include "DebugLog.h"
 #include "DirIter.h"
 #include "Doc.h"
 #include "EbookController.h"
@@ -674,68 +673,6 @@ void SaveThumbnailForFile(const WCHAR *filePath, RenderedBitmap *bmp)
     SaveThumbnail(*ds);
 }
 
-class ChmThumbnailTask : public UITask, public ChmNavigationCallback
-{
-    ChmEngine *engine;
-    HWND hwnd;
-    RenderedBitmap *bmp;
-
-public:
-    ChmThumbnailTask(ChmEngine *engine, HWND hwnd) :
-        engine(engine), hwnd(hwnd), bmp(NULL) { }
-
-    ~ChmThumbnailTask() {
-        delete engine;
-        DestroyWindow(hwnd);
-        delete bmp;
-    }
-
-    virtual void Execute() {
-        SaveThumbnailForFile(engine->FileName(), bmp);
-        bmp = NULL;
-    }
-
-    virtual void PageNoChanged(int pageNo) {
-        CrashIf(pageNo != 1);
-        RectI area(0, 0, THUMBNAIL_DX * 2, THUMBNAIL_DY * 2);
-        bmp = engine->TakeScreenshot(area, SizeI(THUMBNAIL_DX, THUMBNAIL_DY));
-        uitask::Post(this);
-    }
-
-    virtual void LaunchBrowser(const WCHAR *url) { }
-    virtual void FocusFrame(bool always) { }
-};
-
-// Create a thumbnail of chm document by loading it again and rendering
-// its first page to a hwnd specially created for it.
-static void CreateChmThumbnail(WindowInfo& win)
-{
-    ChmEngine *engine = ChmEngine::CreateFromFile(win.loadedFilePath);
-    if (!engine)
-        return;
-
-    // We render twice the size of thumbnail and scale it down
-    int winDx = THUMBNAIL_DX * 2 + GetSystemMetrics(SM_CXVSCROLL);
-    int winDy = THUMBNAIL_DY * 2 + GetSystemMetrics(SM_CYHSCROLL);
-    // reusing WC_STATIC. I don't think exact class matters (WndProc
-    // will be taken over by HtmlWindow anyway) but it can't be NULL.
-    HWND hwnd = CreateWindow(WC_STATIC, L"BrowserCapture", WS_POPUP,
-                             0, 0, winDx, winDy, NULL, NULL, NULL, NULL);
-    if (!hwnd) {
-        delete engine;
-        return;
-    }
-#if 0 // when debugging set to 1 to see the window
-    ShowWindow(hwnd, SW_SHOW);
-#endif
-
-    // engine and window will be destroyed by the callback once it's invoked
-    ChmThumbnailTask *callback = new ChmThumbnailTask(engine, hwnd);
-    engine->SetParentHwnd(hwnd);
-    engine->SetNavigationCalback(callback);
-    engine->DisplayPage(1);
-}
-
 class ThumbnailRenderingTask : public UITask, public RenderingCallback
 {
     ScopedMem<WCHAR> filePath;
@@ -760,6 +697,27 @@ public:
         bmp = NULL;
     }
 };
+
+// Create a thumbnail of chm document by loading it again and rendering
+// its first page to a hwnd specially created for it. An alternative
+// would be to reuse ChmEngine/HtmlWindow we already have but it has
+// its own problem.
+// Could be done in background but no need to do that unless it's
+// too slow (I've measured it at ~1sec for a sample document)
+static void CreateChmThumbnail(WindowInfo& win, DisplayState& ds)
+{
+    assert(win.IsChm());
+    if (!win.IsChm()) return;
+
+    ChmEngine *chmEngine = static_cast<ChmEngine *>(win.dm->AsChmEngine()->Clone());
+    if (!chmEngine)
+        return;
+
+    SizeI thumbSize(THUMBNAIL_DX, THUMBNAIL_DY);
+    RenderedBitmap *bmp = chmEngine->CreateThumbnail(thumbSize);
+    SaveThumbnailForFile(win.loadedFilePath, bmp);
+    delete chmEngine;
+}
 
 bool ShouldSaveThumbnail(DisplayState& ds)
 {
@@ -800,7 +758,7 @@ static void CreateThumbnailForFile(WindowInfo& win, DisplayState& ds)
     }
 
     if (win.IsChm()) {
-        CreateChmThumbnail(win);
+        CreateChmThumbnail(win, ds);
         return;
     }
 
@@ -841,6 +799,8 @@ static void UnsubclassCanvas(HWND hwnd)
     SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)WndProcCanvas);
     SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)0);
 }
+
+#include "DebugLog.h"
 
 // isNewWindow : if true then 'win' refers to a newly created window that needs
 //   to be resized and placed
@@ -1077,6 +1037,9 @@ Error:
 
 void ReloadDocument(WindowInfo *win, bool autorefresh)
 {
+    if (win->IsChm() && InHtmlNestedMessagePump())
+        return;
+
     DisplayState ds;
     ds.useGlobalValues = gGlobalPrefs.globalPrefsOnly;
     if (!win->IsDocLoaded()) {
@@ -1460,12 +1423,6 @@ static WindowInfo* LoadDocumentOld(LoadArgs& args)
     bool loaded = LoadDocIntoWindow(args, &pwdUI, NULL, isNewWindow, 
         true /* allowFailure */, true /* placeWindow */);
 
-    if (gPluginMode) {
-        // hide the menu for embedded documents opened from the plugin
-        SetMenu(win->hwndFrame, NULL);
-        return win;
-    }
-
     if (!loaded) {
         if (gFileHistory.MarkFileInexistent(fullPath))
             SavePrefs();
@@ -1550,17 +1507,18 @@ bool DoCachePageRendering(WindowInfo *win, int pageNo)
 }
 
 /* Send the request to render a given page to a rendering thread */
-void WindowInfo::RequestRendering(int pageNo)
+void WindowInfo::RenderPage(int pageNo)
 {
     assert(dm);
-    if (!dm) return;
+    if (!dm)
+        return;
     // don't render any plain images on the rendering thread,
     // they'll be rendered directly in DrawDocument during
     // WM_PAINT on the UI thread
     if (!DoCachePageRendering(this, pageNo))
         return;
 
-    gRenderCache.RequestRendering(dm, pageNo);
+    gRenderCache.Render(dm, pageNo, NULL);
 }
 
 void WindowInfo::CleanUp(DisplayModel *dm)
@@ -2095,8 +2053,8 @@ static void OnMouseMove(WindowInfo& win, int x, int y, WPARAM flags)
     case MA_SELECTING:
         win.selectionRect.dx = x - win.selectionRect.x;
         win.selectionRect.dy = y - win.selectionRect.y;
-        OnSelectionEdgeAutoscroll(&win, x, y);
         win.RepaintAsync();
+        OnSelectionEdgeAutoscroll(&win, x, y);
         break;
     case MA_DRAGGING:
     case MA_DRAGGING_RIGHT:
@@ -2376,6 +2334,7 @@ static void OnPaint(WindowInfo& win)
         // a notification would break this
         ScopedFont fontRightTxt(GetSimpleFont(hdc, L"MS Shell Dlg", 14));
         HGDIOBJ hPrevFont = SelectObject(hdc, fontRightTxt);
+        SetBkMode(hdc, TRANSPARENT);
         FillRect(hdc, &ps.rcPaint, gBrushNoDocBg);
         ScopedMem<WCHAR> msg(str::Format(_TR("Error loading %s"), win.loadedFilePath));
         DrawCenteredText(hdc, ClientRect(win.hwndCanvas), msg, IsUIRightToLeft());
@@ -2404,10 +2363,8 @@ void OnMenuExit()
 
     for (size_t i = 0; i < gWindows.Count(); i++) {
         WindowInfo *win = gWindows.At(i);
-        if (win->printThread && !win->printCanceled) {
-            int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
-            if (IDNO == res)
-                return;
+        if (win->IsChm() && InHtmlNestedMessagePump()) {
+            return;
         }
         AbortFinding(win);
         AbortPrinting(win);
@@ -2490,21 +2447,16 @@ void CloseDocumentAndDeleteWindowInfo(WindowInfo *win)
    menu item. */
 void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
 {
-    CrashIf(!win);
+    assert(win);
     if (!win) return;
-    CrashIf(forceClose && !quitIfLast);
-    if (forceClose) quitIfLast = true;
-
     // when used as an embedded plugin, closing should happen automatically
     // when the parent window is destroyed (cf. WM_DESTROY)
-    if (gPluginMode && gWindows.Find(win) == 0 && !forceClose)
+    if (gPluginMode && !forceClose)
         return;
 
-    if (win->printThread && !win->printCanceled) {
-        int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
-        if (IDNO == res)
-            return;
-    }
+    bool wasChm = win->IsChm();
+    if (wasChm && InHtmlNestedMessagePump())
+        return;
 
     if (win->IsDocLoaded())
         win->dm->dontRenderFlag = true;
@@ -2512,18 +2464,12 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
         ExitFullscreen(*win);
 
     bool lastWindow = (1 == TotalWindowsCount());
-    // hide the window before saving prefs (closing seems slightly faster that way)
-    if (lastWindow && quitIfLast && !forceClose)
-        ShowWindow(win->hwndFrame, SW_HIDE);
     if (lastWindow)
         SavePrefs();
     else
         UpdateCurrentFileDisplayStateForWin(SumatraWindow::Make(win));
 
-    if (forceClose) {
-        // WM_DESTROY has already been sent, so don't destroy win->hwndFrame again
-        DeleteWindowInfo(win);
-    } else if (lastWindow && !quitIfLast) {
+    if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
         CloseDocumentInWindow(win);
     } else {
@@ -2541,8 +2487,7 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
     }
 }
 
-// returns false if no filter has been appended
-static bool AppendFileFilterForDoc(DisplayModel *dm, str::Str<WCHAR>& fileFilter)
+static void AppendFileFilterForDoc(DisplayModel *dm, str::Str<WCHAR>& fileFilter)
 {
     const WCHAR *defExt = dm->engine->GetDefaultFileExt();
     switch (dm->engineType) {
@@ -2550,7 +2495,6 @@ static bool AppendFileFilterForDoc(DisplayModel *dm, str::Str<WCHAR>& fileFilter
         case Engine_DjVu:   fileFilter.Append(_TR("DjVu documents")); break;
         case Engine_ComicBook: fileFilter.Append(_TR("Comic books")); break;
         case Engine_Image:  fileFilter.AppendFmt(_TR("Image files (*.%s)"), defExt + 1); break;
-        case Engine_ImageDir: return false; // only show "All files"
         case Engine_PS:     fileFilter.Append(_TR("Postscript documents")); break;
         case Engine_Chm:    fileFilter.Append(_TR("CHM documents")); break;
         case Engine_Epub:   fileFilter.Append(_TR("EPUB ebooks")); break;
@@ -2562,7 +2506,6 @@ static bool AppendFileFilterForDoc(DisplayModel *dm, str::Str<WCHAR>& fileFilter
         case Engine_Txt:    fileFilter.Append(_TR("Text documents")); break;
         default:            fileFilter.Append(_TR("PDF documents")); break;
     }
-    return true;
 }
 
 static void OnMenuSaveAs(WindowInfo& win)
@@ -2584,7 +2527,7 @@ static void OnMenuSaveAs(WindowInfo& win)
 
     // Can't save a document's content as plain text if text copying isn't allowed
     bool hasCopyPerm = !win.dm->engine->IsImageCollection() &&
-                       win.dm->engine->AllowsCopyingText();
+                       win.dm->engine->IsCopyingTextAllowed();
     bool canConvertToPDF = Engine_PS == win.dm->engineType;
 
     const WCHAR *defExt = win.dm->engine->GetDefaultFileExt();
@@ -2592,8 +2535,8 @@ static void OnMenuSaveAs(WindowInfo& win)
     // double-zero terminated string isn't cut by the string handling
     // methods too early on)
     str::Str<WCHAR> fileFilter(256);
-    if (AppendFileFilterForDoc(win.dm, fileFilter))
-        fileFilter.AppendFmt(L"\1*%s\1", defExt);
+    AppendFileFilterForDoc(win.dm, fileFilter);
+    fileFilter.AppendFmt(L"\1*%s\1", defExt);
     if (hasCopyPerm) {
         fileFilter.Append(_TR("Text documents"));
         fileFilter.Append(L"\1*.txt\1");
@@ -2653,7 +2596,6 @@ static void OnMenuSaveAs(WindowInfo& win)
         realDstFileName = str::Format(L"%s%s", dstFileName, defExt);
     }
 
-    ScopedMem<WCHAR> errorMsg;
     // Extract all text when saving as a plain text file
     if (hasCopyPerm && str::EndsWithI(realDstFileName, L".txt")) {
         str::Str<WCHAR> text(1024);
@@ -2665,38 +2607,46 @@ static void OnMenuSaveAs(WindowInfo& win)
         ScopedMem<char> textUTF8(str::conv::ToUtf8(text.LendData()));
         ScopedMem<char> textUTF8BOM(str::Join(UTF8_BOM, textUTF8));
         ok = file::WriteAll(realDstFileName, textUTF8BOM, str::Len(textUTF8BOM));
+        if (!ok)
+            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"), _TR("Warning"));
     }
     // Convert the Postscript file into a PDF one
-    else if (Engine_PS == win.dm->engineType && str::EndsWithI(realDstFileName, L".pdf")) {
-        ok = static_cast<PsEngine *>(win.dm->engine)->SaveFileAsPDF(realDstFileName);
+    else if (canConvertToPDF && str::EndsWithI(realDstFileName, L".pdf")) {
+        size_t dataLen;
+        ScopedMem<unsigned char> data(static_cast<PsEngine *>(win.dm->engine)->GetPDFData(&dataLen));
+        ok = data && file::WriteAll(realDstFileName, data, dataLen);
+        if (!ok)
+            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"));
     }
     // Recreate inexistant files from memory...
     else if (!file::Exists(srcFileName)) {
-        ok = win.dm->engine->SaveFileAs(realDstFileName);
+        size_t dataLen;
+        ScopedMem<unsigned char> data(win.dm->engine->GetFileData(&dataLen));
+        ok = data && file::WriteAll(realDstFileName, data, dataLen);
+        if (!ok)
+            MessageBoxWarning(win.hwndFrame, _TR("Failed to save a file"));
     }
-#ifdef DEBUG
-    // ... as well as files containing annotations ...
-    else if (win.dm->engine->SupportsAnnotation(Annot_Highlight, true)) {
-        ok = win.dm->engine->SaveFileAs(realDstFileName);
-    }
-#endif
     // ... else just copy the file
     else {
-        WCHAR *msgBuf;
-        ok = CopyFile(srcFileName, realDstFileName, FALSE);
+        ok = CopyFileEx(srcFileName, realDstFileName, NULL, NULL, NULL, 0);
         if (ok) {
             // Make sure that the copy isn't write-locked or hidden
             const DWORD attributesToDrop = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM;
             DWORD attributes = GetFileAttributes(realDstFileName);
             if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & attributesToDrop))
                 SetFileAttributes(realDstFileName, attributes & ~attributesToDrop);
-        } else if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), 0, (LPWSTR)&msgBuf, 0, NULL)) {
-            errorMsg.Set(str::Format(L"%s\n\n%s", _TR("Failed to save a file"), msgBuf));
-            LocalFree(msgBuf);
+        } else {
+            WCHAR *msgBuf, *errorMsg;
+            if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), 0, (LPWSTR)&msgBuf, 0, NULL)) {
+                errorMsg = str::Format(L"%s\n\n%s", _TR("Failed to save a file"), msgBuf);
+                LocalFree(msgBuf);
+            } else {
+                errorMsg = str::Dup(_TR("Failed to save a file"));
+            }
+            MessageBoxWarning(win.hwndFrame, errorMsg);
+            free(errorMsg);
         }
     }
-    if (!ok)
-        MessageBoxWarning(win.hwndFrame, errorMsg ? errorMsg : _TR("Failed to save a file"));
 
     if (ok && IsUntrustedFile(win.dm->FilePath(), gPluginURL))
         file::SetZoneIdentifier(realDstFileName);
@@ -2754,8 +2704,7 @@ static void OnMenuRenameFile(WindowInfo &win)
     // methods too early on)
     const WCHAR *defExt = win.dm->engine->GetDefaultFileExt();
     str::Str<WCHAR> fileFilter(256);
-    bool ok = AppendFileFilterForDoc(win.dm, fileFilter);
-    CrashIf(!ok);
+    AppendFileFilterForDoc(win.dm, fileFilter);
     fileFilter.AppendFmt(L"\1*%s\1", defExt);
     str::TransChars(fileFilter.Get(), L"\1", L"\0");
 
@@ -2780,7 +2729,7 @@ static void OnMenuRenameFile(WindowInfo &win)
     ofn.lpstrDefExt = defExt + 1;
     ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
 
-    ok = GetSaveFileName(&ofn);
+    bool ok = GetSaveFileName(&ofn);
     if (!ok)
         return;
 
@@ -2918,7 +2867,7 @@ void OnMenuOpen(SumatraWindow& win)
         bool available;
     } fileFormats[] = {
         { _TR("PDF documents"),         L"*.pdf",        true },
-        { _TR("XPS documents"),         L"*.xps;*.oxps", true },
+        { _TR("XPS documents"),         L"*.xps",        true },
         { _TR("DjVu documents"),        L"*.djvu",       true },
         { _TR("Postscript documents"),  L"*.ps;*.eps",   PsEngine::IsAvailable() },
         { _TR("Comic books"),           L"*.cbz;*.cbr",  true },
@@ -3574,7 +3523,7 @@ static void FrameOnChar(WindowInfo& win, WPARAM key)
         else if (win.presentation)
             OnMenuViewPresentation(win);
         else if (gGlobalPrefs.escToExit)
-            CloseWindow(&win, true);
+            DestroyWindow(win.hwndFrame);
         else if (win.fullScreen)
             OnMenuViewFullscreen(win);
         else if (win.showSelection)
@@ -3582,7 +3531,8 @@ static void FrameOnChar(WindowInfo& win, WPARAM key)
         return;
     case 'q':
         // close the current document/window. Quit if this is the last window
-        CloseWindow(&win, true);
+        if (!gPluginMode)
+            DestroyWindow(win.hwndFrame);
         return;
     case 'r':
         ReloadDocument(&win);
@@ -3691,23 +3641,6 @@ static void FrameOnChar(WindowInfo& win, WPARAM key)
     case '$':
         ToggleGdiDebugging();
         break;
-    case 0xA7:
-        if (win.dm->engine->SupportsAnnotation(Annot_Highlight)) {
-            // convert the current selection into a text highlighting annotation
-            if (!win.showSelection || !win.selectionOnPage)
-                win.dm->engine->UpdateUserAnnotations(NULL);
-            else {
-                Vec<PageAnnotation> annots;
-                for (size_t i = 0; i < win.selectionOnPage->Count(); i++) {
-                    SelectionOnPage& sel = win.selectionOnPage->At(i);
-                    annots.Append(PageAnnotation(Annot_Highlight, sel.pageNo, sel.rect));
-                }
-                win.dm->engine->UpdateUserAnnotations(&annots);
-                gRenderCache.CancelRendering(win.dm);
-                gRenderCache.KeepForDisplayModel(win.dm, win.dm);
-                ClearSearchResult(&win);
-            }
-        }
 #endif
     }
 }
@@ -3934,8 +3867,6 @@ LRESULT CALLBACK WndProcCloseButton(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
     } else if (WM_MOUSELEAVE == msg) {
         win::SetText(hwnd, L"");
         stateChanged = true;
-    } else if (WM_ERASEBKGND == msg) {
-        return FALSE;
     }
 
     if (stateChanged) {
@@ -4134,8 +4065,7 @@ static void OnTimer(WindowInfo& win, HWND hwnd, WPARAM timerId)
             win.MoveDocBy(win.xScrollSpeed, win.yScrollSpeed);
         else if (MA_SELECTING == win.mouseAction || MA_SELECTING_TEXT == win.mouseAction) {
             GetCursorPosInHwnd(win.hwndCanvas, pt);
-            if (NeedsSelectionEdgeAutoscroll(&win, pt.x, pt.y))
-                OnMouseMove(win, pt.x, pt.y, MK_CONTROL);
+            OnMouseMove(win, pt.x, pt.y, MK_CONTROL);
         }
         else {
             KillTimer(hwnd, SMOOTHSCROLL_TIMER_ID);
@@ -4629,7 +4559,7 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
             // close the document and its window, unless it's the last window
             // in which case we close the document but convert the window
             // to about window
-            CloseWindow(win, false);
+            CloseWindow(win, false, false);
             break;
 
         case IDM_EXIT:
@@ -4892,11 +4822,6 @@ static LRESULT FrameOnCommand(WindowInfo *win, HWND hwnd, UINT msg, WPARAM wPara
             win::menu::SetChecked(GetMenu(win->hwndFrame), IDM_DEBUG_MUI, !IsDebugPaint());
             break;
 
-        case IDM_DEBUG_ANNOTATION:
-            if (win)
-                FrameOnChar(*win, 0xA7);
-            break;
-
         case IDM_DEBUG_CRASH_ME:
             CrashMe();
             break;
@@ -5041,10 +4966,6 @@ InitMouseWheelInfo:
             // (required since the canvas itself never has the focus and thus
             // never receives WM_MOUSEWHEEL messages)
             return SendMessage(win->hwndCanvas, msg, wParam, lParam);
-
-        case WM_CLOSE:
-            CloseWindow(win, true);
-            break;
 
         case WM_DESTROY:
             /* WM_DESTROY is generated by windows when close button is pressed

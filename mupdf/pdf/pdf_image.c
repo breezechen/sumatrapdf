@@ -32,37 +32,6 @@ pdf_mask_color_key(fz_pixmap *pix, int n, int *colorkey)
 	pix->single_bit = 0; /* SumatraPDF: allow optimizing 1-bit pixmaps */
 }
 
-/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693517 */
-static void
-pdf_unblend_masked_tile(fz_context *ctx, fz_pixmap *tile, pdf_image *image)
-{
-	/* pdf_image_get_pixmap tends to return too large tiles */
-	int min_w = 1 << (int)floorf(logf(tile->w) / logf(2));
-	int min_h = 1 << (int)floorf(logf(tile->h) / logf(2));
-	fz_pixmap *mask = image->base.mask->get_pixmap(ctx, image->base.mask, min_w, min_h);
-	unsigned char *s = mask->samples, *end = s + mask->w * mask->h;
-	unsigned char *d = tile->samples;
-	int k;
-
-	if (tile->w != mask->w || tile->h != mask->h)
-	{
-		fz_warn(ctx, "mask must be of same size as image for /Matte");
-		fz_drop_pixmap(ctx, mask);
-		return;
-	}
-
-	for (; s < end; s++, d += tile->n)
-	{
-		if (!*s)
-			continue;
-		for (k = 0; k < image->n; k++)
-			d[k] = image->colorkey[k] + (d[k] - image->colorkey[k]) * 255 / *s;
-	}
-
-	fz_drop_pixmap(ctx, mask);
-	tile->single_bit = 0; /* SumatraPDF: allow optimizing 1-bit pixmaps */
-}
-
 static int
 pdf_make_hash_image_key(fz_store_hash *hash, void *key_)
 {
@@ -131,75 +100,6 @@ static fz_store_type pdf_image_store_type =
 #endif
 };
 
-/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1333 */
-static fz_pixmap *
-decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int in_line, int indexed, int l2factor, int native_l2factor, int cache);
-
-static fz_pixmap *
-decomp_image_banded(fz_context *ctx, fz_stream *stm, pdf_image *image, int indexed, int l2factor, int native_l2factor, int cache)
-{
-	fz_pixmap *tile = NULL, *part = NULL;
-	int w = (image->base.w + (1 << l2factor) - 1) >> l2factor;
-	int h = (image->base.h + (1 << l2factor) - 1) >> l2factor;
-	int part_h, orig_h = image->base.h;
-	int band = 1 << fz_maxi(8, l2factor);
-
-	fz_var(tile);
-	fz_var(part);
-
-	fz_try(ctx)
-	{
-		tile = fz_new_pixmap(ctx, image->base.colorspace, w, h);
-		tile->interpolate = image->interpolate;
-		tile->has_alpha = 0; /* SumatraPDF: allow optimizing non-alpha pixmaps */
-		/* decompress the image in bands of 256 lines */
-		for (part_h = h; part_h > 0; part_h -= band >> l2factor)
-		{
-			image->base.h = part_h >= band >> l2factor ? band : orig_h % band;
-			part = decomp_image_from_stream(ctx, fz_keep_stream(stm), image, -1, indexed, l2factor, native_l2factor, 0);
-			memcpy(tile->samples + (h - part_h) * tile->w * tile->n, part->samples, part->h * part->w * part->n);
-			tile->has_alpha |= part->has_alpha; /* SumatraPDF: allow optimizing non-alpha pixmaps */
-			fz_drop_pixmap(ctx, part);
-			part = NULL;
-		}
-		/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693517 */
-		if (image->usecolorkey && image->base.mask)
-			pdf_unblend_masked_tile(ctx, tile, image);
-	}
-	fz_always(ctx)
-	{
-		image->base.h = orig_h;
-		fz_close(stm);
-	}
-	fz_catch(ctx)
-	{
-		fz_drop_pixmap(ctx, part);
-		fz_drop_pixmap(ctx, tile);
-		fz_rethrow(ctx);
-	}
-
-	if (cache)
-	{
-		pdf_image_key *key = NULL;
-		fz_var(key);
-		fz_try(ctx)
-		{
-			key = fz_malloc_struct(ctx, pdf_image_key);
-			key->refs = 1;
-			key->image = fz_keep_image(ctx, &image->base);
-			key->l2factor = l2factor;
-			fz_store_item(ctx, key, tile, fz_pixmap_size(ctx, tile), &pdf_image_store_type);
-		}
-		fz_always(ctx)
-		{
-			pdf_drop_image_key(ctx, key);
-		}
-		fz_catch(ctx) { }
-	}
-
-	return tile;
-}
-
 static fz_pixmap *
 decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int in_line, int indexed, int l2factor, int native_l2factor, int cache)
 {
@@ -215,10 +115,6 @@ decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int 
 	fz_var(tile);
 	fz_var(samples);
 	fz_var(key);
-
-	/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=1333 */
-	if (l2factor - native_l2factor > 0 && image->base.w > (1 << 8) && in_line != -1)
-		return decomp_image_banded(ctx, stm, image, indexed, l2factor, native_l2factor, cache);
 
 	fz_try(ctx)
 	{
@@ -274,7 +170,7 @@ decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int 
 		fz_free(ctx, samples);
 		samples = NULL;
 
-		if (image->usecolorkey && !image->base.mask)
+		if (image->usecolorkey)
 			pdf_mask_color_key(tile, image->n, image->colorkey);
 
 		if (indexed)
@@ -289,10 +185,6 @@ decomp_image_from_stream(fz_context *ctx, fz_stream *stm, pdf_image *image, int 
 		{
 			fz_decode_tile(tile, image->decode);
 		}
-
-		/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693517 */
-		if (image->usecolorkey && image->base.mask && in_line != -1)
-			pdf_unblend_masked_tile(ctx, tile, image);
 	}
 	fz_always(ctx)
 	{
@@ -439,15 +331,6 @@ pdf_load_image_imp(pdf_document *xref, pdf_obj *rdb, pdf_obj *dict, fz_stream *c
 		/* special case for JPEG2000 images */
 		if (pdf_is_jpx_image(ctx, dict))
 		{
-			/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693527 */
-			if (forcemask && pdf_is_dict(pdf_dict_getsa(dict, "SMask", "Mask")))
-			{
-				fz_warn(ctx, "Ignoring recursive image soft mask");
-				fz_free(ctx, image);
-				image = NULL;
-				break; /* Out of fz_try */
-			}
-
 			pdf_load_jpx(xref, dict, image);
 
 			if (forcemask)
@@ -458,17 +341,6 @@ pdf_load_image_imp(pdf_document *xref, pdf_obj *rdb, pdf_obj *dict, fz_stream *c
 				mask_pixmap = fz_alpha_from_gray(ctx, image->tile, 1);
 				fz_drop_pixmap(ctx, image->tile);
 				image->tile = mask_pixmap;
-			}
-			/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693517 */
-			else if (image->base.mask)
-			{
-				obj = pdf_dict_getp(dict, "SMask/Matte");
-				if (pdf_is_array(obj))
-				{
-					image->usecolorkey = 2;
-					for (i = 0; i < image->n; i++)
-						image->colorkey[i] = pdf_to_int(pdf_array_get(obj, i));
-				}
 			}
 			break; /* Out of fz_try */
 		}
@@ -545,14 +417,6 @@ pdf_load_image_imp(pdf_document *xref, pdf_obj *rdb, pdf_obj *dict, fz_stream *c
 				fz_warn(ctx, "Ignoring recursive image soft mask");
 			else
 				mask = (fz_image *)pdf_load_image_imp(xref, rdb, obj, NULL, 1);
-			/* cf. http://bugs.ghostscript.com/show_bug.cgi?id=693517 */
-			obj = pdf_dict_getp(dict, "SMask/Matte");
-			if (pdf_is_array(obj) && mask)
-			{
-				usecolorkey = 2;
-				for (i = 0; i < n; i++)
-					image->colorkey[i] = pdf_to_int(pdf_array_get(obj, i));
-			}
 		}
 		else if (pdf_is_array(obj))
 		{

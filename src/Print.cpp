@@ -499,7 +499,7 @@ void OnMenuPrint(WindowInfo *win, bool waitForCompletion)
     assert(dm);
     if (!dm) return;
 
-    if (!dm->engine || !dm->engine->AllowsPrinting())
+    if (!dm->engine || !dm->engine->IsPrintingAllowed())
         return;
 
     if (win->IsChm()) {
@@ -508,7 +508,7 @@ void OnMenuPrint(WindowInfo *win, bool waitForCompletion)
     }
 
     if (win->printThread) {
-        int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and start over?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
+        int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and start over?"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
         if (res == IDNO)
             return;
     }
@@ -654,7 +654,7 @@ bool PrintFile(const WCHAR *fileName, const WCHAR *printerName, bool displayErro
 
     ScopedMem<WCHAR> fileName2(path::Normalize(fileName));
     BaseEngine *engine = EngineManager::CreateEngine(!gUseEbookUI, fileName2);
-    if (!engine || !engine->AllowsPrinting()) {
+    if (!engine || !engine->IsPrintingAllowed()) {
         if (displayErrors)
             MessageBox(NULL, _TR("Cannot print this file"), _TR("Printing problem."), MB_ICONEXCLAMATION | MB_OK | (IsUIRightToLeft() ? MB_RTLREADING : 0));
         return false;

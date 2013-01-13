@@ -59,14 +59,15 @@ class DjVuDestination : public PageDestination {
     //   #[+-]<pageCount>  e.g. #+1 for NextPage and #-1 for PrevPage
     //   #filename.djvu    use ResolveNamedDest to get a link in #<pageNo> format
     //   http://example.net/#hyperlink
-    ScopedMem<char> link;
+    char *link;
 
     bool IsPageLink(const char *link) const {
-        return link && link[0] == '#' && (str::IsDigit(link[1]) || link[1] == ' ' && str::IsDigit(link[2]));
+        return link[0] == '#' && (str::IsDigit(link[1]) || link[1] == ' ' && str::IsDigit(link[2]));
     }
 
 public:
     DjVuDestination(const char *link) : link(str::Dup(link)) { }
+    ~DjVuDestination() { free(link); }
 
     virtual PageDestType GetDestType() const {
         if (IsPageLink(link))
@@ -227,16 +228,10 @@ public:
     virtual RectD Transform(RectD rect, int pageNo, float zoom, int rotation, bool inverse=false);
 
     virtual unsigned char *GetFileData(size_t *cbCount);
-    virtual bool SaveFileAs(const WCHAR *copyFileName);
     virtual WCHAR * ExtractPageText(int pageNo, WCHAR *lineSep, RectI **coords_out=NULL,
                                     RenderTarget target=Target_View);
     virtual bool HasClipOptimizations(int pageNo) { return false; }
     virtual PageLayoutType PreferredLayout() { return Layout_Single; }
-
-    virtual WCHAR *GetProperty(DocumentProperty prop) { return NULL; }
-
-    virtual bool SupportsAnnotation(PageAnnotType type, bool forSaving=false) const;
-    virtual void UpdateUserAnnotations(Vec<PageAnnotation> *list);
 
     // DPI isn't constant for all pages and thus premultiplied
     virtual float GetFileDPI() const { return 300.0f; }
@@ -261,11 +256,9 @@ protected:
     ddjvu_document_t *doc;
     miniexp_t outline;
     miniexp_t *annos;
-    Vec<PageAnnotation> userAnnots;
 
     Vec<ddjvu_fileinfo_t> fileInfo;
 
-    void AddUserAnnots(RenderedBitmap *bmp, int pageNo, float zoom, int rotation, RectI screen);
     bool ExtractPageText(miniexp_t item, const WCHAR *lineSep,
                          str::Str<WCHAR>& extracted, Vec<RectI>& coords);
     char *ResolveNamedDest(const char *name);
@@ -431,32 +424,6 @@ bool DjVuEngineImpl::Load(const WCHAR *fileName)
     return true;
 }
 
-void DjVuEngineImpl::AddUserAnnots(RenderedBitmap *bmp, int pageNo, float zoom, int rotation, RectI screen)
-{
-    if (!bmp || userAnnots.Count() == 0)
-        return;
-
-    HDC hdc = CreateCompatibleDC(NULL);
-    HGDIOBJ prevBmp = SelectObject(hdc, bmp->GetBitmap());
-    {
-        using namespace Gdiplus;
-        Graphics g(hdc);
-        g.SetCompositingQuality(CompositingQualityHighQuality);
-        g.SetPageUnit(UnitPixel);
-
-        for (size_t i = 0; i < userAnnots.Count(); i++) {
-            PageAnnotation& annot = userAnnots.At(i);
-            if (annot.pageNo != pageNo || annot.type != Annot_Highlight)
-                continue;
-            RectD arect = Transform(annot.rect, pageNo, zoom, rotation);
-            arect.Offset(-screen.x, -screen.y);
-            g.FillRectangle(&SolidBrush(Color(95, 135, 67, 135)), arect.ToGdipRectF());
-        }
-    }
-    SelectObject(hdc, prevBmp);
-    DeleteDC(hdc);
-}
-
 RenderedBitmap *DjVuEngineImpl::RenderBitmap(int pageNo, float zoom, int rotation, RectD *pageRect, RenderTarget target, AbortCookie **cookie_out)
 {
     ScopedCritSec scope(&gDjVuContext.lock);
@@ -494,15 +461,12 @@ RenderedBitmap *DjVuEngineImpl::RenderBitmap(int pageNo, float zoom, int rotatio
         //       in debug builds when passing in DDJVU_RENDER_COLOR
         ddjvu_render_mode_t mode = DDJVU_RENDER_MASKONLY;
 #endif
-        if (ddjvu_page_render(page, mode, &prect, &rrect, fmt, stride, bmpData.Get())) {
+        if (ddjvu_page_render(page, mode, &prect, &rrect, fmt, stride, bmpData.Get()))
             bmp = new RenderedDjVuPixmap(bmpData, screen.Size(), isBitonal);
-            AddUserAnnots(bmp, pageNo, zoom, rotation, screen);
-        }
     }
 
     ddjvu_format_release(fmt);
     ddjvu_page_release(page);
-
     return bmp;
 }
 
@@ -649,11 +613,6 @@ unsigned char *DjVuEngineImpl::GetFileData(size_t *cbCount)
     return (unsigned char *)file::ReadAll(fileName, cbCount);
 }
 
-bool DjVuEngineImpl::SaveFileAs(const WCHAR *copyFileName)
-{
-    return CopyFile(fileName, copyFileName, FALSE);
-}
-
 bool DjVuEngineImpl::ExtractPageText(miniexp_t item, const WCHAR *lineSep, str::Str<WCHAR>& extracted, Vec<RectI>& coords)
 {
     miniexp_t type = miniexp_car(item);
@@ -745,20 +704,6 @@ WCHAR *DjVuEngineImpl::ExtractPageText(int pageNo, WCHAR *lineSep, RectI **coord
     }
 
     return extracted.StealData();
-}
-
-bool DjVuEngineImpl::SupportsAnnotation(PageAnnotType type, bool forSaving) const
-{
-    return !forSaving && Annot_Highlight == type;
-}
-
-void DjVuEngineImpl::UpdateUserAnnotations(Vec<PageAnnotation> *list)
-{
-    ScopedCritSec scope(&gDjVuContext.lock);
-    if (list)
-        userAnnots = *list;
-    else
-        userAnnots.Reset();
 }
 
 Vec<PageElement *> *DjVuEngineImpl::GetElements(int pageNo)

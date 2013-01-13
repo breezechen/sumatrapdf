@@ -31,7 +31,7 @@ struct pdf_image_s
  * tokenizer and low-level object parser
  */
 
-typedef enum
+enum
 {
 	PDF_TOK_ERROR, PDF_TOK_EOF,
 	PDF_TOK_OPEN_ARRAY, PDF_TOK_CLOSE_ARRAY,
@@ -43,7 +43,7 @@ typedef enum
 	PDF_TOK_STREAM, PDF_TOK_ENDSTREAM,
 	PDF_TOK_XREF, PDF_TOK_TRAILER, PDF_TOK_STARTXREF,
 	PDF_NUM_TOKENS
-} pdf_token;
+};
 
 enum
 {
@@ -188,7 +188,7 @@ fz_stream *pdf_open_stream_with_offset(pdf_document *doc, int num, int gen, pdf_
 fz_stream *pdf_open_compressed_stream(fz_context *ctx, fz_compressed_buffer *);
 fz_stream *pdf_open_contents_stream(pdf_document *xref, pdf_obj *obj);
 fz_buffer *pdf_load_raw_renumbered_stream(pdf_document *doc, int num, int gen, int orig_num, int orig_gen);
-fz_buffer *pdf_load_renumbered_stream(pdf_document *doc, int num, int gen, int orig_num, int orig_gen, int *truncated);
+fz_buffer *pdf_load_renumbered_stream(pdf_document *doc, int num, int gen, int orig_num, int orig_gen);
 fz_stream *pdf_open_raw_renumbered_stream(pdf_document *doc, int num, int gen, int orig_num, int orig_gen);
 
 void pdf_repair_xref(pdf_document *doc, pdf_lexbuf *buf);
@@ -579,15 +579,6 @@ void pdf_run_glyph(pdf_document *doc, pdf_obj *resources, fz_buffer *contents, f
 void pdf_store_item(fz_context *ctx, pdf_obj *key, void *val, unsigned int itemsize);
 void *pdf_find_item(fz_context *ctx, fz_store_free_fn *free, pdf_obj *key);
 void pdf_remove_item(fz_context *ctx, fz_store_free_fn *free, pdf_obj *key);
-
-/* SumatraPDF: support PDF document updates */
-typedef struct pdf_file_update_list_s pdf_file_update_list;
-pdf_file_update_list *pdf_file_update_start(fz_context *ctx, const char *filepath, int max_xref_size);
-#ifdef _WIN32
-pdf_file_update_list *pdf_file_update_start_w(fz_context *ctx, const wchar_t *filepath, int max_xref_size);
-#endif
-void pdf_file_update_append(pdf_file_update_list *list, pdf_obj *dict, int num, int gen, fz_buffer *stream);
-void pdf_file_update_end(pdf_file_update_list *list, pdf_obj *prev_trailer, int prev_xref_offset);
 
 /*
  * PDF interaction interface

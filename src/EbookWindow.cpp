@@ -17,10 +17,9 @@ using namespace Gdiplus;
 #include "Menu.h"
 #include "MobiDoc.h"
 #include "Resource.h"
-#include "SumatraAbout.h"
-#include "SumatraDialogs.h"
-#include "SumatraPDF.h"
 #include "SumatraProperties.h"
+#include "SumatraAbout.h"
+#include "SumatraPDF.h"
 #include "Touch.h"
 #include "Translations.h"
 #include "WindowInfo.h"
@@ -134,8 +133,6 @@ static LRESULT OnMouseWheel(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lP
     return 0;
 }
 
-static void OnMenuGoToPage(EbookWindow *win);
-
 static LRESULT OnKeyDown(EbookWindow *win, UINT msg, WPARAM key, LPARAM lParam)
 {
     switch (key) {
@@ -161,9 +158,6 @@ static LRESULT OnKeyDown(EbookWindow *win, UINT msg, WPARAM key, LPARAM lParam)
         break;
     case 'Q':
         CloseEbookWindow(win, true, true);
-        break;
-    case 'G':
-        OnMenuGoToPage(win);
         break;
     case VK_ESCAPE:
         if (gGlobalPrefs.escToExit)
@@ -269,21 +263,6 @@ static void OnLoadMobiSample(EbookWindow *win)
 }
 #endif
 
-static void OnMenuGoToPage(EbookWindow *win)
-{
-    int pageNo = win->ebookController->GetCurrentPageNo();
-    int maxPage = (int)win->ebookController->GetMaxPageCount();
-    ScopedMem<WCHAR> label(str::Format(L"%d", pageNo));
-    WCHAR *newPageStr = Dialog_GoToPage(win->hwndFrame, label, maxPage);
-    if (!newPageStr)
-        return;
-
-    int newPageNo = 0;
-    str::Parse(newPageStr, L"%d", &newPageNo);
-    if (newPageNo > 0)
-        win->ebookController->GoToPage(newPageNo);
-}
-
 static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     int wmId = LOWORD(wParam);
@@ -340,9 +319,11 @@ static LRESULT OnCommand(EbookWindow *win, UINT msg, WPARAM wParam, LPARAM lPara
             break;
 #endif
 
+#if 0
         case IDM_GOTO_PAGE:
-            OnMenuGoToPage(win);
+            OnMenuGoToPage(*win);
             break;
+#endif
 
         case IDM_VISIT_WEBSITE:
             LaunchBrowser(WEBSITE_MAIN_URL);
@@ -562,7 +543,7 @@ void OpenMobiInWindow(Doc doc, SumatraWindow& winToReplace)
             // showing a document, we create invisible window for this document and
             // we don't want to show empty window if loading fails
             if (gEbookWindows.Count() > 0 || gWindows.Count() > 1) {
-                CloseWindow(w, false);
+                CloseWindow(w, false, false);
                 if (gFileHistory.MarkFileInexistent(fullPath))
                     SavePrefs();
                 // TODO: notify the use that loading failed (e.g. show a notification)

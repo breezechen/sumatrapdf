@@ -87,7 +87,7 @@ void PaintTransparentRectangles(HDC hdc, RectI screenRc, Vec<RectI>& rects, COLO
     for (size_t i = 0; i < rects.Count(); i++) {
         RectI rc = rects.At(i).Intersect(screenRc);
         if (!rc.IsEmpty())
-            path.AddRectangle(rc.ToGdipRect());
+            path.AddRectangle(Rect(rc.x, rc.y, rc.dx, rc.dy));
     }
 
     // fill path (and draw optional outline margin)
@@ -221,7 +221,7 @@ void CopySelectionToClipboard(WindowInfo *win)
     if (!OpenClipboard(NULL)) return;
     EmptyClipboard();
 
-    if (!win->dm->engine->AllowsCopyingText())
+    if (!win->dm->engine->IsCopyingTextAllowed())
         ShowNotification(win, _TR("Copying text was denied (copying as image only)"));
     else if (!win->dm->engine->IsImageCollection()) {
         ScopedMem<WCHAR> selText;
@@ -300,14 +300,6 @@ void OnSelectAll(WindowInfo *win, bool textOnly)
 #define SELECT_AUTOSCROLL_AREA_WIDTH 15
 #define SELECT_AUTOSCROLL_STEP_LENGTH 10
 
-bool NeedsSelectionEdgeAutoscroll(WindowInfo *win, int x, int y)
-{
-    return x < SELECT_AUTOSCROLL_AREA_WIDTH * win->uiDPIFactor ||
-           x > (win->canvasRc.dx - SELECT_AUTOSCROLL_AREA_WIDTH) * win->uiDPIFactor ||
-           y < SELECT_AUTOSCROLL_AREA_WIDTH * win->uiDPIFactor ||
-           y > (win->canvasRc.dy - SELECT_AUTOSCROLL_AREA_WIDTH) * win->uiDPIFactor;
-}
-
 void OnSelectionEdgeAutoscroll(WindowInfo *win, int x, int y)
 {
     int dx = 0, dy = 0;
@@ -321,7 +313,6 @@ void OnSelectionEdgeAutoscroll(WindowInfo *win, int x, int y)
     else if (y > (win->canvasRc.dy - SELECT_AUTOSCROLL_AREA_WIDTH) * win->uiDPIFactor)
         dy = SELECT_AUTOSCROLL_STEP_LENGTH;
 
-    CrashIf(NeedsSelectionEdgeAutoscroll(win, x, y) != (dx != 0 || dy != 0));
     if (dx != 0 || dy != 0) {
         PointI oldOffset = win->dm->viewPort.TL();
         win->MoveDocBy(dx, dy);

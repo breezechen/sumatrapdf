@@ -26,21 +26,34 @@ public:
         ElAlignData   vertAlign;
         ElAlignData   horizAlign;
 
-        CellData() : el(NULL), cachedStyle(NULL), row(0), col(0), colSpan(1),
-            vertAlign(GetElAlignTop()), horizAlign(GetElAlignLeft()) { }
+        CellData() {
+            el = NULL;
+            cachedStyle = NULL;
+            row = 0;
+            col = 0;
+            colSpan = 1;
+            vertAlign.Set(ElAlignTop);
+            horizAlign.Set(ElAlignLeft);
+        }
 
-        CellData(const CellData& other) : el(other.el), cachedStyle(other.cachedStyle),
-            row(other.row), col(other.col), colSpan(other.colSpan),
-            vertAlign(other.vertAlign), horizAlign(other.horizAlign) { }
+        CellData(const CellData& other) {
+            el = other.el;
+            cachedStyle = other.cachedStyle;
+            row = other.row;
+            col = other.col;
+            colSpan = other.colSpan;
+            vertAlign = other.vertAlign;
+            horizAlign = other.horizAlign;
+        }
 
-        void Set(Control *el, int row, int col, ElAlign horizAlign=ElAlignLeft, ElAlign vertAlign=ElAlignBottom) {
+        void Set(Control *el, int row, int col, ElAlign horizAlign = ElAlignLeft, ElAlign vertAlign = ElAlignBottom) {
             this->el = el;
             this->cachedStyle = NULL;
             this->row = row;
             this->col = col;
             this->colSpan = 1; // this can be re-used, so re-set to default value
-            this->vertAlign = GetElAlign(vertAlign);
-            this->horizAlign = GetElAlign(horizAlign);
+            this->vertAlign.Set(vertAlign);
+            this->horizAlign.Set(horizAlign);
         }
 
         bool SetStyle(Style *s) {
@@ -61,11 +74,13 @@ public:
 private:
     int     rows;
     int     cols;
-
+    
     // if dirty is true, rows/cols and ld must be rebuilt from els
     bool    dirty;
     // cells is rows * cols in size
+    int nCells;
     Cell *cells;
+    Cell *lastCell;
     // maxColWidth is an array of cols size and contains
     // maximum width of each column (the width of the widest
     // cell in that column)
@@ -95,3 +110,4 @@ public:
     virtual Size DesiredSize() { return desiredSize; }
     virtual void Arrange(const Rect finalRect);
 };
+

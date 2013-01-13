@@ -86,7 +86,7 @@ static bool IsToolbarButtonEnabled(WindowInfo *win, int buttonNo)
         return !gPluginMode;
 
     case IDM_PRINT:
-        return win->dm->engine && win->dm->engine->AllowsPrinting();
+        return win->dm->engine && win->dm->engine->IsPrintingAllowed();
 
     case IDM_FIND_NEXT:
     case IDM_FIND_PREV:
@@ -549,7 +549,7 @@ void CreateToolbar(WindowInfo *win)
     HWND hwndToolbar = CreateWindowEx(0, TOOLBARCLASSNAME, NULL, WS_TOOLBAR,
                                       0, 0, 0, 0, win->hwndFrame,(HMENU)IDC_TOOLBAR, ghinst, NULL);
     win->hwndToolbar = hwndToolbar;
-    SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
+    LRESULT lres = SendMessage(hwndToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 
     ShowWindow(hwndToolbar, SW_SHOW);
     TBBUTTON tbButtons[TOOLBAR_BUTTONS_COUNT];
@@ -582,18 +582,16 @@ void CreateToolbar(WindowInfo *win)
         if (gToolbarButtons[i].cmdId == IDM_FIND_MATCH)
             tbButtons[i].fsStyle = BTNS_CHECK;
     }
-    SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
+    lres = SendMessage(hwndToolbar, TB_SETIMAGELIST, 0, (LPARAM)himl);
 
     LRESULT exstyle = SendMessage(hwndToolbar, TB_GETEXTENDEDSTYLE, 0, 0);
     exstyle |= TBSTYLE_EX_MIXEDBUTTONS;
-    SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, exstyle);
+    lres = SendMessage(hwndToolbar, TB_SETEXTENDEDSTYLE, 0, exstyle);
 
-    SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
+    lres = SendMessage(hwndToolbar, TB_ADDBUTTONS, TOOLBAR_BUTTONS_COUNT, (LPARAM)tbButtons);
 
     RECT rc;
-    LRESULT res = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
-    if (!res)
-        rc.left = rc.right = rc.top = rc.bottom = 0;
+    lres = SendMessage(hwndToolbar, TB_GETITEMRECT, 0, (LPARAM)&rc);
 
     DWORD  reBarStyle = WS_REBAR | WS_VISIBLE;
     win->hwndReBar = CreateWindowEx(WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL, reBarStyle,
@@ -603,7 +601,7 @@ void CreateToolbar(WindowInfo *win)
     rbi.cbSize = sizeof(REBARINFO);
     rbi.fMask  = 0;
     rbi.himl   = (HIMAGELIST)NULL;
-    SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
+    lres = SendMessage(win->hwndReBar, RB_SETBARINFO, 0, (LPARAM)&rbi);
 
     REBARBANDINFO rbBand;
     rbBand.cbSize  = sizeof(REBARBANDINFO);
@@ -618,7 +616,7 @@ void CreateToolbar(WindowInfo *win)
     rbBand.cxMinChild = (rc.right - rc.left) * TOOLBAR_BUTTONS_COUNT;
     rbBand.cyMinChild = (rc.bottom - rc.top) + 2 * rc.top;
     rbBand.cx         = 0;
-    SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
+    lres = SendMessage(win->hwndReBar, RB_INSERTBAND, (WPARAM)-1, (LPARAM)&rbBand);
 
     SetWindowPos(win->hwndReBar, NULL, 0, 0, 0, 0, SWP_NOZORDER);
 

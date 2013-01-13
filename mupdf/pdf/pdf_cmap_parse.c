@@ -51,7 +51,7 @@ pdf_code_from_string(char *buf, int len)
 static int
 pdf_lex_cmap(fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok = pdf_lex(file, buf);
+	int tok = pdf_lex(file, buf);
 
 	if (tok == PDF_TOK_KEYWORD)
 		tok = pdf_cmap_token_from_keyword(buf->scratch);
@@ -62,7 +62,7 @@ pdf_lex_cmap(fz_stream *file, pdf_lexbuf *buf)
 static void
 pdf_parse_cmap_name(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 
 	tok = pdf_lex_cmap(file, buf);
 
@@ -75,7 +75,7 @@ pdf_parse_cmap_name(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf
 static void
 pdf_parse_wmode(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 
 	tok = pdf_lex_cmap(file, buf);
 
@@ -88,7 +88,7 @@ pdf_parse_wmode(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *bu
 static void
 pdf_parse_codespace_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 	int lo, hi;
 
 	while (1)
@@ -119,7 +119,7 @@ pdf_parse_codespace_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_
 static void
 pdf_parse_cid_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 	int lo, hi, dst;
 
 	while (1)
@@ -153,7 +153,7 @@ pdf_parse_cid_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf
 static void
 pdf_parse_cid_char(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 	int src, dst;
 
 	while (1)
@@ -181,7 +181,7 @@ pdf_parse_cid_char(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf 
 static void
 pdf_parse_bf_range_array(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf, int lo, int hi)
 {
-	pdf_token tok;
+	int tok;
 	int dst[256];
 	int i;
 
@@ -212,7 +212,7 @@ pdf_parse_bf_range_array(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_l
 static void
 pdf_parse_bf_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 	int lo, hi, dst;
 
 	while (1)
@@ -232,11 +232,6 @@ pdf_parse_bf_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf 
 			fz_throw(ctx, "expected string");
 
 		hi = pdf_code_from_string(buf->scratch, buf->len);
-		if (lo < 0 || lo > 65535 || hi < 0 || hi > 65535 || lo > hi)
-		{
-			fz_warn(ctx, "bf_range limits out of range in cmap %s", cmap->cmap_name);
-			return;
-		}
 
 		tok = pdf_lex_cmap(file, buf);
 
@@ -283,7 +278,7 @@ pdf_parse_bf_range(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf 
 static void
 pdf_parse_bf_char(fz_context *ctx, pdf_cmap *cmap, fz_stream *file, pdf_lexbuf *buf)
 {
-	pdf_token tok;
+	int tok;
 	int dst[256];
 	int src;
 	int i;
@@ -321,7 +316,7 @@ pdf_load_cmap(fz_context *ctx, fz_stream *file)
 	pdf_cmap *cmap;
 	char key[64];
 	pdf_lexbuf buf;
-	pdf_token tok;
+	int tok;
 	const char *where;
 
 	pdf_lexbuf_init(ctx, &buf, PDF_LEXBUF_SMALL);

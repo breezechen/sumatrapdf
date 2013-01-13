@@ -168,7 +168,7 @@ void    UpdateBitmapColorRange(HBITMAP hbmp, COLORREF range[2]);
 unsigned char *SerializeBitmap(HBITMAP hbmp, size_t *bmpBytesOut);
 double  GetProcessRunningTime();
 
-void RunNonElevated(const WCHAR *exePath);
-void VariantInitBstr(VARIANT& urlVar, const WCHAR *s);
+HANDLE CreateProcessAtLevel(const WCHAR *exe, const WCHAR *args=NULL, DWORD level=SAFER_LEVELID_NORMALUSER);
+bool RunAsUser(WCHAR *cmd);
 
 #endif

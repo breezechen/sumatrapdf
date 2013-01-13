@@ -27,9 +27,6 @@ pdf_obj *pdf_new_matrix(fz_context *ctx, fz_matrix *mtx);
 pdf_obj *pdf_copy_array(fz_context *ctx, pdf_obj *array);
 pdf_obj *pdf_copy_dict(fz_context *ctx, pdf_obj *dict);
 
-/* SumatraPDF: convenience method to easily create nested objects */
-pdf_obj *pdf_new_obj_from_str(fz_context *ctx, const char *src);
-
 pdf_obj *pdf_keep_obj(pdf_obj *obj);
 void pdf_drop_obj(pdf_obj *obj);
 
@@ -47,10 +44,10 @@ int pdf_is_stream(pdf_document *doc, int num, int gen);
 
 int pdf_objcmp(pdf_obj *a, pdf_obj *b);
 
-/* obj marking and unmarking functions - to avoid infinite recursions. */
-int pdf_obj_marked(pdf_obj *obj);
-int pdf_obj_mark(pdf_obj *obj);
-void pdf_obj_unmark(pdf_obj *obj);
+/* dict marking and unmarking functions - to avoid infinite recursions */
+int pdf_dict_marked(pdf_obj *obj);
+int pdf_dict_mark(pdf_obj *obj);
+void pdf_dict_unmark(pdf_obj *obj);
 
 /* safe, silent failure, no error reporting on type mismatches */
 int pdf_to_bool(pdf_obj *obj);

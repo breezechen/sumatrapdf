@@ -9,7 +9,6 @@ using namespace Gdiplus;
 #include "GdiPlusUtil.h"
 #include "HtmlPullParser.h"
 #include "JsonParser.h"
-#include "TgaReader.h"
 #include "WinUtil.h"
 #include "ZipUtil.h"
 
@@ -71,19 +70,12 @@ static bool GetEncoderClsid(const WCHAR *format, CLSID& clsid)
 
 bool SaveRenderedBitmap(RenderedBitmap *bmp, const WCHAR *filePath)
 {
-    const WCHAR *fileExt = path::GetExt(filePath);
-    if (str::EqI(fileExt, L".tga")) {
-        size_t tgaDataLen;
-        ScopedMem<unsigned char> tgaData(tga::SerializeBitmap(bmp->GetBitmap(), &tgaDataLen));
-        if (!tgaData)
-            return false;
-        return file::WriteAll(filePath, tgaData.Get(), tgaDataLen);
-    }
-
     size_t bmpDataLen;
     ScopedMem<char> bmpData((char *)SerializeBitmap(bmp->GetBitmap(), &bmpDataLen));
     if (!bmpData)
         return false;
+
+    const WCHAR *fileExt = path::GetExt(filePath);
     if (str::EqI(fileExt, L".bmp"))
         return file::WriteAll(filePath, bmpData.Get(), bmpDataLen);
 
@@ -100,6 +92,7 @@ bool SaveRenderedBitmap(RenderedBitmap *bmp, const WCHAR *filePath)
         if (str::EqI(fileExt, encoders[i]))
             encoder = encoders[i+1];
     }
+
     CLSID encClsid;
     if (!encoder || !GetEncoderClsid(encoder, encClsid))
         return false;
@@ -107,6 +100,7 @@ bool SaveRenderedBitmap(RenderedBitmap *bmp, const WCHAR *filePath)
     Bitmap *gbmp = BitmapFromData(bmpData, bmpDataLen);
     if (!gbmp)
         return false;
+
     Status status = gbmp->Save(filePath, &encClsid);
     delete gbmp;
 
@@ -141,15 +135,11 @@ public:
     virtual RectD Transform(RectD rect, int pageNo, float zoom, int rotation, bool inverse=false);
 
     virtual unsigned char *GetFileData(size_t *cbCount);
-    virtual bool SaveFileAs(const WCHAR *copyFileName);
     virtual WCHAR * ExtractPageText(int pageNo, WCHAR *lineSep, RectI **coords_out=NULL,
                                     RenderTarget target=Target_View) { return NULL; }
     virtual bool HasClipOptimizations(int pageNo) { return false; }
     virtual PageLayoutType PreferredLayout() { return Layout_NonContinuous; }
-    virtual bool IsImageCollection() const { return true; }
-
-    virtual bool SupportsAnnotation(PageAnnotType type, bool forSaving=false) const { return false; }
-    virtual void UpdateUserAnnotations(Vec<PageAnnotation> *list) { }
+    virtual bool IsImageCollection() { return true; }
 
     virtual const WCHAR *GetDefaultFileExt() const { return fileExt; }
 
@@ -211,7 +201,7 @@ bool ImagesEngine::RenderPage(HDC hDC, RectI screenRect, int pageNo, float zoom,
     g.SetPageUnit(UnitPixel);
 
     Color white(0xFF, 0xFF, 0xFF);
-    Rect screenR(screenRect.ToGdipRect());
+    Rect screenR(screenRect.x, screenRect.y, screenRect.dx, screenRect.dy);
     g.SetClip(screenR);
     g.FillRectangle(&SolidBrush(white), screenR);
 
@@ -223,13 +213,14 @@ bool ImagesEngine::RenderPage(HDC hDC, RectI screenRect, int pageNo, float zoom,
     RectI pageRcI = PageMediabox(pageNo).Round();
     ImageAttributes imgAttrs;
     imgAttrs.SetWrapMode(WrapModeTileFlipXY);
-    Status ok = g.DrawImage(bmp, pageRcI.ToGdipRect(), 0, 0, pageRcI.dx, pageRcI.dy, UnitPixel, &imgAttrs);
+    Status ok = g.DrawImage(bmp, Rect(0, 0, pageRcI.dx, pageRcI.dy), 0, 0, pageRcI.dx, pageRcI.dy, UnitPixel, &imgAttrs);
     return ok == Ok;
 }
 
 void ImagesEngine::GetTransform(Matrix& m, int pageNo, float zoom, int rotation)
 {
-    GetBaseTransform(m, PageMediabox(pageNo).ToGdipRectF(), zoom, rotation);
+    SizeD size = PageMediabox(pageNo).Size();
+    GetBaseTransform(m, RectF(0, 0, (REAL)size.dx, (REAL)size.dy), zoom, rotation);
 }
 
 PointD ImagesEngine::Transform(PointD pt, int pageNo, float zoom, int rotation, bool inverse)
@@ -308,20 +299,6 @@ unsigned char *ImagesEngine::GetFileData(size_t *cbCount)
     if (fileName)
         return (unsigned char *)file::ReadAll(fileName, cbCount);
     return NULL;
-}
-
-bool ImagesEngine::SaveFileAs(const WCHAR *copyFileName)
-{
-    if (fileName) {
-        BOOL ok = CopyFile(fileName, copyFileName, FALSE);
-        if (ok)
-            return true;
-    }
-    size_t dataLen;
-    ScopedMem<unsigned char> data(GetFileData(&dataLen));
-    if (data)
-        return file::WriteAll(copyFileName, data.Get(), dataLen);
-    return false;
 }
 
 ///// ImageEngine handles a single image file /////
@@ -481,7 +458,7 @@ bool ImageEngine::IsSupportedFile(const WCHAR *fileName, bool sniff)
            str::EndsWithI(fileName, L".bmp") ||
            str::EndsWithI(fileName, L".tga") ||
            str::EndsWithI(fileName, L".jxr") || str::EndsWithI(fileName, L".hdp") ||
-                                                str::EndsWithI(fileName, L".wdp");
+                                                   str::EndsWithI(fileName, L".wdp");
 }
 
 ImageEngine *ImageEngine::CreateFromFile(const WCHAR *fileName)
@@ -517,9 +494,6 @@ public:
     virtual RectD PageMediabox(int pageNo);
 
     virtual unsigned char *GetFileData(size_t *cbCount) { return NULL; }
-    virtual bool SaveFileAs(const WCHAR *copyFileName);
-
-    virtual WCHAR *GetProperty(DocumentProperty prop) { return NULL; }
 
     // TODO: is there a better place to expose pageFileNames than through page labels?
     virtual bool HasPageLabels() { return true; }
@@ -636,20 +610,6 @@ DocTocItem *ImageDirEngineImpl::GetTocTree()
         root->AddSibling(item);
     }
     return root;
-}
-
-bool ImageDirEngineImpl::SaveFileAs(const WCHAR *copyFileName)
-{
-    // only copy the files if the target directory doesn't exist yet
-    if (!CreateDirectory(copyFileName, NULL))
-        return false;
-    bool ok = true;
-    for (size_t i = 0; i < pageFileNames.Count(); i++) {
-        const WCHAR *filePathOld = pageFileNames.At(i);
-        ScopedMem<WCHAR> filePathNew(path::Join(copyFileName, path::GetBaseName(filePathOld)));
-        ok = ok && CopyFile(filePathOld, filePathNew, TRUE);
-    }
-    return ok;
 }
 
 bool ImageDirEngine::IsSupportedFile(const WCHAR *fileName, bool sniff)

@@ -468,7 +468,7 @@ int DisplayModel::CurrentPageNo() const
 
 void DisplayModel::SetZoomVirtual(float newZoomVirtual)
 {
-    CrashIf(!IsValidZoom(newZoomVirtual));
+    assert(IsValidZoom(newZoomVirtual));
     zoomVirtual = newZoomVirtual;
 
     if (AsChmEngine()) {
@@ -902,7 +902,7 @@ void DisplayModel::RenderVisibleParts()
     // empty, so request the visible pages first and last to
     // make sure they're rendered before the predicted pages
     for (int pageNo = firstVisiblePage; pageNo <= lastVisiblePage; pageNo++) {
-        dmCb->RequestRendering(pageNo);
+        dmCb->RenderPage(pageNo);
     }
 
     if (gPredictiveRender) {
@@ -910,20 +910,20 @@ void DisplayModel::RenderVisibleParts()
         // if the rendering queue still has place for them
         if (!IsSingle(GetDisplayMode())) {
             if (firstVisiblePage > 2)
-                dmCb->RequestRendering(firstVisiblePage - 2);
+                dmCb->RenderPage(firstVisiblePage - 2);
             if (lastVisiblePage + 1 < PageCount())
-                dmCb->RequestRendering(lastVisiblePage + 2);
+                dmCb->RenderPage(lastVisiblePage + 2);
         }
         if (firstVisiblePage > 1)
-            dmCb->RequestRendering(firstVisiblePage - 1);
+            dmCb->RenderPage(firstVisiblePage - 1);
         if (lastVisiblePage < PageCount())
-            dmCb->RequestRendering(lastVisiblePage + 1);
+            dmCb->RenderPage(lastVisiblePage + 1);
     }
 
     // request the visible pages last so that the above requested
     // invisible pages are not rendered if the queue fills up
     for (int pageNo = lastVisiblePage; pageNo >= firstVisiblePage; pageNo--) {
-        dmCb->RequestRendering(pageNo);
+        dmCb->RenderPage(pageNo);
     }
 }
 

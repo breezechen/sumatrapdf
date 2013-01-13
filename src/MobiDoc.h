@@ -27,7 +27,6 @@ class MobiDoc
     bool                multibyte;
     size_t              trailersCount;
     size_t              imageFirstRec; // 0 if no images
-    size_t              coverImageRec; // 0 if no cover image
 
     ImageData *         images;
 

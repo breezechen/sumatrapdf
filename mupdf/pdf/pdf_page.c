@@ -54,7 +54,7 @@ pdf_load_page_tree_node(pdf_document *xref, pdf_obj *node, struct info info)
 	{
 		do
 		{
-			if (!node || pdf_obj_mark(node))
+			if (!node || pdf_dict_mark(node))
 			{
 				/* NULL node, or we've been here before.
 				 * Nothing to do. */
@@ -112,7 +112,7 @@ pdf_load_page_tree_node(pdf_document *xref, pdf_obj *node, struct info info)
 					xref->page_refs[xref->page_len] = pdf_keep_obj(node);
 					xref->page_objs[xref->page_len] = pdf_keep_obj(dict);
 					xref->page_len ++;
-					pdf_obj_unmark(node);
+					pdf_dict_unmark(node);
 				}
 			}
 			/* Get the next node */
@@ -120,13 +120,13 @@ pdf_load_page_tree_node(pdf_document *xref, pdf_obj *node, struct info info)
 				break;
 			while (++stack[stacklen].pos == stack[stacklen].max)
 			{
-				pdf_obj_unmark(stack[stacklen].node);
+				pdf_dict_unmark(stack[stacklen].node);
 				stacklen--;
 				if (stacklen < 0) /* No more to pop! */
 					break;
 				node = stack[stacklen].node;
 				info = stack[stacklen].info;
-				pdf_obj_unmark(node); /* Unmark it, cos we're about to mark it again */
+				pdf_dict_unmark(node); /* Unmark it, cos we're about to mark it again */
 			}
 			if (stacklen >= 0)
 				node = pdf_array_get(stack[stacklen].kids, stack[stacklen].pos);
@@ -136,7 +136,7 @@ pdf_load_page_tree_node(pdf_document *xref, pdf_obj *node, struct info info)
 	fz_always(ctx)
 	{
 		while (stacklen >= 0)
-			pdf_obj_unmark(stack[stacklen--].node);
+			pdf_dict_unmark(stack[stacklen--].node);
 		fz_free(ctx, stack);
 	}
 	fz_catch(ctx)
@@ -248,7 +248,7 @@ pdf_resources_use_blending(fz_context *ctx, pdf_obj *rdb)
 		return pdf_to_bool(obj);
 
 	/* stop on cyclic resource dependencies */
-	if (pdf_obj_mark(rdb))
+	if (pdf_dict_mark(rdb))
 		return 0;
 
 	fz_try(ctx)
@@ -278,7 +278,7 @@ found:
 	}
 	fz_always(ctx)
 	{
-		pdf_obj_unmark(rdb);
+		pdf_dict_unmark(rdb);
 	}
 	fz_catch(ctx)
 	{
@@ -441,9 +441,6 @@ pdf_load_page(pdf_document *xref, int number)
 		page->contents = pdf_keep_obj(obj);
 
 		if (pdf_resources_use_blending(ctx, page->resources))
-			page->transparency = 1;
-		/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=2107 */
-		else if (!strcmp(pdf_to_name(pdf_dict_getp(pageobj, "Group/S")), "Transparency"))
 			page->transparency = 1;
 
 		for (annot = page->annots; annot && !page->transparency; annot = annot->next)

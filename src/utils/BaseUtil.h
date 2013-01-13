@@ -50,12 +50,6 @@ inline T *AllocArray(size_t n)
     return (T*)calloc(n, sizeof(T));
 }
 
-template <typename T>
-inline T *AllocStruct()
-{
-    return (T*)calloc(1, sizeof(T));
-}
-
 #define dimof(X)    (sizeof(X)/sizeof((X)[0]))
 #define NoOp()      ((void)0)
 
@@ -147,6 +141,7 @@ inline void *memdup(const void *data, size_t len)
         memcpy(dup, data, len);
     return dup;
 }
+#define _memdup(ptr) memdup(ptr, sizeof(*(ptr)))
 
 inline bool memeq(const void *s1, const void *s2, size_t len)
 {

@@ -706,9 +706,10 @@ static void OnFavTreeContextMenu(WindowInfo *win, PointI pt)
         }
     }
 
+    FavName *toDelete = NULL;
     item.mask = TVIF_PARAM;
     TreeView_GetItem(win->hwndFavTree, &item);
-    FavName *toDelete = (FavName *)item.lParam;
+    toDelete = (FavName*)item.lParam;
 
     HMENU popup = BuildMenuFromMenuDef(menuDefFavContext, dimof(menuDefFavContext), CreatePopupMenu());
 
@@ -747,9 +748,6 @@ static LRESULT CALLBACK WndProcFavTree(HWND hwnd, UINT msg, WPARAM wParam, LPARA
         return CallWindowProc(DefWndProcFavTree, hwnd, msg, wParam, lParam);
 
     switch (msg) {
-
-        case WM_ERASEBKGND:
-            return FALSE;
 
         case WM_CHAR:
             if (VK_ESCAPE == wParam && gGlobalPrefs.escToExit)
@@ -814,7 +812,7 @@ static LRESULT CALLBACK WndProcFavBox(HWND hwnd, UINT message, WPARAM wParam, LP
 
 void CreateFavorites(WindowInfo *win)
 {
-    win->hwndFavBox = CreateWindow(WC_STATIC, L"", WS_CHILD|WS_CLIPCHILDREN,
+    win->hwndFavBox = CreateWindow(WC_STATIC, L"", WS_CHILD,
                                    0, 0, gGlobalPrefs.sidebarDx, 0,
                                    win->hwndFrame, (HMENU)0, ghinst, NULL);
     HWND title = CreateWindow(WC_STATIC, L"", WS_VISIBLE | WS_CHILD,

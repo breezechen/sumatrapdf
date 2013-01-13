@@ -37,10 +37,6 @@ static void ByteOrderTests()
         assert(vu16 == 0xfeff);
         d.Skip(2);
         assert(9 == d.Offset());
-        d.Unskip(4);
-        assert(5 == d.Offset());
-        vu32 = d.UInt32();
-        assert(vu32 == 0xfeff);
 
         vu32 = d.UInt32();
         assert(13 == d.Offset());

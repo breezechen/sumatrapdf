@@ -5,8 +5,7 @@
 
 namespace mui {
 
-Grid::Grid(Style *style) : dirty(true), cells(NULL),
-    maxColWidth(NULL), maxRowHeight(NULL), rows(0), cols(0)
+Grid::Grid(Style *style) : dirty(true), cells(NULL), maxColWidth(NULL), maxRowHeight(NULL)
 {
     SetStyle(style);
 }
@@ -30,11 +29,15 @@ Grid& Grid::Add(Grid::CellData& ld)
 
 Grid::Cell *Grid::GetCell(int row, int col) const
 {
-    CrashIf(row < 0);
     CrashIf(row >= rows);
-    CrashIf(col < 0);
     CrashIf(col >= cols);
-    return &cells[row * cols + col];
+    int n = (row * cols) + col;
+    CrashIf(n < 0);
+    CrashIf(n >= nCells);
+    Cell *res = cells + n;
+    CrashIf(res >= lastCell);
+    CrashIf(res < cells);
+    return res;
 }
 
 Point Grid::GetCellPos(int row, int col) const
@@ -71,7 +74,9 @@ void Grid::RebuildCellDataIfNeeded()
     }
 
     free(cells);
-    cells = AllocArray<Cell>(cols * rows);
+    nCells = cols * rows;
+    cells = AllocArray<Cell>(nCells);
+    lastCell = cells + nCells;
 
     // TODO: not sure if I want to disallow empty grids, but do for now
     CrashIf(0 == rows);

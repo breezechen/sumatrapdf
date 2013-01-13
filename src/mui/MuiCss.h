@@ -64,7 +64,7 @@ enum ElAlign {
 // vertical or horizontal) of an element relative to its container.
 // Each point of both the container and element can be represented
 // as a float in the <0.f - 1.f> range.
-// 0.f represents left (in horizontal case) or top (in vertical) case point.
+// O.f represents left (in horizontal case) or top (in vertical) case point.
 // 1.f represents right/bottom point and 0.5f represents a middle.
 // We define a point inside cotainer and point inside element and layout
 // positions element so that those points are the same.
@@ -82,12 +82,14 @@ struct ElAlignData {
     float containerPoint;
 
     bool operator==(const ElAlignData& other) const;
-    int CalcOffset(int elSize, int containerSize) const;
+
+    void Set(ElAlign align);
+    int CalcOffset(int elSize, int containerSize);
 };
 
 extern struct ElAlignData g_ElAlignVals[5];
 
-// we can't have constructors in ElAlignData, so those are
+// we can't have constructors in ElInContainerAlign, so those are
 // helper methods for constructing them
 static inline ElAlignData GetElAlignCenter() {
     return g_ElAlignVals[ElAlignCenter];
@@ -107,11 +109,6 @@ static inline ElAlignData GetElAlignBottom() {
 
 static inline ElAlignData GetElAlignRight() {
     return g_ElAlignVals[ElAlignRight];
-}
-
-static inline ElAlignData GetElAlign(ElAlign align) {
-    CrashIf(align >= dimof(g_ElAlignVals));
-    return g_ElAlignVals[align];
 }
 
 static inline ElAlignData GetElAlign(float ep, float cp) {

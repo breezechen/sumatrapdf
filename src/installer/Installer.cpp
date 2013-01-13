@@ -71,7 +71,7 @@ Color            COLOR_MSG_FAILED(gCol1);
 // list of supported file extensions for which SumatraPDF.exe will
 // be registered as a candidate for the Open With dialog's suggestions
 WCHAR *gSupportedExts[] = {
-    L".pdf", L".xps", L".oxps", L".cbz", L".cbr", L".djvu",
+    L".pdf", L".xps", L".cbz", L".cbr", L".djvu",
     L".chm", L".mobi", L".epub", NULL
 };
 
@@ -712,8 +712,7 @@ static void DrawFrame2(Graphics &g, RectI r)
     CalcLettersLayout(g, &f, r.dx);
 
     SolidBrush bgBrush(Color(0xff, 0xf2, 0));
-    Rect r2(r.ToGdipRect());
-    r2.Inflate(1, 1);
+    Rect r2(r.y - 1, r.x - 1, r.dx + 1, r.dy + 1);
     g.FillRectangle(&bgBrush, r2);
 
     Font f2(L"Impact", 16, FontStyleRegular);

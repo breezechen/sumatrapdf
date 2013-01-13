@@ -208,9 +208,9 @@ static WCHAR *FormatPermissions(Doc doc)
 
     WStrVec denials;
 
-    if (!doc.AsEngine()->AllowsPrinting())
+    if (!doc.AsEngine()->IsPrintingAllowed())
         denials.Push(str::Dup(_TR("printing document")));
-    if (!doc.AsEngine()->AllowsCopyingText())
+    if (!doc.AsEngine()->IsCopyingTextAllowed())
         denials.Push(str::Dup(_TR("copying text")));
 
     return denials.Join(L", ");

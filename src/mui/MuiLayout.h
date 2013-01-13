@@ -65,14 +65,24 @@ struct DirectionalLayoutData {
     // desiredSize of the element after Measure() step
     Size               desiredSize;
 
-    DirectionalLayoutData() : element(NULL), sizeLayoutAxis(0.f), sizeNonLayoutAxis(0.f),
-        alignNonLayoutAxis(GetElAlignCenter()), ownsElement(false) { }
+    DirectionalLayoutData() {
+        element = 0;
+        sizeLayoutAxis = 0.f;
+        sizeNonLayoutAxis = 0.f;
+        alignNonLayoutAxis = GetElAlignCenter();
+        ownsElement = false;
+        desiredSize = Size();
+    }
 
-    // TODO: should element be cloned if ownsElement is true?
-    DirectionalLayoutData(const DirectionalLayoutData& other) : element(other.element),
-        sizeLayoutAxis(other.sizeLayoutAxis), sizeNonLayoutAxis(other.sizeNonLayoutAxis),
-        alignNonLayoutAxis(other.alignNonLayoutAxis), ownsElement(other.ownsElement),
-        desiredSize(other.desiredSize) { }
+    DirectionalLayoutData(const DirectionalLayoutData& other)
+    {
+        element = other.element;
+        sizeLayoutAxis = other.sizeLayoutAxis;
+        sizeNonLayoutAxis = other.sizeNonLayoutAxis;
+        alignNonLayoutAxis = other.alignNonLayoutAxis;
+        ownsElement = other.ownsElement;
+        desiredSize = other.desiredSize;
+    }
 
     void Set(ILayout *el, float sla, float snla, const ElAlignData& a) {
         element = el;
@@ -112,3 +122,4 @@ public:
 
     virtual void Arrange(const Rect finalRect);
 };
+

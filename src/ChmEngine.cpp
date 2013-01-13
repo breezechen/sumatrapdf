@@ -4,11 +4,10 @@
 #include "BaseUtil.h"
 #include "ChmEngine.h"
 #include "ChmDoc.h"
-#include "DebugLog.h"
 #include "Dict.h"
 #include "FileUtil.h"
 #include "HtmlWindow.h"
-#include "Timer.h"
+#include "WinUtil.h"
 
 // when set, always returns false from ChmEngine::IsSupportedFile
 // so that an alternative implementation can be used
@@ -32,7 +31,7 @@ public:
 
     ChmTocItem(WCHAR *title, int pageNo, WCHAR *url) :
         DocTocItem(title, pageNo), url(url) { }
-    ChmTocItem *Clone() const;
+    ChmTocItem *Clone();
 
     virtual PageDestination *GetLink() { return this; }
     virtual PageDestType GetDestType() const {
@@ -51,7 +50,7 @@ public:
     }
 };
 
-ChmTocItem *ChmTocItem::Clone() const
+ChmTocItem *ChmTocItem::Clone()
 {
     ChmTocItem *res = new ChmTocItem(str::Dup(title), pageNo, str::Dup(url));
     res->open = open;
@@ -118,9 +117,6 @@ public:
     virtual unsigned char *GetFileData(size_t *cbCount) {
         return (unsigned char *)file::ReadAll(fileName, cbCount);
     }
-    virtual bool SaveFileAs(const WCHAR *copyFileName) {
-        return CopyFile(fileName, copyFileName, FALSE);
-    }
 
     virtual WCHAR * ExtractPageText(int pageNo, WCHAR *lineSep, RectI **coords_out=NULL,
                                     RenderTarget target=Target_View) {
@@ -131,13 +127,7 @@ public:
     virtual PageLayoutType PreferredLayout() { return Layout_Single; }
     virtual WCHAR *GetProperty(DocumentProperty prop) { return doc->GetProperty(prop); }
 
-    virtual bool SupportsAnnotation(PageAnnotType type, bool forSaving=false) const { return false; }
-    virtual void UpdateUserAnnotations(Vec<PageAnnotation> *list) { }
-
     virtual const WCHAR *GetDefaultFileExt() const { return L".chm"; }
-
-    virtual Vec<PageElement *> *GetElements(int pageNo) { return NULL; }
-    virtual PageElement *GetElementAtPos(int pageNo, PointD pt) { return NULL; }
 
     virtual bool BenchLoadPage(int pageNo) { return true; }
 
@@ -150,9 +140,8 @@ public:
     virtual void SetParentHwnd(HWND hwnd);
     virtual void DisplayPage(int pageNo) { DisplayPage(pages.At(pageNo - 1)); }
     virtual void SetNavigationCalback(ChmNavigationCallback *cb) { navCb = cb; }
-
+    virtual RenderedBitmap *CreateThumbnail(SizeI size);
     virtual void GoToDestination(PageDestination *link);
-    virtual RenderedBitmap *TakeScreenshot(RectI area, SizeI targetSize);
 
     virtual void PrintCurrentPage() { if (htmlWindow) htmlWindow->PrintCurrentPage(); }
     virtual void FindInCurrentPage() { if (htmlWindow) htmlWindow->FindInCurrentPage(); }
@@ -246,7 +235,7 @@ bool ChmEngineImpl::OnBeforeNavigate(const WCHAR *url, bool newWindow)
 
 void ChmEngineImpl::SetParentHwnd(HWND hwnd)
 {
-    CrashIf(htmlWindow);
+    assert(!htmlWindow);
     delete htmlWindow;
     htmlWindow = new HtmlWindow(hwnd, this);
 }
@@ -282,19 +271,43 @@ void ChmEngineImpl::DisplayPage(const WCHAR *pageUrl)
         htmlWindow->NavigateToDataUrl(pageUrl);
 }
 
+RenderedBitmap *ChmEngineImpl::CreateThumbnail(SizeI size)
+{
+    RenderedBitmap *bmp = NULL;
+    // We render twice the size of thumbnail and scale it down
+    RectI area(0, 0, size.dx * 2, size.dy * 2);
+
+    // reusing WC_STATIC. I don't think exact class matters (WndProc
+    // will be taken over by HtmlWindow anyway) but it can't be NULL.
+    int winDx = area.dx + GetSystemMetrics(SM_CXVSCROLL);
+    int winDy = area.dy + GetSystemMetrics(SM_CYHSCROLL);
+    HWND hwnd = CreateWindow(WC_STATIC, L"BrowserCapture", WS_POPUP,
+                             0, 0, winDx, winDy, NULL, NULL, NULL, NULL);
+    if (!hwnd)
+        return NULL;
+
+#if 0 // when debugging set to 1 to see the window
+    ShowWindow(hwnd, SW_SHOW);
+#endif
+    SetParentHwnd(hwnd);
+    DisplayPage(1);
+    if (!htmlWindow || !htmlWindow->WaitUntilLoaded(5 * 1000))
+        goto Exit;
+    HBITMAP hbmp = htmlWindow->TakeScreenshot(area, size);
+    if (!hbmp)
+        goto Exit;
+    bmp = new RenderedBitmap(hbmp, size);
+
+Exit:
+    DestroyWindow(hwnd);
+    return bmp;
+}
+
 void ChmEngineImpl::GoToDestination(PageDestination *link)
 {
     ChmTocItem *item = static_cast<ChmTocItem *>(link);
     if (item && item->url)
         DisplayPage(item->url);
-}
-
-RenderedBitmap *ChmEngineImpl::TakeScreenshot(RectI area, SizeI targetSize)
-{
-    HBITMAP hbmp = htmlWindow->TakeScreenshot(area, targetSize);
-    if (!hbmp)
-        return NULL;
-    return new RenderedBitmap(hbmp, targetSize);
 }
 
 bool ChmEngineImpl::CanNavigate(int dir)
@@ -405,6 +418,9 @@ public:
         }
     }
 };
+
+#include "Timer.h"
+#include "DebugLog.h"
 
 bool ChmEngineImpl::Load(const WCHAR *fileName)
 {

@@ -25,9 +25,8 @@ public:
     virtual void SetParentHwnd(HWND hwnd) = 0;
     virtual void DisplayPage(int pageNo) = 0;
     virtual void SetNavigationCalback(ChmNavigationCallback *cb) = 0;
-
+    virtual RenderedBitmap *CreateThumbnail(SizeI size) = 0;
     virtual void GoToDestination(PageDestination *link) = 0;
-    virtual RenderedBitmap *TakeScreenshot(RectI area, SizeI targetSize) = 0;
 
     virtual void PrintCurrentPage() = 0;
     virtual void FindInCurrentPage() = 0;

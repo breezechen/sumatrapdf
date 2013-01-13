@@ -369,9 +369,6 @@ fz_draw_clip_path(fz_device *devp, fz_path *path, fz_rect *rect, int even_odd, f
 	bbox = fz_intersect_bbox(bbox, state->scissor);
 	if (rect)
 		bbox = fz_intersect_bbox(bbox, fz_bbox_covering_rect(*rect));
-	/* SumatraPDF: try to match rendering with and without display list */
-	else
-		bbox = fz_intersect_bbox(bbox, fz_bbox_covering_rect(fz_bound_path(ctx, path, NULL, ctm)));
 
 	if (fz_is_empty_rect(bbox) || fz_is_rect_gel(dev->gel))
 	{
@@ -438,9 +435,6 @@ fz_draw_clip_stroke_path(fz_device *devp, fz_path *path, fz_rect *rect, fz_strok
 	bbox = fz_intersect_bbox(bbox, state->scissor);
 	if (rect)
 		bbox = fz_intersect_bbox(bbox, fz_bbox_covering_rect(*rect));
-	/* SumatraPDF: try to match rendering with and without display list */
-	else
-		bbox = fz_intersect_bbox(bbox, fz_bbox_covering_rect(fz_bound_path(ctx, path, stroke, ctm)));
 
 	fz_try(ctx)
 	{
@@ -1653,8 +1647,8 @@ fz_draw_end_tile(fz_device *devp)
 {
 	fz_draw_device *dev = devp->user;
 	float xstep, ystep;
-	fz_matrix ttm, ctm, shapectm;
-	fz_rect area, scissor;
+	fz_matrix ctm, ttm, shapectm;
+	fz_rect area;
 	int x0, y0, x1, y1, x, y;
 	fz_context *ctx = dev->ctx;
 	fz_draw_state *state;
@@ -1671,16 +1665,17 @@ fz_draw_end_tile(fz_device *devp)
 	area = state[1].area;
 	ctm = state[1].ctm;
 
-	/* Fudge the scissor bbox a little to allow for inaccuracies in the
-	 * matrix inversion. */
-	/* SumatraPDF: modify calculations to accommodate XPS tiling */
-	scissor.x0 = fz_max(state[0].dest->x, state[0].scissor.x0) - state[1].dest->w;
-	scissor.y0 = fz_max(state[0].dest->y, state[0].scissor.y0) - state[1].dest->h;
-	scissor.x1 = fz_min(state[0].dest->x + state[0].dest->w, state[0].scissor.x1) + state[1].dest->w;
-	scissor.y1 = fz_min(state[0].dest->y + state[0].dest->h, state[0].scissor.y1) + state[1].dest->h;
-	ctm.e = state[1].dest->x; ctm.f = state[1].dest->y;
-	scissor = fz_transform_rect(fz_invert_matrix(ctm), scissor);
-	area = fz_intersect_rect(area, scissor);
+	/* SumatraPDF: only draw what's really necessary */
+	{
+		fz_rect area2;
+		area2.x0 = fz_max(state[0].dest->x, state[0].scissor.x0) - state[1].dest->w;
+		area2.y0 = fz_max(state[0].dest->y, state[0].scissor.y0) - state[1].dest->h;
+		area2.x1 = fz_min(state[0].dest->x + state[0].dest->w, state[0].scissor.x1) + state[1].dest->w;
+		area2.y1 = fz_min(state[0].dest->y + state[0].dest->h, state[0].scissor.y1) + state[1].dest->h;
+		ctm.e = state[1].dest->x; ctm.f = state[1].dest->y;
+		area2 = fz_transform_rect(fz_invert_matrix(ctm), area2);
+		area = fz_intersect_rect(area, area2);
+	}
 
 	x0 = floorf(area.x0 / xstep);
 	y0 = floorf(area.y0 / ystep);
@@ -1716,10 +1711,6 @@ fz_draw_end_tile(fz_device *devp)
 			ttm = fz_concat(fz_translate(x * xstep, y * ystep), ctm);
 			state[1].dest->x = ttm.e;
 			state[1].dest->y = ttm.f;
-			if (state[1].dest->x > 0 && state[1].dest->x + state[1].dest->w < 0)
-				continue;
-			if (state[1].dest->y > 0 && state[1].dest->y + state[1].dest->h < 0)
-				continue;
 			fz_paint_pixmap_with_rect(state[0].dest, state[1].dest, 255, state[0].scissor);
 			if (state[1].shape)
 			{
@@ -1770,10 +1761,7 @@ fz_draw_apply_transfer_function(fz_device *devp, fz_transfer_function *tr, int f
 		else if (dest->n > 2)
 			for (n = 0; n < dest->n - 1; n++)
 				*s++ = tr->function[n][*s];
-		if (for_mask && !dev->stack[dev->top].luminosity)
-			*s++ = tr->function[3][*s];
-		else
-			s++;
+		*s++ = for_mask ? tr->function[3][*s] : *s;
 	}
 #ifdef DUMP_GROUP_BLENDS
 	fz_dump_blend(dev->ctx, dest, " mapped to ");

@@ -404,7 +404,19 @@ void OnInstallationFinished()
 static void OnButtonStartSumatra()
 {
     ScopedMem<WCHAR> exePath(GetInstalledExePath());
-    RunNonElevated(exePath);
+#if 0
+    // try to create the process as a normal user
+    ScopedHandle h(CreateProcessAtLevel(exePath));
+    // create the process as is (mainly for Windows 2000 compatibility)
+    if (!h)
+        CreateProcessHelper(exePath);
+#else
+    bool ok = RunAsUser(exePath);
+    if (!ok) {
+        // create the process as is (mainly for non-admin users)
+        CreateProcessHelper(exePath);
+    }
+#endif
     OnButtonExit();
 }
 

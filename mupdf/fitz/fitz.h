@@ -511,7 +511,7 @@ void *fz_resize_array(fz_context *ctx, void *p, unsigned int count, unsigned int
 	Returns a pointer to a duplicated string. Throws exception on failure
 	to allocate.
 */
-char *fz_strdup(fz_context *ctx, const char *s);
+char *fz_strdup(fz_context *ctx, char *s);
 
 /*
 	fz_free: Frees an allocation.
@@ -1035,13 +1035,6 @@ fz_rect fz_union_rect(fz_rect a, fz_rect b);
 	Does not throw exceptions.
 */
 fz_bbox fz_union_bbox(fz_bbox a, fz_bbox b);
-
-/*
-	fz_expand_bbox: Expand a bbox by a given amount in all directions.
-
-	Does not throw exceptions.
-*/
-fz_bbox fz_expand_bbox(fz_bbox b, int expand);
 
 /*
 	fz_translate_bbox: Translate bounding box.
@@ -2326,7 +2319,7 @@ typedef struct fz_page_s fz_page;
 
 	filename: a path to a file as it would be given to open(2).
 */
-fz_document *fz_open_document(fz_context *ctx, const char *filename);
+fz_document *fz_open_document(fz_context *ctx, char *filename);
 
 /*
 	fz_open_document_with_stream: Open a PDF, XPS or CBZ document.
@@ -2336,7 +2329,7 @@ fz_document *fz_open_document(fz_context *ctx, const char *filename);
 
 	magic: a string used to detect document type; either a file name or mime-type.
 */
-fz_document *fz_open_document_with_stream(fz_context *ctx, const char *magic, fz_stream *stream);
+fz_document *fz_open_document_with_stream(fz_context *ctx, char *magic, fz_stream *stream);
 
 /*
 	fz_close_document: Close and free an open document.
@@ -2608,13 +2601,6 @@ enum
 	FZ_WIDGET_TYPE_TEXT,
 	FZ_WIDGET_TYPE_LISTBOX,
 	FZ_WIDGET_TYPE_COMBOBOX
-	/* SumatraPDF: support more annotation types */,
-	FZ_WIDGET_TYPE_FILE,
-	FZ_WIDGET_TYPE_FREETEXT,
-	FZ_WIDGET_TYPE_LINK,
-	FZ_WIDGET_TYPE_TEXT_HIGHLIGHT,
-	FZ_WIDGET_TYPE_TEXT_ICON,
-	FZ_WIDGET_TYPE_TEXT_MARKUP,
 };
 
 /* Types of text widget content */
@@ -2997,9 +2983,6 @@ struct fz_write_options_s
 	int do_garbage; /* If non-zero then attempt (where possible) to
 				garbage collect the file before writing. */
 	int do_linear; /* If non-zero then write linearised. */
-	int continue_on_error; /* If non-zero, errors are (optionally)
-					counted and writing continues. */
-	int *errors;   /* Pointer to a place to store a count of errors */
 };
 
 /*	An enumeration of bitflags to use in the above 'do_expand' field of

@@ -23,9 +23,7 @@ public:
     void   Bytes(char *dest, size_t len);
 
     void   Skip(size_t len);
-    void   Unskip(size_t len);
-
-    size_t Offset() const { return curr - data; }
+    size_t Offset() const { return curr - data; } // for debugging
 
 protected:
     ByteOrder byteOrder;
@@ -42,3 +40,4 @@ uint32 UInt32BE(const uint8* d);
 uint32 UInt32LE(const uint8* d);
 
 #endif
+

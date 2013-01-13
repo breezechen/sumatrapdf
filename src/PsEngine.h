@@ -8,7 +8,7 @@
 
 class PsEngine : public BaseEngine {
 public:
-    virtual bool SaveFileAsPDF(const WCHAR *copyFileName) = 0;
+    virtual unsigned char *GetPDFData(size_t *cbCount) = 0;
 
 public:
     static bool IsAvailable();

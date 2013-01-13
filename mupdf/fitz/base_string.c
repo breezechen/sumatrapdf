@@ -255,10 +255,3 @@ float fz_atof(const char *s)
 	d = fz_clampd(d, -FLT_MAX, FLT_MAX);
 	return (float)d;
 }
-
-int fz_atoi(const char *s)
-{
-	if (s == NULL)
-		return 0;
-	return atoi(s);
-}

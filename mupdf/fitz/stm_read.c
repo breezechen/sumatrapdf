@@ -92,20 +92,11 @@ fz_fill_buffer(fz_stream *stm)
 fz_buffer *
 fz_read_all(fz_stream *stm, int initial)
 {
-	return fz_read_best(stm, initial, NULL);
-}
-
-fz_buffer *
-fz_read_best(fz_stream *stm, int initial, int *truncated)
-{
 	fz_buffer *buf = NULL;
 	int n;
 	fz_context *ctx = stm->ctx;
 
 	fz_var(buf);
-
-	if (truncated)
-		*truncated = 0;
 
 	fz_try(ctx)
 	{
@@ -133,15 +124,8 @@ fz_read_best(fz_stream *stm, int initial, int *truncated)
 	}
 	fz_catch(ctx)
 	{
-		if (truncated)
-		{
-			*truncated = 1;
-		}
-		else
-		{
-			fz_drop_buffer(ctx, buf);
-			fz_rethrow(ctx);
-		}
+		fz_drop_buffer(ctx, buf);
+		fz_rethrow(ctx);
 	}
 	fz_trim_buffer(ctx, buf);
 

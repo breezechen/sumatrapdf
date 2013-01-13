@@ -300,7 +300,8 @@ static void StrTest()
 
     {
         size_t trimmed;
-        WCHAR *s = str::Dup(L"");
+        WCHAR *s = NULL;
+        s = str::Dup(L"");
         trimmed = str::TrimWS(s);
         assert(trimmed == 0);
         assert(str::Eq(s, L""));
