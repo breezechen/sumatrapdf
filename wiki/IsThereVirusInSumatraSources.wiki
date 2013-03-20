@@ -6,4 +6,6 @@ Some people report that their anti-virus software complains about executables in
 
 Is there really a virus in them?
 
-*No*. It's a false positive. Anti-virus software is just being stupid.
+*No*. 
+
+It's a false positive. Anti-virus software is just being stupid.
