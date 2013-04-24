@@ -26,13 +26,13 @@ fix the problem.
 == Supported configurations ==
 
 === Supported Files ===
-  * PDF, XPS, DjVu
+  * PDF, XPS, !DjVu
 
 === Supported Clients ===
   * Microsoft Narrator
 
 === Unsupported Clients ===
-  * NVDA.
+  * [http://community.nvda-project.org/ NVDA].
 
 
 = Technical Documentation =
