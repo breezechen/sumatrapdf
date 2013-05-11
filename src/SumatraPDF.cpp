@@ -3933,7 +3933,7 @@ static void FrameOnChar(WindowInfo& win, WPARAM key)
                 win.userAnnots = new Vec<PageAnnotation>();
             for (size_t i = 0; i < win.selectionOnPage->Count(); i++) {
                 SelectionOnPage& sel = win.selectionOnPage->At(i);
-                win.userAnnots->Append(PageAnnotation(Annot_Highlight, sel.pageNo, sel.rect, PageAnnotation::Color(gGlobalPrefs->annotationDefaults.highlightColor, 0xCC)));
+                win.userAnnots->Append(PageAnnotation(Annot_Highlight, sel.pageNo, sel.rect, PageAnnotation::Color(0xFF, 0xFF, 0x60, 0xCC)));
                 gRenderCache.Invalidate(win.dm, sel.pageNo, sel.rect);
             }
             win.userAnnotsModified = true;
