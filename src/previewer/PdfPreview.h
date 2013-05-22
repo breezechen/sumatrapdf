@@ -87,12 +87,12 @@ public:
         return punkSite->QueryInterface(&m_site);
     }
     IFACEMETHODIMP GetSite(REFIID riid, void **ppv) {
-        if (m_site)
-            return m_site->QueryInterface(riid, ppv);
         if (!ppv)
             return E_INVALIDARG;
         *ppv = NULL;
-        return E_FAIL;
+        if (!m_site)
+            return E_FAIL;
+        return m_site->QueryInterface(riid, ppv);
     }
 
     // IPreviewHandler

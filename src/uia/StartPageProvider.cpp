@@ -18,14 +18,25 @@ SumatraUIAutomationStartPageProvider::~SumatraUIAutomationStartPageProvider()
 }
 
 // IUnknown
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::QueryInterface(REFIID riid, void **ppv)
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::QueryInterface(const IID &iid,void **ppvObject)
 {
-    static const QITAB qit[] = {
-        QITABENT(SumatraUIAutomationStartPageProvider, IRawElementProviderSimple),
-        QITABENT(SumatraUIAutomationStartPageProvider, IRawElementProviderFragment),
-        { 0 }
-    };
-    return QISearch(this, qit, riid, ppv);
+    if (ppvObject == NULL)
+        return E_POINTER;
+
+    // TODO: per http://blogs.msdn.com/b/oldnewthing/archive/2004/03/26/96777.aspx should
+    // respond to IUnknown
+    if (iid == __uuidof(IRawElementProviderFragment)) {
+        *ppvObject = static_cast<IRawElementProviderFragment*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    } else if (iid == __uuidof(IRawElementProviderSimple)) {
+        *ppvObject = static_cast<IRawElementProviderSimple*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    }
+
+    *ppvObject = NULL;
+    return E_NOINTERFACE;
 }
 
 ULONG STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::AddRef(void)
@@ -37,8 +48,9 @@ ULONG STDMETHODCALLTYPE SumatraUIAutomationStartPageProvider::Release(void)
 {
     LONG res = InterlockedDecrement(&refCount);
     CrashIf(res < 0);
-    if (0 == res)
+    if (0 == res) {
         delete this;
+    }
     return res;
 }
 

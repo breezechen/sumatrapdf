@@ -3,24 +3,21 @@ the release notes, as we make them, to make the release process easier.
 
 Next version:
 
-2.4 (????-??-???):
-
-* support screen readers etc. via UI automation (disabled in release builds)
-
 2.3 (2013-??-??):
 
 * more configurability. Settings are now saved in human-editable
   SumatraPDF-settings.txt (instead of binary sumatrapdfprefs.dat)
   and there are more settings for customizing Sumatra. For more
   documentation see http://blog.kowalczyk.info/software/sumatrapdf/settings.html
-* "Go To Page" for ebook format
+* support screen readers etc. via UI automation (disabled in release builds)
 * add support for OpenXPS documents
-* add View/Manga Mode menu item for Comic Book (CBZ/CBR) files
-* support Deflate64 in Comic Book (CBZ/CBR) files
+* "Go To Page" for ebook format
+* fixed paragraph indentation missing for EPUB documents
 * new key bindings:
   * Ctrl-Up   : page up
   * Ctrl-Down : page down
-* fixed paragraph indentation missing for EPUB documents
+* add View/Manga Mode menu item for Comic Book (CBZ/CBR) files
+* support Deflate64 in Comic Book (CBZ/CBR) files
 * printing with "Use original page sizes" no longer centers pages on paper
 * reduced size. Installer is ~1MB smaller
 
