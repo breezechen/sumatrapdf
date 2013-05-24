@@ -198,18 +198,11 @@ inline bool IsSpecialDir(const WCHAR *s)
     return str::Eq(s, L".") || str::Eq(s, L"..");
 }
 
-static bool IsStressTestSupportedFile(const WCHAR *fileName, const WCHAR *filter, const WCHAR *dirPath)
+static bool IsStressTestSupportedFile(const WCHAR *fileName, const WCHAR *filter)
 {
     if (filter && !path::Match(fileName, filter))
         return false;
-    if (EngineManager::IsSupportedFile(fileName))
-        return true;
-    if (!filter)
-        return false;
-    // sniff the file's content if it matches the filter but
-    // doesn't have a known extension
-    ScopedMem<WCHAR> fullPath(path::Join(dirPath, fileName));
-    return EngineManager::IsSupportedFile(fullPath, true);
+    return EngineManager::IsSupportedFile(fileName);
 }
 
 static bool CollectStressTestSupportedFilesFromDirectory(const WCHAR *dirPath, const WCHAR *filter, WStrVec& paths)
@@ -223,7 +216,7 @@ static bool CollectStressTestSupportedFilesFromDirectory(const WCHAR *dirPath, c
 
     do {
         if (!(fdata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            if (IsStressTestSupportedFile(fdata.cFileName, filter, dirPath)) {
+            if (IsStressTestSupportedFile(fdata.cFileName, filter)) {
                 paths.Append(path::Join(dirPath, fdata.cFileName));
             }
         }
@@ -522,7 +515,7 @@ void StressTest::Finished(bool success)
 bool StressTest::GoToNextFile()
 {
     for (;;) {
-        ScopedMem<WCHAR> nextFile(fileProvider->NextFile());
+        WCHAR *nextFile = fileProvider->NextFile();
         if (nextFile) {
             if (!IsInRange(fileRanges, ++fileIndex))
                 continue;

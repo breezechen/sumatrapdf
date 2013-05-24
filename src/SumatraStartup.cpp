@@ -479,7 +479,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (i.stressTestPath) {
         // don't save file history and preference changes
         gPolicyRestrictions = (gPolicyRestrictions | Perm_RestrictedUse) & ~Perm_SavePreferences;
-        RebuildMenuBarForWindow(win);
         StartStressTest(&i, win, &gRenderCache);
     }
 
@@ -519,7 +518,6 @@ Exit:
     // (which should be necessary only very rarely)
     while (gFileExistenceChecker) {
         Sleep(10);
-        uitask::DrainQueue();
     }
 
     gFileHistory.UpdateStatesSource(NULL);

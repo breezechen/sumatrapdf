@@ -38,15 +38,29 @@ SumatraUIAutomationPageProvider* SumatraUIAutomationPageProvider::GetPreviousPag
     return sibling_prev;
 }
 
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::QueryInterface(REFIID riid, void **ppv)
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::QueryInterface(const IID &iid,void **ppvObject)
 {
-    static const QITAB qit[] = {
-        QITABENT(SumatraUIAutomationPageProvider, IRawElementProviderSimple),
-        QITABENT(SumatraUIAutomationPageProvider, IRawElementProviderFragment),
-        QITABENT(SumatraUIAutomationPageProvider, IValueProvider),
-        { 0 }
-    };
-    return QISearch(this, qit, riid, ppv);
+    if (ppvObject == NULL)
+        return E_POINTER;
+
+    // TODO: per http://blogs.msdn.com/b/oldnewthing/archive/2004/03/26/96777.aspx should
+    // respond to IUnknown
+    if (iid == __uuidof(IRawElementProviderFragment)) {
+        *ppvObject = static_cast<IRawElementProviderFragment*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    } else if (iid == __uuidof(IRawElementProviderSimple)) {
+        *ppvObject = static_cast<IRawElementProviderSimple*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    } else if (iid == __uuidof(IValueProvider)) {
+        *ppvObject = static_cast<IValueProvider*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    }
+
+    *ppvObject = NULL;
+    return E_NOINTERFACE;
 }
 
 ULONG STDMETHODCALLTYPE SumatraUIAutomationPageProvider::AddRef(void)
@@ -58,8 +72,9 @@ ULONG STDMETHODCALLTYPE SumatraUIAutomationPageProvider::Release(void)
 {
     LONG res = InterlockedDecrement(&refCount);
     CrashIf(res < 0);
-    if (0 == res)
+    if (0 == res) {
         delete this;
+    }
     return res;
 }
 
@@ -166,7 +181,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationPageProvider::GetPatternProvider(PA
 
     if (patternId == UIA_ValuePatternId) {
         *pRetVal = static_cast<IValueProvider*>(this);
-        AddRef();
+        this->AddRef();
         return S_OK;
     }
 

@@ -213,13 +213,21 @@ int SumatraUIAutomationTextRange::FindNextLineEndpoint(int pageno, int idx, bool
 }
 
 // IUnknown
-HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::QueryInterface(REFIID riid, void **ppv)
+HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::QueryInterface(const IID &iid,void **ppvObject)
 {
-    static const QITAB qit[] = {
-        QITABENT(SumatraUIAutomationTextRange, ITextRangeProvider),
-        { 0 }
-    };
-    return QISearch(this, qit, riid, ppv);
+    if (ppvObject == NULL)
+        return E_POINTER;
+
+    // TODO: per http://blogs.msdn.com/b/oldnewthing/archive/2004/03/26/96777.aspx should
+    // respond to IUnknown
+    if (iid == __uuidof(ITextRangeProvider)) {
+        *ppvObject = static_cast<ITextRangeProvider*>(this);
+        this->AddRef(); //New copy has entered the universe
+        return S_OK;
+    }
+
+    *ppvObject = NULL;
+    return E_NOINTERFACE;
 }
 
 ULONG STDMETHODCALLTYPE SumatraUIAutomationTextRange::AddRef(void)
@@ -231,8 +239,9 @@ ULONG STDMETHODCALLTYPE SumatraUIAutomationTextRange::Release(void)
 {
     LONG res = InterlockedDecrement(&refCount);
     CrashIf(res < 0);
-    if (0 == res)
+    if (0 == res) {
         delete this;
+    }
     return res;
 }
 
@@ -386,10 +395,8 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::GetAttributeValue(TEXTAT
         return E_FAIL;
 
     // text doesn't have attributes, we don't support those
-    IUnknown* not_supported = NULL;
-    HRESULT hr = uia::GetReservedNotSupportedValue(&not_supported);
-    if (FAILED(hr))
-        return hr;
+    IUnknown* not_supported;
+    uia::GetReservedNotSupportedValue(&not_supported);
 
     value->vt = VT_UNKNOWN;
     value->punkVal = not_supported;

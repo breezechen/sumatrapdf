@@ -1,19 +1,17 @@
-#include <time.h>
-#include "fitz.h"
-
 #ifdef _WIN32
+
+#include <time.h>
 #ifndef METRO
 #include <winsock2.h>
 #endif
 #include <windows.h>
+#include "fitz.h"
 
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
 #else
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
 #endif
-
-#ifndef _WINRT
 
 struct timeval;
 
@@ -40,12 +38,6 @@ int gettimeofday(struct timeval *tv, struct timezone *tz)
 	return 0;
 }
 
-#else /* !_WINRT */
-
-void fz_gettimeofday_dummy() { }
-
-#endif /* !_WINRT) */
-
 FILE *fopen_utf8(const char *name, const char *mode)
 {
 	wchar_t *wname, *wmode, *d;
@@ -58,7 +50,7 @@ FILE *fopen_utf8(const char *name, const char *mode)
 	if (strchr(mode, 'r') && (file = fopen(name, mode)) != NULL)
 		return file;
 
-	d = wname = (wchar_t*) malloc((strlen(name)+1) * sizeof(wchar_t));
+	d = wname = malloc((strlen(name)+1) * sizeof(wchar_t));
 	if (d == NULL)
 		return NULL;
 	s = name;
@@ -67,7 +59,7 @@ FILE *fopen_utf8(const char *name, const char *mode)
 		*d++ = c;
 	}
 	*d = 0;
-	d = wmode = (wchar_t*) malloc((strlen(mode)+1) * sizeof(wchar_t));
+	d = wmode = malloc((strlen(mode)+1) * sizeof(wchar_t));
 	if (d == NULL)
 	{
 		free(wname);
@@ -85,4 +77,8 @@ FILE *fopen_utf8(const char *name, const char *mode)
 	return file;
 }
 
-#endif /* _WIN32 */
+#else
+
+void fz_gettimeofday_dummy() { }
+
+#endif

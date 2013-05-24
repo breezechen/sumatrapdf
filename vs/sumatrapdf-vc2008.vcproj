@@ -1283,10 +1283,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\mupdf\fitz\dev_svg.c"
-					>
-				</File>
-				<File
 					RelativePath="..\mupdf\fitz\dev_trace.c"
 					>
 				</File>
@@ -1400,10 +1396,6 @@
 				</File>
 				<File
 					RelativePath="..\mupdf\fitz\res_pixmap.c"
-					>
-				</File>
-				<File
-					RelativePath="..\mupdf\fitz\res_pwg.c"
 					>
 				</File>
 				<File
