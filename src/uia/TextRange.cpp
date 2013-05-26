@@ -395,7 +395,7 @@ HRESULT STDMETHODCALLTYPE SumatraUIAutomationTextRange::GetAttributeValue(TEXTAT
         return E_FAIL;
 
     // text doesn't have attributes, we don't support those
-    IUnknown* not_supported;
+    IUnknown* not_supported = NULL;
     uia::GetReservedNotSupportedValue(&not_supported);
 
     value->vt = VT_UNKNOWN;
