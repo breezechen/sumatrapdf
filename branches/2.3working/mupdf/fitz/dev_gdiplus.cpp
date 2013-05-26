@@ -1124,7 +1124,7 @@ gdiplus_get_font(fz_device *dev, fz_font *font, float height, float *out_ascent)
 		collection = new PrivateFontCollection();
 		assert(collection->GetFamilyCount() == 0);
 		
-		if (font->ft_data)
+		if (font->ft_data && font->ft_size > 4 && memcmp(font->ft_data, "true", 4) != 0)
 		{
 			// TODO: memory fonts seem to get substituted in release builds
 			// collection->AddMemoryFont(font->ft_data, font->ft_size);
