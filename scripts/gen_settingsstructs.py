@@ -129,7 +129,7 @@ ForwardSearch = [
 		"amount of margin from the page margin)"),
 	Field("HighlightWidth", Int, 15,
 		"width of the highlight rectangle (if HighlightOffset is > 0)"),
-	Field("HighlightColor", Color, 0x6581FF,
+	Field("HighlightColor", Color, 0xFF8165,
 		"color used for the forward search highlight"),
 	Field("HighlightPermanent", Bool, False,
 		"if true, highlight remains visible until the next " +

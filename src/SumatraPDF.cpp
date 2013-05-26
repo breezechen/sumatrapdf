@@ -2393,6 +2393,11 @@ static void OnMouseLeftButtonUp(WindowInfo& win, int x, int y, WPARAM key)
     /* return from white/black screens in presentation mode */
     else if (PM_BLACK_SCREEN == win.presentation || PM_WHITE_SCREEN == win.presentation)
         win.ChangePresentationMode(PM_ENABLED);
+    /* if there's a permanent forward search mark, hide it */
+    else if (win.fwdSearchMark.show && gGlobalPrefs->forwardSearch.highlightPermanent) {
+        win.fwdSearchMark.show = false;
+        win.RepaintAsync();
+    }
 
     delete activeLink;
 }
