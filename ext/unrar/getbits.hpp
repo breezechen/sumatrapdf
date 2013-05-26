@@ -5,13 +5,11 @@ class BitInput
 {
   public:
     enum BufferSize {MAX_SIZE=0x8000}; // Size of input buffer.
-
+  protected:
     int InAddr; // Curent byte position in the buffer.
     int InBit;  // Current bit position in the current byte.
-
-    bool ExternalBuffer;
   public:
-    BitInput(bool AllocBuffer);
+    BitInput();
     ~BitInput();
 
     byte *InBuf; // Dynamically allocated input buffer.
@@ -39,19 +37,6 @@ class BitInput
       BitField >>= (8-InBit);
       return(BitField & 0xffff);
     }
-
-    // Return 32 bits from current position in the buffer.
-    // Bit at (InAddr,InBit) has the highest position in returning data.
-    uint getbits32()
-    {
-      uint BitField=(uint)InBuf[InAddr] << 24;
-      BitField|=(uint)InBuf[InAddr+1] << 16;
-      BitField|=(uint)InBuf[InAddr+2] << 8;
-      BitField|=(uint)InBuf[InAddr+3];
-      BitField <<= InBit;
-      BitField|=(uint)InBuf[InAddr+4] >> (8-InBit);
-      return(BitField & 0xffffffff);
-    }
     
     void faddbits(uint Bits);
     uint fgetbits();
@@ -62,7 +47,5 @@ class BitInput
     {
       return(InAddr+IncPtr>=MAX_SIZE);
     }
-
-    void SetExternalBuffer(byte *Buf);
 };
 #endif

@@ -2,9 +2,11 @@
 #define _RAR_RESOURCE_
 
 #ifdef RARDLL
-#define St(x) (L"")
+#define St(x)  ( "")
+#define StW(x) (L"")
 #else
-const wchar *St(MSGID StringId);
+const char  *St  (MSGID StringId);
+const wchar *StW (MSGID StringId);
 #endif
 
 

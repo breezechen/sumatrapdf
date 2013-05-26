@@ -17,13 +17,8 @@ enum HtmlParseError {
     ErrParsingAttributeValue,
 };
 
+struct HtmlAttr;
 struct HtmlToken;
-
-struct HtmlAttr {
-    char *name;
-    char *val;
-    HtmlAttr *next;
-};
 
 struct HtmlElement {
     HtmlTag tag;

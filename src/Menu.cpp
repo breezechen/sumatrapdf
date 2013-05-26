@@ -370,11 +370,7 @@ void MenuUpdateZoom(WindowInfo* win)
 
 void MenuUpdatePrintItem(WindowInfo* win, HMENU menu, bool disableOnly=false) {
     bool filePrintEnabled = win->IsDocLoaded();
-#ifndef DISABLE_DOCUMENT_RESTRICTIONS
     bool filePrintAllowed = !filePrintEnabled || win->dm->engine->AllowsPrinting();
-#else
-    bool filePrintAllowed = true;
-#endif
 
     int ix;
     for (ix = 0; ix < dimof(menuDefFile) && menuDefFile[ix].id != IDM_PRINT; ix++);

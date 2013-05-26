@@ -8,29 +8,25 @@ static inline int fz_tolower(int c)
 	return c;
 }
 
-static inline int iswhite(int c)
-{
-	return c == ' ' || c == '\r' || c == '\n' || c == '\t';
-}
-
 fz_char_and_box *fz_text_char_at(fz_char_and_box *cab, fz_text_page *page, int idx)
 {
 	int block_num;
-	int ofs = 0;
 
 	for (block_num = 0; block_num < page->len; block_num++)
 	{
-		fz_text_block *block;
 		fz_text_line *line;
-		fz_text_span *span;
+		int ofs = 0;
+		fz_text_block *block;
 
 		if (page->blocks[block_num].type != FZ_PAGE_BLOCK_TEXT)
 			continue;
 		block = page->blocks[block_num].u.text;
 		for (line = block->lines; line < block->lines + block->len; line++)
 		{
-			for (span = line->first_span; span; span = span->next)
+			int span_num;
+			for (span_num = 0; span_num < line->len; span_num++)
 			{
+				fz_text_span *span = line->spans[span_num];
 				if (idx < ofs + span->len)
 				{
 					cab->c = span->text[idx - ofs].c;
@@ -40,10 +36,10 @@ fz_char_and_box *fz_text_char_at(fz_char_and_box *cab, fz_text_page *page, int i
 				ofs += span->len;
 			}
 			/* pseudo-newline */
-			if (idx == ofs)
+			if (idx == 0)
 			{
 				cab->bbox = fz_empty_rect;
-				cab->c = ' ';
+				cab->c = 0;
 				return cab;
 			}
 			ofs++;
@@ -77,15 +73,16 @@ static int textlen(fz_text_page *page)
 	{
 		fz_text_block *block;
 		fz_text_line *line;
-		fz_text_span *span;
 
 		if (page->blocks[block_num].type != FZ_PAGE_BLOCK_TEXT)
 			continue;
 		block = page->blocks[block_num].u.text;
 		for (line = block->lines; line < block->lines + block->len; line++)
 		{
-			for (span = line->first_span; span; span = span->next)
+			int span_num;
+			for (span_num = 0; span_num < line->len; span_num++)
 			{
+				fz_text_span *span = line->spans[span_num];
 				len += span->len;
 			}
 			len++; /* pseudo-newline */
@@ -101,11 +98,10 @@ static int match(fz_text_page *page, const char *s, int n)
 	while (*s)
 	{
 		s += fz_chartorune(&c, (char *)s);
-		if (iswhite(c) && iswhite(charat(page, n)))
+		if (c == ' ' && charat(page, n) == ' ')
 		{
-			do
+			while (charat(page, n) == ' ')
 				n++;
-			while (iswhite(charat(page, n)));
 		}
 		else
 		{
@@ -165,7 +161,6 @@ fz_highlight_selection(fz_context *ctx, fz_text_page *page, fz_rect rect, fz_rec
 	fz_rect linebox, charbox;
 	fz_text_block *block;
 	fz_text_line *line;
-	fz_text_span *span;
 	int i, block_num, hit_count;
 
 	float x0 = rect.x0;
@@ -182,9 +177,11 @@ fz_highlight_selection(fz_context *ctx, fz_text_page *page, fz_rect rect, fz_rec
 		block = page->blocks[block_num].u.text;
 		for (line = block->lines; line < block->lines + block->len; line++)
 		{
+			int span_num;
 			linebox = fz_empty_rect;
-			for (span = line->first_span; span; span = span->next)
+			for (span_num = 0; span_num < line->len; span_num++)
 			{
+				fz_text_span *span = line->spans[span_num];
 				for (i = 0; i < span->len; i++)
 				{
 					fz_text_char_bbox(&charbox, span, i);
@@ -230,15 +227,16 @@ fz_copy_selection(fz_context *ctx, fz_text_page *page, fz_rect rect)
 	{
 		fz_text_block *block;
 		fz_text_line *line;
-		fz_text_span *span;
 
 		if (page->blocks[block_num].type != FZ_PAGE_BLOCK_TEXT)
 			continue;
 		block = page->blocks[block_num].u.text;
 		for (line = block->lines; line < block->lines + block->len; line++)
 		{
-			for (span = line->first_span; span; span = span->next)
+			int span_num;
+			for (span_num = 0; span_num < line->len; span_num++)
 			{
+				fz_text_span *span = line->spans[span_num];
 				if (seen)
 				{
 					fz_write_buffer_byte(ctx, buffer, '\n');
@@ -259,7 +257,7 @@ fz_copy_selection(fz_context *ctx, fz_text_page *page, fz_rect rect)
 					}
 				}
 
-				seen = (seen && span == line->last_span);
+				seen = (seen && span_num + 1 == line->len);
 			}
 		}
 	}

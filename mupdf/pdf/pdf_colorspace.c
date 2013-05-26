@@ -24,9 +24,9 @@ load_icc_based(pdf_document *xref, pdf_obj *dict)
 
 	switch (n)
 	{
-	case 1: return fz_device_gray(xref->ctx);
-	case 3: return fz_device_rgb(xref->ctx);
-	case 4: return fz_device_cmyk(xref->ctx);
+	case 1: return fz_device_gray;
+	case 3: return fz_device_rgb;
+	case 4: return fz_device_cmyk;
 	}
 
 	fz_throw(xref->ctx, "syntaxerror: ICCBased must have 1, 3 or 4 components");
@@ -169,7 +169,6 @@ load_indexed(pdf_document *xref, pdf_obj *array)
 	unsigned char *lookup = NULL;
 
 	fz_var(base);
-	fz_var(lookup);
 
 	fz_try(ctx)
 	{
@@ -237,19 +236,19 @@ pdf_load_colorspace_imp(pdf_document *xref, pdf_obj *obj)
 	{
 		const char *str = pdf_to_name(obj);
 		if (!strcmp(str, "Pattern"))
-			return fz_device_gray(ctx);
+			return fz_device_gray;
 		else if (!strcmp(str, "G"))
-			return fz_device_gray(ctx);
+			return fz_device_gray;
 		else if (!strcmp(str, "RGB"))
-			return fz_device_rgb(ctx);
+			return fz_device_rgb;
 		else if (!strcmp(str, "CMYK"))
-			return fz_device_cmyk(ctx);
+			return fz_device_cmyk;
 		else if (!strcmp(str, "DeviceGray"))
-			return fz_device_gray(ctx);
+			return fz_device_gray;
 		else if (!strcmp(str, "DeviceRGB"))
-			return fz_device_rgb(ctx);
+			return fz_device_rgb;
 		else if (!strcmp(str, "DeviceCMYK"))
-			return fz_device_cmyk(ctx);
+			return fz_device_cmyk;
 		else
 			fz_throw(ctx, "unknown colorspace: %s", pdf_to_name(obj));
 	}
@@ -263,23 +262,23 @@ pdf_load_colorspace_imp(pdf_document *xref, pdf_obj *obj)
 		{
 			/* load base colorspace instead */
 			if (!strcmp(str, "G"))
-				return fz_device_gray(ctx);
+				return fz_device_gray;
 			else if (!strcmp(str, "RGB"))
-				return fz_device_rgb(ctx);
+				return fz_device_rgb;
 			else if (!strcmp(str, "CMYK"))
-				return fz_device_cmyk(ctx);
+				return fz_device_cmyk;
 			else if (!strcmp(str, "DeviceGray"))
-				return fz_device_gray(ctx);
+				return fz_device_gray;
 			else if (!strcmp(str, "DeviceRGB"))
-				return fz_device_rgb(ctx);
+				return fz_device_rgb;
 			else if (!strcmp(str, "DeviceCMYK"))
-				return fz_device_cmyk(ctx);
+				return fz_device_cmyk;
 			else if (!strcmp(str, "CalGray"))
-				return fz_device_gray(ctx);
+				return fz_device_gray;
 			else if (!strcmp(str, "CalRGB"))
-				return fz_device_rgb(ctx);
+				return fz_device_rgb;
 			else if (!strcmp(str, "CalCMYK"))
-				return fz_device_cmyk(ctx);
+				return fz_device_cmyk;
 			else if (!strcmp(str, "Lab"))
 				return fz_device_lab;
 			else
@@ -308,7 +307,7 @@ pdf_load_colorspace_imp(pdf_document *xref, pdf_obj *obj)
 						pobj = pdf_array_get(obj, 1);
 						if (!pobj)
 						{
-							cs = fz_device_gray(ctx);
+							cs = fz_device_gray;
 							break;
 						}
 

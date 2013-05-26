@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="UnRAR"
 	ProjectGUID="{E815C46C-36C4-499F-BBC2-E772C6B17971}"
 	RootNamespace="UnRAR"
@@ -47,10 +47,8 @@
 				Optimization="0"
 				PreprocessorDefinitions="RARDLL;UNRAR;SILENT"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				StructMemberAlignment="3"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="rar.hpp"
@@ -73,7 +71,7 @@
 				OutputFile="$(OutDir)\unrar.dll"
 				LinkIncremental="2"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll.def"
+				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -129,10 +127,8 @@
 				Optimization="0"
 				PreprocessorDefinitions="RARDLL;UNRAR;SILENT"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				StructMemberAlignment="3"
 				RuntimeTypeInfo="false"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="rar.hpp"
@@ -155,7 +151,7 @@
 				OutputFile="$(OutDir)\unrar64.dll"
 				LinkIncremental="2"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll.def"
+				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="17"
@@ -215,9 +211,8 @@
 				WholeProgramOptimization="false"
 				PreprocessorDefinitions="RARDLL;UNRAR;SILENT"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				RuntimeLibrary="0"
-				StructMemberAlignment="3"
+				StructMemberAlignment="0"
 				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="0"
@@ -241,11 +236,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/SAFESEH"
 				OutputFile="$(OutDir)\unrar.dll"
 				LinkIncremental="1"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll.def"
+				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -310,9 +304,7 @@
 				PreprocessorDefinitions="RARDLL;UNRAR;SILENT"
 				StringPooling="false"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				RuntimeLibrary="0"
-				StructMemberAlignment="3"
 				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
@@ -337,7 +329,7 @@
 				OutputFile="$(OutDir)\unrar64.dll"
 				LinkIncremental="1"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll.def"
+				ModuleDefinitionFile="dll.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -398,11 +390,10 @@
 				FavorSizeOrSpeed="0"
 				OmitFramePointers="true"
 				WholeProgramOptimization="false"
-				PreprocessorDefinitions="RARDLL;UNRAR;SILENT;RAR_NOCRYPT"
+				PreprocessorDefinitions="RARDLL;UNRAR;SILENT;NOCRYPT"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				RuntimeLibrary="0"
-				StructMemberAlignment="3"
+				StructMemberAlignment="0"
 				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				EnableEnhancedInstructionSet="0"
@@ -426,11 +417,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/SAFESEH"
 				OutputFile="$(OutDir)\unrar_nocrypt.dll"
 				LinkIncremental="1"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll_nocrypt.def"
+				ModuleDefinitionFile="dll_nocrypt.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -492,12 +482,10 @@
 				FavorSizeOrSpeed="0"
 				OmitFramePointers="true"
 				WholeProgramOptimization="false"
-				PreprocessorDefinitions="RARDLL;UNRAR;SILENT;RAR_NOCRYPT"
+				PreprocessorDefinitions="RARDLL;UNRAR;SILENT;NOCRYPT"
 				StringPooling="false"
 				MinimalRebuild="false"
-				ExceptionHandling="1"
 				RuntimeLibrary="0"
-				StructMemberAlignment="3"
 				BufferSecurityCheck="true"
 				EnableFunctionLevelLinking="true"
 				RuntimeTypeInfo="false"
@@ -522,7 +510,7 @@
 				OutputFile="$(OutDir)\unrar64_nocrypt.dll"
 				LinkIncremental="1"
 				GenerateManifest="true"
-				ModuleDefinitionFile="D:\Projects\WinRAR\rar\dll_nocrypt.def"
+				ModuleDefinitionFile="dll_nocrypt.def"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -682,15 +670,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\hash.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\headers.cpp"
-				>
-			</File>
-			<File
 				RelativePath="isnt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="list.cpp"
 				>
 			</File>
 			<File
@@ -703,10 +687,6 @@
 			</File>
 			<File
 				RelativePath="pathfn.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\qopen.cpp"
 				>
 			</File>
 			<File
@@ -790,23 +770,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rs16.cpp"
+				RelativePath="savepos.cpp"
 				>
 			</File>
 			<File
 				RelativePath="scantree.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\secpassword.cpp"
+  		<File
+				RelativePath="secpassword.cpp"
 				>
 			</File>
 			<File
 				RelativePath="sha1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\sha256.cpp"
 				>
 			</File>
 			<File
@@ -826,11 +802,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\threadpool.cpp"
+				RelativePath="timefn.cpp"
 				>
 			</File>
 			<File
-				RelativePath="timefn.cpp"
+				RelativePath="ulinks.cpp"
 				>
 			</File>
 			<File

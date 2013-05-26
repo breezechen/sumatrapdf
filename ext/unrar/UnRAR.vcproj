@@ -369,10 +369,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\blake2s.cpp"
-				>
-			</File>
-			<File
 				RelativePath="cmddata.cpp"
 				>
 			</File>
@@ -465,14 +461,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\hash.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\headers.cpp"
-				>
-			</File>
-			<File
 				RelativePath="isnt.cpp"
 				>
 			</File>
@@ -490,10 +478,6 @@
 			</File>
 			<File
 				RelativePath="pathfn.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\qopen.cpp"
 				>
 			</File>
 			<File
@@ -565,7 +549,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\rs16.cpp"
+				RelativePath="savepos.cpp"
 				>
 			</File>
 			<File
@@ -578,10 +562,6 @@
 			</File>
 			<File
 				RelativePath="sha1.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\sha256.cpp"
 				>
 			</File>
 			<File
@@ -601,11 +581,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\threadpool.cpp"
+				RelativePath="timefn.cpp"
 				>
 			</File>
 			<File
-				RelativePath="timefn.cpp"
+				RelativePath="ulinks.cpp"
 				>
 			</File>
 			<File
@@ -626,6 +606,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="rar.hpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

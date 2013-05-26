@@ -29,6 +29,11 @@
   #endif
 #endif
 
+#ifdef __BEOS__
+  #define _UNIX
+  #define _BEOS
+#endif
+
 #ifdef __APPLE__
   #define _UNIX
   #define _APPLE

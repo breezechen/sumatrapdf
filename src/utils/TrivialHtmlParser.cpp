@@ -15,6 +15,12 @@ name/val pointers inside Element/Attr structs refer to
 memory inside HtmlParser::s, so they don't need to be freed.
 */
 
+struct HtmlAttr {
+    char *name;
+    char *val;
+    HtmlAttr *next;
+};
+
 bool HtmlElement::NameIs(const char *name) const
 {
     if (!this->name) {
@@ -326,3 +332,7 @@ FindNext:
     }
     return NULL;
 }
+
+#ifdef DEBUG
+#include "TrivialHtmlParser_ut.cpp"
+#endif

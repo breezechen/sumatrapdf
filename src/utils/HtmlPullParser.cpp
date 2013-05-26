@@ -17,7 +17,7 @@ int HtmlEntityNameToRune(const char *name, size_t nameLen)
 
 #define MAX_ENTITY_NAME_LEN 8
 
-// A unicode version of HtmlEntityNameToRune. It's safe because
+// A unicode version of HtmlEntityNameToRune. It's safe because 
 // entity names only contain ascii (<127) characters so if a simplistic
 // conversion from unicode to ascii succeeds, we can use ascii
 // version, otherwise it wouldn't match anyway
@@ -111,7 +111,7 @@ void MemAppend(char *& dst, const char *s, size_t len)
 // after '&' and len is the maximum lenght of the string
 // (4 in case of "foo;")
 // returns a pointer to the first character after the entity
-const char *ResolveHtmlEntity(const char *s, size_t len, int& rune)
+static const char *ResolveHtmlEntity(const char *s, size_t len, int& rune)
 {
     const char *entEnd = str::Parse(s, len, "#%d%?;", &rune);
     if (entEnd)
@@ -191,6 +191,11 @@ char *ResolveHtmlEntities(const char *s, size_t len)
     if (tmp == s)
         return str::DupN(s, len);
     return (char *)tmp;
+}
+
+inline bool StrEqNIx(const char *s, size_t len, const char *s2)
+{
+    return str::Len(s2) == len && str::StartsWithI(s, s2);
 }
 
 bool AttrInfo::NameIs(const char *s) const
@@ -349,7 +354,7 @@ NoNextAttr:
 // <tag attr=">" />
 // tries to find the closing '>' and not be confused by '>' that
 // are part of attribute value. We're not very strict here
-// Returns false if didn't find
+// Returns false if didn't find 
 static bool SkipUntilTagEnd(const char*& s, const char *end)
 {
     while (s < end) {
@@ -463,3 +468,10 @@ Next:
     UpdateTagNesting(&tagNesting, &currToken);
     return &currToken;
 }
+
+// note: this is a bit unorthodox but allows us to easily separate
+// (often long) unit tests into a separate file without additional
+// makefile gymnastics
+#ifdef DEBUG
+#include "HtmlPullParser_ut.cpp"
+#endif

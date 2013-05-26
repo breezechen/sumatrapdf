@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\scripts;..\fitz;..\ucdn;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\src\lib\openjp2;..\thirdparty\zlib;..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\scripts;..\fitz;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\libopenjpeg;..\thirdparty\zlib;..\thirdparty\freetype\include"
 				PreprocessorDefinitions="DEBUG=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -105,7 +105,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\scripts;..\fitz;..\ucdn;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\src\lib\openjp2;..\thirdparty\zlib;..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\scripts;..\fitz;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\libopenjpeg;..\thirdparty\zlib;..\thirdparty\freetype\include"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -165,7 +165,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\scripts;..\fitz;..\ucdn;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\src\lib\openjp2;..\thirdparty\zlib;..\thirdparty\freetype\include"
+				AdditionalIncludeDirectories="..\scripts;..\fitz;..\pdf;..\thirdparty\jbig2dec;..\thirdparty\jpeg;..\thirdparty\openjpeg\libopenjpeg;..\thirdparty\zlib;..\thirdparty\freetype\include"
 				PreprocessorDefinitions="MEMENTO=1;DEBUG=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -437,10 +437,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\fitz\dev_svg.c"
-				>
-			</File>
-			<File
 				RelativePath="..\fitz\dev_trace.c"
 				>
 			</File>
@@ -561,10 +557,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\fitz\res_pwg.c"
-				>
-			</File>
-			<File
 				RelativePath="..\fitz\res_shade.c"
 				>
 			</File>
@@ -654,14 +646,6 @@
 			</File>
 			<File
 				RelativePath="..\draw\draw_unpack.c"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="ucdn"
-			>
-			<File
-				RelativePath="..\ucdn\ucdn.c"
 				>
 			</File>
 		</Filter>

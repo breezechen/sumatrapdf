@@ -45,7 +45,7 @@ class ComprDataIO
 
     int LastPercent;
 
-    wchar CurrentCommand;
+    char CurrentCommand;
 
   public:
     ComprDataIO();
@@ -60,19 +60,18 @@ class ComprDataIO
     void SetFiles(File *SrcFile,File *DestFile);
     void SetCommand(CmdAdd *Cmd) {Command=Cmd;}
     void SetSubHeader(FileHeader *hd,int64 *Pos) {SubHead=hd;SubHeadPos=Pos;}
-    void SetEncryption(bool Encrypt,CRYPT_METHOD Method,SecPassword *Password,
-         const byte *Salt,const byte *InitV,uint Lg2Cnt,byte *PswCheck,byte *HashKey);
+    void SetEncryption(int Method,SecPassword *Password,const byte *Salt,bool Encrypt,bool HandsOffHash);
     void SetAV15Encryption();
     void SetCmt13Encryption();
     void SetUnpackToMemory(byte *Addr,uint Size);
-    void SetCurrentCommand(wchar Cmd) {CurrentCommand=Cmd;}
+    void SetCurrentCommand(char Cmd) {CurrentCommand=Cmd;}
 
     bool PackVolume;
     bool UnpVolume;
     bool NextVolumeMissing;
+    int64 TotalPackRead;
     int64 UnpArcSize;
     int64 CurPackRead,CurPackWrite,CurUnpRead,CurUnpWrite;
-
 
     // Size of already processed archives.
     // Used to calculate the total operation progress.
@@ -80,12 +79,10 @@ class ComprDataIO
 
     int64 TotalArcSize;
 
-    DataHash PackedDataHash; // Packed write and unpack read hash.
-    DataHash PackHash; // Pack read hash.
-    DataHash UnpHash;  // Unpack write hash.
+    uint PackFileCRC,UnpFileCRC,PackedCRC;
 
-    bool Encryption;
-    bool Decryption;
+    int Encryption;
+    int Decryption;
 };
 
 #endif

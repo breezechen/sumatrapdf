@@ -1,7 +1,7 @@
 #ifndef _RAR_OPTIONS_
 #define _RAR_OPTIONS_
 
-#define DEFAULT_RECOVERY     -3
+#define DEFAULT_RECOVERY     -1
 
 #define DEFAULT_RECVOLUMES  -10
 
@@ -42,26 +42,18 @@ enum RECURSE_MODE
 
 enum OVERWRITE_MODE 
 {
-  OVERWRITE_DEFAULT=0, // Ask when extracting, silently overwrite when archiving.
+  OVERWRITE_DEFAULT=0, // ask for extraction, silently overwrite for archiving
   OVERWRITE_ALL,
   OVERWRITE_NONE,
   OVERWRITE_AUTORENAME,
   OVERWRITE_FORCE_ASK
 };
 
-
-enum QOPEN_MODE { QOPEN_NONE, QOPEN_AUTO, QOPEN_ALWAYS };
-
 enum RAR_CHARSET { RCH_DEFAULT=0,RCH_ANSI,RCH_OEM,RCH_UNICODE };
 
 #define     MAX_FILTER_TYPES           16
 enum FilterState {FILTER_DEFAULT=0,FILTER_AUTO,FILTER_FORCE,FILTER_DISABLE};
 
-
-enum SAVECOPY_MODE {
-  SAVECOPY_NONE=0, SAVECOPY_SILENT, SAVECOPY_LIST, SAVECOPY_LISTEXIT,
-  SAVECOPY_DUPLISTEXIT
-};
 
 struct FilterMode
 {
@@ -83,26 +75,24 @@ class RAROptions
     uint ExclFileAttr;
     uint InclFileAttr;
     bool InclAttrSet;
-    size_t WinSize;
-    wchar TempPath[NM];
-#ifdef USE_QOPEN
-    wchar SFXModule[NM];
-    QOPEN_MODE QOpenMode;
-#endif
+    uint WinSize;
+    char TempPath[NM];
     bool ConfigDisabled; // Switch -cfg-.
-    wchar ExtrPath[NM];
-    wchar CommentFile[NM];
+    char ExtrPath[NM];
+    wchar ExtrPathW[NM];
+    char CommentFile[NM];
+    wchar CommentFileW[NM];
     RAR_CHARSET CommentCharset;
     RAR_CHARSET FilelistCharset;
-    wchar ArcPath[NM];
+    char ArcPath[NM];
+    wchar ArcPathW[NM];
     SecPassword Password;
     bool EncryptHeaders;
-    wchar LogName[NM];
+    char LogName[NM];
     MESSAGE_TYPE MsgStream;
     bool Sound;
     OVERWRITE_MODE Overwrite;
     int Method;
-    HASH_TYPE HashType;
     int Recovery;
     int RecVolNumber;
     bool DisablePercentage;
@@ -112,6 +102,7 @@ class RAROptions
     int SolidCount;
     bool ClearArc;
     bool AddArcOnly;
+    bool AV;
     bool DisableComment;
     bool FreshFiles;
     bool UpdateFiles;
@@ -121,22 +112,20 @@ class RAROptions
     Array<int64> NextVolSizes;
     uint CurVolNum;
     bool AllYes;
+    bool DisableViewAV;
     bool DisableSortSolid;
     int ArcTime;
     int ConvertNames;
     bool ProcessOwners;
-    bool SaveSymLinks;
-    bool SaveHardLinks;
+    bool SaveLinks;
     int Priority;
     int SleepTime;
     bool KeepBroken;
     bool OpenShared;
     bool DeleteFiles;
-
-
 #ifndef SFX_MODULE
     bool GenerateArcName;
-    wchar GenerateMask[MAX_GENERATE_MASK];
+    char GenerateMask[MAX_GENERATE_MASK];
 #endif
     bool SyncFiles;
     bool ProcessEA;
@@ -147,27 +136,34 @@ class RAROptions
     RarTime FileTimeAfter;
     int64 FileSizeLess;
     int64 FileSizeMore;
+    bool OldNumbering;
     bool Lock;
     bool Test;
     bool VolumePause;
     FilterMode FilterModes[MAX_FILTER_TYPES];
-    wchar EmailTo[NM];
+    char EmailTo[NM];
     uint VersionControl;
+    bool NoEndBlock;
     bool AppendArcNameToPath;
     bool Shutdown;
     EXTTIME_MODE xmtime;
     EXTTIME_MODE xctime;
     EXTTIME_MODE xatime;
-    wchar CompressStdin[NM];
+    EXTTIME_MODE xarctime;
+    char CompressStdin[NM];
 
-    uint Threads; // We use it to init hash even if RAR_SMP is not defined.
+#ifdef RAR_SMP
+    uint Threads;
+#endif
+
 
 
 
 
 
 #ifdef RARDLL
-    wchar DllDestName[NM];
+    char DllDestName[NM];
+    wchar DllDestNameW[NM];
     int DllOpMode;
     int DllError;
     LPARAM UserData;

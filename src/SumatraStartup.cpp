@@ -256,6 +256,22 @@ static bool SetupPluginMode(CommandLineInfo& i)
     return true;
 }
 
+static void RunUnitTests()
+{
+#ifdef DEBUG
+    extern void BaseUtils_UnitTests();
+    BaseUtils_UnitTests();
+    extern void HtmlPullParser_UnitTests();
+    HtmlPullParser_UnitTests();
+    extern void TrivialHtmlParser_UnitTests();
+    TrivialHtmlParser_UnitTests();
+    extern void CssParser_UnitTests();
+    CssParser_UnitTests();
+    extern void SumatraPDF_UnitTests();
+    SumatraPDF_UnitTests();
+#endif
+}
+
 static void GetCommandLineInfo(CommandLineInfo& i)
 {
     i.bgColor = gGlobalPrefs->mainWindowBackground;
@@ -325,6 +341,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             return 0;
     }
 #endif
+
+    RunUnitTests();
 
     srand((unsigned int)time(NULL));
 
@@ -461,7 +479,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (i.stressTestPath) {
         // don't save file history and preference changes
         gPolicyRestrictions = (gPolicyRestrictions | Perm_RestrictedUse) & ~Perm_SavePreferences;
-        RebuildMenuBarForWindow(win);
         StartStressTest(&i, win, &gRenderCache);
     }
 
@@ -501,8 +518,10 @@ Exit:
     // (which should be necessary only very rarely)
     while (gFileExistenceChecker) {
         Sleep(10);
-        uitask::DrainQueue();
     }
+
+    gFileHistory.UpdateStatesSource(NULL);
+    DeleteGlobalPrefs(gGlobalPrefs);
 
     mui::Destroy();
     uitask::Destroy();
@@ -510,11 +529,6 @@ Exit:
 
     SaveCallstackLogs();
     dbghelp::FreeCallstackLogs();
-
-    // must be after uitask::Destroy() because we might have queued prefs::Reload()
-    // which crashes if gGlobalPrefs is freed
-    gFileHistory.UpdateStatesSource(NULL);
-    DeleteGlobalPrefs(gGlobalPrefs);
 
     // it's still possible to crash after this (destructors of static classes,
     // atexit() code etc.) point, but it's very unlikely

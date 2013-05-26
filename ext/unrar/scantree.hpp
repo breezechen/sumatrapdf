@@ -20,7 +20,6 @@ class ScanTree
   private:
     bool GetNextMask();
     SCAN_CODE FindProc(FindData *FD);
-    void ScanError(bool &Error);
 
     FindFile *FindStack[MAXSCANDEPTH];
     int Depth;
@@ -36,21 +35,25 @@ class ScanTree
     // set when processing paths like c:\ (root directory without wildcards)
     bool ScanEntireDisk;
 
-    wchar CurMask[NM];
-    wchar OrigCurMask[NM];
+    char CurMask[NM];
+    wchar CurMaskW[NM];
+    char OrigCurMask[NM];
+    wchar OrigCurMaskW[NM];
     bool SearchAllInRoot;
     size_t SpecPathLength;
+    size_t SpecPathLengthW;
 
-    wchar ErrArcName[NM];
+    char ErrArcName[NM];
 
     CommandData *Cmd;
   public:
     ScanTree(StringList *FileMasks,RECURSE_MODE Recurse,bool GetLinks,SCAN_DIRS GetDirs);
     ~ScanTree();
     SCAN_CODE GetNext(FindData *FindData);
-    size_t GetSpecPathLength() {return SpecPathLength;};
-    int GetErrors() {return Errors;};
-    void SetErrArcName(const wchar *Name) {wcsncpyz(ErrArcName,Name,ASIZE(ErrArcName));}
+    size_t GetSpecPathLength() {return(SpecPathLength);};
+    size_t GetSpecPathLengthW() {return(SpecPathLengthW);};
+    int GetErrors() {return(Errors);};
+    void SetErrArcName(const char *Name) {strcpy(ErrArcName,Name);}
     void SetCommandData(CommandData *Cmd) {ScanTree::Cmd=Cmd;}
 };
 

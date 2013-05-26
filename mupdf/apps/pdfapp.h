@@ -116,9 +116,8 @@ struct pdfapp_s
 	int isediting;
 	int searchdir;
 	char search[512];
-	int searchpage;
-	fz_rect hit_bbox[512];
-	int hit_count;
+	int hit;
+	int hitlen;
 
 	/* client context storage */
 	void *userdata;

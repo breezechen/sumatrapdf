@@ -4,7 +4,6 @@
 #include "BaseUtil.h"
 #include "Selection.h"
 
-#include "AppPrefs.h"
 #include "Notifications.h"
 #include "SumatraPDF.h"
 #include "Toolbar.h"
@@ -12,6 +11,8 @@
 #include "uia/Provider.h"
 #include "WindowInfo.h"
 #include "WinUtil.h"
+
+#define COL_SELECTION_RECT      RGB(0xF5, 0xFC, 0x0C)
 
 RectI SelectionOnPage::GetRect(DisplayModel *dm)
 {
@@ -92,7 +93,7 @@ void PaintTransparentRectangles(HDC hdc, RectI screenRc, Vec<RectI>& rects, COLO
 
     // fill path (and draw optional outline margin)
     Graphics gs(hdc);
-    Color c(alpha, GetRValueSafe(selectionColor), GetGValueSafe(selectionColor), GetBValueSafe(selectionColor));
+    Color c(alpha, GetRValue(selectionColor), GetGValue(selectionColor), GetBValue(selectionColor));
     SolidBrush tmpBrush(c);
     gs.FillPath(&tmpBrush, &path);
     if (margin) {
@@ -140,7 +141,7 @@ void PaintSelection(WindowInfo *win, HDC hdc)
             rects.Append(win->selectionOnPage->At(i).GetRect(win->dm));
     }
 
-    PaintTransparentRectangles(hdc, win->canvasRc, rects, gGlobalPrefs->fixedPageUI.selectionColor);
+    PaintTransparentRectangles(hdc, win->canvasRc, rects, COL_SELECTION_RECT);
 }
 
 void UpdateTextSelection(WindowInfo *win, bool select)
@@ -226,12 +227,9 @@ void CopySelectionToClipboard(WindowInfo *win)
     if (!OpenClipboard(NULL)) return;
     EmptyClipboard();
 
-#ifndef DISABLE_DOCUMENT_RESTRICTIONS
     if (!win->dm->engine->AllowsCopyingText())
         ShowNotification(win, _TR("Copying text was denied (copying as image only)"));
-    else
-#endif
-    if (!win->dm->engine->IsImageCollection()) {
+    else if (!win->dm->engine->IsImageCollection()) {
         ScopedMem<WCHAR> selText;
         bool isTextSelection = win->dm->textSelection->result.len > 0;
         if (isTextSelection) {

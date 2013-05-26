@@ -178,7 +178,6 @@ public:
         static const QITAB qit[] = {
             QITABENT(CFilterBase, IPersistStream),
             QITABENT(CFilterBase, IPersistFile),
-            QITABENTMULTI(CFilterBase, IPersist, IPersistStream),
             QITABENT(CFilterBase, IInitializeWithStream),
             QITABENT(CFilterBase, IFilter),
             { 0 }

@@ -542,21 +542,6 @@ bool IsUIRightToLeft()
     return trans::IsCurrLangRtl();
 }
 
-UINT MbRtlReadingMaybe()
-{
-    if (IsUIRightToLeft())
-        return MB_RTLREADING;
-    return 0;
-}
-
-void MessageBoxWarning(HWND hwnd, const WCHAR *msg, const WCHAR *title)
-{
-    UINT type =  MB_OK | MB_ICONEXCLAMATION | MbRtlReadingMaybe();
-    if (!title)
-        title = _TR("Warning");
-    MessageBox(hwnd, msg, title, type);
-}
-
 // updates the layout for a window to either left-to-right or right-to-left
 // depending on the currently used language (cf. IsUIRightToLeft)
 static void UpdateWindowRtlLayout(WindowInfo *win)
@@ -871,6 +856,8 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI, DisplayState *s
     float zoomVirtual = gGlobalPrefs->defaultZoomFloat;
     int rotation = 0;
 
+    // TODO: remove time logging before release
+    Timer t(true);
     // Never load settings from a preexisting state if the user doesn't wish to
     // (unless we're just refreshing the document, i.e. only if args.placeWindow == true)
     if (args.placeWindow && (!gGlobalPrefs->rememberStatePerDocument || state && state->useDefaultState)) {
@@ -920,11 +907,14 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI, DisplayState *s
         // make sure that MSHTML can't be used as a potential exploit
         // vector through another browser and our plugin (which doesn't
         // advertise itself for Chm documents but could be tricked into
-        // loading one nonetheless); note: this crash should never happen,
-        // since gGlobalPrefs->chmUI.useFixedPageUI is set in SetupPluginMode
-        CrashAlwaysIf(gPluginMode);
+        // loading one nonetheless)
+        if (gPluginMode && IsUntrustedFile(args.fileName, gPluginURL)) {
+            delete engine;
+            engine = NULL;
+            engineType = Engine_None;
+        }
         // if CLSID_WebBrowser isn't available, fall back on Chm2Engine
-        if (!static_cast<ChmEngine *>(engine)->SetParentHwnd(win->hwndCanvas)) {
+        else if (!static_cast<ChmEngine *>(engine)->SetParentHwnd(win->hwndCanvas)) {
             delete engine;
             engine = EngineManager::CreateEngine(args.fileName, pwdUI, &engineType, true);
             CrashIf(engineType != (engine ? Engine_Chm2 : Engine_None));
@@ -1094,6 +1084,9 @@ Error:
         EnterFullscreen(*win);
     if (!args.isNewWindow && win->presentation && win->dm)
         win->dm->SetPresentationMode(true);
+
+    t.Stop();
+    lf("LoadDocIntoWindow() time: %.2f", t.GetTimeInMs());
 
     return true;
 }
@@ -1270,6 +1263,8 @@ WindowInfo *CreateAndShowWindowInfo()
 
 static void DeleteWindowInfo(WindowInfo *win)
 {
+    Timer t(true);
+
     FileWatcherUnsubscribe(win->watcher);
     win->watcher = NULL;
 
@@ -1288,6 +1283,9 @@ static void DeleteWindowInfo(WindowInfo *win)
     }
 
     delete win;
+
+    t.Stop();
+    lf("DeleteWindowInfo() time: %.2f", t.GetTimeInMs());
 }
 
 class FileChangeCallback : public UITask, public FileChangeObserver
@@ -1701,6 +1699,14 @@ void OnDropFiles(HDROP hDrop, bool dragFinish)
         DragFinish(hDrop);
 }
 
+static void MessageBoxWarning(HWND hwnd, const WCHAR *msg, const WCHAR *title = NULL)
+{
+    UINT type =  MB_OK | MB_ICONEXCLAMATION | (IsUIRightToLeft() ? MB_RTLREADING : 0);
+    if (!title)
+        title = _TR("Warning");
+    MessageBox(hwnd, msg, title, type);
+}
+
 static DWORD ShowAutoUpdateDialog(HWND hParent, HttpReq *ctx, bool silent)
 {
     if (ctx->error)
@@ -2025,9 +2031,9 @@ static void DebugShowLinks(DisplayModel& dm, HDC hdc)
 // cf. http://forums.fofou.org/sumatrapdf/topic?id=3183580
 static void GetGradientColor(COLORREF a, COLORREF b, float perc, TRIVERTEX *tv)
 {
-    tv->Red = (COLOR16)((GetRValueSafe(a) + perc * (GetRValueSafe(b) - GetRValueSafe(a))) * 256);
-    tv->Green = (COLOR16)((GetGValueSafe(a) + perc * (GetGValueSafe(b) - GetGValueSafe(a))) * 256);
-    tv->Blue = (COLOR16)((GetBValueSafe(a) + perc * (GetBValueSafe(b) - GetBValueSafe(a))) * 256);
+    tv->Red = (COLOR16)((GetRValue(a) + perc * (GetRValue(b) - GetRValue(a))) * 256);
+    tv->Green = (COLOR16)((GetGValue(a) + perc * (GetGValue(b) - GetGValue(a))) * 256);
+    tv->Blue = (COLOR16)((GetBValue(a) + perc * (GetBValue(b) - GetBValue(a))) * 256);
 }
 
 static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
@@ -2055,9 +2061,9 @@ static void DrawDocument(WindowInfo& win, HDC hdc, RECT *rcArea)
         }
         else if (gGlobalPrefs->fixedPageUI.gradientColors->Count() == 2) {
             colors[2] = gGlobalPrefs->fixedPageUI.gradientColors->At(1);
-            colors[1] = RGB((GetRValueSafe(colors[0]) + GetRValueSafe(colors[2])) / 2,
-                            (GetGValueSafe(colors[0]) + GetGValueSafe(colors[2])) / 2,
-                            (GetBValueSafe(colors[0]) + GetBValueSafe(colors[2])) / 2);
+            colors[1] = RGB((GetRValue(colors[0]) + GetRValue(colors[2])) / 2,
+                            (GetGValue(colors[0]) + GetGValue(colors[2])) / 2,
+                            (GetBValue(colors[0]) + GetBValue(colors[2])) / 2);
         }
         else {
             colors[1] = gGlobalPrefs->fixedPageUI.gradientColors->At(1);
@@ -2576,7 +2582,7 @@ void OnMenuExit()
     for (size_t i = 0; i < gWindows.Count(); i++) {
         WindowInfo *win = gWindows.At(i);
         if (win->printThread && !win->printCanceled) {
-            int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | MbRtlReadingMaybe());
+            int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
             if (IDNO == res)
                 return;
         }
@@ -2597,6 +2603,8 @@ size_t TotalWindowsCount()
 // about window
 void CloseDocumentInWindow(WindowInfo *win)
 {
+    // TODO: remove time logging before release
+    Timer t(true);
     bool wasChm = win->IsChm();
     if (wasChm)
         UnsubclassCanvas(win->hwndCanvas);
@@ -2629,6 +2637,8 @@ void CloseDocumentInWindow(WindowInfo *win)
     win->RedrawAll();
     UpdateFindbox(win);
     SetFocus(win->hwndFrame);
+    t.Stop();
+    lf("CloseDocumentInWindow() time: %.2f", t.GetTimeInMs());
 
 #ifdef DEBUG
     // cf. https://code.google.com/p/sumatrapdf/issues/detail?id=2039
@@ -2672,7 +2682,7 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
         return;
 
     if (win->printThread && !win->printCanceled) {
-        int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | MbRtlReadingMaybe());
+        int res = MessageBox(win->hwndFrame, _TR("Printing is still in progress. Abort and quit?"), _TR("Printing in progress."), MB_ICONEXCLAMATION | MB_YESNO | (IsUIRightToLeft() ? MB_RTLREADING : 0));
         if (IDNO == res)
             return;
     }
@@ -2758,11 +2768,8 @@ static void OnMenuSaveAs(WindowInfo& win)
     if (!srcFileName) return;
 
     // Can't save a document's content as plain text if text copying isn't allowed
-    bool hasCopyPerm = !win.dm->engine->IsImageCollection();
-#ifndef DISABLE_DOCUMENT_RESTRICTIONS
-    if (!win.dm->engine->AllowsCopyingText())
-        hasCopyPerm = false;
-#endif
+    bool hasCopyPerm = !win.dm->engine->IsImageCollection() &&
+                       win.dm->engine->AllowsCopyingText();
     bool canConvertToPDF = Engine_PS == win.dm->engineType;
 
     const WCHAR *defExt = win.dm->engine->GetDefaultFileExt();
@@ -2852,10 +2859,12 @@ static void OnMenuSaveAs(WindowInfo& win)
     else if (!file::Exists(srcFileName)) {
         ok = win.dm->engine->SaveFileAs(realDstFileName);
     }
+#ifdef DEBUG
     // ... as well as files containing annotations ...
     else if (win.dm->engine->SupportsAnnotation(true)) {
         ok = win.dm->engine->SaveFileAs(realDstFileName);
     }
+#endif
     // ... else just copy the file
     else if (!path::IsSame(srcFileName, realDstFileName)) {
         WCHAR *msgBuf;
@@ -2872,8 +2881,12 @@ static void OnMenuSaveAs(WindowInfo& win)
         }
     }
     if (ok && win.userAnnots && win.userAnnotsModified) {
+#ifdef DEBUG
         if (!win.dm->engine->SupportsAnnotation(true))
+#endif
+        {
             ok = SaveFileModifictions(realDstFileName, win.userAnnots);
+        }
         if (ok && path::IsSame(srcFileName, realDstFileName))
             win.userAnnotsModified = false;
     }
@@ -3920,7 +3933,7 @@ static void FrameOnChar(WindowInfo& win, WPARAM key)
                 win.userAnnots = new Vec<PageAnnotation>();
             for (size_t i = 0; i < win.selectionOnPage->Count(); i++) {
                 SelectionOnPage& sel = win.selectionOnPage->At(i);
-                win.userAnnots->Append(PageAnnotation(Annot_Highlight, sel.pageNo, sel.rect, PageAnnotation::Color(gGlobalPrefs->annotationDefaults.highlightColor, 0xCC)));
+                win.userAnnots->Append(PageAnnotation(Annot_Highlight, sel.pageNo, sel.rect, PageAnnotation::Color(0xFF, 0xFF, 0x60, 0xCC)));
                 gRenderCache.Invalidate(win.dm, sel.pageNo, sel.rect);
             }
             win.userAnnotsModified = true;
@@ -5410,7 +5423,7 @@ void CrashHandlerMessage()
     // to fix the unexpected behavior (of which for a restricted set of documents
     // there should be much less, anyway)
     if (HasPermission(Perm_DiskAccess)) {
-        int res = MessageBox(NULL, _TR("Sorry, that shouldn't have happened!\n\nPlease press 'Cancel', if you want to help us fix the cause of this crash."), _TR("SumatraPDF crashed"), MB_ICONERROR | MB_OKCANCEL | MbRtlReadingMaybe());
+        int res = MessageBox(NULL, _TR("Sorry, that shouldn't have happened!\n\nPlease press 'Cancel', if you want to help us fix the cause of this crash."), _TR("SumatraPDF crashed"), MB_ICONERROR | MB_OKCANCEL | (IsUIRightToLeft() ? MB_RTLREADING : 0));
         if (IDCANCEL == res)
             LaunchBrowser(CRASH_REPORT_URL);
     }

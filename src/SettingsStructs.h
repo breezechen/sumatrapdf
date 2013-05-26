@@ -25,9 +25,6 @@ struct FixedPageUI {
     COLORREF textColor;
     // color value with which white (background) will be substituted
     COLORREF backgroundColor;
-    // color value for the text selection rectangle (also used to highlight
-    // found text)
-    COLORREF selectionColor;
     // top, right, bottom and left margin (in that order) between window
     // and document
     WindowMargin windowMargin;
@@ -116,14 +113,6 @@ struct ForwardSearch {
     // if true, highlight remains visible until the next mouse click
     // (instead of fading away immediately)
     bool highlightPermanent;
-};
-
-// default values for user added annotations in FixedPageUI documents
-struct AnnotationDefaults {
-    // color used for the highlight tool (in prerelease builds, the current
-    // selection can be converted into a highlight annotation by pressing
-    // the 'h' key)
-    COLORREF highlightColor;
 };
 
 // Values which are persisted for bookmarks/favorites
@@ -239,8 +228,6 @@ struct GlobalPrefs {
     // customization options for how we show forward search results (used
     // from LaTeX editors)
     ForwardSearch forwardSearch;
-    // default values for user added annotations in FixedPageUI documents
-    AnnotationDefaults annotationDefaults;
     // if true, we store display settings for each document separately
     // (i.e. everything after UseDefaultState in FileStates)
     bool rememberStatePerDocument;
@@ -330,12 +317,11 @@ static const StructInfo gSizeIInfo = { sizeof(SizeI), 2, gSizeIFields, "Dx\0Dy" 
 static const FieldInfo gFixedPageUIFields[] = {
     { offsetof(FixedPageUI, textColor),       Type_Color,      0x000000                     },
     { offsetof(FixedPageUI, backgroundColor), Type_Color,      0xffffff                     },
-    { offsetof(FixedPageUI, selectionColor),  Type_Color,      0x0cfcf5                     },
     { offsetof(FixedPageUI, windowMargin),    Type_Compact,    (intptr_t)&gWindowMarginInfo },
     { offsetof(FixedPageUI, pageSpacing),     Type_Compact,    (intptr_t)&gSizeIInfo        },
     { offsetof(FixedPageUI, gradientColors),  Type_ColorArray, NULL                         },
 };
-static const StructInfo gFixedPageUIInfo = { sizeof(FixedPageUI), 6, gFixedPageUIFields, "TextColor\0BackgroundColor\0SelectionColor\0WindowMargin\0PageSpacing\0GradientColors" };
+static const StructInfo gFixedPageUIInfo = { sizeof(FixedPageUI), 5, gFixedPageUIFields, "TextColor\0BackgroundColor\0WindowMargin\0PageSpacing\0GradientColors" };
 
 static const FieldInfo gEbookUIFields[] = {
     { offsetof(EbookUI, fontName),        Type_String, (intptr_t)L"Georgia" },
@@ -392,11 +378,6 @@ static const FieldInfo gForwardSearchFields[] = {
     { offsetof(ForwardSearch, highlightPermanent), Type_Bool,  false    },
 };
 static const StructInfo gForwardSearchInfo = { sizeof(ForwardSearch), 4, gForwardSearchFields, "HighlightOffset\0HighlightWidth\0HighlightColor\0HighlightPermanent" };
-
-static const FieldInfo gAnnotationDefaultsFields[] = {
-    { offsetof(AnnotationDefaults, highlightColor), Type_Color, 0x60ffff },
-};
-static const StructInfo gAnnotationDefaultsInfo = { sizeof(AnnotationDefaults), 1, gAnnotationDefaultsFields, "HighlightColor" };
 
 static const FieldInfo gRectIFields[] = {
     { offsetof(RectI, x),  Type_Int, 0 },
@@ -457,7 +438,7 @@ static const FieldInfo gFILETIMEFields[] = {
 static const StructInfo gFILETIMEInfo = { sizeof(FILETIME), 2, gFILETIMEFields, "DwHighDateTime\0DwLowDateTime" };
 
 static const FieldInfo gGlobalPrefsFields[] = {
-    { (size_t)-1,                                      Type_Comment,    (intptr_t)"For documentation, see http://blog.kowalczyk.info/software/sumatrapdf/settings2.4.html"                    },
+    { (size_t)-1,                                      Type_Comment,    (intptr_t)"For documentation, see http://blog.kowalczyk.info/software/sumatrapdf/settings2.3.html"                    },
     { (size_t)-1,                                      Type_Comment,    NULL                                                                                                                  },
     { offsetof(GlobalPrefs, mainWindowBackground),     Type_Color,      0x8000f2ff                                                                                                            },
     { offsetof(GlobalPrefs, escToExit),                Type_Bool,       false                                                                                                                 },
@@ -471,7 +452,6 @@ static const FieldInfo gGlobalPrefsFields[] = {
     { offsetof(GlobalPrefs, zoomIncrement),            Type_Float,      (intptr_t)"0"                                                                                                         },
     { offsetof(GlobalPrefs, printerDefaults),          Type_Struct,     (intptr_t)&gPrinterDefaultsInfo                                                                                       },
     { offsetof(GlobalPrefs, forwardSearch),            Type_Struct,     (intptr_t)&gForwardSearchInfo                                                                                         },
-    { offsetof(GlobalPrefs, annotationDefaults),       Type_Struct,     (intptr_t)&gAnnotationDefaultsInfo                                                                                    },
     { (size_t)-1,                                      Type_Comment,    NULL                                                                                                                  },
     { offsetof(GlobalPrefs, rememberStatePerDocument), Type_Bool,       true                                                                                                                  },
     { offsetof(GlobalPrefs, uiLanguage),               Type_Utf8String, NULL                                                                                                                  },
@@ -498,7 +478,7 @@ static const FieldInfo gGlobalPrefsFields[] = {
     { offsetof(GlobalPrefs, timeOfLastUpdateCheck),    Type_Compact,    (intptr_t)&gFILETIMEInfo                                                                                              },
     { offsetof(GlobalPrefs, openCountWeek),            Type_Int,        0                                                                                                                     },
 };
-static const StructInfo gGlobalPrefsInfo = { sizeof(GlobalPrefs), 40, gGlobalPrefsFields, "\0\0MainWindowBackground\0EscToExit\0ReuseInstance\0FixedPageUI\0EbookUI\0ComicBookUI\0ChmUI\0ExternalViewers\0ZoomLevels\0ZoomIncrement\0PrinterDefaults\0ForwardSearch\0AnnotationDefaults\0\0RememberStatePerDocument\0UiLanguage\0ShowToolbar\0ShowFavorites\0AssociatedExtensions\0AssociateSilently\0CheckForUpdates\0VersionToSkip\0RememberOpenedFiles\0UseSysColors\0InverseSearchCmdLine\0EnableTeXEnhancements\0DefaultDisplayMode\0DefaultZoom\0WindowState\0WindowPos\0ShowToc\0SidebarDx\0TocDy\0ShowStartPage\0\0FileStates\0TimeOfLastUpdateCheck\0OpenCountWeek" };
+static const StructInfo gGlobalPrefsInfo = { sizeof(GlobalPrefs), 39, gGlobalPrefsFields, "\0\0MainWindowBackground\0EscToExit\0ReuseInstance\0FixedPageUI\0EbookUI\0ComicBookUI\0ChmUI\0ExternalViewers\0ZoomLevels\0ZoomIncrement\0PrinterDefaults\0ForwardSearch\0\0RememberStatePerDocument\0UiLanguage\0ShowToolbar\0ShowFavorites\0AssociatedExtensions\0AssociateSilently\0CheckForUpdates\0VersionToSkip\0RememberOpenedFiles\0UseSysColors\0InverseSearchCmdLine\0EnableTeXEnhancements\0DefaultDisplayMode\0DefaultZoom\0WindowState\0WindowPos\0ShowToc\0SidebarDx\0TocDy\0ShowStartPage\0\0FileStates\0TimeOfLastUpdateCheck\0OpenCountWeek" };
 
 #endif
 

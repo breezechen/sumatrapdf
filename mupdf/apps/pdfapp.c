@@ -1,4 +1,7 @@
 #include "pdfapp.h"
+#include "mupdf.h"
+#include "muxps.h"
+#include "mucbz.h"
 
 #include <ctype.h> /* for tolower() */
 
@@ -89,9 +92,9 @@ void pdfapp_init(fz_context *ctx, pdfapp_t *app)
 	app->resolution = 72;
 	app->ctx = ctx;
 #ifdef _WIN32
-	app->colorspace = fz_device_bgr(ctx);
+	app->colorspace = fz_device_bgr;
 #else
-	app->colorspace = fz_device_rgb(ctx);
+	app->colorspace = fz_device_rgb;
 #endif
 }
 
@@ -606,7 +609,8 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 		pdfapp_loadpage(app);
 
 		/* Zero search hit position */
-		app->hit_count = 0;
+		app->hit = -1;
+		app->hitlen = 0;
 
 		/* Extract text */
 		app->page_sheet = fz_new_text_sheet(app->ctx);
@@ -650,7 +654,7 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 		if (app->image)
 			fz_drop_pixmap(app->ctx, app->image);
 		if (app->grayscale)
-			colorspace = fz_device_gray(app->ctx);
+			colorspace = fz_device_gray;
 		else
 			colorspace = app->colorspace;
 		app->image = NULL;
@@ -753,65 +757,194 @@ void pdfapp_gotopage(pdfapp_t *app, int number)
 	pdfapp_showpage(app, 1, 1, 1, 0);
 }
 
+static int textlen(fz_text_page *page)
+{
+	int len = 0;
+	int block_num;
+
+	for (block_num = 0; block_num < page->len; block_num++)
+	{
+		fz_text_line *line;
+		fz_text_block *block;
+
+		if (page->blocks[block_num].type != FZ_PAGE_BLOCK_TEXT)
+			continue;
+		block = page->blocks[block_num].u.text;
+		for (line = block->lines; line < block->lines + block->len; line++)
+		{
+			int span_num;
+			for (span_num = 0; span_num < line->len; span_num++)
+			{
+				fz_text_span *span = line->spans[span_num];
+				len += span->len;
+			}
+			len++; /* pseudo-newline */
+		}
+	}
+	return len;
+}
+
+static inline int charat(fz_text_page *page, int idx)
+{
+	fz_char_and_box cab;
+	return fz_text_char_at(&cab, page, idx)->c;
+}
+
+static inline fz_rect bboxcharat(fz_text_page *page, int idx)
+{
+	fz_char_and_box cab;
+	return fz_text_char_at(&cab, page, idx)->bbox;
+}
+
 void pdfapp_inverthit(pdfapp_t *app)
 {
-	fz_rect bbox;
+	fz_rect hitbox, bbox;
 	fz_matrix ctm;
 	int i;
 
+	if (app->hit < 0)
+		return;
+
+	hitbox = fz_empty_rect;
 	pdfapp_viewctm(&ctm, app);
 
-	for (i = 0; i < app->hit_count; i++)
+	for (i = app->hit; i < app->hit + app->hitlen; i++)
 	{
-		bbox = app->hit_bbox[i];
-		pdfapp_invert(app, fz_transform_rect(&bbox, &ctm));
+		bbox = bboxcharat(app->page_text, i);
+		if (fz_is_empty_rect(&bbox))
+		{
+			if (!fz_is_empty_rect(&hitbox))
+				pdfapp_invert(app, fz_transform_rect(&hitbox, &ctm));
+			hitbox = fz_empty_rect;
+		}
+		else
+		{
+			fz_union_rect(&hitbox, &bbox);
+		}
 	}
+
+	if (!fz_is_empty_rect(&hitbox))
+		pdfapp_invert(app, fz_transform_rect(&hitbox, &ctm));
 }
 
-static void pdfapp_search_in_direction(pdfapp_t *app, enum panning *panto, int dir)
+static int match(char *s, fz_text_page *page, int n)
 {
-	int firstpage, page;
+	int orig = n;
+	int c;
+	while ((c = *s++))
+	{
+		if (c == ' ' && charat(page, n) == ' ')
+		{
+			while (charat(page, n) == ' ')
+				n++;
+		}
+		else
+		{
+			if (tolower(c) != tolower(charat(page, n)))
+				return 0;
+			n++;
+		}
+	}
+	return n - orig;
+}
+
+static void pdfapp_searchforward(pdfapp_t *app, enum panning *panto)
+{
+	int matchlen;
+	int test;
+	int len;
+	int startpage;
 
 	wincursor(app, WAIT);
 
-	firstpage = app->pageno;
-	if (app->searchpage == app->pageno)
-		page = app->pageno + dir;
-	else
-		page = app->pageno;
-
-	if (page < 1) page = app->pagecount;
-	if (page > app->pagecount) page = 1;
+	startpage = app->pageno;
 
 	do
 	{
-		if (page != app->pageno)
+		len = textlen(app->page_text);
+
+		if (app->hit >= 0)
+			test = app->hit + strlen(app->search);
+		else
+			test = 0;
+
+		while (test < len)
 		{
-			app->pageno = page;
-			pdfapp_showpage(app, 1, 0, 0, 0);
+			matchlen = match(app->search, app->page_text, test);
+			if (matchlen)
+			{
+				app->hit = test;
+				app->hitlen = matchlen;
+				wincursor(app, HAND);
+				winrepaint(app);
+				return;
+			}
+			test++;
 		}
 
-		app->hit_count = fz_search_text_page(app->ctx, app->page_text, app->search, app->hit_bbox, nelem(app->hit_bbox));
-		if (app->hit_count > 0)
-		{
-			*panto = dir == 1 ? PAN_TO_TOP : PAN_TO_BOTTOM;
-			app->searchpage = app->pageno;
-			wincursor(app, HAND);
-			winrepaint(app);
-			return;
-		}
+		app->pageno++;
+		if (app->pageno > app->pagecount)
+			app->pageno = 1;
 
-		page += dir;
-		if (page < 1) page = app->pagecount;
-		if (page > app->pagecount) page = 1;
-	} while (page != firstpage);
+		pdfapp_showpage(app, 1, 0, 0, 0);
+		*panto = PAN_TO_TOP;
 
-	pdfapp_warn(app, "String '%s' not found.", app->search);
+	} while (app->pageno != startpage);
 
-	app->pageno = firstpage;
-	pdfapp_showpage(app, 1, 0, 0, 0);
-	wincursor(app, HAND);
+	if (app->pageno == startpage)
+		pdfapp_warn(app, "String '%s' not found.", app->search);
 	winrepaint(app);
+	wincursor(app, HAND);
+}
+
+static void pdfapp_searchbackward(pdfapp_t *app, enum panning *panto)
+{
+	int matchlen;
+	int test;
+	int len;
+	int startpage;
+
+	wincursor(app, WAIT);
+
+	startpage = app->pageno;
+
+	do
+	{
+		len = textlen(app->page_text);
+
+		if (app->hit >= 0)
+			test = app->hit - 1;
+		else
+			test = len;
+
+		while (test >= 0)
+		{
+			matchlen = match(app->search, app->page_text, test);
+			if (matchlen)
+			{
+				app->hit = test;
+				app->hitlen = matchlen;
+				wincursor(app, HAND);
+				winrepaint(app);
+				return;
+			}
+			test--;
+		}
+
+		app->pageno--;
+		if (app->pageno < 1)
+			app->pageno = app->pagecount;
+
+		pdfapp_showpage(app, 1, 0, 0, 0);
+		*panto = PAN_TO_BOTTOM;
+
+	} while (app->pageno != startpage);
+
+	if (app->pageno == startpage)
+		pdfapp_warn(app, "String '%s' not found.", app->search);
+
+	winrepaint(app);
+	wincursor(app, HAND);
 }
 
 void pdfapp_onresize(pdfapp_t *app, int w, int h)
@@ -1127,8 +1260,8 @@ void pdfapp_onkey(pdfapp_t *app, int c)
 		app->isediting = 1;
 		app->searchdir = -1;
 		app->search[0] = 0;
-		app->hit_count = 0;
-		app->searchpage = -1;
+		app->hit = -1;
+		app->hitlen = 0;
 		winrepaintsearch(app);
 		break;
 
@@ -1136,24 +1269,24 @@ void pdfapp_onkey(pdfapp_t *app, int c)
 		app->isediting = 1;
 		app->searchdir = 1;
 		app->search[0] = 0;
-		app->hit_count = 0;
-		app->searchpage = -1;
+		app->hit = -1;
+		app->hitlen = 0;
 		winrepaintsearch(app);
 		break;
 
 	case 'n':
 		if (app->searchdir > 0)
-			pdfapp_search_in_direction(app, &panto, 1);
+			pdfapp_searchforward(app, &panto);
 		else
-			pdfapp_search_in_direction(app, &panto, -1);
+			pdfapp_searchbackward(app, &panto);
 		loadpage = 0;
 		break;
 
 	case 'N':
 		if (app->searchdir > 0)
-			pdfapp_search_in_direction(app, &panto, -1);
+			pdfapp_searchbackward(app, &panto);
 		else
-			pdfapp_search_in_direction(app, &panto, 1);
+			pdfapp_searchforward(app, &panto);
 		loadpage = 0;
 		break;
 
@@ -1481,7 +1614,6 @@ void pdfapp_oncopy(pdfapp_t *app, unsigned short *ucsbuf, int ucslen)
 	{
 		fz_text_line *line;
 		fz_text_block *block;
-		fz_text_span *span;
 
 		if (page->blocks[block_num].type != FZ_PAGE_BLOCK_TEXT)
 			continue;
@@ -1489,8 +1621,10 @@ void pdfapp_oncopy(pdfapp_t *app, unsigned short *ucsbuf, int ucslen)
 
 		for (line = block->lines; line < block->lines + block->len; line++)
 		{
-			for (span = line->first_span; span; span = span->next)
+			int span_num;
+			for (span_num = 0; span_num < line->len; span_num++)
 			{
+				fz_text_span *span = line->spans[span_num];
 				if (seen)
 				{
 #ifdef _WIN32
@@ -1518,7 +1652,7 @@ void pdfapp_oncopy(pdfapp_t *app, unsigned short *ucsbuf, int ucslen)
 					}
 				}
 
-				seen = (seen && span == line->last_span);
+				seen = (seen && span_num + 1 == line->len);
 			}
 		}
 	}

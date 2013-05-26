@@ -35,10 +35,9 @@ function solution_common()
     -- 4127 - conditional expression is constant
     -- 4100 - unreferenced formal parameter
     -- 4244 - possible loss of data due to conversion
-    -- 4428 - universal-character-name encountered in source
     -- /MP  - use multi-cores for compilation
     buildoptions {
-        "/wd4800", "/wd4127", "/wd4100", "/wd4244", "/wd4428"
+        "/wd4800", "/wd4127", "/wd4100", "/wd4244"
     }
 end
 
@@ -81,6 +80,10 @@ solution "efi"
       "src/utils/Dict*",
       "src/utils/StrUtil*",
     }
+    excludes
+    {
+      "src/utils/*_ut.cpp",
+    }
     includedirs { "src/utils", "src/utils/msvc" }
     links { }
 
@@ -105,45 +108,6 @@ solution "efi"
     }
     includedirs { "src/utils", "src/utils/msvc" }
 --]]
-
-solution "all_tests"
-  solution_common()
-
-  project "test_util"
-    kind "ConsoleApp"
-    language "C++"
-    files {
-      "src/utils/BaseUtil*",
-      "src/utils/BencUtil*",
-      "src/utils/BitManip*",
-      "src/utils/ByteOrderDecoder*",
-      "src/utils/CssParser*",
-      "src/utils/Dict*",
-      "src/utils/DebugLog*",
-      "src/utils/FileUtil*",
-      "src/utils/HtmlParserLookup*",
-      "src/utils/HtmlPullParser*",
-      "src/utils/JsonParser*",
-      "src/utils/SettingsUtil*",
-      "src/utils/SimpleLog*",
-      "src/utils/StrFormat*",
-      "src/utils/StrUtil*",
-      "src/utils/SquareTreeParser*",
-      "src/utils/TrivialHtmlParser*",
-      "src/utils/UtAssert*",
-      "src/utils/VarintGob*",
-      "src/utils/WinUtil*",
-      "src/utils/tests/*",
-      --"src/AppTools.*",
-      --"src/ParseCommandLine.*",
-      --"src/StressTesting.*",
-      "src/UnitTests.cpp",
-      "src/mui/SvgPath*",
-      "tools/tests/UnitMain.cpp"
-    }
-    includedirs { "src/utils", "src/utils/msvc" }
-    links { "gdiplus", "comctl32", "shlwapi", "Version" }
-
 
 solution "muitest"
   solution_common()
@@ -174,6 +138,7 @@ solution "muitest"
     }
     excludes
     {
+      "src/utils/*_ut.cpp",
       "src/mui/*_ut.cpp",
       "src/mui/MiniMui*",
     }

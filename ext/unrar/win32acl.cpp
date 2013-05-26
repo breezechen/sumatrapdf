@@ -1,22 +1,25 @@
-static void SetACLPrivileges();
+static void SetPrivileges();
 
 static bool ReadSacl=false;
 
 
 
 #ifndef SFX_MODULE
-void ExtractACL20(Archive &Arc,const wchar *FileName)
+void ExtractACL(Archive &Arc,char *FileName,wchar *FileNameW)
 {
-  SetACLPrivileges();
+  if (!WinNT())
+    return;
 
-  if (Arc.BrokenHeader)
+  SetPrivileges();
+
+  if (Arc.HeaderCRC!=Arc.EAHead.HeadCRC)
   {
     Log(Arc.FileName,St(MACLBroken),FileName);
     ErrHandler.SetErrorCode(RARX_CRC);
     return;
   }
 
-  if (Arc.EAHead.Method<0x31 || Arc.EAHead.Method>0x35 || Arc.EAHead.UnpVer>VER_PACK)
+  if (Arc.EAHead.Method<0x31 || Arc.EAHead.Method>0x35 || Arc.EAHead.UnpVer>PACK_VER)
   {
     Log(Arc.FileName,St(MACLUnknown),FileName);
     ErrHandler.SetErrorCode(RARX_WARNING);
@@ -25,18 +28,17 @@ void ExtractACL20(Archive &Arc,const wchar *FileName)
 
   ComprDataIO DataIO;
   Unpack Unpack(&DataIO);
-  Unpack.Init(0x10000,false);
+  Unpack.Init();
 
   Array<byte> UnpData(Arc.EAHead.UnpSize);
   DataIO.SetUnpackToMemory(&UnpData[0],Arc.EAHead.UnpSize);
   DataIO.SetPackedSizeToRead(Arc.EAHead.DataSize);
   DataIO.EnableShowProgress(false);
   DataIO.SetFiles(&Arc,NULL);
-  DataIO.UnpHash.Init(HASH_CRC32,1);
   Unpack.SetDestSize(Arc.EAHead.UnpSize);
   Unpack.DoUnpack(Arc.EAHead.UnpVer,false);
 
-  if (Arc.EAHead.EACRC!=DataIO.UnpHash.GetCRC32())
+  if (Arc.EAHead.EACRC!=~DataIO.UnpFileCRC)
   {
     Log(Arc.FileName,St(MACLBroken),FileName);
     ErrHandler.SetErrorCode(RARX_CRC);
@@ -49,7 +51,11 @@ void ExtractACL20(Archive &Arc,const wchar *FileName)
     si|=SACL_SECURITY_INFORMATION;
   SECURITY_DESCRIPTOR *sd=(SECURITY_DESCRIPTOR *)&UnpData[0];
 
-  int SetCode=SetFileSecurityW(FileName,si,sd);
+  int SetCode;
+  if (FileNameW!=NULL)
+    SetCode=SetFileSecurityW(FileNameW,si,sd);
+  else
+    SetCode=SetFileSecurityA(FileName,si,sd);
 
   if (!SetCode)
   {
@@ -61,13 +67,16 @@ void ExtractACL20(Archive &Arc,const wchar *FileName)
 #endif
 
 
-void ExtractACL(Archive &Arc,const wchar *FileName)
+void ExtractACLNew(Archive &Arc,char *FileName,wchar *FileNameW)
 {
+  if (!WinNT())
+    return;
+
   Array<byte> SubData;
   if (!Arc.ReadSubData(&SubData,NULL))
     return;
 
-  SetACLPrivileges();
+  SetPrivileges();
 
   SECURITY_INFORMATION si=OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|
                           DACL_SECURITY_INFORMATION;
@@ -75,7 +84,11 @@ void ExtractACL(Archive &Arc,const wchar *FileName)
     si|=SACL_SECURITY_INFORMATION;
   SECURITY_DESCRIPTOR *sd=(SECURITY_DESCRIPTOR *)&SubData[0];
 
-  int SetCode=SetFileSecurityW(FileName,si,sd);
+  int SetCode;
+  if (FileNameW!=NULL)
+    SetCode=SetFileSecurityW(FileNameW,si,sd);
+  else
+    SetCode=SetFileSecurityA(FileName,si,sd);
 
   if (!SetCode)
   {
@@ -86,38 +99,29 @@ void ExtractACL(Archive &Arc,const wchar *FileName)
 }
 
 
-void SetACLPrivileges()
+void SetPrivileges()
 {
   static bool InitDone=false;
   if (InitDone)
     return;
-
-  if (SetPrivilege(SE_SECURITY_NAME))
-    ReadSacl=true;
-  SetPrivilege(SE_RESTORE_NAME);
-
   InitDone=true;
-}
-
-
-bool SetPrivilege(LPCTSTR PrivName)
-{
-  bool Success=false;
 
   HANDLE hToken;
-  if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
-  {
-    TOKEN_PRIVILEGES tp;
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-    if (LookupPrivilegeValue(NULL,PrivName,&tp.Privileges[0].Luid) &&
-        AdjustTokenPrivileges(hToken, FALSE, &tp, 0, NULL, NULL) &&
+  if(!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
+    return;
+
+  TOKEN_PRIVILEGES tp;
+  tp.PrivilegeCount = 1;
+  tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+  if (LookupPrivilegeValue(NULL,SE_SECURITY_NAME,&tp.Privileges[0].Luid))
+    if (AdjustTokenPrivileges(hToken, FALSE, &tp, 0, NULL, NULL) &&
         GetLastError() == ERROR_SUCCESS)
-      Success=true;
+      ReadSacl=true;
 
-    CloseHandle(hToken);
-  }
+  if (LookupPrivilegeValue(NULL,SE_RESTORE_NAME,&tp.Privileges[0].Luid))
+    AdjustTokenPrivileges(hToken, FALSE, &tp, 0, NULL, NULL);
 
-  return Success;
+  CloseHandle(hToken);
 }

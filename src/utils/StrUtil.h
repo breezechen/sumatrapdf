@@ -70,17 +70,11 @@ inline const char * FindChar(const char *str, const char c) {
 inline const WCHAR * FindChar(const WCHAR *str, const WCHAR c) {
     return wcschr(str, c);
 }
-inline WCHAR * FindChar(WCHAR *str, const WCHAR c) {
-    return wcschr(str, c);
-}
 
 inline const char * FindCharLast(const char *str, const char c) {
     return strrchr(str, c);
 }
 inline const WCHAR * FindCharLast(const WCHAR *str, const WCHAR c) {
-    return wcsrchr(str, c);
-}
-inline WCHAR * FindCharLast(WCHAR *str, const WCHAR c) {
     return wcsrchr(str, c);
 }
 
@@ -171,11 +165,6 @@ int          StrToIdx(const char *strings, const WCHAR *toFind);
 const char * IdxToStr(const char *strings, int idx);
 
 } // namespace seqstrings
-
-// TODO: change to str::EqNIx
-static inline bool StrEqNIx(const char *s, size_t len, const char *s2) {
-    return str::Len(s2) == len && str::StartsWithI(s, s2);
-}
 
 #define _MemToHex(ptr) str::MemToHex((const unsigned char *)(ptr), sizeof(*ptr))
 #define _HexToMem(txt, ptr) str::HexToMem(txt, (unsigned char *)(ptr), sizeof(*ptr))

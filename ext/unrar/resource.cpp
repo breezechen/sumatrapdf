@@ -3,7 +3,15 @@
 
 
 #ifndef RARDLL
-const wchar *St(MSGID StringId)
+const char *St(MSGID StringId)
+{
+  return(StringId);
+}
+#endif
+
+
+#ifndef RARDLL
+const wchar *StW(MSGID StringId)
 {
   static wchar StrTable[8][512];
   static int StrNum=0;

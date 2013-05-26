@@ -3,6 +3,7 @@
 FindFile::FindFile()
 {
   *FindMask=0;
+  *FindMaskW=0;
   FirstCall=true;
 #ifdef _WIN_ALL
   hFind=INVALID_HANDLE_VALUE;
@@ -24,185 +25,267 @@ FindFile::~FindFile()
 }
 
 
-void FindFile::SetMask(const wchar *Mask)
+void FindFile::SetMask(const char *FindMask)
 {
-  wcscpy(FindMask,Mask);
+  strcpy(FindFile::FindMask,NullToEmpty(FindMask));
+  if (*FindMaskW==0)
+    CharToWide(FindMask,FindMaskW);
   FirstCall=true;
 }
 
 
-bool FindFile::Next(FindData *fd,bool GetSymLink)
+void FindFile::SetMaskW(const wchar *FindMaskW)
+{
+  if (FindMaskW==NULL)
+    return;
+  wcscpy(FindFile::FindMaskW,FindMaskW);
+  if (*FindMask==0)
+    WideToChar(FindMaskW,FindMask);
+  FirstCall=true;
+}
+
+
+bool FindFile::Next(struct FindData *fd,bool GetSymLink)
 {
   fd->Error=false;
   if (*FindMask==0)
-    return false;
+    return(false);
 #ifdef _WIN_ALL
   if (FirstCall)
   {
-    if ((hFind=Win32Find(INVALID_HANDLE_VALUE,FindMask,fd))==INVALID_HANDLE_VALUE)
-      return false;
+    if ((hFind=Win32Find(INVALID_HANDLE_VALUE,FindMask,FindMaskW,fd))==INVALID_HANDLE_VALUE)
+      return(false);
   }
   else
-    if (Win32Find(hFind,FindMask,fd)==INVALID_HANDLE_VALUE)
-      return false;
+    if (Win32Find(hFind,FindMask,FindMaskW,fd)==INVALID_HANDLE_VALUE)
+      return(false);
 #else
   if (FirstCall)
   {
-    wchar DirName[NM];
-    wcsncpyz(DirName,FindMask,ASIZE(DirName));
+    char DirName[NM];
+    strcpy(DirName,FindMask);
     RemoveNameFromPath(DirName);
     if (*DirName==0)
-      wcscpy(DirName,L".");
-    char DirNameA[NM];
-    WideToChar(DirName,DirNameA,ASIZE(DirNameA));
-    if ((dirp=opendir(DirNameA))==NULL)
+      strcpy(DirName,".");
+    if ((dirp=opendir(DirName))==NULL)
     {
       fd->Error=(errno!=ENOENT);
-      return false;
+      return(false);
     }
   }
   while (1)
   {
     struct dirent *ent=readdir(dirp);
     if (ent==NULL)
-      return false;
+      return(false);
     if (strcmp(ent->d_name,".")==0 || strcmp(ent->d_name,"..")==0)
       continue;
-    wchar Name[NM];
-    if (!CharToWide(ent->d_name,Name,ASIZE(Name)))
-      Log(NULL,St(MInvalidName),Name);
-
-    if (CmpName(FindMask,Name,MATCH_NAMES))
+    if (CmpName(FindMask,ent->d_name,MATCH_NAMES))
     {
-      wchar FullName[NM];
-      wcscpy(FullName,FindMask);
+      char FullName[NM];
+      strcpy(FullName,FindMask);
       *PointToName(FullName)=0;
-      if (wcslen(FullName)+wcslen(Name)>=ASIZE(FullName)-1)
+      if (strlen(FullName)+strlen(ent->d_name)>=ASIZE(FullName)-1)
       {
 #ifndef SILENT
-        Log(NULL,L"\n%ls%ls",FullName,Name);
+        Log(NULL,"\n%s%s",FullName,ent->d_name);
         Log(NULL,St(MPathTooLong));
 #endif
-        return false;
+        return(false);
       }
-      wcscat(FullName,Name);
-      if (!FastFind(FullName,fd,GetSymLink))
+      strcat(FullName,ent->d_name);
+      if (!FastFind(FullName,NULL,fd,GetSymLink))
       {
-        ErrHandler.OpenErrorMsg(NULL,FullName);
+        ErrHandler.OpenErrorMsg(FullName);
         continue;
       }
-      wcscpy(fd->Name,FullName);
+      strcpy(fd->Name,FullName);
       break;
     }
   }
+  *fd->NameW=0;
+#ifdef _APPLE
+  if (!LowAscii(fd->Name))
+    UtfToWide(fd->Name,fd->NameW,sizeof(fd->NameW));
+#elif defined(UNICODE_SUPPORTED)
+  if (!LowAscii(fd->Name) && UnicodeEnabled())
+    CharToWide(fd->Name,fd->NameW);
+#endif
 #endif
   fd->Flags=0;
   fd->IsDir=IsDir(fd->FileAttr);
-  fd->IsLink=IsLink(fd->FileAttr);
-
   FirstCall=false;
-  wchar *NameOnly=PointToName(fd->Name);
-  if (wcscmp(NameOnly,L".")==0 || wcscmp(NameOnly,L"..")==0)
-    return Next(fd);
-  return true;
+  char *Name=PointToName(fd->Name);
+  if (strcmp(Name,".")==0 || strcmp(Name,"..")==0)
+    return(Next(fd));
+  return(true);
 }
 
 
-bool FindFile::FastFind(const wchar *FindMask,FindData *fd,bool GetSymLink)
+bool FindFile::FastFind(const char *FindMask,const wchar *FindMaskW,FindData *fd,bool GetSymLink)
 {
   fd->Error=false;
 #ifndef _UNIX
-  if (IsWildcard(FindMask))
-    return false;
+  if (IsWildcard(FindMask,FindMaskW))
+    return(false);
 #endif    
 #ifdef _WIN_ALL
-  HANDLE hFind=Win32Find(INVALID_HANDLE_VALUE,FindMask,fd);
+  HANDLE hFind=Win32Find(INVALID_HANDLE_VALUE,FindMask,FindMaskW,fd);
   if (hFind==INVALID_HANDLE_VALUE)
-    return false;
+    return(false);
   FindClose(hFind);
 #else
-  char FindMaskA[NM];
-  WideToChar(FindMask,FindMaskA,ASIZE(FindMaskA));
-
   struct stat st;
   if (GetSymLink)
   {
 #ifdef SAVE_LINKS
-    if (lstat(FindMaskA,&st)!=0)
+    if (lstat(FindMask,&st)!=0)
 #else
-    if (stat(FindMaskA,&st)!=0)
+    if (stat(FindMask,&st)!=0)
 #endif
     {
       fd->Error=(errno!=ENOENT);
-      return false;
+      return(false);
     }
   }
   else
-    if (stat(FindMaskA,&st)!=0)
+    if (stat(FindMask,&st)!=0)
     {
       fd->Error=(errno!=ENOENT);
-      return false;
+      return(false);
     }
+#ifdef _DJGPP
+  fd->FileAttr=_chmod(FindMask,0);
+#elif defined(_EMX)
+  fd->FileAttr=st.st_attr;
+#else
   fd->FileAttr=st.st_mode;
+#endif
+  fd->IsDir=IsDir(st.st_mode);
   fd->Size=st.st_size;
   fd->mtime=st.st_mtime;
   fd->atime=st.st_atime;
   fd->ctime=st.st_ctime;
-  wcsncpyz(fd->Name,FindMask,ASIZE(fd->Name));
+  fd->FileTime=fd->mtime.GetDos();
+  strcpy(fd->Name,FindMask);
+
+  *fd->NameW=0;
+#ifdef _APPLE
+  if (!LowAscii(fd->Name))
+    UtfToWide(fd->Name,fd->NameW,sizeof(fd->NameW));
+#elif defined(UNICODE_SUPPORTED)
+  if (!LowAscii(fd->Name) && UnicodeEnabled())
+    CharToWide(fd->Name,fd->NameW);
+#endif
 #endif
   fd->Flags=0;
   fd->IsDir=IsDir(fd->FileAttr);
-  fd->IsLink=IsLink(fd->FileAttr);
-
-  return true;
+  return(true);
 }
 
 
 #ifdef _WIN_ALL
-HANDLE FindFile::Win32Find(HANDLE hFind,const wchar *Mask,FindData *fd)
+HANDLE FindFile::Win32Find(HANDLE hFind,const char *Mask,const wchar *MaskW,FindData *fd)
 {
-  WIN32_FIND_DATAW FindData;
-  if (hFind==INVALID_HANDLE_VALUE)
+#ifndef _WIN_CE
+  if (WinNT())
+#endif
   {
-    hFind=FindFirstFile(Mask,&FindData);
+    wchar WideMask[NM];
+    if (MaskW!=NULL && *MaskW!=0)
+      wcscpy(WideMask,MaskW);
+    else
+      CharToWide(Mask,WideMask);
+
+    WIN32_FIND_DATAW FindData;
     if (hFind==INVALID_HANDLE_VALUE)
     {
-      wchar LongMask[NM];
-      if (GetWinLongPath(Mask,LongMask,ASIZE(LongMask)))
-        hFind=FindFirstFile(LongMask,&FindData);
+      hFind=FindFirstFileW(WideMask,&FindData);
+      if (hFind==INVALID_HANDLE_VALUE)
+      {
+        int SysErr=GetLastError();
+        fd->Error=(SysErr!=ERROR_FILE_NOT_FOUND &&
+                   SysErr!=ERROR_PATH_NOT_FOUND &&
+                   SysErr!=ERROR_NO_MORE_FILES);
+      }
     }
-    if (hFind==INVALID_HANDLE_VALUE)
+    else
+      if (!FindNextFileW(hFind,&FindData))
+      {
+        hFind=INVALID_HANDLE_VALUE;
+        fd->Error=GetLastError()!=ERROR_NO_MORE_FILES;
+      }
+
+    if (hFind!=INVALID_HANDLE_VALUE)
     {
-      int SysErr=GetLastError();
-      fd->Error=(SysErr!=ERROR_FILE_NOT_FOUND &&
-                 SysErr!=ERROR_PATH_NOT_FOUND &&
-                 SysErr!=ERROR_NO_MORE_FILES);
+      wcscpy(fd->NameW,WideMask);
+      wcscpy(PointToName(fd->NameW),FindData.cFileName);
+      WideToChar(fd->NameW,fd->Name);
+      fd->Size=INT32TO64(FindData.nFileSizeHigh,FindData.nFileSizeLow);
+      fd->FileAttr=FindData.dwFileAttributes;
+      wcscpy(fd->ShortName,FindData.cAlternateFileName);
+      fd->ftCreationTime=FindData.ftCreationTime;
+      fd->ftLastAccessTime=FindData.ftLastAccessTime;
+      fd->ftLastWriteTime=FindData.ftLastWriteTime;
+      fd->mtime=FindData.ftLastWriteTime;
+      fd->ctime=FindData.ftCreationTime;
+      fd->atime=FindData.ftLastAccessTime;
+      fd->FileTime=fd->mtime.GetDos();
+
+#ifndef _WIN_CE
+//      if (LowAscii(fd->NameW))
+//        *fd->NameW=0;
+#endif
     }
   }
+#ifndef _WIN_CE
   else
-    if (!FindNextFile(hFind,&FindData))
-    {
-      hFind=INVALID_HANDLE_VALUE;
-      fd->Error=GetLastError()!=ERROR_NO_MORE_FILES;
-    }
-
-  if (hFind!=INVALID_HANDLE_VALUE)
   {
-    wcsncpyz(fd->Name,Mask,ASIZE(fd->Name));
-    SetName(fd->Name,FindData.cFileName,ASIZE(fd->Name));
-    fd->Size=INT32TO64(FindData.nFileSizeHigh,FindData.nFileSizeLow);
-    fd->FileAttr=FindData.dwFileAttributes;
-    fd->ftCreationTime=FindData.ftCreationTime;
-    fd->ftLastAccessTime=FindData.ftLastAccessTime;
-    fd->ftLastWriteTime=FindData.ftLastWriteTime;
-    fd->mtime=FindData.ftLastWriteTime;
-    fd->ctime=FindData.ftCreationTime;
-    fd->atime=FindData.ftLastAccessTime;
+    char CharMask[NM];
+    if (Mask!=NULL && *Mask!=0)
+      strcpy(CharMask,Mask);
+    else
+      WideToChar(MaskW,CharMask);
 
+    WIN32_FIND_DATAA FindData;
+    if (hFind==INVALID_HANDLE_VALUE)
+    {
+      hFind=FindFirstFileA(CharMask,&FindData);
+      if (hFind==INVALID_HANDLE_VALUE)
+      {
+        int SysErr=GetLastError();
+        fd->Error=SysErr!=ERROR_FILE_NOT_FOUND && SysErr!=ERROR_PATH_NOT_FOUND;
+      }
+    }
+    else
+      if (!FindNextFileA(hFind,&FindData))
+      {
+        hFind=INVALID_HANDLE_VALUE;
+        fd->Error=GetLastError()!=ERROR_NO_MORE_FILES;
+      }
 
+    if (hFind!=INVALID_HANDLE_VALUE)
+    {
+      strcpy(fd->Name,CharMask);
+      strcpy(PointToName(fd->Name),FindData.cFileName);
+      CharToWide(fd->Name,fd->NameW);
+      fd->Size=INT32TO64(FindData.nFileSizeHigh,FindData.nFileSizeLow);
+      fd->FileAttr=FindData.dwFileAttributes;
+      CharToWide(FindData.cAlternateFileName,fd->ShortName);
+      fd->ftCreationTime=FindData.ftCreationTime;
+      fd->ftLastAccessTime=FindData.ftLastAccessTime;
+      fd->ftLastWriteTime=FindData.ftLastWriteTime;
+      fd->mtime=FindData.ftLastWriteTime;
+      fd->ctime=FindData.ftCreationTime;
+      fd->atime=FindData.ftLastAccessTime;
+      fd->FileTime=fd->mtime.GetDos();
+//      if (LowAscii(fd->Name))
+//        *fd->NameW=0;
+    }
   }
+#endif
   fd->Flags=0;
-  return hFind;
+  return(hFind);
 }
 #endif
 

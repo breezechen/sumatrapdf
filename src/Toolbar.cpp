@@ -85,10 +85,8 @@ static bool IsToolbarButtonEnabled(WindowInfo *win, int buttonNo)
         // opening different files isn't allowed in plugin mode
         return !gPluginMode;
 
-#ifndef DISABLE_DOCUMENT_RESTRICTIONS
     case IDM_PRINT:
-        return win->dm->engine->AllowsPrinting();
-#endif
+        return win->dm->engine && win->dm->engine->AllowsPrinting();
 
     case IDM_FIND_NEXT:
     case IDM_FIND_PREV:
