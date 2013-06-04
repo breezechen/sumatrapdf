@@ -1031,7 +1031,8 @@ load_cid_font(pdf_document *xref, pdf_obj *dict, pdf_obj *encoding, pdf_obj *to_
 		if (strstr(fontdesc->encoding->cmap_name, "Identity-") && fontdesc->font->ft_substitute)
 		{
 			fz_warn(ctx, "non-embedded font using identity encoding: %s", basefont);
-			if (fontdesc->to_unicode && !fontdesc->to_ttf_cmap)
+			/* cf. http://code.google.com/p/sumatrapdf/issues/detail?id=2318 */
+			if (fontdesc->to_unicode && !fontdesc->to_ttf_cmap && !fontdesc->font->ft_file)
 				fontdesc->to_ttf_cmap = pdf_keep_cmap(ctx, fontdesc->to_unicode);
 		}
 
