@@ -553,7 +553,6 @@ dec2d(fz_context *ctx, fz_faxd *fax)
 static int
 read_faxd(fz_stream *stm, unsigned char *buf, int len)
 {
-	fz_context *ctx = stm->ctx;
 	fz_faxd *fax = stm->state;
 	unsigned char *p = buf;
 	unsigned char *ep = buf + len;
@@ -564,12 +563,12 @@ read_faxd(fz_stream *stm, unsigned char *buf, int len)
 		fill_bits(fax);
 		if ((fax->word >> (32 - 12)) != 1)
 		{
-			fz_warn(ctx, "faxd stream doesn't start with EOL");
+			fz_warn(stm->ctx, "faxd stream doesn't start with EOL");
 			while (!fill_bits(fax) && (fax->word >> (32 - 12)) != 1)
 				eat_bits(fax, 1);
 		}
 		if ((fax->word >> (32 - 12)) != 1)
-			fz_throw(ctx, FZ_ERROR_GENERIC, "initial EOL not found");
+			fz_throw(stm->ctx, FZ_ERROR_GENERIC, "initial EOL not found");
 	}
 
 	if (fax->stage == STATE_INIT)
@@ -627,26 +626,12 @@ loop:
 	else if (fax->dim == 1)
 	{
 		fax->eolc = 0;
-		fz_try(ctx)
-		{
-			dec1d(ctx, fax);
-		}
-		fz_catch(ctx)
-		{
-			goto error;
-		}
+		dec1d(stm->ctx, fax);
 	}
 	else if (fax->dim == 2)
 	{
 		fax->eolc = 0;
-		fz_try(ctx)
-		{
-			dec2d(ctx, fax);
-		}
-		fz_catch(ctx)
-		{
-			goto error;
-		}
+		dec2d(stm->ctx, fax);
 	}
 
 	/* no eol check after makeup codes nor in the middle of an H code */
@@ -723,20 +708,6 @@ eol:
 		return p - buf;
 
 	goto loop;
-
-error:
-	/* decode the remaining pixels up to where the error occurred */
-	if (fax->black_is_1)
-	{
-		while (fax->rp < fax->wp && p < ep)
-			*p++ = *fax->rp++;
-	}
-	else
-	{
-		while (fax->rp < fax->wp && p < ep)
-			*p++ = *fax->rp++ ^ 0xff;
-	}
-	/* fallthrough */
 
 rtc:
 	fax->stage = STATE_DONE;

@@ -931,7 +931,7 @@ fz_outline *pdf_loadattachments(pdf_document *doc)
         node->dest.ld.launch.new_window = 1;
         node->dest.ld.launch.embedded_num = pdf_to_num(embedded);
         node->dest.ld.launch.embedded_gen = pdf_to_gen(embedded);
-        node->dest.ld.launch.is_uri = 0;
+        node->dest.ld.launch.is_url = 0;
     }
     pdf_drop_obj(dict);
 
@@ -1614,14 +1614,6 @@ bool PdfEngineImpl::LoadFromStream(fz_stream *stm, PasswordUI *pwdUI)
                 pwd_utf8.Set(str::conv::ToUtf8(pwd));
                 ok = pwd_utf8 && pdf_authenticate_password(_doc, pwd_utf8);
             }
-        }
-        // older Acrobat versions seem to have considered passwords to be in codepage 1252
-        // note: such passwords aren't portable when stored as Unicode text
-        if (!ok && GetACP() != 1252) {
-            ScopedMem<char> pwd_ansi(str::conv::ToAnsi(pwd));
-            ScopedMem<WCHAR> pwd_cp1252(str::conv::FromCodePage(pwd_ansi, 1252));
-            pwd_utf8.Set(str::conv::ToUtf8(pwd_cp1252));
-            ok = pwd_utf8 && pdf_authenticate_password(_doc, pwd_utf8);
         }
     }
 
@@ -2366,7 +2358,7 @@ pdf_annot **PdfEngineImpl::ProcessPageAnnotations(pdf_page *page)
                 ld.ld.launch.new_window = 1;
                 ld.ld.launch.embedded_num = pdf_to_num(embedded);
                 ld.ld.launch.embedded_gen = pdf_to_gen(embedded);
-                ld.ld.launch.is_uri = 0;
+                ld.ld.launch.is_url = 0;
                 fz_transform_rect(&rect, &page->ctm);
                 // add links in top-to-bottom order (i.e. last-to-first)
                 fz_link *link = fz_new_link(ctx, &rect, ld);
@@ -3131,7 +3123,7 @@ PageDestType PdfLink::GetDestType() const
     case FZ_LINK_LAUNCH:
         if (link->ld.launch.embedded_num)
             return Dest_LaunchEmbedded;
-        if (link->ld.launch.is_uri)
+        if (link->ld.launch.is_url)
             return Dest_LaunchURL;
         return Dest_LaunchFile;
     case FZ_LINK_GOTOR:
@@ -3181,8 +3173,7 @@ RectD PdfLink::GetDestRect() const
         if (result.IsEmpty())
             result.dx = result.dy = 0.1;
     }
-    else if ((link->ld.gotor.flags & (fz_link_flag_fit_h | fz_link_flag_fit_v)) == fz_link_flag_fit_h &&
-        (link->ld.gotor.flags & fz_link_flag_t_valid)) {
+    else if ((link->ld.gotor.flags & (fz_link_flag_fit_h | fz_link_flag_fit_v)) == fz_link_flag_fit_h) {
         // /FitH or /FitBH link
         result.y = lt.y;
     }

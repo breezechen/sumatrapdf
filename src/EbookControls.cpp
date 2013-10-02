@@ -117,12 +117,6 @@ Control *CreatePageControl(TxtNode *structDef)
     return c;
 }
 
-ILayout *CreatePagesLayout(TxtNode *structDef)
-{
-    // TODO: write me
-    return NULL;
-}
-
 void SetMainWndBgCol(EbookControls *ctrls)
 {
     Style *styleMainWnd = StyleByName("styleMainWnd");
@@ -138,7 +132,6 @@ EbookControls *CreateEbookControls(HWND hwnd)
 {
     if (!gCursorHand) {
         RegisterControlCreatorFor("EbookPage", &CreatePageControl);
-        RegisterLayoutCreatorFor("PagesLayout", &CreatePagesLayout);
         gCursorHand  = LoadCursor(NULL, IDC_HAND);
     }
 
@@ -182,15 +175,3 @@ void DestroyEbookControls(EbookControls* ctrls)
     delete ctrls->muiDef;
     delete ctrls;
 }
-
-class PagesLayout : public ILayout
-{
-protected:
-    Size                        desiredSize;
-public:
-    virtual ~PagesLayout();
-    virtual Size DesiredSize() { return desiredSize; }
-
-    virtual Size Measure(const Size availableSize) { return desiredSize; };
-    virtual void Arrange(const Rect finalRect) { CrashIf(true); }
-};

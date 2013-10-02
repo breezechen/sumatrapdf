@@ -370,10 +370,6 @@ GlobalPrefs = [
 		"a whitespace separated list of passwords to try for opening a password protected document " +
 		"(passwords containing spaces must be quoted same as command line arguments)",
 		expert=True),
-	Field("ReloadModifiedDocuments", Bool, True,
-		"if true, a document will be reloaded automatically whenever it's changed " +
-		"(currently doesn't work for documents shown in the ebook UI)",
-		expert=True),
 	EmptyLine(),
 
 	Field("RememberStatePerDocument", Bool, True,
@@ -523,9 +519,23 @@ def BuildMetaData(struct, built=[]):
 	lines.append("static %sStructInfo g%sInfo = { sizeof(%s), %d, g%sFields, \"%s\" };" % ("const " if fullName != "FileState" else "", fullName, struct.structName, len(names), fullName, "\\0".join(names)))
 	return "\n".join(lines)
 
-def GenerateSettingsHtml():
-	from gen_settings_html import html_tmpl, gen_struct, gen_settingsstructs
-	return html_tmpl.replace("%INSIDE%", gen_struct(gen_settingsstructs.GlobalPrefs, prerelease=True))
+def AssembleDefaults(struct, topLevelComment=None):
+	lines, more = [], []
+	if topLevelComment:
+		lines += FormatComment(topLevelComment, ";") + [""]
+	for field in struct.default:
+		if field.internal or type(field) is Comment:
+			continue
+		if topLevelComment and not field.expert:
+			continue
+		if type(field) in [Struct, Array] and not field.type.name == "Compact":
+			assert topLevelComment
+			more.append("\n".join(FormatComment(field.docComment, ";") + ["[%s]" % field.name, AssembleDefaults(field)]))
+		else:
+			lines += FormatComment(field.docComment, ";") + [field.inidefault()]
+	if more:
+		lines += [""] + more
+	return "\n".join(lines) + "\n"
 
 SettingsStructs_Header = """\
 /* Copyright 2013 the SumatraPDF project authors (see AUTHORS file).
@@ -558,8 +568,13 @@ def main():
 	content = SettingsStructs_Header % locals()
 	open("src/SettingsStructs.h", "wb").write(content.replace("\n", "\r\n").replace("\t", "    "))
 
-	content = GenerateSettingsHtml()
-	open("docs/settings.html", "wb").write(content.replace("\n", "\r\n"))
+	content = AssembleDefaults(GlobalPrefs,
+		"You can use this file to modify experimental and expert settings not changeable " +
+		"through the UI instead of modifying SumatraPDF-settings.txt directly. Just copy " +
+		"this file alongside SumatraPDF-settings.txt and change the values below. " +
+		"They will overwrite the corresponding settings in SumatraPDF-settings.txt at every startup.")
+	content = "# Warning: This file only works for builds compiled with ENABLE_SUMATRAPDF_USER_INI !\n\n" + content
+	open("docs/SumatraPDF-user.ini", "wb").write(content.replace("\n", "\r\n").encode("utf-8-sig"))
 
 	beforeUseDefaultState = True
 	for field in FileSettings:

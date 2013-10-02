@@ -1248,9 +1248,6 @@
     <None Include="..\src\EbookWinDesc.txt">
       <Filter>sumatra</Filter>
     </None>
-    <None Include="..\src\sample_mobi.html">
-      <Filter>sumatra</Filter>
-    </None>
     <None Include="..\src\mui\mui-todo.txt">
       <Filter>mui</Filter>
     </None>
@@ -1266,7 +1263,7 @@
     <None Include="..\docs\releaseplan.txt">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\docs\settings.html">
+    <None Include="..\docs\SumatraPDF-user.ini">
       <Filter>docs</Filter>
     </None>
     <None Include="..\docs\sumatrapdfrestrict.ini">

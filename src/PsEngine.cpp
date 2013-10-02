@@ -94,31 +94,6 @@ public:
     }
 };
 
-static RectI ExtractDSCPageSize(const WCHAR *fileName)
-{
-    char header[1024];
-    if (!file::ReadAll(fileName, header, sizeof(header)))
-        return RectI();
-    header[sizeof(header) - 1] = '\0';
-    if (!str::StartsWith(header, "%!PS-Adobe-"))
-        return RectI();
-
-    // PostScript creators are supposed to set the page size
-    // e.g. through a setpagedevice call in PostScript code,
-    // some creators however fail to do so and only indicate
-    // the page size in a DSC BoundingBox comment.
-    char *nl = header;
-    geomutil::RectT<float> bbox;
-    while ((nl = strchr(nl + 1, '\n')) != NULL && '%' == nl[1]) {
-        if (str::StartsWith(nl + 1, "%%BoundingBox:") &&
-            str::Parse(nl + 1, "%%%%BoundingBox: 0 0 %f %f% ", &bbox.dx, &bbox.dy)) {
-            return bbox.Convert<int>();
-        }
-    }
-
-    return RectI();
-}
-
 static PdfEngine *ps2pdf(const WCHAR *fileName)
 {
     // TODO: read from gswin32c's stdout instead of using a TEMP file
@@ -128,16 +103,7 @@ static PdfEngine *ps2pdf(const WCHAR *fileName)
     ScopedMem<WCHAR> gswin32c(GetGhostscriptPath());
     if (!shortPath || !tmpFile || !gswin32c)
         return NULL;
-
-    // try to help Ghostscript determine the intended page size
-    ScopedMem<WCHAR> psSetup;
-    RectI page = ExtractDSCPageSize(fileName);
-    if (!page.IsEmpty())
-        psSetup.Set(str::Format(L" << /PageSize [%i %i] >> setpagedevice", page.dx, page.dy));
-
-    ScopedMem<WCHAR> cmdLine(str::Format(
-        L"\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite -c \".setpdfwrite%s\" -f \"%s\"",
-        gswin32c, tmpFile, psSetup ? psSetup : L"", shortPath));
+    ScopedMem<WCHAR> cmdLine(str::Format(L"\"%s\" -q -dSAFER -dNOPAUSE -dBATCH -dEPSCrop -sOutputFile=\"%s\" -sDEVICE=pdfwrite -c .setpdfwrite -f \"%s\"", gswin32c, tmpFile, shortPath));
     fprintf(stderr, "- %s:%d: using '%ls' for creating '%%TEMP%%\\%ls'\n", __FILE__, __LINE__, gswin32c.Get(), path::GetBaseName(tmpFile));
 
     // TODO: the PS-to-PDF conversion can hang the UI for several seconds
@@ -169,6 +135,13 @@ static PdfEngine *ps2pdf(const WCHAR *fileName)
         return NULL;
 
     return PdfEngine::CreateFromStream(stream);
+}
+
+inline bool isgzipped(const WCHAR *fileName)
+{
+    char header[2] = { 0 };
+    file::ReadAll(fileName, header, sizeof(header));
+    return str::EqN(header, "\x1F\x8B", sizeof(header));
 }
 
 static PdfEngine *psgz2pdf(const WCHAR *fileName)
@@ -335,7 +308,7 @@ protected:
         if (!fileName)
             return false;
         this->fileName = str::Dup(fileName);
-        if (file::StartsWith(fileName, "\x1F\x8B"))
+        if (isgzipped(fileName))
             pdfEngine = psgz2pdf(fileName);
         else
             pdfEngine = ps2pdf(fileName);

@@ -16,16 +16,9 @@ struct ControlCreatorNode {
     ControlCreatorFunc      creator;
 };
 
-struct LayoutCreatorNode {
-    LayoutCreatorNode *     next;
-    const char *            typeName;
-    LayoutCreatorFunc       creator;
-};
-
-// This is an extensiblity point that allows creating custom controls and layouts
-// unknown to mui that appear in text description
+// This is an extensiblity point that allows creating custom controls unknown
+// to mui that appear in text description
 static ControlCreatorNode *gControlCreators = NULL;
-static LayoutCreatorNode  *gLayoutCreators = NULL;
 
 void RegisterControlCreatorFor(const char *typeName, ControlCreatorFunc creator)
 {
@@ -35,7 +28,7 @@ void RegisterControlCreatorFor(const char *typeName, ControlCreatorFunc creator)
     ListInsert(&gControlCreators, cc);
 }
 
-static ControlCreatorFunc FindControlCreatorFuncFor(const char *typeName)
+static ControlCreatorFunc FindCreatorFuncFor(const char *typeName)
 {
     ControlCreatorNode *curr = gControlCreators;
     while (curr) {
@@ -58,38 +51,7 @@ void FreeControlCreators()
     }
 }
 
-void RegisterLayoutCreatorFor(const char *layoutName, LayoutCreatorFunc creator)
-{
-    LayoutCreatorNode *lc = AllocStruct<LayoutCreatorNode>();
-    lc->typeName = str::Dup(layoutName);
-    lc->creator = creator;
-    ListInsert(&gLayoutCreators, lc);
-}
-
-static LayoutCreatorFunc FindLayoutCreatorFuncFor(const char *typeName)
-{
-    LayoutCreatorNode *curr = gLayoutCreators;
-    while (curr) {
-        if (str::EqI(typeName, curr->typeName))
-            return curr->creator;
-        curr = curr->next;
-    }
-    return NULL;
-}
-
-void FreeLayoutCreators()
-{
-    LayoutCreatorNode *curr = gLayoutCreators;
-    LayoutCreatorNode *next;
-    while (curr) {
-        next = curr->next;
-        free((void*)curr->typeName);
-        free(curr);
-        curr = next;
-    }
-}
-
-Button *FindButtonNamed(const ParsedMui& muiInfo, const char *name)
+Button *FindButtonNamed(ParsedMui& muiInfo, const char *name)
 {
     for (size_t i = 0; i < muiInfo.buttons.Count(); i++) {
         Button *c = muiInfo.buttons.At(i);
@@ -99,7 +61,7 @@ Button *FindButtonNamed(const ParsedMui& muiInfo, const char *name)
     return NULL;
 }
 
-ButtonVector *FindButtonVectorNamed(const ParsedMui& muiInfo, const char *name)
+ButtonVector *FindButtonVectorNamed(ParsedMui& muiInfo, const char *name)
 {
     for (size_t i = 0; i < muiInfo.vecButtons.Count(); i++) {
         ButtonVector *c = muiInfo.vecButtons.At(i);
@@ -109,7 +71,7 @@ ButtonVector *FindButtonVectorNamed(const ParsedMui& muiInfo, const char *name)
     return NULL;
 }
 
-ScrollBar *FindScrollBarNamed(const ParsedMui& muiInfo, const char *name)
+ScrollBar *FindScrollBarNamed(ParsedMui& muiInfo, const char *name)
 {
     for (size_t i = 0; i < muiInfo.scrollBars.Count(); i++) {
         ScrollBar *c = muiInfo.scrollBars.At(i);
@@ -119,7 +81,7 @@ ScrollBar *FindScrollBarNamed(const ParsedMui& muiInfo, const char *name)
     return NULL;
 }
 
-Control *FindControlNamed(const ParsedMui& muiInfo, const char *name)
+Control *FindControlNamed(ParsedMui& muiInfo, const char *name)
 {
     for (size_t i = 0; i < muiInfo.allControls.Count(); i++) {
         Control *c = muiInfo.allControls.At(i);
@@ -129,7 +91,7 @@ Control *FindControlNamed(const ParsedMui& muiInfo, const char *name)
     return NULL;
 }
 
-ILayout *FindLayoutNamed(const ParsedMui& muiInfo, const char *name)
+ILayout *FindLayoutNamed(ParsedMui& muiInfo, const char *name)
 {
     for (size_t i = 0; i < muiInfo.layouts.Count(); i++) {
         ILayout *l = muiInfo.layouts.At(i);
@@ -462,19 +424,11 @@ static void ParseMuiDefinition(TxtNode *root, ParsedMui& res)
             res.layouts.Append(l);
         } else {
             ScopedMem<char> keyName(node->KeyDup());
-            ControlCreatorFunc creatorFunc = FindControlCreatorFuncFor(keyName);
-            if (creatorFunc) {
-                Control *c = creatorFunc(node);
-                if (c)
-                    res.allControls.Append(c);
-                continue;
-            }
-
-            LayoutCreatorFunc layoutCreatorFunc = FindLayoutCreatorFuncFor(keyName);
-            CrashIf(!layoutCreatorFunc);
-            ILayout *layout = layoutCreatorFunc(node);
-            if (layout)
-                res.layouts.Append(layout);
+            ControlCreatorFunc creatorFunc = FindCreatorFuncFor(keyName);
+            CrashIf(!creatorFunc);
+            Control *c = creatorFunc(node);
+            if (c)
+                res.allControls.Append(c);
         }
     }
 }
