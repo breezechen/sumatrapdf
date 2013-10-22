@@ -33,6 +33,6 @@ However, in order for someone to help you, you need to provide the following inf
  * did you download an installer or zipped executable?
  * where did you download the Sumatra from (the url of the webpage you used to download Sumatra)?
  * is there SumatraPDF directory in your program files directory (usually "c:\Program Files" or "c:\Program Files (x86)" on 64-bit systems)?
- * what evidence there is that Sumatra is installed? Be precise is specifc. Don't just say "there's a link to it" but tell us where is that link, what is the name of the link etc.
+ * what evidence there is that Sumatra is installed? Be precise and specific. Don't just say "there's a link to it",  tell us where that link is, what is the name of the link etc.
 
 To emphasize: if you don't provide this information, we cannot help you.
