@@ -1,0 +1,18 @@
+#summary Where to download SumatraPDF's source code
+
+= Source Code Archives =
+
+== Release versions 2.5 and later ==
+
+Source code for SumatraPDF version 2.5 and later are available as [http://www.7-zip.org/ 7-Zip] archives:
+
+  * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5-src.7z SumatraPDF 2.5 source code]
+  * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5.1-src.7z SumatraPDF 2.5.1 source code]
+
+== Release versions 1.1 to 2.4 ==
+
+Source code for SumatraPDF version 1.1 through 2.4 are available from the [https://code.google.com/p/sumatrapdf/downloads/list Downloads tab] as ZIP archives.
+
+== Prerelease versions ==
+
+Source code for all prerelease versions and for releases not listed above are only available through [http://en.wikipedia.org/wiki/Apache_Subversion Subversion] as described in the [https://code.google.com/p/sumatrapdf/source/checkout Source tab] (to get to a specific version, check the list of [https://code.google.com/p/sumatrapdf/source/browse/#svn%2Ftags release tags]).
