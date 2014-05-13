@@ -6,10 +6,10 @@
 
 // CURR_VERSION can be over-written externally (via makefile)
 #ifndef CURR_VERSION
-#define CURR_VERSION 2.5.1
+#define CURR_VERSION 2.5.2
 #endif
 #ifndef CURR_VERSION_COMMA
-#define CURR_VERSION_COMMA 2,5,1
+#define CURR_VERSION_COMMA 2,5,2
 #endif
 // VER_QUALIFIER allows people who recompile SumatraPDF to add
 // a distinguishing string at the end of the version number
