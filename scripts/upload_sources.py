@@ -7,6 +7,11 @@ It's meant to be run after tagging a realease (it checks out
 the sources from svn's /tags/${ver}rel branch).
 
 Run as: ./scripts/upload_sources.bat 2.4
+
+The sources are uploaded as:
+https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-${ver}-src.7z
+(e.g. https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5-src.7z)
+
 """
 
 import os
@@ -53,22 +58,7 @@ def usage_and_exit():
     sys.exit(1)
 
 
-# - check out the sources from /svn/tags/${ver}rel to SumatraPDF-$ver-src directory
-# - 7-zip them
-# - upload to s3
-# - delete temporary directory
-def main():
-    if len(sys.argv) < 2:
-        usage_and_exit()
-    #print("top_dir: '%s'" % get_top_dir())
-    ensure_7z_exists()
-    conf = util.load_config()
-    cert_pwd = conf.GetCertPwdMustExist()
-    s3.set_secrets(conf.aws_access, conf.aws_secret)
-    s3.set_bucket("kjkpub")
-
-    ver = sys.argv[1]
-    #print("ver: '%s'" % ver)
+def upload(ver):
     svn_url = "https://sumatrapdf.googlecode.com/svn/tags/%srel" % ver
     src_dir_name = "SumatraPDF-%s-src" % ver
     archive_name = src_dir_name + ".7z"
@@ -82,6 +72,26 @@ def main():
     s3.upload_file_public(archive_name, s3_path)
     shutil.rmtree(src_dir_name)
     os.remove(archive_name)
+
+
+# - check out the sources from /svn/tags/${ver}rel to SumatraPDF-$ver-src directory
+# - 7-zip them
+# - upload to s3
+# - delete temporary directory
+def main():
+    if len(sys.argv) < 2:
+        usage_and_exit()
+    #print("top_dir: '%s'" % get_top_dir())
+    ensure_7z_exists()
+    conf = util.load_config()
+    assert conf.aws_access is not None, "conf.py is missing"
+    s3.set_secrets(conf.aws_access, conf.aws_secret)
+    s3.set_bucket("kjkpub")
+
+    ver = sys.argv[1]
+    #print("ver: '%s'" % ver)
+    upload(ver)
+
 
 if __name__ == "__main__":
     main()
