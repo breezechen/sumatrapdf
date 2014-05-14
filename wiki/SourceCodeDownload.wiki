@@ -6,8 +6,9 @@
 
 Source code for SumatraPDF version 2.5 and later are available as [http://www.7-zip.org/ 7-Zip] archives:
 
-  * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5-src.7z SumatraPDF 2.5 source code]
+  * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5.2-src.7z SumatraPDF 2.5.2 source code]
   * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5.1-src.7z SumatraPDF 2.5.1 source code]
+  * [https://kjkpub.s3.amazonaws.com/sumatrapdf/rel/SumatraPDF-2.5-src.7z SumatraPDF 2.5 source code]
 
 == Release versions 1.1 to 2.4 ==
 
