@@ -346,7 +346,7 @@ def build(upload, upload_tmp, testing, build_test_installer, build_rel_installer
         ver = extract_sumatra_version(os.path.join("src", "Version.h"))
         if upload:
             verify_correct_branch(ver)
-            verfiy_not_tagged_yet(ver)
+            verify_not_tagged_yet(ver)
 
     log("Version: '%s'" % ver)
 
