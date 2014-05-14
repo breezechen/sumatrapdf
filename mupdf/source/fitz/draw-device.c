@@ -312,6 +312,7 @@ fz_draw_stroke_path(fz_device *devp, fz_path *path, fz_stroke_state *stroke, con
 	/* cf. https://code.google.com/p/sumatrapdf/issues/detail?id=2260 */
 	if (linewidth * expansion < FLT_EPSILON)
 		linewidth = 1 / expansion;
+
 	if (flatness < 0.001f)
 		flatness = 0.001f;
 
@@ -374,6 +375,9 @@ fz_draw_clip_path(fz_device *devp, fz_path *path, const fz_rect *rect, int even_
 	state = push_stack(dev);
 	model = state->dest->colorspace;
 
+	if (flatness < 0.001f)
+		flatness = 0.001f;
+
 	fz_intersect_irect(fz_bound_gel(dev->gel, &bbox), &state->scissor);
 	if (rect)
 	{
@@ -432,6 +436,7 @@ fz_draw_clip_stroke_path(fz_device *devp, fz_path *path, const fz_rect *rect, fz
 	/* cf. https://code.google.com/p/sumatrapdf/issues/detail?id=2260 */
 	if (linewidth * expansion < FLT_EPSILON)
 		linewidth = 1 / expansion;
+
 	if (flatness < 0.001f)
 		flatness = 0.001f;
 

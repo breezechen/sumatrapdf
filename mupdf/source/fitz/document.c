@@ -1,5 +1,7 @@
 #include "mupdf/fitz.h"
 
+extern int pdf_js_supported(void);
+
 enum
 {
 	FZ_DOCUMENT_HANDLER_MAX = 10

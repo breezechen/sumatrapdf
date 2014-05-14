@@ -337,6 +337,7 @@ void LinkHandler::ScrollTo(PageDestination *dest)
         if (DEST_USE_DEFAULT == rect.y) {
             PageInfo *pageInfo = dm->GetPageInfo(dm->CurrentPageNo());
             scroll.y = -(pageInfo->pageOnScreen.y - dm->GetWindowMargin()->top);
+            scroll.y = max(scroll.y, 0); // Adobe Reader never shows the previous page
         }
     }
     else if (rect.dx != DEST_USE_DEFAULT && rect.dy != DEST_USE_DEFAULT) {
@@ -350,7 +351,7 @@ void LinkHandler::ScrollTo(PageDestination *dest)
     else if (rect.y != DEST_USE_DEFAULT) {
         // PDF: /FitH top  or  /FitBH top
         PointD scrollD = dm->engine->Transform(rect.TL(), pageNo, dm->ZoomReal(), dm->Rotation());
-        scroll.y = scrollD.Convert<int>().y;
+        scroll.y = max(scrollD.Convert<int>().y, 0); // Adobe Reader never shows the previous page
 
         // zoom = FitBH ? ZOOM_FIT_CONTENT : ZOOM_FIT_WIDTH
     }
@@ -363,9 +364,6 @@ void LinkHandler::ScrollTo(PageDestination *dest)
         UpdateToolbarState(owner);
     }
     // */
-    // TODO: prevent scroll.y from getting too large?
-    if (scroll.y < 0)
-        scroll.y = 0; // Adobe Reader never shows the previous page
     dm->GoToPage(pageNo, scroll.y, true, scroll.x);
 }
 
@@ -475,8 +473,8 @@ void LinkHandler::GotoNamedDest(const WCHAR *name)
         ScrollTo(dest);
         delete dest;
     }
-    else if (owner->dm->HasTocTree()) {
-        DocTocItem *root = owner->dm->GetTocTree();
+    else if (engine()->HasTocTree()) {
+        DocTocItem *root = engine()->GetTocTree();
         ScopedMem<WCHAR> fuzName(NormalizeFuzzy(name));
         dest = FindTocItem(root, fuzName);
         if (!dest)

@@ -48,11 +48,7 @@
 #define PROG_ID               L"ProgId"
 #define APPLICATION           L"Application"
 
-#ifndef _WIN64
 #define REG_PATH_PLUGIN     L"Software\\MozillaPlugins\\@mozilla.zeniko.ch/SumatraPDF_Browser_Plugin"
-#else
-#define REG_PATH_PLUGIN     L"Software\\MozillaPlugins\\@mozilla.zeniko.ch/SumatraPDF_Browser_Plugin_x64"
-#endif
 #define PLUGIN_PATH         L"Path"
 
 // Keys we'll set in REG_PATH_UNINST path
@@ -95,9 +91,9 @@ struct GlobalData {
     WCHAR * installDir;
 #ifndef BUILD_UNINSTALLER
     bool    registerAsDefault;
+    bool    installBrowserPlugin;
     bool    installPdfFilter;
     bool    installPdfPreviewer;
-    bool    keepBrowserPlugin;
     bool    justExtractFiles;
 #endif
 
@@ -132,7 +128,6 @@ extern Gdiplus::Color COLOR_MSG_FAILED;
 void NotifyFailed(const WCHAR *msg);
 void SetMsg(const WCHAR *msg, Gdiplus::Color color);
 WCHAR *GetInstalledExePath();
-WCHAR *GetInstalledBrowserPluginPath();
 void OnCreateWindow(HWND hwnd);
 void ShowUsage();
 void CreateMainWindow();
@@ -152,6 +147,7 @@ void CreateButtonExit(HWND hwndParent);
 void OnButtonExit();
 HWND CreateDefaultButton(HWND hwndParent, const WCHAR *label, int width, int id=IDOK);
 int dpiAdjust(int value);
+void InstallBrowserPlugin();
 void InstallPdfFilter();
 void InstallPdfPreviewer();
 
@@ -167,6 +163,7 @@ DWORD WINAPI UninstallerThread(LPVOID data);
 extern HWND gHwndButtonRunSumatra;
 bool IsValidInstaller();
 void OnInstallationFinished();
+bool IsBrowserPluginInstalled();
 bool IsPdfFilterInstalled();
 bool IsPdfPreviewerInstalled();
 DWORD WINAPI InstallerThread(LPVOID data);

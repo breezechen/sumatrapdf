@@ -429,10 +429,9 @@ Size BitmapSizeFromData(const char *data, size_t len)
         }
         break;
     case Img_JPEG:
-        // find the last start of frame marker for non-differential Huffman/arithmetic coding
+        // find the last start of frame marker for non-differential Huffman coding
         for (size_t ix = 2; ix + 9 < len && r.Byte(ix) == 0xFF; ) {
-            if (0xC0 <= r.Byte(ix + 1) && r.Byte(ix + 1) <= 0xC3 ||
-                0xC9 <= r.Byte(ix + 1) && r.Byte(ix + 1) <= 0xCB) {
+            if (0xC0 <= r.Byte(ix + 1) && r.Byte(ix + 1) <= 0xC3) {
                 result.Width = r.WordBE(ix + 7);
                 result.Height = r.WordBE(ix + 5);
             }

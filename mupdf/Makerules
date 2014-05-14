@@ -63,11 +63,7 @@ SYS_OPENSSL_CFLAGS = -DHAVE_OPENSSL $(shell pkg-config --cflags libcrypto)
 SYS_OPENSSL_LIBS = $(shell pkg-config --libs libcrypto)
 endif
 
-ifeq "$(shell pkg-config --exists libcurl && echo yes)" "yes"
-HAVE_CURL = yes
-SYS_CURL_CFLAGS = $(shell pkg-config --cflags libcurl)
-SYS_CURL_LIBS = $(shell pkg-config --libs libcurl)
-endif
+# TODO: use pkg-config for system CURL
 SYS_CURL_DEPS = -lpthread -lrt
 
 SYS_X11_CFLAGS = $(shell pkg-config --cflags x11 xext)

@@ -1275,7 +1275,7 @@ protected:
     WCHAR         * ExtractPageText(pdf_page *page, WCHAR *lineSep, RectI **coords_out=NULL,
                                     RenderTarget target=Target_View, bool cacheRun=false);
 
-    Vec<PdfPageRun *, MAX_PAGE_RUN_CACHE+1> runCache; // ordered most recently used first
+    Vec<PdfPageRun*>runCache; // ordered most recently used first
     PdfPageRun    * CreatePageRun(pdf_page *page, fz_display_list *list);
     PdfPageRun    * GetPageRun(pdf_page *page, bool tryOnly=false);
     bool            RunPage(pdf_page *page, fz_device *dev, const fz_matrix *ctm,
@@ -2010,17 +2010,20 @@ bool PdfEngineImpl::RunPage(pdf_page *page, fz_device *dev, const fz_matrix *ctm
 
 void PdfEngineImpl::DropPageRun(PdfPageRun *run, bool forceRemove)
 {
-    ScopedCritSec scope(&pagesAccess);
+    EnterCriticalSection(&pagesAccess);
     run->refs--;
 
-    if (0 == run->refs || forceRemove)
+    if (0 == run->refs || forceRemove) {
         runCache.Remove(run);
-
-    if (0 == run->refs) {
-        ScopedCritSec ctxScope(&ctxAccess);
-        fz_drop_display_list(ctx, run->list);
-        delete run;
+        if (0 == run->refs) {
+            EnterCriticalSection(&ctxAccess);
+            fz_drop_display_list(ctx, run->list);
+            LeaveCriticalSection(&ctxAccess);
+            delete run;
+        }
     }
+
+    LeaveCriticalSection(&pagesAccess);
 }
 
 RectD PdfEngineImpl::PageMediabox(int pageNo)
@@ -3530,7 +3533,7 @@ protected:
     WCHAR         * ExtractPageText(xps_page *page, WCHAR *lineSep,
                                     RectI **coords_out=NULL, bool cacheRun=false);
 
-    Vec<XpsPageRun *, MAX_PAGE_RUN_CACHE+1> runCache; // ordered most recently used first
+    Vec<XpsPageRun*>runCache; // ordered most recently used first
     XpsPageRun    * CreatePageRun(xps_page *page, fz_display_list *list);
     XpsPageRun    * GetPageRun(xps_page *page, bool tryOnly=false);
     bool            RunPage(xps_page *page, fz_device *dev, const fz_matrix *ctm,
@@ -3965,13 +3968,13 @@ void XpsEngineImpl::DropPageRun(XpsPageRun *run, bool forceRemove)
     ScopedCritSec scope(&_pagesAccess);
     run->refs--;
 
-    if (0 == run->refs || forceRemove)
+    if (0 == run->refs || forceRemove) {
         runCache.Remove(run);
-
-    if (0 == run->refs) {
-        ScopedCritSec ctxScope(&ctxAccess);
-        fz_drop_display_list(ctx, run->list);
-        delete run;
+        if (0 == run->refs) {
+            ScopedCritSec ctxScope(&ctxAccess);
+            fz_drop_display_list(ctx, run->list);
+            delete run;
+        }
     }
 }
 

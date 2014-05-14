@@ -13,6 +13,7 @@ DIRS = ["src",
         pj("src", "mui"),
         pj("src", "installer"),
         pj("src", "ifilter"),
+        pj("src", "browserplugin"),
         pj("src", "previewer"),
         ]
 

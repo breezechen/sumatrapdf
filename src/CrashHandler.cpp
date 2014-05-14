@@ -353,14 +353,10 @@ static const char *OsNameFromVer(OSVERSIONINFOEX ver)
 {
     if (VER_PLATFORM_WIN32_NT != ver.dwPlatformId)
         return "9x";
-    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 3)
-        return "8.1"; // or Server 2012 R2
-    if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 2)
-        return "8"; // or Server 2012
     if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 1)
-        return "7"; // or Server 2008 R2
+        return "7"; // or Server 2008
     if (ver.dwMajorVersion == 6 && ver.dwMinorVersion == 0)
-        return "Vista"; // or Server 2008
+        return "Vista";
     if (ver.dwMajorVersion == 5 && ver.dwMinorVersion == 2)
         return "Server 2003";
     if (ver.dwMajorVersion == 5 && ver.dwMinorVersion == 1)

@@ -3,19 +3,7 @@ the release notes, as we make them, to make the release process easier.
 
 Next version:
 
-2.6 (????-??-??)
-
-* swapped keybindings:
-  * F11 : Fullscreen mode (still also Ctrl+Shift+L)
-  * F5  : Presentation mode (also Shift+F11, still also Ctrl+L)
-* deprecated the browser plugin (remains installed if used)
-* support LZMA in Comic Book (CBZ) files
-
-2.5.1 (2014-05-07):
-
-* hopefully fix frequent ebook crashes
-
-2.5 (2014-05-05):
+2.5 (2014-??-??):
 
 * 2 page view for ebooks
 * new keybindings:
@@ -55,7 +43,7 @@ Next version:
 * "Go To Page" for ebook format
 * add support for OpenXPS documents
 * add View/Manga Mode menu item for Comic Book (CBZ/CBR) files
-* support Deflate64 in Comic Book (CBZ) files
+* support Deflate64 in Comic Book (CBZ/CBR) files
 * new key bindings:
   * Ctrl-Up   : page up
   * Ctrl-Down : page down
