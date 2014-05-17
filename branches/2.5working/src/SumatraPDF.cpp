@@ -917,6 +917,10 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI, DisplayState *s
         showToc = state->showToc;
     }
 
+    // make sure to clear linkOnLastButtonDown before deleting win->dm
+    delete win->linkOnLastButtonDown;
+    win->linkOnLastButtonDown = NULL;
+
     DisplayModel *prevModel = win->dm;
     AbortFinding(args.win);
     delete win->pdfsync;
