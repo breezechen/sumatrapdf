@@ -1,28 +1,5 @@
-#summary Explains why Sumatra doesn't have tabs
-=Why Sumatra doesn't have tabs?=
+Good news, everyone.
 
-Adding tabs to Sumatra is a popular feature request. Why haven't we done that?
+The version after 2.5.x will have tabs.
 
-The first reason is prosaic: it's a non-trivial feature to add and neither of 2 Sumatra developers is working on it. We would consider applying patches but we're not likely to work on that.
-
-Second reason is design. It's natural that people try to apply solutions that work in one scenario to other scenarios. Tabs are clearly useful in web browsers and text editors, why not have them in a pdf reader?
-
-Well, we're not convinced that the use cases translate. For example in a web browser it's very common to read a lot of relatively short web pages, queue up pages to visit later in tabs or have several websites constantly opened in a background (e.g. a mail client, rss reader).
-
-This is not how pdf readers are used. People usually read just one, large document. 
-
-Additionally, Windows 7 vastly improved switching between several windows of the same application, providing an alternative way of switching between multiple pdf documents opened in Sumatra.
-
-A disadvantage of tabs is that they take vertical space, which is at premium, especially on notebooks.
-
-=Conclusion=
-
-We acknowledge that for some people ability to conveniently switch between multiple, simultaneously opened PDFs is important.
-
-I don't necessarily think that tabs are the best solution for that. See e.g. how Windows 7 implemented such functionality in a completely different way.
-
-We (i.e. zeniko and kkowalczyk, the 2 [https://www.ohloh.net/p/4623/contributors main Sumatra developers]) are not likely to work on that.
-
-We would gladly guide and help others implement such feature and integrate it into Sumatra if it's done right.
-
-Want to discuss tabs? Use [http://forums.fofou.org/sumatrapdf/ the forum].
+If you want to try tab support in Sumatra before the official release, try [http://blog.kowalczyk.info/software/sumatrapdf/prerelease.html pre-release build].
