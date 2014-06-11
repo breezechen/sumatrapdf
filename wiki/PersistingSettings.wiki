@@ -7,4 +7,6 @@ Persisted data is stored in SumatraPDF-settings.txt file. In portable version th
 
 Starting with version 1.6 we also persist thumbnails for "Frequently read" list. They are stored in subdirectory sumatrapdfcache as .png files.
 
-Note: in earlier version settings were stored in sumatrapdfprefs.dat file in  [http://en.wikipedia.org/wiki/Bencode bencode] format.
+See blog.kowalczyk.info/software/sumatrapdf/settings.html for more information about all the settings which are currently stored and [https://code.google.com/p/sumatrapdf/source/browse/trunk/scripts/gen_settingsstructs.py /scripts/gen_settingsstructs.py] for what to change in order to add new settings.
+
+Note: In earlier version settings were stored in sumatrapdfprefs.dat file in  [http://en.wikipedia.org/wiki/Bencode bencode] format.
