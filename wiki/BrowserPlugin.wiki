@@ -6,7 +6,7 @@ Why?
 
 Chrome will completely remove support for NPAPI plugins (and Sumatra's plugin is based on NPAPI) in 2014 (http://www.chromium.org/developers/npapi-deprecation).
 
-FireFox will require a click to activate NPAPI plugin each time, which is very user unfriendly and will surely decrease number of people using the plugin.
+!FireFox will require a click to activate NPAPI plugin each time, which is very user unfriendly and will surely decrease number of people using the plugin (https://blog.mozilla.org/security/2013/01/29/putting-users-in-control-of-plugins/)
 
 For those reasons we won't be including browser plugin in Sumatra past 2.5.x
 
