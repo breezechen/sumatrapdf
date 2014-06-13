@@ -1,0 +1,13 @@
+#summary Why we're removing browser plugin after 2.5.x
+
+After 2.5.x we'll remove browser plugin from Sumatra.
+
+Why?
+
+Chrome will completely remove support for NPAPI plugins (and Sumatra's plugin is based on NPAPI) in 2014 (http://www.chromium.org/developers/npapi-deprecation).
+
+FireFox will require a click to activate NPAPI plugin each time, which is very user unfriendly and will surely decrease number of people using the plugin.
+
+For those reasons we won't be including browser plugin in Sumatra past 2.5.x
+
+That being said, we won't be deleting/disabling it, so if you really want it, you can install 2.5.2 and then upgrade, which will preserve the plugin.
