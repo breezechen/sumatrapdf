@@ -27,6 +27,14 @@ All options start with a dash and have (where indicated) arguments that have to 
   
   Displays the first indicated file directly in fullscreen view.
 
+  * {{{-invert-colors}}}
+  
+  Swaps text and background color for most documents (used to be a shortcut for
+  {{{
+  -set-color-range #ffffff #000000
+  }}}
+  but now uses the actual values of the [http://blog.kowalczyk.info/software/sumatrapdf/settings.html#FixedPageUI_TextColor TextColor and BackgroundColor settings]).
+
 == Printing options ==
 
   * {{{-print-to-default}}}
@@ -173,16 +181,6 @@ The following options just set values in the [http://blog.kowalczyk.info/softwar
   }}}
   displays soft white text on a dark gray background.
   
-  [*Deprecated*]: Use the [http://blog.kowalczyk.info/software/sumatrapdf/settings.html#FixedPageUI_TextColor TextColor and BackgroundColor settings] for FixedPageUI instead.
-
-  * {{{-invert-colors}}}
-  
-  Is a shortcut for
-  {{{
-  -set-color-range #ffffff #000000
-  }}}
-  i.e. will display white text on a black background for most documents.
-
   [*Deprecated*]: Use the [http://blog.kowalczyk.info/software/sumatrapdf/settings.html#FixedPageUI_TextColor TextColor and BackgroundColor settings] for FixedPageUI instead.
 
   * {{{-lang <language-code>}}}
