@@ -1,0 +1,115 @@
+#summary How to enable auto-updates
+
+= Enabling Auto-Updates =
+
+SumatraPDF can be compiled in a way so that when new updates are available, these updates are installed with minimal user intervention (one click for portable builds, additionally entering the administration password for installers).
+
+== Overview ==
+
+SumatraPDF downloads once a day a small file containing the latest version number, compares it and informs the user when the latest version is newer than the current one.
+
+This file may also contain a link to where to download the update and a fingerprint in order to verify the download's integrity. Additionally, this file contains a digital signature so that SumatraPDF can verify that link and fingerprint have not been tampered with.
+
+If an update is available and the user agrees to update, SumatraPDF usually just loads the webbrowser so that the user can manually download and install the update. If auto-updates are enabled, SumatraPDF downloads itself and either launches the installer in a non-interactive mode or has the portable build replace itself.
+
+== Preparation (required once) ==
+
+In order to enable auto-updates, you'll need the following tools:
+
+  * makecert.exe (included in the Windows SDK, usually shipping with Visual Studio)
+  * premake4.exe (available from http://industriousone.com/premake/download)
+  * Python (available from https://www.python.org/) or sha256sum.exe
+
+=== Create Certificate ===
+
+Open a command prompt in an empty directory outside of SumatraPDF's sources and run
+{{{
+makecert.exe -r -n "CN=SumatraPDF Authority" -cy authority -a sha1 -sv sumatra.pvk sumatra.cer
+
+makecert.exe -n "CN=SumatraPDF" -ic sumatra.cer -iv sumatra.pvk -a sha1 -sky signature -pe -sr currentuser -ss My sumatra-app.cer
+}}}
+
+This will create a new self-signed certificate for SumatraPDF in your local store and create backups named "sumatra.pvk" (private key), "sumatra.cer" (root certificate) and "sumatra-app.cer" (signing certificate) which you should *backup in a safe location*.
+
+=== Build signfile.exe ===
+
+Open a command prompt in SumatraPDF's main source directory and run
+{{{
+premake4.exe vs2010
+}}}
+in order to create "vs-premake\signfile.vcxproj" among others (for Visual Studio 2008, call {{{premake4.exe vs2008}}} instead).
+
+Open the signfile project and build signfile.exe (located in either "obj-dbg" or "obj-rel", where SumatraPDF's own executables are built as well).
+
+=== Create Public Signature Key ===
+
+Run
+{{{
+signfile.exe -cert SumatraPDF -pubkey src\SumatraPDF.key
+}}}
+for creating the file "src\SumatraPDF.key" which will be included in SumatraPDF.exe and will be used for verifying the signature of the update file.
+
+== Build SumatraPDF with Support for Auto-Update ==
+
+For every build (portable or installer), you now have to tell the compiler to include the public signature key into SumatraPDF.exe and then add the required information to the update file.
+
+=== Include Public Signature Key ===
+
+SumatraPDF is built through an nmake.exe makefile, either from a Visual Studio command prompt or through Visual Studio itself. The following is a minimal invocation for including the public signature key produced above:
+
+{{{
+nmake.exe /f makefile.msvc CFG=rel SumatraPDF "EXTCFLAGS=/D \"SUMATRA_UPDATE_INFO_URL=L\\\"http://www.example.net/update-info.txt\\\"\" /D SUPPORTS_AUTO_UPDATE /D HAS_PUBLIC_APP_KEY"
+}}}
+(change the URL to where you'll upload the update info file)
+
+=== Calculate SHA-256 Fingerprint ===
+
+Use either "sha256sum.exe" from a trusted source or a local Python installation for calculating the SHA-256 fingerprint of SumatraPDF.exe (portable build) and/or SumatraPDF-install.exe:
+{{{
+sha256sum.exe obj-rel\SumatraPDF.exe
+}}}
+or
+{{{
+python -c "import hashlib, sys; print ''.join([('0' + hex(ord(c))[2:])[-2:] for c in hashlib.sha256(open(sys.argv[1], 'rb').read()).digest()])" obj-rel\SumatraPDF.exe
+}}}
+
+=== Assemble Update Info ===
+
+Now create a file called "update-info.txt" (the name has to match the URL passed to nmake.exe above) and include the following data:
+{{{
+[SumatraPDF]
+Latest <version>
+
+Portable [
+	URL: <URL of the portable executable (must not be included in a ZIP archive)>
+	Hash <SHA-256 fingerprint of the linked executable>
+]
+}}}
+Instead or in addition to the "Portable" subsection you can also have an "Installer" subsection. E.g.
+
+{{{
+[SumatraPDF]
+Latest 2.6
+
+Installer [
+	URL: http://www.example.net/SumatraPDF-install.exe
+	Hash 5397e57f28b86f9f8be18668e96d83a86ba813b3a43ef4e06ae1e726dd1cc236
+]
+}}}
+
+See [https://code.google.com/p/sumatrapdf/source/browse/trunk/src/SumatraPDF.cpp?r=9372#1964 the source] for the code handling this format and [http://software.zeniko.ch/sumatrapdf/update-dev.txt zeniko's update-dev.txt] for a live example.
+
+=== Sign Update Info ===
+
+Once all the information is complete, sign this file using signfile.exe:
+{{{
+signfile.exe -cert SumatraPDF -out "update-info.txt" -comment # "update-info.txt"
+}}}
+
+This will append the signature to the "update-info.txt" file. After this has happened, the file may not be modified any more. If you change any content, you'll have to sign it anew.
+
+_TODO: Create a script for creating a signed update-info.txt automatically._
+
+=== Upload Files ===
+
+Finally, upload the update info file and the portable/installer executable(s) to your website. Users will now have to download this build in order to be able to auto-update to all future builds produced in this way.
