@@ -64,6 +64,9 @@
 #include "WindowInfo.h"
 #include "WinUtil.h"
 
+#define NOLOG 0
+#include "DebugLog.h"
+
 /* if true, we're in debug mode where we show links as blue rectangle on
    the screen. Makes debugging code related to links easier. */
 #ifdef DEBUG
@@ -2905,7 +2908,7 @@ static void RelayoutFrame(WindowInfo *win, bool updateToolbars=true, int sidebar
     if (rc.IsEmpty())
         return;
 
-    if (PM_BLACK_SCREEN == win->presentation || PM_WHITE_SCREEN == win->presentation) {
+    if (PM_DISABLED != win->presentation) {
         MoveWindow(win->hwndCanvas, rc);
         return;
     }
@@ -3019,15 +3022,19 @@ static void RelayoutFrame(WindowInfo *win, bool updateToolbars=true, int sidebar
 
 static void FrameOnSize(WindowInfo* win, int dx, int dy)
 {
-    RelayoutFrame(win);
-
     if (win->presentation || win->isFullScreen) {
         RectI fullscreen = GetFullscreenRect(win->hwndFrame);
         WindowRect rect(win->hwndFrame);
         // Windows XP sometimes seems to change the window size on it's own
-        if (rect != fullscreen && rect != GetVirtualScreenRect())
+        if (rect != fullscreen && rect != GetVirtualScreenRect()) {
             MoveWindow(win->hwndFrame, fullscreen);
+            // changing size will trigger WM_SIZE and FrameOnSize() will be called again,
+            // so no need to call RelayouFrame() now
+            return;
+        }
     }
+
+    RelayoutFrame(win);
 }
 
 void SetCurrentLanguageAndRefreshUi(const char *langCode)
@@ -3235,7 +3242,8 @@ static void EnterFullScreen(WindowInfo& win, bool presentation)
     long ws = GetWindowLong(win.hwndFrame, GWL_STYLE);
     if (!presentation || !win.isFullScreen)
         win.nonFullScreenWindowStyle = ws;
-    ws &= ~(WS_BORDER|WS_CAPTION|WS_THICKFRAME);
+    // remove window styles that add to non-client area
+    ws &= ~(WS_CAPTION|WS_THICKFRAME);
     ws |= WS_MAXIMIZE;
 
     win.nonFullScreenFrameRect = WindowRect(win.hwndFrame);
@@ -3247,8 +3255,7 @@ static void EnterFullScreen(WindowInfo& win, bool presentation)
     ShowWindow(win.hwndCaption, SW_HIDE);
 
     SetWindowLong(win.hwndFrame, GWL_STYLE, ws);
-    SetWindowPos(win.hwndFrame, NULL, rect.x, rect.y, rect.dx, rect.dy, SWP_FRAMECHANGED | SWP_NOZORDER);
-    SetWindowPos(win.hwndCanvas, NULL, 0, 0, rect.dx, rect.dy, SWP_NOZORDER);
+    SetWindowPos(win.hwndFrame, NULL, rect.x, rect.y, rect.dx, rect.dy, SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOZORDER);
 
     if (presentation)
         win.ctrl->SetPresentationMode(true);
@@ -4256,6 +4263,7 @@ static LRESULT CALLBACK WndProcFrame(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
                 RememberDefaultWindowPosition(*win);
                 int dx = LOWORD(lParam);
                 int dy = HIWORD(lParam);
+                //dbglog::LogF("dx: %d, dy: %d", dx, dy);
                 FrameOnSize(win, dx, dy);
             }
             break;
