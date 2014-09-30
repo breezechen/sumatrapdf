@@ -2269,6 +2269,10 @@ static void CloseDocumentInTab(WindowInfo *win, bool keepUIEnabled)
         win->RedrawAll();
     }
 
+    // Note: this causes https://code.google.com/p/sumatrapdf/issues/detail?id=2702. For whatever reason
+    // edit ctrl doesn't receive WM_KILLFOCUS if we do SetFocus() here, even if we call SetFocus() later
+    // on.
+    //SetFocus(win->hwndFrame);
 #ifdef DEBUG
     // cf. https://code.google.com/p/sumatrapdf/issues/detail?id=2039
     // HeapValidate() is left here to help us catch the possibility that the fix
@@ -2341,6 +2345,7 @@ void CloseWindow(WindowInfo *win, bool quitIfLast, bool forceClose)
     } else if (lastWindow && !quitIfLast) {
         /* last window - don't delete it */
         CloseDocumentInTab(win);
+        SetFocus(win->hwndFrame);
     } else {
         HWND hwndToDestroy = win->hwndFrame;
         DeleteWindowInfo(win);
@@ -2908,7 +2913,8 @@ static void RelayoutFrame(WindowInfo *win, bool updateToolbars=true, int sidebar
     if (rc.IsEmpty())
         return;
 
-    if (PM_DISABLED != win->presentation) {
+    if (PM_BLACK_SCREEN == win->presentation || PM_WHITE_SCREEN == win->presentation) {
+        // make the black/white canvas cover the entire window
         MoveWindow(win->hwndCanvas, rc);
         return;
     }
@@ -3022,19 +3028,16 @@ static void RelayoutFrame(WindowInfo *win, bool updateToolbars=true, int sidebar
 
 static void FrameOnSize(WindowInfo* win, int dx, int dy)
 {
+    RelayoutFrame(win);
+
     if (win->presentation || win->isFullScreen) {
         RectI fullscreen = GetFullscreenRect(win->hwndFrame);
         WindowRect rect(win->hwndFrame);
         // Windows XP sometimes seems to change the window size on it's own
         if (rect != fullscreen && rect != GetVirtualScreenRect()) {
             MoveWindow(win->hwndFrame, fullscreen);
-            // changing size will trigger WM_SIZE and FrameOnSize() will be called again,
-            // so no need to call RelayouFrame() now
-            return;
         }
     }
-
-    RelayoutFrame(win);
 }
 
 void SetCurrentLanguageAndRefreshUi(const char *langCode)
