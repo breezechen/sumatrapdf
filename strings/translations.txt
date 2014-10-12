@@ -1,5 +1,5 @@
 AppTranslator: SumatraPDF
-e9ae17504742bf40d3a277c218a3dc157edfd79f
+7b9a26a18b6fa48c71ce833cfbab3c4bb9c69b57
 :&About
 af:&Omtrent
 am:&Ծրագրի մասին
@@ -15,7 +15,7 @@ ca:&Quant a...
 cn:关于(&A)...
 cy:&Ynghylch...
 cz:&O programu
-de:&Über SumatraPDF
+de:Über &SumatraPDF
 dk:&Om
 el:&Σχετικά
 es:&Acerca de
@@ -992,7 +992,7 @@ ar:&الذهاب إلى
 az:K&eçid
 bg:&Отиди на
 bn:এতে চলুন...
-br:Ir &para
+br:&Ir para
 bs:Idi na
 by:Перайсці да
 ca-xv:&Vés a
@@ -1121,7 +1121,7 @@ ar:&مساعدة
 az:&Kömək
 bg:&Помощ
 bn:&সাহায্য
-br:A&juda
+br:Aj&uda
 bs:&Pomoć
 by:Дапамога
 ca-xv:&Ajuda
@@ -1137,7 +1137,7 @@ et:&Abi
 eu:&Laguntza
 fa:&راهنما
 fi:&Ohje
-fr:&Aide
+fr:Ai&de
 fy-nl:&Help
 ga:&Cabhair
 gl:A&xuda
@@ -2939,13 +2939,15 @@ uz:&Ko'rish
 vn:Hiển thị
 :&Window
 am:&Պատուհան
+ar:النافذة
 az:&Pəncərə
+br:&Janela
 bs:&Prozor
 ca:&Finestra
 cn:窗口(&W)
 cy:&Ffenestr
 de:Fe&nster
-es:&Ventana
+es:V&entana
 et:A&ken
 eu:&Leihoa
 fa:&پنجره
@@ -2963,6 +2965,8 @@ pt:&Janela
 ru:&Окно
 sk:&Okno
 sl:&Okno
+sv:Fönster
+tr:&Pencere
 uk:&Вікно
 :&Yes
 am:&Այո
@@ -6501,6 +6505,7 @@ uz:Joriy fayl
 vn:Tập tin hiện hành
 :Cursor position:
 am:Նշորդի դիրքը.
+ar:إحداثيات المؤشر
 az:Kursorun mövqeyi:
 br:Posição do cursor:
 bs:Pozicija kursora:
@@ -6530,6 +6535,8 @@ sk:Pozícia kurzora:
 sl:Položaj kurzorja:
 sp-rs:Pozicija kursora
 sr-rs:Позиција курсора
+sv:Muspekarens position:
+tr:İmleç konumu:
 uk:Позиція вказівника:
 :Custom &Zoom...\tCtrl+Y
 am:&Ընտրված չափով\tCtrl+Y
@@ -7387,7 +7394,7 @@ am:Ը&նտրյալներ
 ar:المفضلة
 az:&Seçilmişlər
 bg:&Любими
-br:F&avoritos
+br:&Favoritos
 bs:F&avoriti
 ca-xv:F&avorits
 ca:Pr&eferits
@@ -7430,7 +7437,7 @@ sl:Priljubljeni
 sp-rs:Odabir
 sq:P&ëlqej
 sr-rs:Одабир
-sv:F&avoriter
+sv:&Favoriter
 ta:பிடித்தவை
 tr:S&ık kullanılanlar
 tw:我的最愛(&A)
@@ -7519,7 +7526,7 @@ et:&Täisekraanvaade\tCtrl+Shift+L
 eu:&Ikusleiho-osoan\tKtrl+Shift+L
 fa:&تمام‌صفحه\tCtrl+Shift+L
 fi:Koko &näyttö\tCtrl+Shift+L
-fr:&Plein écran\tCtrl+Shift+L
+fr:&Plein écran\tCtrl+Maj+L
 fy-nl:Folslein skerm\tCtrl+Shift+L
 ga:Lánscáileán\tCtrl+Shift+L
 gl:A toda pantalla\tCtrl+Shift+L
@@ -10051,6 +10058,7 @@ uz:KB
 vn:KB
 :Keep the PDF &browser plugin installed (no longer supported)
 am:Թողնել &դիտարկիչի PDF բաղադրիչը (այլևս չի աջակցում)
+ar:حافظ على تكميلة البرنامج في المتصفح
 az:PDF &brauzer plaginini silmə (artıq dəstəklənmir)
 br:Mantenha o plugin PDF para instalado (não é mais suportado)
 bs:Ostavi plugin instaliran u &browseru (više nije podržano)
@@ -10080,6 +10088,7 @@ sk:Ponechať PDF plugin prehliadača nainštalovaný (už nie je podporovaný)
 sl:Obdržati PDF vtičnik &brskalnika nameščen (ni več podprt)
 sp-rs:Zadrži PDF plugin pretraživača instalisan (nije podržano)
 sr-rs:Задржи ПДФ плугин инсталисан (није подржано)
+sv:Behåll webbläsarens insticksprogram för PDF (stöds inte längre)
 tr:PDF ve tarayıcı eklentisini kurulu oalrak bırakınız (artık desteklenmiyor)
 tw:維持 PDF 瀏覽器插件安裝狀態(不再支援)(&B)
 uk:Залишити розширення для браузера (більше не підтримується)
@@ -10163,7 +10172,7 @@ mk:Дозволи Windows да прикажува слики за PDF-докум
 my:Biarkan Windows menunjukkan &preview dokumen PDF
 nl:Laat Windows &voorbeelden tonen van PDF documenten
 pl:Windows ma pokazywać &podgląd plików PDF
-pt:&Permitir que o WIndows mostre uma antevisão dos PDF
+pt:&Permitir que o Windows mostre uma antevisão dos PDF
 ro:Permite Windows-ului sa arate &previzualizari ale documentelor PDF
 ru:&Просмотр документов PDF средствами Windows
 sk:Povoliť, aby Windows zobrazoval &náhľad PDF dokumentov
@@ -10382,6 +10391,7 @@ uz:SumatraPDF PDF fayllar bilan bog'lanish
 vn:Đặt SumatraPDF làm trình đọc PDF chính
 :Man&ga Mode
 am:Man&ga եղանակ
+ar:Man&ga وضعية 
 az:Man&qa rejimi
 br:Modo Man&gá
 bs:Man&ga režim
@@ -12348,15 +12358,24 @@ uz:Bet:
 vn:Trang:
 :PalmDoc documents
 am:PalmDoc փաստաթղթեր
+ar:وثائق بالم دوك
+az:PalmDoc sənədləri
+br:Documentos PalmDoc
+cn:PalmDoc 文档
 de:PalmDoc E-Bücher
+es:Documentos PalmDoc
 fr:Fichiers PalmDoc
 he:קובצי PalmDoc
 it:Documenti PalmDoc
+kr:PalmDoc 문서
 mk:документи на PalmDoc
 pl:Dokumenty PalmDoc
 pt:Documentos PalmDoc
 ru:Документы PalmDoc
 sl:PalmDoc dokumenti
+sv:PalmDoc dokument
+tr:PalmDoc belgeleri
+uk:Документи PalmDoc
 :Please close %s to proceed!
 am:Շարունակելուց առաջ փակեք %s-ը:
 ar:أغلق %s للإكمال!
@@ -13446,7 +13465,7 @@ et:Pööra &vasemale\tCtrl+Shift+-
 eu:Itzulikatu E&zkerrerantz\tKtrl+Shift+-
 fa:چرخاندن به &چپ\tCtrl+Shift+-‎
 fi:Käännä &vasemmalle\tCtrl+Shift+-
-fr:Rotation &antihoraire\tCtrl+Shift+-
+fr:Rotation &antihoraire\tCtrl+Maj+-
 fy-nl:Linksom draaie\tCtrl+Shift+-
 ga:Rothlaigh tuathalach\tCtrl+Shift+-
 gl:Xirar á esquerda\tCtrl+Shift+-
@@ -13514,7 +13533,7 @@ et:Pööra &paremale\tCtrl+Shift++
 eu:Itzulikatu E&skuinera\tKtrl+Shift++
 fa:چرخاندن به &راست\tCtrl+Shift++‎
 fi:Käännä &oikealle\tCtrl+Shift++
-fr:Rotation &horaire\tCtrl+Shift++
+fr:Rotation &horaire\tCtrl+Maj++
 fy-nl:Rjochtsom draaie\tCtrl+Shift++
 ga:Rothlaigh deiseal\tCtrl+Shift++
 gl:Xirar á dereita\tCtrl+Shift++
@@ -13961,6 +13980,7 @@ uz:SumatraPDF o'rnatish uchun jildni tanlang:
 vn:Chọn thư mục nơi mà SumatraPDF sẽ được cài đặt:
 :Selection:
 am:Նշվածը.
+ar:التحديد
 az:Seçmə:
 br:Seleção:
 bs:Selekcija:
@@ -13990,6 +14010,8 @@ sk:Výber:
 sl:Izbor:
 sp-rs:Izbor
 sr-rs:Избор
+sv:Markering:
+tr:Seçim:
 uk:Виділення:
 :Send by &E-mail...
 am:Ուղարկել &էլ. փոստով
@@ -15700,7 +15722,7 @@ ml:സുമാത്ര പി.ഡി.എഫ്.നീക്കം ചെയ്
 my:Membuang SumatraPDF
 nl:Deinstalleer SumatraPDF
 pl:Usuń SumatraPDF
-pt:Desinstalar SumatraPDF
+pt:Remover SumatraPDF
 ro:Dezinstalare SumatraPDF
 ru:Удалить SumatraPDF
 sk:Odinštalovanie SumatraPDF
@@ -15874,7 +15896,9 @@ uz:Noma'lum manba fayli (%s)
 vn:Không rõ tập tin nguồn (%s)
 :Use &tabs
 am:Ավելացնել &ներդիրներ
+ar:الإستعمال & التبويبات
 az:&Tab-vərəqələrdən istifadə et
+br:Usar &abas
 bs:Koristi &tabove
 cn:使用标签页(&T)
 cy:Defnyddio &tabiau
@@ -15900,6 +15924,8 @@ sk:Povoliť &záložky
 sl:Uporabljaj &zavihke
 sp-rs:Koristiti tab
 sr-rs:Користити таб
+sv:Använd flikar
+tr:&Sekmeler kullan
 uk:Використовувати вкладки
 :Use SumatraPDF as the &default PDF reader
 am:Օգտ. SumatraPDF-ը որպես &PDF-ի հիմնական ծրագիր
@@ -16032,7 +16058,7 @@ ca:Visiteu el lloc &web
 cn:访问网站(&W)
 cy:&Ymweld â'r Wefan
 cz:Navštívit &webovou stránku
-de:&SumatraPDF im Internet
+de:SumatraPDF im &Internet
 dk:Besøg &webside
 el:&Ιστοσελίδα Προγράμματος
 es:Visitar sitio &Web
@@ -16717,7 +16743,7 @@ vn:đang chép văn bản
 :printing document
 am:Ֆայլը տպվում է
 ar:تتم حالياً الطباعة
-az:sənəd çap olunur
+az:sənədin çap olunması
 bg:отпечатване на документ
 br:imprimindo documento
 bs:štampam dokument
