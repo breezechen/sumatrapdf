@@ -127,7 +127,7 @@ const char * gTranslations_ar =
   "\330\252\331\206\330\265\331\212\330\250 SumatraPDF \331\201\331\212 \330\247\331\204\331\205\330\254\331\204\330\257:\0"\
   "\331\201\330\264\331\204 \331\201\331\212 \330\252\331\206\330\265\331\212\330\250 \330\247\331\204\330\250\330\261\331\206\330\247\331\205\330\254\0"\
   "\331\202\331\212\330\257 \330\252\331\206\330\265\331\212\330\250 \330\247\331\204\330\250\330\261\331\206\330\247\331\205\330\254 ...\0"\
-  "\0"\
+  "\330\255\330\247\331\201\330\270 \330\271\331\204\331\211 \330\252\331\203\331\205\331\212\331\204\330\251 \330\247\331\204\330\250\330\261\331\206\330\247\331\205\330\254 \331\201\331\212 \330\247\331\204\331\205\330\252\330\265\331\201\330\255\0"\
   "\330\247\331\204\330\263\331\205\330\247\330\255 \331\204\331\210\331\212\331\206\330\257\331\210\330\262 \330\250\330\247\331\204\330\250\330\255\330\253 \331\201\331\212 \331\205\331\204\331\201\330\247\330\252 PDF\0"\
   "\330\247\331\204\330\263\331\205\330\247\330\255 \331\204\331\210\331\212\331\206\330\257\331\210\330\262 \330\271\330\261\330\266 \330\265\331\210\330\261 \331\205\330\271\330\247\331\212\331\206\330\251 PDF\0"\
   "\330\243\330\272\331\204\331\202 %s \331\204\331\204\330\245\331\203\331\205\330\247\331\204!\0"\
@@ -1449,7 +1449,7 @@ const char * gTranslations_pt =
   "A instalar...\0"\
   "&Manter plugin de navegador instalado (j\303\241 n\303\243o \303\251 suportado)\0"\
   "Permitir que o Windows Desktop &Search localize os PDF\0"\
-  "&Permitir que o WIndows mostre uma antevis\303\243o dos PDF\0"\
+  "&Permitir que o Windows mostre uma antevis\303\243o dos PDF\0"\
   "Para continuar, feche o %s!\0"\
   "Escolha a pasta de instala\303\247\303\243o do SumatraPDF:\0"\
   "Alguns ficheiros do instalador est\303\243o danificados\0"\
@@ -1461,7 +1461,7 @@ const char * gTranslations_pt =
   "Obrigado por ter escolhido o SumatraPDF!\0"\
   "O SumatraPDF foi instalado.\0"\
   "O instalador est\303\241 danificado. Efetue uma nova transfer\303\252ncia.\nDesculpe o inconveniente.\0"\
-  "Desinstalar SumatraPDF\0"\
+  "Remover SumatraPDF\0"\
   "Falha na desinstala\303\247\303\243o!\0"\
   "A desinstalar...\0"\
   "Utilizar o SumatraPDF como leitor pa&dr\303\243o de PDF\0";
@@ -1799,7 +1799,7 @@ const char * gTranslations_sv =
   "Installera SumatraPDF i katalog:\0"\
   "Installationen misslyckades!\0"\
   "Installerar...\0"\
-  "\0"\
+  "Beh\303\245ll webbl\303\244sarens insticksprogram f\303\266r PDF (st\303\266ds inte l\303\244ngre)\0"\
   "L\303\245t Windows inbyggda s\303\266kfunktion indexera PDF-dokument\0"\
   "Visa f\303\266rhandstitt av PDF-dokument i Windows\0"\
   "V\303\244nligen st\303\244ng %s innan du forts\303\244tter!\0"\
