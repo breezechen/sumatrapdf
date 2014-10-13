@@ -141,7 +141,10 @@ WCHAR *          gPluginURL = NULL; // owned by CommandLineInfo in WinMain
 #define AUTO_RELOAD_TIMER_ID        5
 #define AUTO_RELOAD_DELAY_IN_MS     100
 
-#define EBOOK_LAYOUT_TIMER_ID       6
+#define AUTO_RELOAD_RETRY_TIMER_ID  6
+#define AUTO_RELOAD_RETRY_DELAY_IN_MS 1000
+
+#define EBOOK_LAYOUT_TIMER_ID       7
 
 Vec<WindowInfo*>             gWindows;
 FileHistory                  gFileHistory;
@@ -843,15 +846,7 @@ public:
         win(win), ctrl(ctrl), data(data) { }
 
     virtual void Execute() {
-        if (WindowInfoStillValid(win)) {
-#ifdef DEBUG
-            TabData *td = NULL;
-            for (int i = 0; (td = GetTabData(win, i)) != NULL; i++) {
-                if (td->ctrl == ctrl)
-                    break;
-            }
-            CrashIf(!td);
-#endif
+        if (WindowInfoStillValid(win) && GetTabDataByCtrl(win, ctrl)) {
             ctrl->HandlePagesFromEbookLayout(data);
         }
     }
@@ -1093,8 +1088,10 @@ static bool LoadDocIntoWindow(LoadArgs& args, PasswordUI *pwdUI, DisplayState *s
         title.Set(str::Format(L"%s %s- %s", SUMATRA_WINDOW_TITLE, docTitle ? docTitle : L"", titlePath));
     }
     free(docTitle);
-    if (needRefresh && win->IsDocLoaded())
+    if (needRefresh && win->IsDocLoaded()) {
+        // TODO: this isn't visible when tabs are used
         title.Set(str::Format(_TR("[Changes detected; refreshing] %s"), title));
+    }
     win::SetText(win->hwndFrame, title);
 
     if (HasPermission(Perm_DiskAccess) && win->GetEngineType() == Engine_PDF) {
@@ -1172,21 +1169,17 @@ public:
 
     virtual void Execute() {
         if (WindowInfoStillValid(win)) {
-            if (win->ctrl == ctrl) {
-                // delay the reload slightly, in case we get another request immediately after this one
-                SetTimer(win->hwndCanvas, AUTO_RELOAD_TIMER_ID, AUTO_RELOAD_DELAY_IN_MS, NULL);
-            }
-            else {
-                CrashIf(!win->tabsVisible);
-                TabData *td = NULL;
-                for (int i = 0; (td = GetTabData(win, i)) != NULL; i++) {
-                    if (td->ctrl == ctrl) {
-                        td->reloadOnFocus = true;
-                        break;
-                    }
+            if (win->ctrl != ctrl && win->tabsVisible) {
+                // make sure that ctrl actually belongs to a background tab
+                // and isn't a previous controller of the current tab
+                TabData *bgTab = GetTabDataByCtrl(win, ctrl);
+                if (bgTab) {
+                    bgTab->reloadOnFocus = true;
+                    return;
                 }
-                CrashIf(!td);
             }
+            // delay the reload slightly, in case we get another request immediately after this one
+            SetTimer(win->hwndCanvas, AUTO_RELOAD_TIMER_ID, AUTO_RELOAD_DELAY_IN_MS, NULL);
         }
     }
 };
@@ -1201,6 +1194,7 @@ void ReloadDocument(WindowInfo *win, bool autorefresh)
         }
         return;
     }
+
     DisplayState *ds = NewDisplayState(win->loadedFilePath);
     win->ctrl->UpdateDisplayState(ds);
     UpdateDisplayStateWindowRect(*win, *ds);
