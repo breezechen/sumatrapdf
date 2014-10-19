@@ -6,16 +6,16 @@
 
 #include "../common/unarr-imp.h"
 
-#ifndef HAVE_ZLIB
-#include "inflate.h"
-#else
+#ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
 #ifdef HAVE_BZIP2
 #include <bzlib.h>
 #endif
-#include "../lzmasdk/LzmaDec.h"
-#include "../lzmasdk/Ppmd8.h"
+#ifdef HAVE_LZMA
+#include <LzmaDec.h>
+#endif
+#include "../ppmd/Ppmd8.h"
 
 typedef struct ar_archive_zip_s ar_archive_zip;
 
@@ -109,19 +109,19 @@ struct ar_archive_zip_uncomp {
     zip_uncomp_uncompress_data_fn uncompress_data;
     zip_uncomp_clear_state_fn clear_state;
     union {
-#ifndef HAVE_ZLIB
-        inflate_state *inflate;
-#else
+#ifdef HAVE_ZLIB
         z_stream zstream;
 #endif
 #ifdef HAVE_BZIP2
         bz_stream bstream;
 #endif
+#ifdef HAVE_LZMA
         struct {
             CLzmaDec dec;
             ELzmaFinishMode finish;
             ISzAlloc alloc;
         } lzma;
+#endif
         struct {
             CPpmd8 ctx;
             struct ByteReader bytein;

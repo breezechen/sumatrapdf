@@ -68,7 +68,6 @@ static INT_PTR CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT msg, WPARAM wPar
 {
     Dialog_GetPassword_Data *data;
 
-//[ ACCESSKEY_GROUP Password Dialog
     if (WM_INITDIALOG == msg)
     {
         data = (Dialog_GetPassword_Data*)lParam;
@@ -88,7 +87,6 @@ static INT_PTR CALLBACK Dialog_GetPassword_Proc(HWND hDlg, UINT msg, WPARAM wPar
         SetFocus(GetDlgItem(hDlg, IDC_GET_PASSWORD_EDIT));
         return FALSE;
     }
-//] ACCESSKEY_GROUP Password Dialog
 
     switch (msg)
     {
@@ -146,7 +144,6 @@ static INT_PTR CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT msg, WPARAM wParam,
     HWND                    editPageNo;
     Dialog_GoToPage_Data *  data;
 
-//[ ACCESSKEY_GROUP GoTo Page Dialog
     if (WM_INITDIALOG == msg)
     {
         data = (Dialog_GoToPage_Data*)lParam;
@@ -171,7 +168,6 @@ static INT_PTR CALLBACK Dialog_GoToPage_Proc(HWND hDlg, UINT msg, WPARAM wParam,
         SetFocus(editPageNo);
         return FALSE;
     }
-//] ACCESSKEY_GROUP GoTo Page Dialog
 
     switch (msg)
     {
@@ -233,7 +229,6 @@ static INT_PTR CALLBACK Dialog_Find_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPA
     switch (msg)
     {
     case WM_INITDIALOG:
-//[ ACCESSKEY_GROUP Find Dialog
         data = (Dialog_Find_Data*)lParam;
         assert(data);
         SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)data);
@@ -253,7 +248,6 @@ static INT_PTR CALLBACK Dialog_Find_Proc(HWND hDlg, UINT msg, WPARAM wParam, LPA
         CenterDialog(hDlg);
         SetFocus(GetDlgItem(hDlg, IDC_FIND_EDIT));
         return FALSE;
-//] ACCESSKEY_GROUP Find Dialog
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
@@ -302,7 +296,6 @@ static INT_PTR CALLBACK Dialog_PdfAssociate_Proc(HWND hDlg, UINT msg, WPARAM wPa
 {
     Dialog_PdfAssociate_Data *  data;
 
-//[ ACCESSKEY_GROUP Associate Dialog
     if (WM_INITDIALOG == msg)
     {
         data = (Dialog_PdfAssociate_Data*)lParam;
@@ -319,7 +312,6 @@ static INT_PTR CALLBACK Dialog_PdfAssociate_Proc(HWND hDlg, UINT msg, WPARAM wPa
         SetFocus(GetDlgItem(hDlg, IDOK));
         return FALSE;
     }
-//] ACCESSKEY_GROUP Associate Dialog
 
     switch (msg)
     {
@@ -467,7 +459,6 @@ static INT_PTR CALLBACK Dialog_NewVersion_Proc(HWND hDlg, UINT msg, WPARAM wPara
     Dialog_NewVersion_Data *  data;
     WCHAR *txt;
 
-//[ ACCESSKEY_GROUP New Version Dialog
     if (WM_INITDIALOG == msg)
     {
         data = (Dialog_NewVersion_Data*)lParam;
@@ -492,7 +483,6 @@ static INT_PTR CALLBACK Dialog_NewVersion_Proc(HWND hDlg, UINT msg, WPARAM wPara
         SetFocus(GetDlgItem(hDlg, IDOK));
         return FALSE;
     }
-//] ACCESSKEY_GROUP New Version Dialog
 
     switch (msg)
     {
@@ -611,7 +601,6 @@ static INT_PTR CALLBACK Dialog_CustomZoom_Proc(HWND hDlg, UINT msg, WPARAM wPara
     switch (msg)
     {
     case WM_INITDIALOG:
-//[ ACCESSKEY_GROUP Zoom Dialog
         data = (Dialog_CustomZoom_Data *)lParam;
         assert(data);
         SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)data);
@@ -626,7 +615,6 @@ static INT_PTR CALLBACK Dialog_CustomZoom_Proc(HWND hDlg, UINT msg, WPARAM wPara
         CenterDialog(hDlg);
         SetFocus(GetDlgItem(hDlg, IDC_DEFAULT_ZOOM));
         return FALSE;
-//] ACCESSKEY_GROUP Zoom Dialog
 
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -690,7 +678,6 @@ static INT_PTR CALLBACK Dialog_Settings_Proc(HWND hDlg, UINT msg, WPARAM wParam,
 
     switch (msg)
     {
-//[ ACCESSKEY_GROUP Settings Dialog
     case WM_INITDIALOG:
         prefs = (GlobalPrefs *)lParam;
         assert(prefs);
@@ -769,8 +756,6 @@ static INT_PTR CALLBACK Dialog_Settings_Proc(HWND hDlg, UINT msg, WPARAM wParam,
         CenterDialog(hDlg);
         SetFocus(GetDlgItem(hDlg, IDC_DEFAULT_LAYOUT));
         return FALSE;
-//] ACCESSKEY_GROUP Settings Dialog
-
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
@@ -843,7 +828,6 @@ static INT_PTR CALLBACK Sheet_Print_Advanced_Proc(HWND hDlg, UINT msg, WPARAM wP
 
     switch (msg)
     {
-//[ ACCESSKEY_GROUP Advanced Print Tab
     case WM_INITDIALOG:
         data = (Print_Advanced_Data *)((PROPSHEETPAGE *)lParam)->lParam;
         assert(data);
@@ -869,7 +853,6 @@ static INT_PTR CALLBACK Sheet_Print_Advanced_Proc(HWND hDlg, UINT msg, WPARAM wP
         CheckDlgButton(hDlg, IDC_PRINT_AS_IMAGE, data->asImage ? BST_CHECKED : BST_UNCHECKED);
 
         return FALSE;
-//] ACCESSKEY_GROUP Advanced Print Tab
 
     case WM_NOTIFY:
         if (((LPNMHDR)lParam)->code == PSN_APPLY) {

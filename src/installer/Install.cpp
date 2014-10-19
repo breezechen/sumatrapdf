@@ -469,15 +469,7 @@ static void OnButtonOptions()
     EnableAndShow(gHwndCheckboxRegisterPdfPreviewer, gShowOptions);
     EnableAndShow(gHwndCheckboxKeepBrowserPlugin, gShowOptions);
 
-//[ ACCESSKEY_GROUP Installer
-//[ ACCESSKEY_ALTERNATIVE // ideally, the same accesskey is used for both
-    if (gShowOptions)
-        win::SetText(gHwndButtonOptions, _TR("Hide &Options"));
-//| ACCESSKEY_ALTERNATIVE
-    else 
-        win::SetText(gHwndButtonOptions, _TR("&Options"));
-//] ACCESSKEY_ALTERNATIVE
-//] ACCESSKEY_GROUP Installer
+    win::SetText(gHwndButtonOptions, gShowOptions ? _TR("Hide &Options") : _TR("&Options"));
 
     ClientRect rc(gHwndFrame);
     rc.dy -= BOTTOM_PART_DY;
@@ -600,7 +592,6 @@ bool OnWmCommand(WPARAM wParam)
     return true;
 }
 
-//[ ACCESSKEY_GROUP Installer
 // TODO: since we have a variable UI, for better layout (anchored to the bottom,
 // not the top), we should layout controls starting at the bottom and go up
 void OnCreateWindow(HWND hwnd)
@@ -706,7 +697,6 @@ void OnCreateWindow(HWND hwnd)
         PostMessage(hwnd, WM_COMMAND, IDOK, 0);
     }
 }
-//] ACCESSKEY_GROUP Installer
 
 void CreateMainWindow()
 {

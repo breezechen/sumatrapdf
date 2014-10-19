@@ -9,4 +9,4 @@ included from other projects:
 Files           License        URL
 ----------------------------------------------------------------------------------
 common/crc32.c  Public Domain  https://gnunet.org/svn/gnunet/src/util/crypto_crc.c
-lzmasdk/*.*     Public Domain  http://www.7-zip.org/sdk.html
+ppmd/*.*        Public Domain  http://www.7-zip.org/sdk.html
