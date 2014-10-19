@@ -1,7 +1,0 @@
-#summary ... because they're not quite done yet
-
-Good news, everyone.
-
-The version after 2.5.x will have tabs.
-
-If you want to try tab support in Sumatra before the official release, try [http://blog.kowalczyk.info/software/sumatrapdf/prerelease.html pre-release build].
